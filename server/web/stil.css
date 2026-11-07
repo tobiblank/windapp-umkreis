@@ -88,6 +88,12 @@ a { color: var(--akzent); }
 .tag.no { background: var(--no-bg); } .tag.no .w { color: var(--no); }
 .tag.nix .w, .tag.leer .w { color: var(--nix); }
 .tag .w.vorbei { font: 600 15px/1.9 system-ui, -apple-system, "Segoe UI", sans-serif; }
+/* Verlauf ueber die Abrufe (seit 7.11.2026) */
+.tag .v { display: block; margin-top: 2px; font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tag .v.steigt { color: var(--go-text); }
+.tag .v.faellt { color: var(--no); }
+.verlauf { color: var(--leise); white-space: nowrap; }
+.verlauf.faellt { color: var(--no); }
 
 .details { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; }
 .details li { padding-top: 6px; border-top: 1px solid var(--linie); }
