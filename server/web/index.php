@@ -515,6 +515,17 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     </select>
   </label>
   <?php endif ?>
+  <?php if (!$woche && !$roadtrip): ?>
+  <label>Sortierung
+    <select name="nach">
+      <option value="summe"<?= $nach === 'summe' ? ' selected' : '' ?>>alle Tage</option>
+      <?php foreach ($tage as $t): ?>
+        <option value="<?= h($t) ?>"<?= $nach === $t ? ' selected' : '' ?>><?= h(tag_kurz($t, $heute)) ?></option>
+      <?php endforeach ?>
+      <option value="km"<?= $nach === 'km' ? ' selected' : '' ?>><?= $flug ? 'Transfer' : 'Fahrzeit' ?></option>
+    </select>
+  </label>
+  <?php endif ?>
   <input type="hidden" name="ansicht" value="<?= h($ansicht) ?>">
   <?php if ($eigenerOrt): ?><input type="hidden" name="ort" value="<?= h($heim[0] . ',' . $heim[1]) ?>"><?php endif ?>
   <?php if ($flug): ?>
@@ -529,27 +540,23 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <noscript><button class="knopf">Anzeigen</button></noscript>
 </form>
 
-<nav class="reiter" aria-label="Zeitraum">
-  <a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>"<?= $ansicht === 'bald' ? ' aria-current="page"' : '' ?>>Heute bis übermorgen</a>
-  <a href="<?= h(link_mit(['ansicht' => 'reise', 'nach' => null])) ?>"<?= $ansicht === 'reise' ? ' aria-current="page"' : '' ?>>Tag 3 bis 7</a>
+<?php // Seit 7.11.2026: drei Ansichten; der Zeitraum gilt nur fuer die Liste, die Sortierung steht im Formular ?>
+<nav class="reiter" aria-label="Ansicht">
+  <a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>"<?= !$woche && !$roadtrip ? ' aria-current="page"' : '' ?>>Liste</a>
   <a href="<?= h(link_mit(['ansicht' => 'woche', 'nach' => null])) ?>"<?= $woche ? ' aria-current="page"' : '' ?>>Woche</a>
   <a href="<?= h(link_mit(['ansicht' => 'roadtrip', 'nach' => null])) ?>"<?= $roadtrip ? ' aria-current="page"' : '' ?>>Roadtrip</a>
 </nav>
-<?php if (!$roadtrip): ?>
-
-<nav class="sortierung klein" aria-label="Sortierung">
-  <span class="leise">Sortiert nach</span>
-  <a href="<?= h(link_mit(['nach' => null])) ?>"<?= $nach === 'summe' ? ' aria-current="true"' : '' ?>>alle Tage</a>
-  <?php foreach ($woche ? [] : $tage as $t): ?>
-    <a href="<?= h(link_mit(['nach' => $t])) ?>"<?= $nach === $t ? ' aria-current="true"' : '' ?>><?= h(tag_kurz($t, $heute)) ?></a>
-  <?php endforeach ?>
-  <?php if ($woche): ?><span class="leise">Tag: Spaltenkopf antippen</span><?php endif ?>
-  <a href="<?= h(link_mit(['nach' => 'km'])) ?>"<?= $nach === 'km' ? ' aria-current="true"' : '' ?>><?= $flug ? 'Transfer' : 'Fahrzeit' ?></a>
+<?php if (!$woche && !$roadtrip): ?>
+<nav class="zeitraum klein" aria-label="Zeitraum">
+  <a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>"<?= $ansicht === 'bald' ? ' aria-current="page"' : '' ?>>Heute – Übermorgen</a>
+  <a href="<?= h(link_mit(['ansicht' => 'reise', 'nach' => null])) ?>"<?= $ansicht === 'reise' ? ' aria-current="page"' : '' ?>>Tag 3 – 7</a>
 </nav>
 <?php endif ?>
 <?php endif ?>
 
-<p class="leise klein erklaerung">
+<details class="leise klein erklaerung">
+  <summary><b><?= h($sport['name']) ?></b> · <?= h($wind) ?> · <span class="unterstrichen">Wie wird gerechnet?</span></summary>
+  <p>
   <?= h($sport['name']) ?>, <?= h($wind) ?>, mindestens <?= MIN_STUNDEN ?> Stunden am Stück zwischen 9 Uhr und Sonnenuntergang<?= $ansicht !== 'reise' ? ', heute erst ab einer halben Stunde nach jetzt' : '' ?>.
   Prozent = Anteil der 51 Läufe des ECMWF-Ensembles, an denen das klappt.
   <?php if ($roadtrip): ?>
@@ -559,7 +566,9 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <?php else: ?>
   „↑ von 40“ = vor bis zu drei Abrufen (zweimal am Tag) stand dort 40 %.
   <?php endif ?>
-</p>
+  </p>
+  <?php if ($woche): ?><p>Nach einem Tag sortieren: auf den Spaltenkopf tippen.</p><?php endif ?>
+</details>
 
 <?php if ($liste && !$geteilt && !$roadtrip):
     // Landkarte (seit 7.11.2026): Punkte nach der Chance am gewaehlten Tag,
@@ -580,7 +589,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
                          $rp, [$vx, $vy, $vw, $vh]);
 ?>
 <details class="karte landkarte" id="landkarte" open>
-  <summary><b>Karte</b> <span class="leise klein"><?= $kartenTag ? 'Chance ' . h(tag_kurz($kartenTag, $heute)) : 'beste Chance im Zeitraum' ?> · Tag über „Sortiert nach“ wählen</span></summary>
+  <summary><b>Karte</b> <span class="leise klein"><?= $kartenTag ? 'Chance ' . h(tag_kurz($kartenTag, $heute)) : 'beste Chance im Zeitraum' ?> · Tag über <?= $woche ? 'den Spaltenkopf' : '„Sortierung“' ?> wählen</span></summary>
   <svg class="landkarte-bild" viewBox="<?= "$vx $vy $vw $vh" ?>" role="img" aria-label="Karte der Regionen im Umkreis">
     <rect class="meer" x="<?= $vx ?>" y="<?= $vy ?>" width="<?= $vw ?>" height="<?= $vh ?>"/>
     <use href="karte.svg#land" class="land"/>
