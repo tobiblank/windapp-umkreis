@@ -4,7 +4,12 @@
 :root {
   --grund: #eef3f4; --karte: #ffffff; --kachel: #e4ecee; --linie: #d3dee1;
   --text: #13242a; --leise: #5a6f77;
-  --go: #1f9d74; --maybe: #c98a12; --no: #c8553f; --nix: #9aabb1;
+  /* Zahlen in den Kacheln: mindestens 3:1 auf ihrem Hintergrund (grosse Schrift) */
+  --go: #1a8a65; --maybe: #a8720c; --no: #b14a35; --nix: #6c7f86;
+  /* Kleine Marker (11 px): mindestens 4,5:1 */
+  --go-text: #176e52; --maybe-text: #8a5e0a;
+  /* Logo: Marke und Windfahnen */
+  --marke: #1f9d74; --marke-fahne: #ffffff;
   --go-bg: #d7f2e8; --maybe-bg: #fbedcf; --no-bg: #f8dfd9; --nix-bg: #edf1f2;
   --akzent: #0f7fa8;
   --zahlen: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
@@ -14,7 +19,9 @@
   :root {
     --grund: #0f1e24; --karte: #16282f; --kachel: #1d343c; --linie: #24404a;
     --text: #e8eef0; --leise: #9db0b7;
-    --go: #4fd1a5; --maybe: #f2b84b; --no: #f08a7a; --nix: #5d7781;
+    --go: #4fd1a5; --maybe: #f2b84b; --no: #f08a7a; --nix: #7a929b;
+    --go-text: #4fd1a5; --maybe-text: #f2b84b;
+    --marke: #4fd1a5; --marke-fahne: #0f1e24;
     --go-bg: #173d35; --maybe-bg: #3d3420; --no-bg: #3e2826; --nix-bg: #1a2e35;
     --akzent: #5cc8f0;
     color-scheme: dark;
@@ -32,6 +39,11 @@ a { color: var(--akzent); }
 .kopf p { margin: 2px 0 0; }
 .kopf .rechts { text-align: right; }
 .marke { margin: 0; font: 600 34px/1 var(--zahlen); letter-spacing: .01em; }
+.marke span { color: var(--marke); }
+.logozeile { display: flex; align-items: center; gap: 10px; }
+.logo { flex: none; display: block; }
+.logo-marke { fill: var(--marke); }
+.logo-fahne { fill: none; stroke: var(--marke-fahne); stroke-width: 6.5; stroke-linecap: round; stroke-linejoin: round; }
 
 .karte { background: var(--karte); border-radius: 18px; padding: 16px; margin: 0 0 12px; }
 
@@ -72,8 +84,8 @@ a { color: var(--akzent); }
 .details li { padding-top: 6px; border-top: 1px solid var(--linie); }
 .links { margin: 10px 0 0; color: var(--leise); }
 .region-kopf .marker { vertical-align: middle; margin-left: 4px; }
-.marker.thermik { background: var(--maybe-bg); color: var(--maybe); }
-.marker.regel { background: var(--go-bg); color: var(--go); }
+.marker.thermik { background: var(--maybe-bg); color: var(--maybe-text); }
+.marker.regel { background: var(--go-bg); color: var(--go-text); }
 .marker { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 1px 6px; border-radius: 6px; background: var(--kachel); color: var(--leise); }
 
 .fuss { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--linie); }

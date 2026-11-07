@@ -34,7 +34,7 @@ function fehlerseite(string $text): never
 {
     http_response_code(503);
     echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-       . '<title>Wohinfahrma</title><link rel="stylesheet" href="stil.css"><main class="seite"><h1 class="marke">Wohinfahrma</h1>'
+       . '<title>Wohinfahrma</title><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="stil.css"><main class="seite"><h1 class="marke">Wohin<span>fahrma</span></h1>'
        . '<p class="karte">' . h($text) . '</p></main>';
     exit;
 }
@@ -140,7 +140,8 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
 <title>Wohinfahrma</title>
 <link rel="stylesheet" href="stil.css">
 <link rel="manifest" href="manifest.php">
-<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="Fahrma">
 <meta name="theme-color" content="#eef3f4" media="(prefers-color-scheme: light)">
@@ -150,9 +151,12 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
 <main class="seite">
 
 <header class="kopf">
-  <div>
-    <h1 class="marke">Wohinfahrma</h1>
-    <p class="leise klein">Wo ist Wind? Fahr ma.</p>
+  <div class="logozeile">
+    <svg class="logo" viewBox="0 0 100 100" width="40" height="40" aria-hidden="true"><path class="logo-marke" d="M50 7C31.2 7 17 21.6 17 40.5C17 64 50 93 50 93S83 64 83 40.5C83 21.6 68.8 7 50 7Z"/><path class="logo-fahne" d="M31 36H57a7 7 0 1 0 -7 -7M31 48H65a7 7 0 1 1 -7 7"/></svg>
+    <div>
+      <h1 class="marke">Wohin<span>fahrma</span></h1>
+      <p class="leise klein">Wo ist Wind? Fahr ma.</p>
+    </div>
   </div>
   <?php if ($standText): ?><p class="leise klein rechts">Stand<br><?= h($standText) ?></p><?php endif ?>
 </header>

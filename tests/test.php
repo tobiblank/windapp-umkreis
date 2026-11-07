@@ -301,7 +301,7 @@ pruefe($ok, 'ohne Daten: Hinweis statt Fehler');
 if (!$ok) {
     echo "        HTTP $code, Anfang der Seite: ", substr(preg_replace('/\s+/', ' ', strip_tags($html)), 0, 400), "\n";
 }
-foreach (['impressum.html', 'datenschutz.html', 'stil.css', 'sw.js', 'offline.html', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon.svg'] as $f) {
+foreach (['impressum.html', 'datenschutz.html', 'stil.css', 'sw.js', 'offline.html', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon.svg', 'icon-maskable-512.png', 'favicon.svg', 'favicon.ico'] as $f) {
     [$code] = holen($sitePort, $f);
     pruefe($code === 200, "$f erreichbar");
 }
