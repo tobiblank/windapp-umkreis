@@ -59,6 +59,13 @@ pruefe(count(regionen_pruefen($mitLink)) === 2, 'anreise nur auto/flug, transfer
 $mitLink['regionen'][0]['anreise'] = ['flug'];
 $mitLink['regionen'][0]['flughafen'] = ['name' => 'X (XXX)', 'transfer_min' => 30];
 pruefe(regionen_pruefen($mitLink) === [] && region_anreise(['id' => 'y']) === ['auto'], 'gültiges Flugziel; ohne anreise: Auto');
+$mitLink['regionen'][0]['infos'] = [['art' => 'warnung', 'text' => 'x'], ['art' => 'sperre', 'text' => 'y', 'monate' => [13, 2]]];
+pruefe(count(regionen_pruefen($mitLink)) === 2, 'infos: unbekannte Art und falsche Monate werden gemeldet');
+$mitLink['regionen'][0]['infos'] = [['art' => 'sperre', 'text' => 'Kiten verboten', 'monate' => [11, 12], 'sportarten' => ['kite'], 'quelle' => 'q']];
+pruefe(regionen_pruefen($mitLink) === [], 'infos: gültige Sperre');
+$sperrR = $mitLink['regionen'][0];
+pruefe(region_sperre($sperrR, SPORTARTEN['kite_twintip'], 11) === 'Sperre: Kiten verboten' && region_sperre($sperrR, SPORTARTEN['windsurf'], 11) === null
+       && region_sperre($sperrR, SPORTARTEN['kitefoil'], 5) === null, 'Sperre trifft Kite im November, nicht Windsurf, nicht im Mai');
 
 echo "Tagesfenster\n";
 [$ab, $bis] = tagesfenster('2026-11-07', new DateTimeZone('Europe/Berlin'), 48.0, 11.13);
@@ -382,6 +389,11 @@ pruefe(($kw2['ens']['chance'] ?? 0) > 0.9, 'Kite Twintip am selben Tag: Welle eg
 pruefe(duenung($wi(1.0, 9, 200)) === [1.0, 9, 200] && duenung(['hoehe' => 0.8, 'periode' => 5, 'richtung' => 60, 'swell' => null, 'swell_periode' => null, 'swell_richtung' => null]) === [0.8, 5, 60],
        'Dünung: Swell, ohne Swell die gesamte Welle');
 
+$urner = $adriaR + ['infos' => [['art' => 'sperre', 'text' => 'Kiten verboten', 'monate' => [11, 12], 'sportarten' => ['kite']]]];
+$bU = region_bewerten($urner, $datA, $kite, ['2030-11-20'])['2030-11-20'];
+pruefe(!$bU['det']['geht'] && str_starts_with($bU['det']['grund'], 'Sperre') && (!isset($bU['ens']) || $bU['ens'] === null || $bU['ens']['chance'] == 0),
+       'Bewertung: gesperrter Tag geht nicht, Ensemble-Chance 0');
+
 // ---------------------------------------------------------------
 echo "Verlauf über die Abrufe\n";
 pruefe(verlauf_trend([], 0.5) === null && verlauf_trend([['ts' => 'x', 'chance' => 0.5]], null) === null, 'ohne frühere Werte oder ohne Chance: kein Verlauf');
@@ -682,6 +694,8 @@ pruefe(str_contains($html, 'Welle 0,8 m (Dünung 0,3 m, 5 s aus ONO)'), 'Detailz
 pruefe($code === 200 && str_contains($html, 'welle-bild') && substr_count($html, 'class="s-welle"') > 5, 'Stundenseite am Meer: Wellendiagramm');
 [$code, $html] = holen($sitePort, "index.php?km=1000&sport=wellenreiten");
 pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'ab 0,8 m Dünung'), 'Rangliste Wellenreiten ohne Fehler');
+[, $html] = holen($sitePort, 'index.php?km=1000');
+pruefe(str_contains($html, '<details class="spotinfo klein"><summary>Spot-Infos (1)') && str_contains($html, 'Testtipp für den Ammersee'), 'Regionskarte: Spot-Infos aufklappbar');
 foreach (['impressum.html', 'datenschutz.html', 'karte.svg', 'stil.css', 'sw.js', 'offline.html', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon.svg', 'icon-maskable-512.png', 'favicon.svg', 'favicon.ico', 'schrift/barlow-condensed-600.woff', 'schrift/OFL.txt'] as $f) {
     [$code] = holen($sitePort, $f);
     pruefe($code === 200, "$f erreichbar");

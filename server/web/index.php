@@ -18,6 +18,7 @@ require __DIR__ . '/lib/karte.php';
 require __DIR__ . '/lib/fahrzeit.php';
 require __DIR__ . '/lib/roadtrip.php';
 require __DIR__ . '/lib/neopren.php';
+require __DIR__ . '/lib/spotinfo.php';
 
 const TZ_SEITE = 'Europe/Berlin';
 const HEIM_STANDARD = [48.07, 11.15];      // Inning am Ammersee
@@ -773,8 +774,10 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
         <?php endforeach ?>
       </ul>
     <?php else: ?>
-      <p class="klein leise">Kein passender Tag in diesem Zeitraum.</p>
+      <?php $sperrGrund = array_values(array_filter(array_map(fn($x) => $x['det']['grund'] ?? '', $e['tage']), fn($g) => str_starts_with((string)$g, 'Sperre')))[0] ?? null; ?>
+      <p class="klein leise"><?= $sperrGrund ? h($sperrGrund) . ' (für ' . h($sport['name']) . ').' : 'Kein passender Tag in diesem Zeitraum.' ?></p>
     <?php endif ?>
+    <?= spotinfo_html($r) ?>
     <?php if (!empty($r['links'])): ?>
       <p class="links klein">Genauer:
         <?php foreach ($r['links'] as $i => $l): ?><?= $i ? ' · ' : '' ?><a href="<?= h($l['url']) ?>" rel="noopener"><?= h($l['name']) ?> ↗</a><?php endforeach ?>

@@ -13,6 +13,9 @@
  *           Ansicht die Region erscheint (seit 7.11.2026)
  *           flughafen? {name, transfer_min?}: naechster sinnvoller Flughafen, Transfer
  *           zum Spot in Minuten; fuer Flugziele
+ *           infos? [{art, text, quelle?, monate?, sportarten?}]: Spot-Infos (seit 7.11.2026),
+ *           art aus INFO_ARTEN. Eine sperre mit monate [von, bis] und sportarten
+ *           (Gruppen aus SPORTARTEN, z. B. "kite") sperrt diese Tage in der Bewertung.
  *   Spot:   id, name, punkt?, windlagen? (ersetzt die der Region),
  *           ablandig? [[von, bis], ...], hinweis?
  * Sektoren in Grad, aus welcher Richtung der Wind kommt, von inklusive,
@@ -30,6 +33,7 @@
 
 const HOEHEN = ['10m', '850hPa', '700hPa'];
 const ANREISEN = ['auto', 'flug'];
+const INFO_ARTEN = ['niveau', 'zone', 'sperre', 'saison', 'gefahr', 'tipp'];
 
 /** Anreisearten einer Region, Standard nur Auto */
 function region_anreise(array $r): array
@@ -99,6 +103,19 @@ function regionen_pruefen(array $d): array
         }
         foreach (windlagen_pruefen($r['windlagen'] ?? null, $druckpunkte) as $m) {
             $f[] = "$wo: $m";
+        }
+        foreach ($r['infos'] ?? [] as $k => $info) {
+            if (!in_array($info['art'] ?? null, INFO_ARTEN, true) || !is_string($info['text'] ?? null) || $info['text'] === ''
+                || (isset($info['quelle']) && !is_string($info['quelle']))) {
+                $f[] = "$wo: infos[$k] braucht art (" . implode(', ', INFO_ARTEN) . ') und text';
+            }
+            if (isset($info['monate']) && (!is_array($info['monate']) || count($info['monate']) !== 2
+                || array_filter($info['monate'], fn($m) => !is_int($m) || $m < 1 || $m > 12))) {
+                $f[] = "$wo: infos[$k].monate muss [von, bis] mit Monaten 1-12 sein";
+            }
+            if (isset($info['sportarten']) && (!is_array($info['sportarten']) || array_filter($info['sportarten'], fn($g) => !is_string($g)))) {
+                $f[] = "$wo: infos[$k].sportarten muss eine Liste von Gruppen sein";
+            }
         }
         if (isset($r['anreise']) && (!is_array($r['anreise']) || !$r['anreise']
             || array_diff($r['anreise'], ANREISEN) || count(array_unique($r['anreise'])) !== count($r['anreise']))) {

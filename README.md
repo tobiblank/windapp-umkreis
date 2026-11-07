@@ -38,6 +38,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Stunden | 7.11.2026: `stunden.php`, Diagramm je Stunde mit allen Modellen, Ensemble-Spanne, Böen, Richtung, fahrbaren Stunden; Vergleich zweier Regionen; siehe „Stunden“ |
 | Wasser und Neopren | 7.11.2026: Meerestemperatur aus der Marine API (neue Quelle `wasser`), Neopren-Faustregel in der Detailzeile und auf der Stundenseite; Seen nur Luft und gefühlt. **Variablenname noch nie gegen das echte Open-Meteo geprüft**; siehe „Wasser und Neopren“ |
 | Wellen | 7.11.2026: Welle und Dünung in der Detailzeile und als Diagramm auf der Stundenseite; Sportarten Kite Wave, Windsurf Wave (mit Mindestwelle) und Wellenreiten; siehe „Wellen“ |
+| Spot-Infos | 7.11.2026: Katalogfeld `infos` (Niveau, Zone, Sperre, Saison, Achtung, Tipp) für 15 Regionen, aus den Quellen im `hinweis`; Sperren mit Monaten wirken auf die Bewertung; siehe „Spot-Infos“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -69,6 +70,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | `thermik` | optional, `true`: Thermik-See. Die Seite zeigt den Hinweis „Thermik“, weil das Modellmittel den Wind dort vermutlich unterschätzt |
 | `anreise` | optional, `["auto"]` (Standard), `["flug"]` oder `["auto", "flug"]`: in welcher Ansicht die Region erscheint. Reine Flugziele bekommen keine Fahrzeit |
 | `flughafen` | optional, `{name, transfer_min}`: Flughafen für die Ansicht „Flug“, Transfer zum Spot in Minuten (geschätzt) |
+| `infos` | optional, `[{art, text, quelle, monate, sportarten}]`: Spot-Infos, `art` aus niveau, zone, sperre, saison, gefahr, tipp. Eine `sperre` mit `monate` [von, bis] und `sportarten` (Gruppen: kite, windsurf, wing, surf, segeln) sperrt diese Tage für diese Sportarten |
 | `anfahrt` | optional, `[Breite, Länge]`: Ziel für die Fahrzeit (Parkplatz am Spot). Ohne: `punkt` des ersten Spots, sonst der Vorhersagepunkt (der auf dem Wasser liegt und erst auf die nächste Straße einrasten muss) |
 
 Sektoren in Grad, **woher** der Wind kommt, im Uhrzeigersinn, `von` inklusive, `bis` exklusive. `[275, 20]` geht über Norden. Eine Region sollte nicht über eine Wetterscheide reichen (Gardasee Nord und Süd verhalten sich verschieden).
@@ -186,6 +188,14 @@ Seit 7.11.2026. Die Wellendaten der Marine API (Quelle `welle`, nur Meer) sammel
 - **Kite Wave, Windsurf Wave:** Wind wie Kite/Windsurf, dazu Welle ab 1,0 m (Faustwert). Das Ensemble hat keine Welle; damit die Chance keine Tage mit zu kleiner Welle zählt, bekommt jeder Lauf die Wellenhöhe der Marine-Vorhersage (`ensemble_welle_einmischen()`).
 - **Wellenreiten** (`surf`, `stunde_surfbar()`): kein Mindestwind. Eine Stunde geht bei Dünung ab 0,8 m und Periode ab 8 s (Faustwerte), wenn die Dünung nicht aus einem ablandigen Sektor des Spots kommt (vom Land kommt keine Welle; Spots ohne `ablandig` sind „grob“), der Wind höchstens 12 kn hat oder ablandig ist (dann gut, im Text „Wind ablandig“), und kein Gewitter. Dünung = Swell der Marine API, ohne Swell die gesamte Welle. Keine Ensemble-Chance; die Kacheln zeigen „ja“ oder „–“. Seen gehen nie.
 - **Grenzen:** Die Marine API rechnet auf einem groben Gitter vor der Küste; Brandung, Riffe und Abschattung an einem Strand kennt sie nicht. Für die Session vor Ort eine Surfvorhersage für den Spot nehmen.
+
+## Spot-Infos
+
+Seit 7.11.2026. Katalogfeld `infos` je Region (siehe Tabelle oben), angezeigt als aufklappbarer Block „Spot-Infos (n)“ in der Regionskarte und auf der Stundenseite (`lib/spotinfo.php`), Reihenfolge Sperre, Zone, Achtung, Niveau, Saison, Tipp; eine Sperre steht schon im zugeklappten Titel.
+
+- **Inhalt:** nur, was mit Quelle schon im `hinweis` stand (15 Regionen, z. B. Urnersee Kitesperre Nov/Dez, Tarifa Kitezonen 15.6.–15.9., Zandvoort Zonen und Strömung, Famara bei Hochwasser ohne Strand, Lago di Santa Croce Kiteverbot am Poetto). Nichts dazuerfunden; auf der Seite als „Stand 7.11.2026, nicht aktuell geprüft“ gekennzeichnet.
+- **Sperren:** `region_sperre()` prüft Monat und Gruppe der Sportart (neues Feld `gruppe` in `SPORTARTEN`); ein gesperrter Tag geht nicht, die Ensemble-Chance ist 0, und die Karte nennt statt „Kein passender Tag“ den Grund.
+- **Pflege:** Neue Infos mit Quelle eintragen; ohne Quelle lieber weglassen.
 
 **Alle Zahlen sind Rohwerte, nicht kalibriert.** An Thermik-Spots unterschätzen die Modelle den Wind vermutlich. Sportart-Voreinstellungen wie in stegen-wind (14 / 14 / 11 / 16 / 17 / 12 / 5–18 kn); dort ist nur 14 kn Directional kalibriert, der Rest sind Faustwerte.
 
@@ -352,6 +362,6 @@ tools/karte_bauen.py    erzeugt server/web/karte.svg aus Natural Earth
 7. ~~Stundenansicht je Region, Vergleich zweier Regionen~~ (erledigt, siehe „Stunden“)
 8. ~~Wassertemperatur und Neoprenempfehlung~~ (erledigt fürs Meer, siehe „Wasser und Neopren“)
 9. ~~Gezeiten~~ (verworfen 7.11.2026: entscheidet nicht „wohin“, sondern „wann“; das klärt eine Gezeitentabelle vor Ort. Stattdessen Wellen, siehe „Wellen“)
-10. Spot-Infos (Niveau, Zonen, Sperrzeiten, Saison) auf der Seite
+10. ~~Spot-Infos~~ (erledigt, siehe „Spot-Infos“)
 11. Kalendereintrag (.ics) für ein gutes Fenster
 12. Rückblick mit Messwerten (Pioupiou offen; Holfuy, Windguru-Stationen: Lizenz klären)
