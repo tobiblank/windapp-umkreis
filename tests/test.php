@@ -79,15 +79,20 @@ foreach (['vorhersage', 'ensemble', 'welle'] as $q) {
 }
 exec('php ' . escapeshellarg("$tmp/sammler.php") . ' 2>&1', $aus2, $rc2);
 $zeilen = count(file("$tmp/daten/vorhersage/$heute.ndjson"));
-pruefe($rc2 === 0 && $zeilen === 1, "zweiter Lauf in derselben Stunde ruft nicht erneut ab ($zeilen Zeile)");
+pruefe($rc2 === 0 && $zeilen === 2, "zweiter Lauf in derselben Stunde ruft nicht erneut ab ($zeilen Zeilen: See und Meer)");
 exec('php ' . escapeshellarg("$tmp/sammler.php") . ' --debug 2>&1', $aus3);
-pruefe(in_array('vorhersage/0: unveraendert', $aus3, true), 'gleiche Werte werden nicht doppelt geschrieben');
+pruefe(in_array('vorhersage/0: unveraendert', $aus3, true) && in_array('vorhersage/1: unveraendert', $aus3, true), 'gleiche Werte werden nicht doppelt geschrieben');
 $zaehl = json_decode(file_get_contents("$tmp/daten/.state/openmeteo.json"), true);
-pruefe(($zaehl[$heute]['abrufe'] ?? 0) === 6, 'Open-Meteo-Zählung: 6 Abrufe (2 Läufe x 3 Quellen)');
+pruefe(($zaehl[$heute]['abrufe'] ?? 0) === 10, 'Open-Meteo-Zählung: 10 Abrufe (2 Läufe x 5: Vorhersage und Ensemble je See/Meer, Welle)');
 
 // Eine fehlerhafte Antwort darf nichts kaputt machen
-$z = json_decode(file($tmp . "/daten/vorhersage/$heute.ndjson")[0], true);
-pruefe($z['regionen'] === ['ammersee', 'adria-nord'] && count($z['payload']) === 2, 'payload als Liste in Reihenfolge der Regionen');
+$zz = array_map(fn($l) => json_decode($l, true), file($tmp . "/daten/vorhersage/$heute.ndjson"));
+pruefe($zz[0]['regionen'] === ['ammersee'] && count($zz[0]['payload']) === 1 && $zz[1]['regionen'] === ['adria-nord'],
+       'payload als Liste, Abrufe getrennt nach See und Meer');
+pruefe($zz[0]['payload'][0]['test_cell_selection'] === null && $zz[1]['payload'][0]['test_cell_selection'] === 'sea',
+       'Meer-Regionen mit cell_selection=sea, Seen ohne');
+$ensZ = array_map(fn($l) => json_decode($l, true), file($tmp . "/daten/ensemble/$heute.ndjson"));
+pruefe(($ensZ[1]['payload'][0]['test_cell_selection'] ?? null) === 'sea', 'auch das Ensemble fragt für das Meer eine Wasser-Zelle an');
 
 proc_terminate($server);
 

@@ -33,7 +33,7 @@
  *   $data_dir/vorhersage/2026-11-07.ndjson
  *   $data_dir/ensemble/2026-11-07.ndjson
  *   $data_dir/welle/2026-11-07.ndjson
- * Jede Zeile ein Abruf fuer bis zu $TEIL_GROESSE Regionen:
+ * Jede Zeile ein Abruf fuer bis zu $TEIL_GROESSE Regionen desselben Typs (see/meer):
  *   {"ts":..., "source":..., "ok":..., "http":..., "ms":...,
  *    "regionen":["ammersee","adria-nord"], "payload":[{...}, {...}]}
  * payload ist immer eine Liste, in derselben Reihenfolge wie "regionen".
@@ -136,6 +136,28 @@ function quellen(array $regionen, string $modelle): array
                         . '&forecast_days=7&timezone=UTC',
         ],
     ];
+}
+
+/**
+ * Abrufe einer Quelle: getrennt nach Typ, weil Meer-Regionen eine Wasser-Zelle
+ * brauchen. Open-Meteo waehlt sonst die Gitterzelle bevorzugt an Land
+ * (cell_selection, Vorgabe "land"). Gesehen am 7.11.2026: Fuer die Adria
+ * (angefragt 45,5 N) lieferte das ECMWF-Ensemble 45,75 N mit 0 m Hoehe an der
+ * friaulischen Kueste, rund 8 kn, die feineren Modelle rechneten 17 kn.
+ * Seen bleiben vorerst beim Standard: wie Open-Meteo "sea" im Binnenland
+ * behandelt, ist nicht geprueft.
+ * Rueckgabe Liste von [regionen, zusatz fuer die URL], je hoechstens $groesse Regionen.
+ */
+function teile(array $regionen, int $groesse): array
+{
+    $out = [];
+    foreach (['see' => '', 'meer' => '&cell_selection=sea'] as $typ => $zusatz) {
+        $gruppe = array_values(array_filter($regionen, fn($r) => $r['typ'] === $typ));
+        foreach (array_chunk($gruppe, $groesse) as $teil) {
+            $out[] = [$teil, $zusatz];
+        }
+    }
+    return $out;
 }
 
 // ===================================================================
@@ -330,9 +352,9 @@ foreach (quellen($REGIONEN, $MODELLE) as $name => $q) {
     }
 
     $alleOk = true;
-    foreach (array_chunk($q['regionen'], $TEIL_GROESSE) as $teilNr => $teil) {
+    foreach (teile($q['regionen'], $TEIL_GROESSE) as $teilNr => [$teil, $zusatz]) {
         $ids = array_column($teil, 'id');
-        $url = $q['basis'] . '?' . koordinaten($teil) . '&' . $q['query'];
+        $url = $q['basis'] . '?' . koordinaten($teil) . '&' . $q['query'] . $zusatz;
         // Nur fuer tests/sammler_test.php: Open-Meteo durch einen lokalen Ersatz tauschen
         $ersatz = $CFG['test_url_ersatz'] ?? (getenv('UMKREIS_TEST_URL') ?: null);
         if ($ersatz) {

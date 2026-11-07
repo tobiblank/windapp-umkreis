@@ -2,9 +2,9 @@
 /**
  * Ersatz fuer Open-Meteo im Test (php -S 127.0.0.1:PORT fake_openmeteo.php).
  * Liefert dieselbe Struktur wie die echte API, mit festen Testwerten:
- *   Ort 0: Westwind 250 Grad, 16 kn, morgen 10-15 UTC, sonst 6 kn
- *   Ort 1: Nordost 40 Grad (Bora), 20 kn, morgen und uebermorgen 9-14 UTC
- *   weitere Orte: Suedwind 180 Grad, 8 kn
+ *   Breite 48,0 (Ammersee): Westwind 250 Grad, 16 kn, morgen 10-15 UTC, sonst 6 kn
+ *   Breite 45,5 (Adria): Nordost 40 Grad (Bora), 20 kn, morgen und uebermorgen 9-14 UTC
+ *   andere Orte: Suedwind 180 Grad, 8 kn
  * Mehrere Orte -> Liste, ein Ort -> Objekt (wie Open-Meteo).
  */
 
@@ -54,7 +54,9 @@ function wert(int $ort, string $var, int $i, float $faktor): ?float
 }
 
 $liste = [];
-foreach ($lats as $ort => $lat) {
+foreach ($lats as $lat) {
+    // Testorte nach Breite erkennen (die Abrufe sind nach Typ getrennt)
+    $ort = abs((float)$lat - 48.0) < 0.01 ? 0 : (abs((float)$lat - 45.5) < 0.01 ? 1 : 2);
     $hourly = ['time' => $zeiten];
     foreach ($vars as $v) {
         if (str_ends_with($pfad, '/ensemble')) {
@@ -75,7 +77,9 @@ foreach ($lats as $ort => $lat) {
             $hourly[$v] = array_map(fn($i) => wert($ort, $v, $i, 1.0), array_keys($zeiten));
         }
     }
-    $liste[] = ['latitude' => (float)$lat, 'generationtime_ms' => mt_rand(1, 99) / 10, 'hourly' => $hourly];
+    // Echo der Zellwahl, damit der Test pruefen kann, was angefragt wurde
+    $liste[] = ['latitude' => (float)$lat, 'generationtime_ms' => mt_rand(1, 99) / 10,
+                'test_cell_selection' => $q['cell_selection'] ?? null, 'hourly' => $hourly];
 }
 
 header('Content-Type: application/json');
