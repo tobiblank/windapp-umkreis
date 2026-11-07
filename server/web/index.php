@@ -81,6 +81,9 @@ $sportId = isset($_GET['sport']) && isset(SPORTARTEN[$_GET['sport']]) ? (string)
 $sport = SPORTARTEN[$sportId];
 $km = isset($_GET['km']) && in_array((int)$_GET['km'], UMKREISE, true) ? (int)$_GET['km'] : 1000;
 $ansicht = ($_GET['ansicht'] ?? '') === 'reise' ? 'reise' : 'bald';
+// Anreise (seit 7.11.2026): Auto = Umkreis um den Standort, Flug = alle Flugziele ohne Umkreis
+$anreise = ($_GET['anreise'] ?? '') === 'flug' ? 'flug' : 'auto';
+$flug = $anreise === 'flug';
 
 $heim = HEIM_STANDARD;
 $eigenerOrt = false;
@@ -150,13 +153,14 @@ function tag_datum(string $tag, DateTimeZone $tz): string
 $jetzt = new DateTimeImmutable('now');
 $dataDir = rtrim($cfg['data_dir'], '/');
 // Nur die Regionen im Umkreis entpacken (Speicher)
+$zurAnreise = array_values(array_filter($regionen, fn($r) => in_array($anreise, region_anreise($r), true)));
 $imUmkreis = $geteilt
     ? [$geteilt['id']]
-    : array_column(array_filter($regionen, fn($r) => entfernung_km($heim, $r['punkt']) <= $km), 'id');
+    : array_column(array_filter($zurAnreise, fn($r) => $flug || entfernung_km($heim, $r['punkt']) <= $km), 'id');
 $stand = daten_laden($dataDir, nur: $imUmkreis);
 $liste = $geteilt
     ? rangliste([$geteilt], $stand, $sport, $heim, INF, $tage, $jetzt)
-    : rangliste($regionen, $stand, $sport, $heim, (float)$km, $tage, $jetzt);
+    : rangliste($zurAnreise, $stand, $sport, $heim, $flug ? INF : (float)$km, $tage, $jetzt);
 // Speicher: die Rohdaten braucht ab hier nichts mehr (der Verlauf liest die Dateien
 // selbst, Stand und Fingerabdruecke stehen in _ts und _fp)
 foreach (array_keys($stand) as $q) {
@@ -177,7 +181,11 @@ if ($nach !== 'km' && !in_array($nach, $tage, true)) {
 $fahrzeiten = fahrzeiten_laden($dataDir);
 $fahrtModell = fahrt_modell($fahrzeiten, $regionen);
 foreach ($liste as $i => $e) {
-    $liste[$i]['fahrt'] = fahrzeit($e['region'], $heim, (float)$e['km'], $fahrzeiten, $fahrtModell);
+    $fh = $e['region']['flughafen'] ?? null;
+    $liste[$i]['fahrt'] = $flug || !in_array('auto', region_anreise($e['region']), true)
+        // Flugziel: "Fahrzeit" ist der Transfer vom Flughafen, sortiert wird danach
+        ? ['min' => $fh['transfer_min'] ?? null, 'km' => null, 'geschaetzt' => false, 'kein_landweg' => false, 'flug' => $fh['name'] ?? 'Flugziel']
+        : fahrzeit($e['region'], $heim, (float)$e['km'], $fahrzeiten, $fahrtModell);
 }
 $liste = rangliste_sortieren($liste, $nach);
 
@@ -204,8 +212,11 @@ function stufe(?float $chance): string
 
 function link_mit(array $aenderung): string
 {
-    global $sportId, $km, $ansicht, $heim, $eigenerOrt, $nach;
+    global $sportId, $km, $ansicht, $heim, $eigenerOrt, $nach, $anreise;
     $p = ['sport' => $sportId, 'km' => $km, 'ansicht' => $ansicht];
+    if ($anreise === 'flug') {
+        $p['anreise'] = 'flug';
+    }
     if ($nach !== 'summe') {
         $p['nach'] = $nach;
     }
@@ -276,16 +287,22 @@ function trend_text(array $tr): string
     };
 }
 
-/** "≈ 5:15 h Fahrt", "kein Landweg" */
+/** "≈ 5:15 h Fahrt", "kein Landweg"; Flugziel: "Flug: Lanzarote (ACE)" */
 function fahrzeit_mit_wort(array $f): string
 {
+    if (isset($f['flug'])) {
+        return 'Flug: ' . $f['flug'];
+    }
     return fahrzeit_text($f) . ($f['min'] !== null ? ' Fahrt' : '');
 }
 
-/** "412 km Straße" (genau) oder "380 km Luftlinie" */
+/** "412 km Straße" (genau), "380 km Luftlinie"; Flugziel: "≈ 25 min Transfer" */
 function km_text(array $e): string
 {
     $f = $e['fahrt'];
+    if (isset($f['flug'])) {
+        return $f['min'] !== null ? '≈ ' . fahrzeit_text($f) . ' Transfer' : '';   // Transfer ist immer geschaetzt
+    }
     return $f['km'] !== null ? zahl((float)$f['km']) . ' km Straße' : zahl((float)$e['km']) . ' km Luftlinie';
 }
 
@@ -294,6 +311,9 @@ function fahrzeit_titel(array $e): string
     global $fahrzeiten;
     $f = $e['fahrt'];
     $luft = 'Luftlinie ' . zahl((float)$e['km']) . ' km';
+    if (isset($f['flug'])) {
+        return 'Flugziel. Flughafen und Transfer zum Spot geschätzt; Flugzeiten und Preise sind nicht berücksichtigt.';
+    }
     if ($f['min'] === null) {
         return 'Vom Startort aus keine Route auf der Straße (Insel?). ' . $luft;
     }
@@ -308,7 +328,7 @@ function abfahrt_text(array $e, string $tag, array $d): ?string
 {
     global $tzSeite, $jetzt;
     $det = $d['det'];
-    if (!$det['geht'] || $e['fahrt']['min'] === null) {
+    if (!$det['geht'] || $e['fahrt']['min'] === null || isset($e['fahrt']['flug'])) {
         return null;
     }
     $a = abfahrt($tag, (int)$det['von'], (int)$det['bis'], new DateTimeZone($e['region']['zeitzone']), $e['fahrt']['min'], $tzSeite, $jetzt);
@@ -387,6 +407,13 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
       <?php endforeach ?>
     </select>
   </label>
+  <label>Anreise
+    <select name="anreise">
+      <option value="auto"<?= $flug ? '' : ' selected' ?>>Auto</option>
+      <option value="flug"<?= $flug ? ' selected' : '' ?>>Flug</option>
+    </select>
+  </label>
+  <?php if ($flug): ?><input type="hidden" name="km" value="<?= $km ?>"><?php else: ?>
   <label>Umkreis
     <select name="km">
       <?php foreach (UMKREISE as $u): ?>
@@ -394,13 +421,18 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
       <?php endforeach ?>
     </select>
   </label>
+  <?php endif ?>
   <input type="hidden" name="ansicht" value="<?= h($ansicht) ?>">
   <?php if ($eigenerOrt): ?><input type="hidden" name="ort" value="<?= h($heim[0] . ',' . $heim[1]) ?>"><?php endif ?>
+  <?php if ($flug): ?>
+  <p class="ort klein leise">Alle Flugziele, ohne Umkreis. Flughafen und Transfer geschätzt, Flugzeiten und Preise nicht berücksichtigt.</p>
+  <?php else: ?>
   <p class="ort klein leise">
     Von <?= $eigenerOrt ? 'deinem Standort (auf etwa 10 km gerundet)' : 'Inning am Ammersee' ?> ·
     <button type="button" class="textknopf" id="standort">Meinen Standort nehmen</button>
     <?php if ($eigenerOrt): ?> · <a href="<?= h(link_mit(['ort' => null])) ?>">Inning</a><?php endif ?>
   </p>
+  <?php endif ?>
   <noscript><button class="knopf">Anzeigen</button></noscript>
 </form>
 
@@ -415,7 +447,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <?php foreach ($tage as $t): ?>
     <a href="<?= h(link_mit(['nach' => $t])) ?>"<?= $nach === $t ? ' aria-current="true"' : '' ?>><?= h(tag_kurz($t, $heute)) ?></a>
   <?php endforeach ?>
-  <a href="<?= h(link_mit(['nach' => 'km'])) ?>"<?= $nach === 'km' ? ' aria-current="true"' : '' ?>>Fahrzeit</a>
+  <a href="<?= h(link_mit(['nach' => 'km'])) ?>"<?= $nach === 'km' ? ' aria-current="true"' : '' ?>><?= $flug ? 'Transfer' : 'Fahrzeit' ?></a>
 </nav>
 <?php endif ?>
 
@@ -437,7 +469,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     }
     // Schlechte zuerst zeichnen, gute liegen oben
     usort($punkte, fn($a, $b) => ($a['wert']['chance'] ?? ($a['wert']['geht'] ? 1 : -1)) <=> ($b['wert']['chance'] ?? ($b['wert']['geht'] ? 1 : -1)));
-    [$vx, $vy, $vw, $vh] = karte_ausschnitt(array_merge([$heimXY], array_column($punkte, 'xy')));
+    [$vx, $vy, $vw, $vh] = karte_ausschnitt(array_merge($flug ? [] : [$heimXY], array_column($punkte, 'xy')));
     $rp = $vw / 42;   // Punktgroesse folgt dem Ausschnitt, auf dem Handy rund 9 px
     $namen = karte_namen(array_map(fn($p) => ['xy' => $p['xy'], 'name' => $p['e']['region']['name'],
                                               'rang' => $p['wert']['chance'] ?? ($p['wert']['geht'] ? 1 : -1)], $punkte),
@@ -448,8 +480,10 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <svg class="landkarte-bild" viewBox="<?= "$vx $vy $vw $vh" ?>" role="img" aria-label="Karte der Regionen im Umkreis">
     <rect class="meer" x="<?= $vx ?>" y="<?= $vy ?>" width="<?= $vw ?>" height="<?= $vh ?>"/>
     <use href="karte.svg#land" class="land"/>
+    <?php if (!$flug): ?>
     <circle class="umkreis" cx="<?= round($heimXY[0], 1) ?>" cy="<?= round($heimXY[1], 1) ?>" r="<?= round(karte_km((float)$km, $heim[0]), 1) ?>"/>
     <circle class="heim" cx="<?= round($heimXY[0], 1) ?>" cy="<?= round($heimXY[1], 1) ?>" r="<?= round($rp * 0.45, 2) ?>"><title><?= $eigenerOrt ? 'Dein Standort' : 'Inning am Ammersee' ?></title></circle>
+    <?php endif ?>
     <?php foreach ($punkte as $nr => $p):
         $r = $p['e']['region'];
         $c = $p['wert']['chance'];
@@ -467,7 +501,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     </a>
     <?php endforeach ?>
   </svg>
-  <p class="leise klein landkarte-fuss">Punkt antippen: zur Region. Kreis: Umkreis von <?= zahl($km) ?> km Luftlinie, ungefähr. Karte: Natural Earth.</p>
+  <p class="leise klein landkarte-fuss">Punkt antippen: zur Region.<?= $flug ? '' : ' Kreis: Umkreis von ' . zahl($km) . ' km Luftlinie, ungefähr.' ?> Karte: Natural Earth.</p>
 </details>
 <?php endif ?>
 
@@ -476,7 +510,11 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
 <?php elseif (!$liste && $geteilt): ?>
   <p class="karte">Für <?= h($geteilt['name']) ?> gibt es gerade keine Vorhersagedaten. <a href="./">Zur Rangliste</a></p>
 <?php elseif (!$liste): ?>
+  <?php if ($flug): ?>
+  <p class="karte">Im Katalog ist noch kein Flugziel eingetragen.</p>
+  <?php else: ?>
   <p class="karte">Keine Region im Umkreis von <?= zahl($km) ?> km. <a href="<?= h(link_mit(['km' => UMKREISE[count(UMKREISE) - 1]])) ?>">Umkreis vergrößern</a></p>
+  <?php endif ?>
 <?php endif ?>
 
 <?php foreach ($liste as $e):
@@ -557,7 +595,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
 
 <footer class="fuss klein leise">
   <p><b>Regel</b> heißt: Die Windlage ist aus Druckdifferenzen und Grundströmung abgeleitet (nach lokalen Vorhersageseiten wie kitewetter.at), die Stärke ist ein geschätzter typischer Wert.</p>
-  <p><b>Rohwerte, nicht kalibriert.</b> Modelle unterschätzen lokale Thermik oft (Seen mit „Thermik“ markiert, dort lieber die verlinkte lokale Vorhersage ansehen); Böen und Gewitter prüft nur das Modellmittel. Umkreis als Luftlinie zum Vorhersagepunkt der Region; Fahrzeit mit dem Auto ohne Verkehr und Pausen, „≈“ heißt aus der Luftlinie geschätzt.</p>
+  <p><b>Rohwerte, nicht kalibriert.</b> Modelle unterschätzen lokale Thermik oft (Seen mit „Thermik“ markiert, dort lieber die verlinkte lokale Vorhersage ansehen); Böen und Gewitter prüft nur das Modellmittel. Umkreis als Luftlinie zum Vorhersagepunkt der Region; Fahrzeit mit dem Auto ohne Verkehr und Pausen, „≈“ heißt aus der Luftlinie geschätzt. Flugziele (Anreise „Flug“): ohne Umkreis, mit geschätztem Transfer vom Flughafen.</p>
   <?php if ($fahrzeiten): ?><p>Fahrzeiten ab <?= h($fahrzeiten['start']['name'] ?? 'Startort') ?>: © <a href="https://openrouteservice.org/">openrouteservice.org</a> by HeiGIT, Kartendaten © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende.</p><?php endif ?>
   <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0) · Für Stegen genauer: <a href="https://ammerseewind.de">ammerseewind.de</a></p>
   <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
@@ -670,6 +708,7 @@ if ('serviceWorker' in navigator) {
   });
 
   var knopf = document.getElementById('standort');
+  if (!knopf) { return; }   // Flugziele: kein Standort
   if (!('geolocation' in navigator)) { knopf.hidden = true; return; }
   knopf.addEventListener('click', function () {
     knopf.textContent = 'Standort wird bestimmt …';

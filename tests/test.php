@@ -49,6 +49,13 @@ pruefe(count(regionen_pruefen($mitLink)) === 1, 'links: nur https-Adressen erlau
 $mitLink['regionen'][0]['links'] = [];
 $mitLink['regionen'][0]['thermik'] = 'ja';
 pruefe(count(regionen_pruefen($mitLink)) === 1, 'thermik: nur true oder false');
+$mitLink['regionen'][0]['thermik'] = true;
+$mitLink['regionen'][0]['anreise'] = ['flug', 'schiff'];
+$mitLink['regionen'][0]['flughafen'] = ['name' => 'X (XXX)', 'transfer_min' => '30'];
+pruefe(count(regionen_pruefen($mitLink)) === 2, 'anreise nur auto/flug, transfer_min ganze Minuten');
+$mitLink['regionen'][0]['anreise'] = ['flug'];
+$mitLink['regionen'][0]['flughafen'] = ['name' => 'X (XXX)', 'transfer_min' => 30];
+pruefe(regionen_pruefen($mitLink) === [] && region_anreise(['id' => 'y']) === ['auto'], 'gültiges Flugziel; ohne anreise: Auto');
 
 echo "Tagesfenster\n";
 [$ab, $bis] = tagesfenster('2026-11-07', new DateTimeZone('Europe/Berlin'), 48.0, 11.13);
@@ -542,6 +549,15 @@ pruefe(str_contains($html, '>kein Landweg<') && ohne_php_meldung($html), 'Region
 pruefe(str_contains($html, '>≈ ') && str_contains($html, ' km Luftlinie</span>') && ohne_php_meldung($html), 'anderer Standort: Fahrzeit geschätzt (≈), dazu die Luftlinie');
 [, $html] = holen($sitePort, "index.php?region=adria-nord&nach=$morgen");
 pruefe(!str_contains($html, 'class="leise klein fahrzeit"') && !str_contains($html, 'class="abfahrt"'), 'geteilte Vorhersage: ohne Fahrzeit und Abfahrt');
+[$code, $html] = holen($sitePort, 'index.php?anreise=flug');
+pruefe($code === 200 && ohne_php_meldung($html) && substr_count($html, 'class="karte region') === 1 && str_contains($html, 'id="r-testsee-druck"')
+       && str_contains($html, 'Flug: Testflughafen (TST)') && str_contains($html, '≈ 20 min Transfer'),
+       'Flugziele: nur Regionen mit Anreise Flug, ohne Umkreis, mit Flughafen und Transfer');
+pruefe(!str_contains($html, 'name="km"><') && !str_contains($html, 'class="umkreis"') && !str_contains($html, 'class="abfahrt"')
+       && !str_contains($html, 'id="standort"') && str_contains($html, 'anreise=flug&amp;nach=km') && str_contains($html, '>Transfer</a>'),
+       'Flugziele: kein Umkreis, kein Standort, keine Abfahrt, Links behalten die Anreise');
+[, $html] = holen($sitePort, 'index.php?km=100&ort=46.6,30.0');
+pruefe(str_contains($html, 'id="r-testsee-druck"') && !str_contains($html, 'Testflughafen'), 'Anreise Auto: Region mit Auto und Flug bleibt mit Fahrzeit');
 foreach (['impressum.html', 'datenschutz.html', 'karte.svg', 'stil.css', 'sw.js', 'offline.html', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon.svg', 'icon-maskable-512.png', 'favicon.svg', 'favicon.ico', 'schrift/barlow-condensed-600.woff', 'schrift/OFL.txt'] as $f) {
     [$code] = holen($sitePort, $f);
     pruefe($code === 200, "$f erreichbar");

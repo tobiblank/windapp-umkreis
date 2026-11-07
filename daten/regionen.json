@@ -485,7 +485,9 @@
       "punkt": [36.0, -5.68],
       "anfahrt": [36.068, -5.69],
       "zeitzone": "Europe/Madrid",
-      "hinweis": "kitefuntarifa.com, kitemana.com: Poniente side-onshore, Levante side-offshore und böig, im Süden von Los Lances offshore; Levante nur für Fortgeschrittene, Valdevaqueros dann die sicherere Wahl. Sommer 15.6.–15.9. Zonen. Ablandig-Sektor geschätzt (Strand Richtung SW); Levante ist absichtlich nicht ablandig gesetzt. Anfahrt (Valdevaqueros) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
+      "anreise": ["auto", "flug"],
+      "flughafen": {"name": "Málaga (AGP)", "transfer_min": 105},
+      "hinweis": "kitefuntarifa.com, kitemana.com: Poniente side-onshore, Levante side-offshore und böig, im Süden von Los Lances offshore; Levante nur für Fortgeschrittene, Valdevaqueros dann die sicherere Wahl. Sommer 15.6.–15.9. Zonen. Ablandig-Sektor geschätzt (Strand Richtung SW); Levante ist absichtlich nicht ablandig gesetzt. Anfahrt (Valdevaqueros) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer (Minuten zum Spot) von Claude am 7.11.2026 geschätzt.",
       "windlagen": [
         {"name": "Levante", "sektor": [60, 120], "charakter": "böig, side-offshore"},
         {"name": "Poniente", "sektor": [240, 300]}
@@ -503,7 +505,9 @@
       "punkt": [40.0, 8.3],
       "anfahrt": [40.035, 8.4],
       "zeitzone": "Europe/Rome",
-      "hinweis": "kite-and-windsurfing-guide.com, waterwind.it: Maestrale (NW) bringt am Capo Mannu Wellen mit Wind von rechts; Kitestart in Putzu Idu, dort side. Mini Capo laut waterwind.it bei Maestrale abgedeckt und schwächer; surf-forecast.com: Nord dort offshore. Andere Richtungen ungeklärt. Ablandig geschätzt. Anfahrt (Putzu Idu) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
+      "anreise": ["auto", "flug"],
+      "flughafen": {"name": "Cagliari (CAG)", "transfer_min": 90},
+      "hinweis": "kite-and-windsurfing-guide.com, waterwind.it: Maestrale (NW) bringt am Capo Mannu Wellen mit Wind von rechts; Kitestart in Putzu Idu, dort side. Mini Capo laut waterwind.it bei Maestrale abgedeckt und schwächer; surf-forecast.com: Nord dort offshore. Andere Richtungen ungeklärt. Ablandig geschätzt. Anfahrt (Putzu Idu) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer (Minuten zum Spot) von Claude am 7.11.2026 geschätzt.",
       "windlagen": [
         {"name": "Maestrale", "sektor": [280, 350]}
       ],
@@ -520,7 +524,9 @@
       "punkt": [35.88, 27.72],
       "anfahrt": [35.88, 27.765],
       "zeitzone": "Europe/Athens",
-      "hinweis": "sportif.travel, kite-and-windsurfing-guide.com: West onshore mit Welle, Ost cross-offshore und flach, Wind dort düsenverstärkt und 1–2 Bft stärker als an der Westküste; Meltemi Mai–Okt. Ablandig-Sektoren geschätzt; Ostseite so gesetzt, dass Meltemi (cross-off) zählt. Anfahrt (Prasonisi) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
+      "anreise": ["flug"],
+      "flughafen": {"name": "Rhodos (RHO)", "transfer_min": 90},
+      "hinweis": "sportif.travel, kite-and-windsurfing-guide.com: West onshore mit Welle, Ost cross-offshore und flach, Wind dort düsenverstärkt und 1–2 Bft stärker als an der Westküste; Meltemi Mai–Okt. Ablandig-Sektoren geschätzt; Ostseite so gesetzt, dass Meltemi (cross-off) zählt. Anfahrt (Prasonisi) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer (Minuten zum Spot) von Claude am 7.11.2026 geschätzt.",
       "windlagen": [
         {"name": "Meltemi", "sektor": [300, 30], "charakter": "Sommer, nachmittags stärker"}
       ],
@@ -537,7 +543,9 @@
       "punkt": [37.53, 12.67],
       "anfahrt": [37.585, 12.69],
       "zeitzone": "Europe/Rome",
-      "hinweis": "windresort.it, surftribe.it, lets-kite.com: Puzziteddu am besten W/NW, SW side-on mit großer Welle, Tramontana offshore; bei Scirocco/Levante nach Kartibubbo, dort side bis side-off. Ablandig geschätzt. Anfahrt (Kartibubbo) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
+      "anreise": ["auto", "flug"],
+      "flughafen": {"name": "Trapani (TPS)", "transfer_min": 40},
+      "hinweis": "windresort.it, surftribe.it, lets-kite.com: Puzziteddu am besten W/NW, SW side-on mit großer Welle, Tramontana offshore; bei Scirocco/Levante nach Kartibubbo, dort side bis side-off. Ablandig geschätzt. Anfahrt (Kartibubbo) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer (Minuten zum Spot) von Claude am 7.11.2026 geschätzt.",
       "windlagen": [
         {"name": "Maestrale", "sektor": [280, 340]},
         {"name": "Libeccio", "sektor": [200, 250]},
@@ -579,7 +587,9 @@
       "typ": "meer",
       "punkt": [29.14, -13.6],
       "zeitzone": "Atlantic/Canary",
-      "hinweis": "unplug-kitesurf.com, hellocanaryislands.com, thekitespot.com: N bis NE side bis side-onshore, Passat Apr–Okt fast täglich; Kitebereich bei Hochwasser ohne Strand. Liegt südlich von ICON-EU (ab 29,5° N): voraussichtlich nur ECMWF und GFS. Ablandig geschätzt.",
+      "anreise": ["flug"],
+      "flughafen": {"name": "Lanzarote (ACE)", "transfer_min": 25},
+      "hinweis": "unplug-kitesurf.com, hellocanaryislands.com, thekitespot.com: N bis NE side bis side-onshore, Passat Apr–Okt fast täglich; Kitebereich bei Hochwasser ohne Strand. Liegt südlich von ICON-EU (ab 29,5° N): voraussichtlich nur ECMWF und GFS. Ablandig geschätzt. Flughafen und Transfer (Minuten zum Spot) von Claude am 7.11.2026 geschätzt.",
       "windlagen": [
         {"name": "Passat", "sektor": [350, 80]}
       ],
@@ -594,7 +604,9 @@
       "typ": "meer",
       "punkt": [28.78, -13.93],
       "zeitzone": "Atlantic/Canary",
-      "hinweis": "fuerteventuraplayas.com, kiteforum, sportif.travel: Flag Beach N/NW, side von links, Wind ab etwa 14 Uhr; Cotillo Lagos N/NE, Flachwasser bei mittlerem bis hohem Wasser, Felsen. Punkt nördlich der Insel, damit beide Küsten passen. Außerhalb ICON-EU. Ablandig geschätzt.",
+      "anreise": ["flug"],
+      "flughafen": {"name": "Fuerteventura (FUE)", "transfer_min": 35},
+      "hinweis": "fuerteventuraplayas.com, kiteforum, sportif.travel: Flag Beach N/NW, side von links, Wind ab etwa 14 Uhr; Cotillo Lagos N/NE, Flachwasser bei mittlerem bis hohem Wasser, Felsen. Punkt nördlich der Insel, damit beide Küsten passen. Außerhalb ICON-EU. Ablandig geschätzt. Flughafen und Transfer (Minuten zum Spot) von Claude am 7.11.2026 geschätzt.",
       "windlagen": [
         {"name": "Passat", "sektor": [330, 60]}
       ],
@@ -611,7 +623,9 @@
       "punkt": [28.02, -16.51],
       "anfahrt": [28.045, -16.535],
       "zeitzone": "Atlantic/Canary",
-      "hinweis": "surfergalaxy.com, howtowindsurf101.com, webtenerife: Passat NE, side-onshore von links; selten SW. Bebauung macht den Wind ufernah böig. Außerhalb ICON-EU. Ablandig geschätzt. Anfahrt (El Médano) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
+      "anreise": ["flug"],
+      "flughafen": {"name": "Teneriffa Süd (TFS)", "transfer_min": 10},
+      "hinweis": "surfergalaxy.com, howtowindsurf101.com, webtenerife: Passat NE, side-onshore von links; selten SW. Bebauung macht den Wind ufernah böig. Außerhalb ICON-EU. Ablandig geschätzt. Anfahrt (El Médano) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer (Minuten zum Spot) von Claude am 7.11.2026 geschätzt.",
       "windlagen": [
         {"name": "Passat", "sektor": [20, 100]}
       ],

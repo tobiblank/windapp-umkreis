@@ -130,6 +130,8 @@
         30.0
       ],
       "zeitzone": "Europe/Berlin",
+      "anreise": ["auto", "flug"],
+      "flughafen": {"name": "Testflughafen (TST)", "transfer_min": 20},
       "thermik": true,
       "windlagen": [
         {
