@@ -527,12 +527,12 @@ pruefe(str_contains($html, 'Chance Morgen') && preg_match('/class="punkt go".*?<
 [, $html] = holen($sitePort, "index.php?region=ammersee&nach=$morgen");
 pruefe(!str_contains($html, 'id="landkarte"'), 'geteilte Vorhersage: keine Landkarte');
 [, $html] = holen($sitePort, 'index.php?km=1000');
-pruefe(preg_match('/fahrzeit"[^>]*>5 min Fahrt</', $html) && str_contains($html, 'openrouteservice.org')
+pruefe(preg_match('/fahrzeit"[^>]*>5 min Fahrt<span class="km">3 km Straße</', $html) && str_contains($html, 'openrouteservice.org')
        && (str_contains($html, 'Anreise am Vortag') || str_contains($html, 'Abfahrt bis')), 'Fahrzeiten ab Inning: genau, ohne Landweg markiert, Abfahrt, Quelle genannt');
 [, $html] = holen($sitePort, 'index.php?km=100&ort=46.6,30.0');
 pruefe(str_contains($html, '>kein Landweg<') && ohne_php_meldung($html), 'Region ohne Route ab dem Startort: kein Landweg');
 [, $html] = holen($sitePort, 'index.php?km=1000&ort=47.5,9.7');
-pruefe(str_contains($html, '>≈ ') && ohne_php_meldung($html), 'anderer Standort: Fahrzeit geschätzt (≈)');
+pruefe(str_contains($html, '>≈ ') && str_contains($html, ' km Luftlinie</span>') && ohne_php_meldung($html), 'anderer Standort: Fahrzeit geschätzt (≈), dazu die Luftlinie');
 [, $html] = holen($sitePort, "index.php?region=adria-nord&nach=$morgen");
 pruefe(!str_contains($html, 'class="leise klein fahrzeit"') && !str_contains($html, 'class="abfahrt"'), 'geteilte Vorhersage: ohne Fahrzeit und Abfahrt');
 foreach (['impressum.html', 'datenschutz.html', 'karte.svg', 'stil.css', 'sw.js', 'offline.html', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon.svg', 'icon-maskable-512.png', 'favicon.svg', 'favicon.ico', 'schrift/barlow-condensed-600.woff', 'schrift/OFL.txt'] as $f) {

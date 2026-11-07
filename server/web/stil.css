@@ -77,7 +77,7 @@ a { color: var(--akzent); }
 .sortierung a[aria-current] { background: var(--text); color: var(--karte); border-color: var(--text); }
 .tag.gewaehlt { box-shadow: inset 0 0 0 2px var(--text); }
 
-.region-kopf { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.region-kopf { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
 .region-kopf h2 { margin: 0; font-size: 18px; }
 .region.still .tage { opacity: .75; }
 
@@ -97,7 +97,8 @@ a { color: var(--akzent); }
 .tag .v.faellt { color: var(--no); }
 .verlauf { color: var(--leise); white-space: nowrap; }
 .abfahrt { white-space: nowrap; }
-.fahrzeit { white-space: nowrap; }
+.fahrzeit { white-space: nowrap; text-align: right; }
+.fahrzeit .km { display: block; font-size: 12px; }
 .verlauf.faellt { color: var(--no); }
 
 /* Landkarte (seit 7.11.2026); .karte ist hier die Kachel, die Karte selbst heisst landkarte */
