@@ -33,7 +33,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Landkarte | 7.11.2026: Regionen als Punkte über der Rangliste, eingefärbt nach der Chance am gewählten Tag, mit Umkreis; eigene SVG-Grundlage aus Natural Earth, keine fremden Server; siehe „Landkarte“ |
 | Fahrzeit und Abfahrt | 7.11.2026: Fahrzeit ab Inning laut openrouteservice (GitHub Action `fahrzeiten.yml`, braucht Secret `ORS_API_KEY`), sonst aus der Luftlinie geschätzt; „Abfahrt bis …“ an guten Tagen; Sortierung „Fahrzeit“. **Noch nie gegen das echte ORS gelaufen**; siehe „Fahrzeit und Abfahrt“ |
 | Flugziele | 7.11.2026: Auswahl „Anreise: Auto / Flug“; Flug zeigt alle Flugziele ohne Umkreis, mit Flughafen und geschätztem Transfer; siehe „Flugziele“ |
-| Roadtrip | 7.11.2026: dritter Reiter, Ketten guter Tage über alle 7 Tage an derselben oder einer nahen Region; siehe „Roadtrip“ |
+| Roadtrip | 7.11.2026: dritter Reiter, Reise vom Standort und zurück über bis zu 7 Tage, Hin-, Rückfahrt und Etappen bis 5 h; die App sucht die beste Länge; siehe „Roadtrip“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -140,13 +140,16 @@ Seit 7.11.2026. Im Formular „Anreise: Auto / Flug“ (Parameter `anreise=flug`
 
 ## Roadtrip
 
-Seit 7.11.2026. Dritter Reiter neben „Heute bis übermorgen“ und „Tag 3 bis 7“ (`ansicht=roadtrip`), über alle 7 Tage, für Auto und Flug. Statt der Regionen stehen dort bis zu 5 Reisevorschläge (`lib/roadtrip.php`):
+Seit 7.11.2026, am selben Abend neu gedacht: Die erste Fassung (Ketten guter Tage an nahen Regionen, ohne Anreise) schlug „Île de Ré morgen“ bei 12 Stunden Fahrt vor und reiste nie. Jetzt ist ein Roadtrip eine Reise **vom Standort und zurück**; die App sucht die beste Länge. Dritter Reiter (`ansicht=roadtrip`), über alle 7 Tage, nur mit Anreise Auto. Code in `lib/roadtrip.php`.
 
-- **Guter Tag:** nicht vorbei, Chance mindestens 50 % (ohne Ensemble: Modellmittel sieht ein Fenster, zählt als 50 %).
-- **Kette:** mindestens 2 gute Tage hintereinander, jeden Tag an derselben Region oder einer bis 150 km Luftlinie entfernt. Je Starttag sucht eine dynamische Programmierung die Folge mit der höchsten Summe der Chancen; ein Wechsel kostet 5 Punkte, damit nur gewechselt wird, wenn es etwas bringt.
-- **Reihenfolge:** mehr Tage zuerst, dann höhere mittlere Chance. Es fallen weg: Teilstücke eines gewählten Vorschlags, Vorschläge mit mindestens der Hälfte der Tage am selben Ort wie ein gewählter, und Vorschläge an schon abgedeckten Tagen, die nur in der Nähe eines gewählten liegen.
-- **Anzeige:** „6 Tage · Morgen – Fr 13. · Ø 93 %“, Anreise vom Standort zur ersten Region, je Tag Chance, Region (Link zur Region in der passenden Ansicht), Windlage, Fenster, Wind; bei einem Wechsel „↳ weiter nach …, ≈ 1:30 h“ (Schätzung aus der Luftlinie, Formel wie bei der Fahrzeit). Ohne Karte und Sortierung; der Verlauf wird hier nicht gerechnet.
-- **Grenzen:** Ob das Wetter zwischen zwei Tagen stabil bleibt, prüft niemand; jeder Tag zählt für sich. Ein Ruhetag mitten im Trip unterbricht die Kette.
+- **Hinfahrt** ab 6 Uhr (heute frühestens jetzt), höchstens 10 Stunden am Tag und bis 23 Uhr, längere Strecken mit Übernachtung unterwegs. Reicht es am Ankunftstag noch für 2 Stunden im Fenster, ist er ein Windtag, sonst ein **Fahrtag**.
+- **Jeden weiteren Tag** bleiben (Windtag oder Pause) oder **abends nach dem Fenster weiterfahren**, Etappe höchstens 5 Stunden (aus der Luftlinie geschätzt, Formel wie bei der Fahrzeit), Ankunft bis 23 Uhr.
+- **Rückfahrt** nach dem letzten Windtag: abends, wenn man bis 23 Uhr zu Hause ist, sonst ab dem nächsten Morgen.
+- **Guter Tag:** nicht vorbei, Chance mindestens 50 % (ohne Ensemble: Modellmittel sieht ein Fenster, zählt als 50 %). Mindestens 2 Windtage.
+- **Bilanz** = Summe der Chancen der Windtage − 0,05 je Fahrstunde − 0,3 je Tag ohne Wind (Fahrtag, Pause, Rückfahrtag). Damit muss ein weites Ziel deutlich mehr gute Tage bringen. Eine dynamische Programmierung je Abreisetag findet je Tag und Region die beste Bilanz; jedes Ende nach einem Windtag ist ein Kandidat, also jede Länge.
+- **Vorschläge:** die 5 besten mit positiver Bilanz; ein Vorschlag fällt weg, wenn mindestens die Hälfte seiner Windtage am selben Ort liegt wie bei einem besseren. Es sind Alternativen.
+- **Anzeige:** Route im Titel („Achensee → Adria Nordost“), Windtage und Fahrzeit insgesamt, Zeitraum; Hinfahrt mit „los bis 7:25“ (Fensterbeginn minus Fahrt und 15 min Aufbau) oder Abfahrt und Ankunft; je Tag Chance, Region (Link in die passende Ansicht), Windlage, Fenster, Wind; Pausen und Fahrtage; Etappen; Rückfahrt mit Ankunft zu Hause.
+- **Grenzen:** Zeitzonen zwischen den Regionen werden ignoriert (in Europa höchstens eine Stunde). Ob die Lage über mehrere Tage stabil bleibt, prüft niemand. Kosten und Schwellen sind geschätzt (Konstanten oben in `roadtrip.php`). Kein Verlauf und keine Karte in dieser Ansicht.
 
 **Alle Zahlen sind Rohwerte, nicht kalibriert.** An Thermik-Spots unterschätzen die Modelle den Wind vermutlich. Sportart-Voreinstellungen wie in stegen-wind (14 / 14 / 11 / 16 / 17 / 12 / 5–18 kn); dort ist nur 14 kn Directional kalibriert, der Rest sind Faustwerte.
 
@@ -306,7 +309,7 @@ tools/karte_bauen.py    erzeugt server/web/karte.svg aus Natural Earth
 2. ~~Karte~~ (erledigt, siehe „Landkarte“)
 3. ~~Fahrzeit statt Luftlinie, mit Abfahrtsempfehlung~~ (erledigt, siehe „Fahrzeit und Abfahrt“; später: Umkreis in Stunden, genaue Zeiten auch für andere Startorte)
 4. ~~Fahr- und Flugziele trennen~~ (erledigt, siehe „Flugziele“)
-5. ~~Roadtrip-Modus~~ (erledigt, siehe „Roadtrip“; später vielleicht: Ruhetage zulassen, Übernachtungsort)
+5. ~~Roadtrip-Modus~~ (erledigt, siehe „Roadtrip“)
 6. Matrix Regionen × Tage als Übersicht
 7. Stundenansicht je Region mit Streuung der Modelle, Vergleich zweier Regionen
 8. Wassertemperatur und Neoprenempfehlung (ob die Marine API das liefert, ungeprüft)
