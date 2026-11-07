@@ -66,7 +66,7 @@ a { color: var(--akzent); }
 .textknopf { font: inherit; color: var(--akzent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
 .knopf { grid-column: 1 / -1; font: inherit; font-weight: 600; padding: 10px; border-radius: 10px; border: 0; background: var(--text); color: var(--karte); }
 
-.reiter { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; background: var(--kachel); padding: 4px; border-radius: 12px; margin: 0 0 10px; }
+.reiter { display: grid; grid-template-columns: 1.3fr 1fr auto auto; gap: 6px; background: var(--kachel); padding: 4px; border-radius: 12px; margin: 0 0 10px; }
 .reiter a { text-align: center; padding: 8px 6px; border-radius: 9px; color: var(--leise); text-decoration: none; font-size: 14px; font-weight: 600; }
 .reiter a[aria-current] { background: var(--karte); color: var(--text); }
 
@@ -157,3 +157,20 @@ a { color: var(--akzent); }
 .trip-wert.maybe { background: var(--maybe-bg); color: var(--maybe-text); }
 .trip-wert.no { background: var(--no-bg); color: var(--no); }
 .trip-region { color: inherit; font-weight: 600; }
+
+/* Woche: Matrix Regionen x Tage (seit 7.11.2026) */
+.matrix-box { padding: 10px 8px; overflow-x: auto; }
+.matrix { width: 100%; border-collapse: separate; border-spacing: 3px; table-layout: fixed; font-size: 13px; }
+.matrix th { font-weight: 600; color: var(--leise); font-size: 11px; padding: 2px 0; text-align: center; }
+.matrix th a { color: inherit; text-decoration: none; display: block; }
+.matrix thead th a span { display: block; line-height: 1.25; }
+.matrix th.m-aktiv a { color: var(--text); background: var(--kachel); border-radius: 6px; }
+.matrix .m-name { width: 34%; text-align: left; font-size: 13px; color: var(--text); padding-right: 4px; }
+.matrix tbody .m-name a { color: inherit; text-decoration: none; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.matrix tbody .m-name .leise { display: block; font-size: 11px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.matrix td { border-radius: 6px; text-align: center; padding: 0; background: var(--nix-bg); font-family: var(--zahlen); font-weight: 600; height: 34px; }
+.matrix td a { display: block; line-height: 34px; color: var(--nix); text-decoration: none; }
+.matrix td.go { background: var(--go-bg); } .matrix td.go a { color: var(--go-text); }
+.matrix td.maybe { background: var(--maybe-bg); } .matrix td.maybe a { color: var(--maybe-text); }
+.matrix td.no { background: var(--no-bg); } .matrix td.no a { color: var(--no); }
+.matrix td.leer a { color: var(--leise); opacity: .6; }
