@@ -227,6 +227,15 @@ function teilen_text(array $region, string $tag, array $d, array $sport, DateTim
   <?php if ($standText): ?><p class="leise klein rechts">Stand<br><?= h($standText) ?></p><?php endif ?>
 </header>
 
+<div class="karte installieren" id="installieren" hidden>
+  <p><b>Als App installieren?</b> <span class="leise">Dann startet Wohinfahrma vom Startbildschirm, ohne Browserleiste.</span></p>
+  <p class="leise klein" id="installieren-ios" hidden>Auf dem iPhone: unten auf das Teilen-Symbol tippen, dann „Zum Home-Bildschirm“.</p>
+  <div class="installieren-knoepfe">
+    <button type="button" class="knopf-klein" id="installieren-ja" hidden>Installieren</button>
+    <button type="button" class="textknopf" id="installieren-nein">Nicht jetzt</button>
+  </div>
+</div>
+
 <?php if ($geteilt): ?>
 <p class="karte geteilt">
   Geteilte Vorhersage<?= $geteiltTag ? ' für ' . h(tag_datum($geteiltTag, $tzSeite)) : '' ?>, <?= h($sport['name']) ?>, aktueller Stand.
@@ -368,6 +377,49 @@ function teilen_text(array $region, string $tag, array $d, array $sport, DateTim
 if ('serviceWorker' in navigator) {
   addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
 }
+// Hinweis "Als App installieren" (seit 7.11.2026): Chrome/Edge/Android melden
+// mit beforeinstallprompt, dass die Seite installierbar ist; dann eigener Knopf
+// statt der Browser-Leiste. iPhone/iPad kennen das nicht: dort ein Text-Hinweis.
+// Nicht in der installierten App, und nach "Nicht jetzt" 30 Tage Ruhe.
+(function () {
+  var box = document.getElementById('installieren');
+  if (!box) { return; }
+  var SCHLUESSEL = 'wohinfahrma_install';
+  var installiert = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  function lesen() { try { return JSON.parse(localStorage.getItem(SCHLUESSEL) || 'null'); } catch (e) { return null; } }
+  function merken(v) { try { localStorage.setItem(SCHLUESSEL, JSON.stringify(v)); } catch (e) {} }
+  var stand = lesen();
+  var ruhe = stand && (stand.installiert || (stand.nein && Date.now() - stand.nein < 30 * 864e5));
+  if (installiert || ruhe) { return; }
+  var ja = document.getElementById('installieren-ja');
+  var angebot = null;
+  addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    angebot = e;
+    ja.hidden = false;
+    box.hidden = false;
+  });
+  ja.addEventListener('click', function () {
+    if (!angebot) { return; }
+    angebot.prompt();
+    angebot.userChoice.then(function (w) {
+      if (w && w.outcome === 'accepted') { merken({ installiert: true }); }
+      box.hidden = true;
+      angebot = null;
+    }, function () {});
+  });
+  addEventListener('appinstalled', function () { merken({ installiert: true }); box.hidden = true; });
+  document.getElementById('installieren-nein').addEventListener('click', function () {
+    merken({ nein: Date.now() });
+    box.hidden = true;
+  });
+  // iPhone/iPad (auch iPad mit Desktop-Kennung): kein beforeinstallprompt
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (ios) {
+    document.getElementById('installieren-ios').hidden = false;
+    box.hidden = false;
+  }
+})();
 // Teilen: Web Share (Handy) oder in die Zwischenablage; ohne beides bleibt der Knopf verborgen
 (function () {
   var kannKopieren = !!(navigator.clipboard && window.isSecureContext);

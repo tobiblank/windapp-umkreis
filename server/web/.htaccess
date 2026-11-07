@@ -25,9 +25,10 @@ DirectoryIndex index.php index.html
   </Files>
 </IfModule>
 
-# Spaeter, wenn wohinfahrma.de laeuft und auf diesen Ordner zeigt:
-# alte Adresse und www dauerhaft umleiten (Pfad und Query bleiben), wie bei
-# ammerseewind.de. Erst einschalten, wenn https://wohinfahrma.de funktioniert.
-# RewriteEngine On
-# RewriteCond %{HTTP_HOST} ^(wohinfahrma\.dablank\.de|www\.wohinfahrma\.de)$ [NC]
-# RewriteRule ^(.*)$ https://wohinfahrma.de/$1 [R=301,L]
+# Seit 7.11.2026 laeuft die App unter wohinfahrma.de (gleicher Ordner).
+# Alte Adresse und www dauerhaft dorthin umleiten, Pfad und Query bleiben
+# erhalten (wie bei ammerseewind.de). http -> https erledigt die
+# HTTPS-Weiterleitung im SSL-Manager der konsoleH.
+RewriteEngine On
+RewriteCond %{HTTP_HOST} ^(wohinfahrma\.dablank\.de|www\.wohinfahrma\.de)$ [NC]
+RewriteRule ^(.*)$ https://wohinfahrma.de/$1 [R=301,L]

@@ -284,6 +284,8 @@ foreach (['', '?sport=wingfoil&km=100', '?ansicht=reise', '?ort=45.6,13.1&km=400
 }
 [, $html] = holen($sitePort, 'index.php?km=1000');
 pruefe(str_contains($html, 'Nördliche Adria') && str_contains($html, 'Ammersee') && str_contains($html, 'Bora'), 'Rangliste zeigt Adria (Bora) und Ammersee');
+[, $html] = holen($sitePort, 'index.php');
+pruefe(str_contains($html, 'id="installieren" hidden') && str_contains($html, 'beforeinstallprompt'), 'Hinweis zum Installieren vorhanden, zunächst verborgen');
 [, $html] = holen($sitePort, 'index.php?km=100');
 pruefe(!str_contains($html, 'Nördliche Adria') && str_contains($html, 'Ammersee'), 'Umkreis 100 km: nur Ammersee');
 [, $html] = holen($sitePort, 'index.php?ort=45.6789,13.1234');

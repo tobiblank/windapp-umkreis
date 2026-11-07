@@ -109,3 +109,8 @@ a { color: var(--akzent); }
 .teilen { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; font: inherit; font-size: 13px; font-weight: 600; color: var(--akzent); background: none; border: 1px solid var(--linie); border-radius: 999px; padding: 1px 10px 1px 8px; cursor: pointer; vertical-align: middle; }
 .teilen[hidden] { display: none; }
 .teilen svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Hinweis "Als App installieren" */
+.installieren p { margin: 0 0 8px; }
+.installieren-knoepfe { display: flex; align-items: center; gap: 16px; }
+.knopf-klein { font: inherit; font-weight: 600; padding: 8px 16px; border-radius: 999px; border: 0; background: var(--text); color: var(--karte); cursor: pointer; }
