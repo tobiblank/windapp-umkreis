@@ -406,6 +406,14 @@ foreach (quellen($KATALOG, $MODELLE) as $name => $q) {
             $url = preg_replace('#^https://[a-z-]+\.open-meteo\.com#', $ersatz, $url);
         }
         $r = fetch($url, $TIMEOUT);
+        // Open-Meteo zaehlt je Minute (ein Ort und ein Ensemble-Abruf wiegen mehrfach).
+        // Am 7.11.2026 lief der Lauf mit 43 Regionen beim Ensemble in HTTP 429
+        // "Minutely API request limit exceeded": eine Minute warten, einmal wiederholen.
+        if ($r['http'] === 429) {
+            $bericht[] = "$name/$teilNr: HTTP 429, warte 65 s";
+            sleep((int)(getenv('UMKREIS_WARTE_429') !== false ? getenv('UMKREIS_WARTE_429') : 65));
+            $r = fetch($url, $TIMEOUT);
+        }
 
         // Im Action-Modus nicht zaehlen: kein bleibender Zustand, Abrufe von GitHub-IPs
         $omHeute = $ACTION ? 0.0 : om_zaehlen($DATA_DIR, om_gewicht($q['query'], count($teil)));

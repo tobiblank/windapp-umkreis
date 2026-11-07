@@ -317,6 +317,34 @@ pruefe(count(glob("$tmp/cache/verlauf-*.json")) === 2, 'Zwischenspeicher: andere
 pruefe(verlauf_mit_cache($regionen, $v, null, $standV, $kite, $tageV, $jetztV) == $vl, 'ohne Zwischenspeicher: gleiches Ergebnis');
 
 // ---------------------------------------------------------------
+echo "Speicher: Zeilen einzeln entpacken\n";
+$zeileT = json_encode(['ts' => '2026-11-07T12:00:00Z', 'source' => 'ensemble', 'ok' => true, 'http' => 200, 'ms' => 1,
+    'regionen' => ['a', 'b', 'c'],
+    'payload' => [['latitude' => 1.5, 'hourly' => ['x' => [1, 2]]], ['latitude' => 2.5, 'hourly' => ['x' => [3]]],
+                  ['latitude' => 3.5, 'hourly' => ['x' => []], 'units' => ['x' => '{"latitude":']]]],
+    JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+$teileT = payload_teile($zeileT, 3);
+pruefe($teileT !== null && array_map(fn($t) => json_decode($t, true), $teileT) === json_decode($zeileT, true)['payload'],
+       'payload wird in dieselben Einträge geteilt');
+$zT = zeile_eintraege($zeileT, fn($id) => $id === 'b');
+pruefe(array_keys($zT['eintraege']) === ['b'] && $zT['eintraege']['b']['latitude'] === 2.5, 'nur der gebrauchte Eintrag wird entpackt');
+pruefe(payload_teile($zeileT, 2) === null && count(zeile_eintraege($zeileT, fn($id) => true)['eintraege']) === 3,
+       'passt die Teilung nicht, wird die ganze Zeile entpackt');
+$standNur = daten_laden("$tmp/action", nur: ['adria-nord']);
+pruefe(isset($standNur['ensemble']['adria-nord']) && count($standNur['ensemble']) === 1
+       && count($standNur['_ts']['ensemble']) === count($standA['_ts']['ensemble'])
+       && count($standNur['_fp']['ensemble']) === count($standA['_ts']['ensemble']),
+       'daten_laden mit Umkreis: Einträge nur dort, Stand und Fingerabdruck für alle');
+$standFrei = $standA;
+foreach (array_keys($standFrei) as $q) {
+    if ($q[0] !== '_') {
+        $standFrei[$q] = [];
+    }
+}
+pruefe(verlauf_rechnen($regionen, "$tmp/action", $standFrei, $kite, $tageV, $jetztV)
+       === verlauf_rechnen($regionen, "$tmp/action", $standA, $kite, $tageV, $jetztV),
+       'Verlauf braucht die Rohdaten nicht mehr');
+
 echo "Seite\n";
 $site = "$tmp/site";
 exec('cp -r ' . escapeshellarg("$ROOT/server/web") . ' ' . escapeshellarg($site));

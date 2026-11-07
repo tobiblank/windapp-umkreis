@@ -39,6 +39,31 @@ function fehlerseite(string $text): never
     exit;
 }
 
+// Abbruch (z. B. zu wenig Speicher) als lesbare Seite statt leerem HTTP 500;
+// die Meldung steht weiter im Fehlerprotokoll des Servers.
+register_shutdown_function(function () {
+    $e = error_get_last();
+    if ($e === null || !in_array($e['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true) || headers_sent()) {
+        return;
+    }
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    http_response_code(500);
+    $speicher = str_contains($e['message'], 'Allowed memory size');
+    echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+       . '<title>Wohinfahrma</title><link rel="stylesheet" href="stil.css"><main class="seite"><h1 class="marke">Wohin<span>fahrma</span></h1>'
+       . '<p class="karte">' . ($speicher ? 'Die Seite braucht gerade mehr Speicher, als der Server erlaubt (memory_limit ' . h((string)ini_get('memory_limit')) . ').'
+                                          : 'Beim Rechnen der Rangliste ist ein Fehler aufgetreten.')
+       . ' Bitte später noch einmal versuchen.</p></main>';
+});
+
+// Mehr Speicher erbitten, falls der Server weniger einstellt (wirkt nur, wo erlaubt)
+$grenze = ini_get('memory_limit');
+if ($grenze !== false && $grenze !== '-1' && (int)$grenze > 0 && stripos($grenze, 'M') !== false && (int)$grenze < 256) {
+    @ini_set('memory_limit', '256M');
+}
+
 $cfg = @include __DIR__ . '/config.php';
 if (!is_array($cfg) || empty($cfg['data_dir'])) {
     fehlerseite('Die App ist noch nicht eingerichtet (config.php fehlt).');
@@ -122,10 +147,21 @@ function tag_datum(string $tag, DateTimeZone $tz): string
 // --- Rechnen ----------------------------------------------------------
 $jetzt = new DateTimeImmutable('now');
 $dataDir = rtrim($cfg['data_dir'], '/');
-$stand = daten_laden($dataDir);
+// Nur die Regionen im Umkreis entpacken (Speicher)
+$imUmkreis = $geteilt
+    ? [$geteilt['id']]
+    : array_column(array_filter($regionen, fn($r) => entfernung_km($heim, $r['punkt']) <= $km), 'id');
+$stand = daten_laden($dataDir, nur: $imUmkreis);
 $liste = $geteilt
     ? rangliste([$geteilt], $stand, $sport, $heim, INF, $tage, $jetzt)
     : rangliste($regionen, $stand, $sport, $heim, (float)$km, $tage, $jetzt);
+// Speicher: die Rohdaten braucht ab hier nichts mehr (der Verlauf liest die Dateien
+// selbst, Stand und Fingerabdruecke stehen in _ts und _fp)
+foreach (array_keys($stand) as $q) {
+    if ($q[0] !== '_') {
+        $stand[$q] = [];
+    }
+}
 // Verlauf: dieselbe Chance aus frueheren Abrufen (mit Zwischenspeicher, Standard <data_dir>/cache)
 $cacheDir = array_key_exists('cache_dir', $cfg) ? ($cfg['cache_dir'] === null ? null : rtrim((string)$cfg['cache_dir'], '/')) : "$dataDir/cache";
 $verlauf = verlauf_mit_cache($geteilt ? [$geteilt] : $regionen, $dataDir, $cacheDir, $stand, $sport, $tage, $jetzt,

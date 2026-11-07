@@ -91,7 +91,14 @@ Seit 7.11.2026. Vor einer langen Fahrt zählt nicht nur die Chance, sondern ob s
 - **Anzeige:** In der Kachel „↑ von 40“ bzw. „↓ von 80“, nur bei steigt/fällt; in der Detailzeile z. B. „stabil seit 4 Abrufen“ oder „fällt (80 → 55 → 40 %)“; im Tooltip die Uhrzeiten der Abrufe.
 - **Zwischenspeicher:** Frühere Abrufe ändern sich nicht. Das Ergebnis liegt je Sportart, Zeitraum und Stunde in `<data_dir>/cache/verlauf-*.json` (Einstellung `cache_dir` in `config.php`, `null` = aus); Dateien älter als ein Tag werden gelöscht. Gemessen mit 40 Regionen und Testdaten: erster Aufruf 0,9 s, danach 0,23 s.
 
-**Rechenzeit** (gleicher Tag): Die Umrechnung der Zeitreihe in Ortszeit lief bis dahin für jeden der 51 Ensemble-Läufe einzeln (`ortszeiten()` macht das jetzt einmal je Abruf); die Rangliste für 40 Regionen brauchte dadurch 2,4 s, jetzt 0,16 s. `daten_laden()` entpackt ältere Zeilen nur noch, wenn ihnen noch Regionen fehlen. Speicher bleibt bei gut 130 MB für 40 Regionen im Umkreis 2500 km (fast alles der aktuelle Stand); das `memory_limit` bei Hetzner ist ungeprüft.
+**Rechenzeit** (gleicher Tag): Die Umrechnung der Zeitreihe in Ortszeit lief bis dahin für jeden der 51 Ensemble-Läufe einzeln (`ortszeiten()` macht das jetzt einmal je Abruf); die Rangliste für 40 Regionen brauchte dadurch 2,4 s, jetzt 0,16 s. `daten_laden()` entpackt ältere Zeilen nur noch, wenn ihnen noch Regionen fehlen. 
+
+**Speicher** (7.11.2026 abends): Nach dem Verlauf zeigte wohinfahrma.de HTTP 500. Nachgestellt mit 43 Regionen und vier Läufen in Originalgröße (Ensemble rund 5 MB je Lauf, wie im echten Sammler-Lauf um 16:05 UTC) brauchte die Seite 146 MB und brach bei `memory_limit=128M` in `verlauf_rechnen()` ab; schon die Fassung davor lag bei 136 MB. Das Limit bei Hetzner selbst ist weiter ungeprüft, 128 MB ist also die wahrscheinliche, nicht die belegte Ursache. Seitdem:
+- `zeile_eintraege()` teilt die `payload`-Liste als Text in ihre Einträge (jeder beginnt mit `{"latitude":`) und entpackt nur, was gebraucht wird; passt die Teilung nicht, wird wie bisher die ganze Zeile entpackt.
+- `daten_laden(…, nur: [ids])` behält Einträge nur für Regionen im Umkreis; Stand (`_ts`) und Fingerabdruck des Ensembles (`_fp`) gibt es für alle, der Verlauf braucht nur diese.
+- Die Seite gibt die Rohdaten nach der Rangliste frei.
+- Ergebnis mit denselben Daten: 96 MB (1000 km), 108 MB (2500 km), Seite unverändert. Den Rest braucht vor allem `ensemble_stunden()` für die größte Region und der Stand selbst; er wächst mit der Zahl der Regionen im Umkreis.
+- `index.php` bittet um 256 MB, falls weniger eingestellt ist (wirkt nur, wo der Server das erlaubt), und zeigt bei einem Abbruch eine lesbare Seite mit dem eingestellten `memory_limit` statt eines leeren HTTP 500.
 
 **Alle Zahlen sind Rohwerte, nicht kalibriert.** An Thermik-Spots unterschätzen die Modelle den Wind vermutlich. Sportart-Voreinstellungen wie in stegen-wind (14 / 14 / 11 / 16 / 17 / 12 / 5–18 kn); dort ist nur 14 kn Directional kalibriert, der Rest sind Faustwerte.
 
@@ -131,6 +138,8 @@ Sind alle Bedingungen einer Stunde erfüllt, rechnet die Bewertung mit der Mitte
 
 - **GitHub Action** (Standard seit 7.11.2026, `.github/workflows/sammeln.yml`): zweimal am Tag, 5:25 und 17:25 UTC (6:25 / 18:25 Uhr im Winter, eine Stunde später im Sommer). `php server/sammler.php --action daten/regionen.json ausgabe` ruft jede Quelle einmal ab und schreibt je Quelle eine gezippte Datei für den Lauf (`vorhersage/2026-11-07_0525.ndjson.gz`); die Action lädt sie per FTPS nach `<HOME_DIR>/umkreisdaten/`. Kein Cronjob auf Hetzner, Abrufe von GitHub-IPs, also nicht aus dem Open-Meteo-Kontingent von ammerseewind.de. Bei jedem Fehler wird die Action rot (GitHub mailt); was geklappt hat, ist trotzdem hochgeladen.
 - **Cronjob** (alle 10 Minuten, ohne `--action`): Takt je Quelle wie unten, eine Datei je Tag, Wiederholung bei Fehlern. Für später, falls mehr Abrufe am Tag nötig werden.
+
+**HTTP 429** (7.11.2026, Lauf mit 43 Regionen): Open-Meteo meldete beim Ensemble und den Begleitdaten „Minutely API request limit exceeded“. Der Sammler wartet bei 429 jetzt 65 s und versucht es einmal neu (`UMKREIS_WARTE_429` für Tests).
 
 | Quelle | Inhalt | Takt als Cronjob |
 |---|---|---|
