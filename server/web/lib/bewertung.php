@@ -900,11 +900,18 @@ function rangliste_sortieren(array $liste, string $nach): array
  * und eine gezippte je Lauf (GitHub Action, 2026-11-07_0525.ndjson.gz).
  * Rueckgabe [quelle => [region_id => eintrag]], dazu ['_ts'][quelle][region_id].
  */
-function daten_laden(string $dataDir, array $quellen = ['vorhersage', 'ensemble', 'welle', 'druck', 'druck_ensemble', 'hoehe', 'hoehe_ensemble']): array
+function daten_laden(string $dataDir, array $quellen = ['vorhersage', 'ensemble', 'welle', 'druck', 'druck_ensemble', 'hoehe', 'hoehe_ensemble'], ?array $nur = null): array
 {
-    $out = ['_ts' => []];
+    // $nur: Regionen, deren Eintraege behalten werden (Umkreis); null = alle.
+    // Stand (_ts) und Fingerabdruck des Ensembles (_fp) gibt es fuer alle Regionen,
+    // der Verlauf braucht sie. Druckquellen sind nach Druckpunkt geschluesselt
+    // und werden nie gefiltert.
+    $behalten = $nur === null ? null : array_fill_keys($nur, true);
+    $out = ['_ts' => [], '_fp' => []];
     foreach ($quellen as $q) {
         $out[$q] = [];
+        $out['_ts'][$q] = [];
+        $filter = $behalten !== null && !in_array($q, ['druck', 'druck_ensemble'], true);
         $dateien = [];
         foreach ([gmdate('Y-m-d'), gmdate('Y-m-d', time() - 86400)] as $d) {
             $dateien = array_merge($dateien, glob("$dataDir/$q/$d.ndjson") ?: [], glob("$dataDir/$q/{$d}_*.ndjson.gz") ?: []);
@@ -917,23 +924,45 @@ function daten_laden(string $dataDir, array $quellen = ['vorhersage', 'ensemble'
                 $txt = (string)@gzdecode($txt);
             }
             $zeilen = array_values(array_filter(array_map('trim', explode("\n", $txt))));
+            unset($txt);
+            $fehlt = fn($id) => !isset($out['_ts'][$q][$id]);
             for ($i = count($zeilen) - 1; $i >= 0; $i--) {
                 // Aeltere Zeilen nur entpacken, wenn sie noch fehlende Regionen haben
                 $kopf = zeile_kopf($zeilen[$i]);
-                if ($kopf !== null && (!$kopf['ok'] || !array_filter($kopf['regionen'], fn($id) => !isset($out[$q][$id])))) {
+                if ($kopf !== null && (!$kopf['ok'] || !array_filter($kopf['regionen'], $fehlt))) {
                     continue;
                 }
-                $z = json_decode($zeilen[$i], true);
-                if (!is_array($z) || empty($z['ok']) || !isset($z['payload'], $z['regionen'])) {
+                // Einzeln entpacken, nur was fehlt (Speicher, siehe zeile_eintraege). Ausserhalb
+                // des Umkreises nur fuer den Fingerabdruck des Ensembles, danach verworfen.
+                $z = zeile_eintraege($zeilen[$i], fn($id) => $fehlt($id) && (!$filter || isset($behalten[$id]) || $q === 'ensemble'));
+                if ($z === null) {
                     continue;
                 }
-                foreach ($z['regionen'] as $k => $id) {
-                    if (!isset($out[$q][$id]) && isset($z['payload'][$k]['hourly'])) {
-                        $out[$q][$id] = $z['payload'][$k];
-                        $out['_ts'][$q][$id] = $z['ts'];
+                foreach ($z['regionen'] as $id) {
+                    if (!$fehlt($id)) {
+                        continue;
+                    }
+                    $e = $z['eintraege'][$id] ?? null;
+                    if ($e !== null && !isset($e['hourly'])) {
+                        continue;
+                    }
+                    if ($e === null && !($filter && !isset($behalten[$id]))) {
+                        continue;   // nicht entpackt, obwohl gebraucht: unbrauchbar
+                    }
+                    $out['_ts'][$q][$id] = $z['ts'];
+                    if ($q === 'ensemble' && $e !== null) {
+                        $out['_fp']['ensemble'][$id] = ensemble_fingerabdruck($e);
+                    }
+                    if ($e !== null && (!$filter || isset($behalten[$id]))) {
+                        $out[$q][$id] = $e;
                     }
                 }
+                unset($z, $e);
             }
+            unset($zeilen);
+        }
+        if (!$out['_ts'][$q]) {
+            unset($out['_ts'][$q]);
         }
     }
     return $out;
@@ -1001,6 +1030,71 @@ function zeile_kopf(string $zeile): ?array
         return null;
     }
     return ['ts' => $z['ts'], 'ok' => !empty($z['ok']), 'regionen' => $z['regionen']];
+}
+
+/**
+ * Die Eintraege einer Zeile einzeln entpacken, nur fuer Regionen, die $brauche
+ * will. Rueckgabe ['ts', 'regionen', 'eintraege' => [id => eintrag]] oder null.
+ *
+ * Speicher (7.11.2026): Eine Ensemble-Zeile mit 25 Regionen ist entpackt rund
+ * 30 MB. Mit dem aktuellen Stand und dem Verlauf zugleich lag die Seite bei
+ * 146 MB und damit ueber 128 MB (HTTP 500). Deshalb wird die payload-Liste als
+ * Text in ihre Eintraege geteilt und nur das Noetige entpackt. Der Sammler
+ * schreibt payload als letztes Feld, jeder Eintrag von Open-Meteo beginnt mit
+ * {"latitude": . Passt das nicht (Anzahl, JSON), wird die ganze Zeile entpackt.
+ */
+function zeile_eintraege(string $zeile, callable $brauche): ?array
+{
+    $kopf = zeile_kopf($zeile);
+    if ($kopf === null || !$kopf['ok']) {
+        return null;
+    }
+    $ids = array_values($kopf['regionen']);
+    $teile = payload_teile($zeile, count($ids));
+    $out = ['ts' => $kopf['ts'], 'regionen' => $ids, 'eintraege' => []];
+    if ($teile !== null) {
+        foreach ($ids as $k => $id) {
+            if ($brauche($id)) {
+                $e = json_decode($teile[$k], true);
+                if (!is_array($e)) {
+                    $teile = null;   // Teilung stimmt nicht: unten alles entpacken
+                    $out['eintraege'] = [];
+                    break;
+                }
+                $out['eintraege'][$id] = $e;
+            }
+        }
+    }
+    if ($teile === null) {
+        $z = json_decode($zeile, true);
+        if (!is_array($z) || empty($z['ok']) || !isset($z['payload'], $z['regionen'])) {
+            return null;
+        }
+        foreach ($z['regionen'] as $k => $id) {
+            if ($brauche($id) && isset($z['payload'][$k])) {
+                $out['eintraege'][$id] = $z['payload'][$k];
+            }
+        }
+    }
+    return $out;
+}
+
+/** payload einer Zeile als Liste von JSON-Texten je Eintrag; null, wenn die Form nicht passt */
+function payload_teile(string $zeile, int $anzahl): ?array
+{
+    $start = strpos($zeile, '"payload":[{');
+    if ($start === false || $anzahl < 1 || !str_ends_with($zeile, '}]}')) {
+        return null;
+    }
+    $innen = substr($zeile, $start + 11, -3);   // ab dem ersten "{" bis vor "]}"; letzter Eintrag ohne "}"
+    $teile = explode('},{"latitude":', $innen);
+    if (count($teile) !== $anzahl || !str_starts_with($teile[0], '{"latitude":')) {
+        return null;
+    }
+    foreach ($teile as $i => $t) {
+        $teile[$i] = ($i === 0 ? '' : '{"latitude":') . $t . '}';
+    }
+    return $teile;
 }
 
 /** Fingerabdruck eines Ensemble-Eintrags: der Kontrolllauf reicht, um gleiche Modelllaeufe zu erkennen */
@@ -1077,12 +1171,14 @@ function verlauf_rechnen(array $regionen, string $dataDir, array $stand, array $
     $zahl = [];
     $out = [];
     foreach ($regionen as $r) {
-        $akt = $stand['ensemble'][$r['id']] ?? null;
-        if ($akt === null) {
+        // Fingerabdruck aus daten_laden; die Seite gibt die Ensemble-Daten danach frei
+        $fpAkt = $stand['_fp']['ensemble'][$r['id']]
+            ?? (isset($stand['ensemble'][$r['id']]) ? ensemble_fingerabdruck($stand['ensemble'][$r['id']]) : null);
+        if ($fpAkt === null) {
             continue;
         }
         $offen[$r['id']] = $r;
-        $gesehen[$r['id']] = [ensemble_fingerabdruck($akt) => true];
+        $gesehen[$r['id']] = [$fpAkt => true];
         $zahl[$r['id']] = 0;
         $out[$r['id']] = [];
     }
@@ -1102,9 +1198,9 @@ function verlauf_rechnen(array $regionen, string $dataDir, array $stand, array $
             if (!$brauchen) {
                 continue;
             }
-            $z = json_decode($zeilen[$i], true);
-            foreach ($brauchen as $k => $id) {
-                $e = $z['payload'][$k] ?? null;
+            $z = zeile_eintraege($zeilen[$i], fn($id) => in_array($id, $brauchen, true));
+            foreach ($brauchen as $id) {
+                $e = $z['eintraege'][$id] ?? null;
                 if (!isset($e['hourly']) || !isset($offen[$id])) {
                     continue;
                 }
