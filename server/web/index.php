@@ -81,8 +81,9 @@ try {
 $sportId = isset($_GET['sport']) && isset(SPORTARTEN[$_GET['sport']]) ? (string)$_GET['sport'] : 'kite_twintip';
 $sport = SPORTARTEN[$sportId];
 $km = isset($_GET['km']) && in_array((int)$_GET['km'], UMKREISE, true) ? (int)$_GET['km'] : 1000;
-$ansicht = in_array($_GET['ansicht'] ?? '', ['reise', 'roadtrip'], true) ? $_GET['ansicht'] : 'bald';
+$ansicht = in_array($_GET['ansicht'] ?? '', ['reise', 'woche', 'roadtrip'], true) ? $_GET['ansicht'] : 'bald';
 $roadtrip = $ansicht === 'roadtrip';   // seit 7.11.2026: Reisevorschlaege ueber alle 7 Tage
+$woche = $ansicht === 'woche';         // seit 7.11.2026: Matrix Regionen x 7 Tage
 // Anreise (seit 7.11.2026): Auto = Umkreis um den Standort, Flug = alle Flugziele ohne Umkreis
 $anreise = ($_GET['anreise'] ?? '') === 'flug' ? 'flug' : 'auto';
 $flug = $anreise === 'flug';
@@ -127,7 +128,7 @@ if ($geteilt && is_string($_GET['nach'] ?? null) && preg_match('/^\d{4}-\d{2}-\d
     }
 }
 
-[$von, $bis] = match ($ansicht) { 'reise' => [3, 6], 'roadtrip' => [0, 6], default => [0, 2] };
+[$von, $bis] = match ($ansicht) { 'reise' => [3, 6], 'roadtrip', 'woche' => [0, 6], default => [0, 2] };
 $tage = [];
 for ($i = $von; $i <= $bis; $i++) {
     $tage[] = $heute->modify("+$i day")->format('Y-m-d');
@@ -172,7 +173,7 @@ foreach (array_keys($stand) as $q) {
 }
 // Verlauf: dieselbe Chance aus frueheren Abrufen (mit Zwischenspeicher, Standard <data_dir>/cache)
 $cacheDir = array_key_exists('cache_dir', $cfg) ? ($cfg['cache_dir'] === null ? null : rtrim((string)$cfg['cache_dir'], '/')) : "$dataDir/cache";
-$verlauf = $roadtrip ? [] : verlauf_mit_cache($geteilt ? [$geteilt] : $regionen, $dataDir, $cacheDir, $stand, $sport, $tage, $jetzt,
+$verlauf = $roadtrip || $woche ? [] : verlauf_mit_cache($geteilt ? [$geteilt] : $regionen, $dataDir, $cacheDir, $stand, $sport, $tage, $jetzt,
                                               $cfg['regionen_datei'] ?? __DIR__ . '/lib/regionen.json');
 // Sortierung: alle Tage (summe), ein angezeigter Tag oder Entfernung
 $nach = (string)($_GET['nach'] ?? 'summe');
@@ -211,6 +212,14 @@ function trip_hin_text(array $trip, array $liste, array $tage, callable $tagName
         return $spaet > $trip['hin']['los'] ? 'los bis ' . uhr(floor($spaet * 12) / 12) : 'los ' . uhr($trip['hin']['los']) . ', ab ca. ' . uhr($aH) . ' dort';
     }
     return 'los ' . uhr($trip['hin']['los']) . ($aT > $trip['start'] ? ', mit Übernachtung, Ankunft ' . $tagName($aT) . ' ca. ' : ', Ankunft ca. ') . uhr($aH);
+}
+
+/** Spaltenkopf der Matrix als HTML: Wochentag ueber dem Datum, heute markiert */
+function matrix_kopf(string $tag, DateTimeImmutable $heute): string
+{
+    $d = new DateTimeImmutable($tag, $heute->getTimezone());
+    $wt = $d->format('Y-m-d') === $heute->format('Y-m-d') ? 'heute' : WOCHENTAGE[(int)$d->format('w')];
+    return '<span>' . h($wt) . '</span><span>' . $d->format('j.') . '</span>';
 }
 
 /** Stunden als Uhrzeit, auf 5 Minuten: 11.25 -> "11:15", ueber Mitternacht weiter gezaehlt */
@@ -470,6 +479,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
 <nav class="reiter" aria-label="Zeitraum">
   <a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>"<?= $ansicht === 'bald' ? ' aria-current="page"' : '' ?>>Heute bis übermorgen</a>
   <a href="<?= h(link_mit(['ansicht' => 'reise', 'nach' => null])) ?>"<?= $ansicht === 'reise' ? ' aria-current="page"' : '' ?>>Tag 3 bis 7</a>
+  <a href="<?= h(link_mit(['ansicht' => 'woche', 'nach' => null])) ?>"<?= $woche ? ' aria-current="page"' : '' ?>>Woche</a>
   <a href="<?= h(link_mit(['ansicht' => 'roadtrip', 'nach' => null])) ?>"<?= $roadtrip ? ' aria-current="page"' : '' ?>>Roadtrip</a>
 </nav>
 <?php if (!$roadtrip): ?>
@@ -477,19 +487,22 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
 <nav class="sortierung klein" aria-label="Sortierung">
   <span class="leise">Sortiert nach</span>
   <a href="<?= h(link_mit(['nach' => null])) ?>"<?= $nach === 'summe' ? ' aria-current="true"' : '' ?>>alle Tage</a>
-  <?php foreach ($tage as $t): ?>
+  <?php foreach ($woche ? [] : $tage as $t): ?>
     <a href="<?= h(link_mit(['nach' => $t])) ?>"<?= $nach === $t ? ' aria-current="true"' : '' ?>><?= h(tag_kurz($t, $heute)) ?></a>
   <?php endforeach ?>
+  <?php if ($woche): ?><span class="leise">Tag: Spaltenkopf antippen</span><?php endif ?>
   <a href="<?= h(link_mit(['nach' => 'km'])) ?>"<?= $nach === 'km' ? ' aria-current="true"' : '' ?>><?= $flug ? 'Transfer' : 'Fahrzeit' ?></a>
 </nav>
 <?php endif ?>
 <?php endif ?>
 
 <p class="leise klein erklaerung">
-  <?= h($sport['name']) ?>, <?= h($wind) ?>, mindestens <?= MIN_STUNDEN ?> Stunden am Stück zwischen 9 Uhr und Sonnenuntergang<?= $ansicht === 'bald' ? ', heute erst ab einer halben Stunde nach jetzt' : '' ?>.
+  <?= h($sport['name']) ?>, <?= h($wind) ?>, mindestens <?= MIN_STUNDEN ?> Stunden am Stück zwischen 9 Uhr und Sonnenuntergang<?= $ansicht !== 'reise' ? ', heute erst ab einer halben Stunde nach jetzt' : '' ?>.
   Prozent = Anteil der 51 Läufe des ECMWF-Ensembles, an denen das klappt.
   <?php if ($roadtrip): ?>
   Roadtrip: vom Standort hin und zurück, mindestens <?= ROADTRIP_MIN_WINDTAGE ?> Windtage mit mindestens <?= zahl(100 * ROADTRIP_MIN_CHANCE) ?> % Chance; Etappen bis <?= intdiv(ROADTRIP_ETAPPE_MAX_MIN, 60) ?> h abends nach dem Fenster, Anreise ab <?= ROADTRIP_LOS_UHR ?> Uhr, höchstens <?= intdiv(ROADTRIP_FAHRT_PRO_TAG_MIN, 60) ?> h am Tag. Die App sucht die Länge, bei der Wind und Fahrt sich am meisten lohnen.
+  <?php elseif ($woche): ?>
+  Woche: leer = 0 %, „ja“ = Fenster nach Modellmittel ohne Ensemble.
   <?php else: ?>
   „↑ von 40“ = vor bis zu drei Abrufen (zweimal am Tag) stand dort 40 %.
   <?php endif ?>
@@ -607,7 +620,43 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   </article>
 <?php endforeach ?>
 
-<?php foreach ($roadtrip && !$geteilt ? [] : $liste as $e):
+<?php if ($woche && $liste && !$geteilt): ?>
+<div class="karte matrix-box">
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th scope="col" class="m-name">Region</th>
+        <?php foreach ($tage as $t): ?>
+          <th scope="col"<?= $nach === $t ? ' class="m-aktiv"' : '' ?>><a href="<?= h(link_mit(['nach' => $nach === $t ? null : $t])) ?>"><?= matrix_kopf($t, $heute) ?></a></th>
+        <?php endforeach ?>
+      </tr>
+    </thead>
+    <tbody>
+      <?php foreach ($liste as $e): $r = $e['region']; ?>
+        <tr>
+          <th scope="row" class="m-name"><a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>#r-<?= h($r['id']) ?>"><?= h($r['name']) ?></a><span class="leise"><?= h(fahrzeit_mit_wort($e['fahrt'])) ?></span></th>
+          <?php foreach ($tage as $ti => $t):
+              $d = $e['tage'][$t] ?? null;
+              $c = $d['ens']['chance'] ?? null;
+              $geht = !empty($d['det']['geht']);
+              $vorbei = !$d || !empty($d['vorbei']);
+              $klasse = $vorbei ? 'leer' : ($c === null ? ($geht ? 'go' : 'leer') : stufe($c));
+              // 0 % bleibt leer, damit die guten Tage herausstechen
+              $text = $vorbei ? '' : ($c === null ? ($geht ? 'ja' : '') : ($c < 0.005 ? '' : zahl(100 * $c)));
+              $titel = $r['name'] . ', ' . tag_kurz($t, $heute) . ': ' . ($vorbei ? 'vorbei'
+                     : ($c === null ? ($geht ? 'Fenster nach Modellmittel' : 'kein Fenster') : zahl(100 * $c) . ' %')
+                     . ($geht ? ', ' . $d['det']['von'] . '–' . $d['det']['bis'] . ' Uhr' . (!empty($d['det']['regel']) ? ', Regel' : ', Ø ' . zahl($d['det']['mittel_kn']) . ' kn') : ''));
+          ?>
+            <td class="<?= $klasse ?>" title="<?= h($titel) ?>"><a href="<?= h(link_mit(['ansicht' => $ti <= 2 ? 'bald' : 'reise', 'nach' => $t])) ?>#r-<?= h($r['id']) ?>"><?= h($text) ?></a></td>
+          <?php endforeach ?>
+        </tr>
+      <?php endforeach ?>
+    </tbody>
+  </table>
+</div>
+<?php endif ?>
+
+<?php foreach ($roadtrip || $woche ? [] : $liste as $e):
     $r = $e['region'];
     $guteTage = array_filter($e['tage'], fn($t) => $t['det']['geht'] || (($t['ens']['chance'] ?? 0) >= 0.15));
 ?>

@@ -34,6 +34,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Fahrzeit und Abfahrt | 7.11.2026: Fahrzeit ab Inning laut openrouteservice (GitHub Action `fahrzeiten.yml`, braucht Secret `ORS_API_KEY`), sonst aus der Luftlinie geschätzt; „Abfahrt bis …“ an guten Tagen; Sortierung „Fahrzeit“. **Noch nie gegen das echte ORS gelaufen**; siehe „Fahrzeit und Abfahrt“ |
 | Flugziele | 7.11.2026: Auswahl „Anreise: Auto / Flug“; Flug zeigt alle Flugziele ohne Umkreis, mit Flughafen und geschätztem Transfer; siehe „Flugziele“ |
 | Roadtrip | 7.11.2026: dritter Reiter, Reise vom Standort und zurück über bis zu 7 Tage, Hin-, Rückfahrt und Etappen bis 5 h; die App sucht die beste Länge; siehe „Roadtrip“ |
+| Woche | 7.11.2026: Reiter „Woche“, Matrix Regionen × 7 Tage; siehe „Woche“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -150,6 +151,10 @@ Seit 7.11.2026, am selben Abend neu gedacht: Die erste Fassung (Ketten guter Tag
 - **Vorschläge:** die 5 besten mit positiver Bilanz; ein Vorschlag fällt weg, wenn mindestens die Hälfte seiner Windtage am selben Ort liegt wie bei einem besseren. Es sind Alternativen.
 - **Anzeige:** Route im Titel („Achensee → Adria Nordost“), Windtage, Fahrzeit und Kilometer insgesamt (Straße laut ORS, sonst Luftlinie × 1,25), Zeitraum; Hinfahrt mit „los bis 7:25“ (Fensterbeginn minus Fahrt und 15 min Aufbau) oder Abfahrt und Ankunft; je Tag Chance, Region (Link in die passende Ansicht), Windlage, Fenster, Wind; Pausen und Fahrtage; Etappen; Rückfahrt mit Ankunft zu Hause.
 - **Grenzen:** Zeitzonen zwischen den Regionen werden ignoriert (in Europa höchstens eine Stunde). Ob die Lage über mehrere Tage stabil bleibt, prüft niemand. Kosten und Schwellen sind geschätzt (Konstanten oben in `roadtrip.php`). Kein Verlauf und keine Karte in dieser Ansicht.
+
+## Woche
+
+Seit 7.11.2026. Reiter „Woche“ (`ansicht=woche`) zwischen „Tag 3 bis 7“ und „Roadtrip“: eine Tabelle mit einer Zeile je Region im Umkreis (bzw. je Flugziel) und den 7 Tagen als Spalten. Zelle = Chance in der Farbe der Kacheln; leer = 0 %, „ja“ = Fenster nach Modellmittel ohne Ensemble, heute nach dem Fenster leer. Unter dem Namen die Fahrzeit (bzw. der Flughafen). Tooltip mit Fenster und Wind. Zeile und Zelle verlinken in die passende Ansicht der Region. Sortieren: „alle Tage“, „Fahrzeit“ oder Spaltenkopf antippen (ein zweites Antippen hebt es auf). Karte wie sonst darüber; kein Verlauf in dieser Ansicht.
 
 **Alle Zahlen sind Rohwerte, nicht kalibriert.** An Thermik-Spots unterschätzen die Modelle den Wind vermutlich. Sportart-Voreinstellungen wie in stegen-wind (14 / 14 / 11 / 16 / 17 / 12 / 5–18 kn); dort ist nur 14 kn Directional kalibriert, der Rest sind Faustwerte.
 
@@ -310,7 +315,7 @@ tools/karte_bauen.py    erzeugt server/web/karte.svg aus Natural Earth
 3. ~~Fahrzeit statt Luftlinie, mit Abfahrtsempfehlung~~ (erledigt, siehe „Fahrzeit und Abfahrt“; später: Umkreis in Stunden, genaue Zeiten auch für andere Startorte)
 4. ~~Fahr- und Flugziele trennen~~ (erledigt, siehe „Flugziele“)
 5. ~~Roadtrip-Modus~~ (erledigt, siehe „Roadtrip“)
-6. Matrix Regionen × Tage als Übersicht
+6. ~~Matrix Regionen × Tage~~ (erledigt, siehe „Woche“)
 7. Stundenansicht je Region mit Streuung der Modelle, Vergleich zweier Regionen
 8. Wassertemperatur und Neoprenempfehlung (ob die Marine API das liefert, ungeprüft)
 9. Gezeiten für Atlantik-Spots (ungeprüft, ob Open-Meteo das brauchbar liefert)

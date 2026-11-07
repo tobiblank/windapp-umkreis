@@ -604,6 +604,14 @@ pruefe(str_contains($html, 'Hinfahrt ab Inning') && str_contains($html, 'Rückfa
 pruefe(str_contains($html, 'Roadtrips gibt es nur mit Anreise Auto') && ohne_php_meldung($html), 'Roadtrip mit Flug: Hinweis');
 [, $html] = holen($sitePort, 'index.php?km=100&ansicht=roadtrip');
 pruefe(str_contains($html, 'Kein Roadtrip lohnt sich gerade'), 'Roadtrip ohne passende Tage: Hinweis');
+[$code, $html] = holen($sitePort, 'index.php?km=1000&ansicht=woche');
+pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, '<table class="matrix">') && substr_count($html, '<th scope="col"') === 8
+       && substr_count($html, '<th scope="row"') === 2 && !str_contains($html, 'class="karte region'),
+       'Woche: Matrix mit 7 Tagen, eine Zeile je Region, keine Regionskarten');
+pruefe(preg_match('/id="r-adria-nord"|#r-adria-nord">Nördliche Adria/', $html) && preg_match('/<td class="go"[^>]*>.*?>100</s', $html)
+       && str_contains($html, '>Woche</a>'), 'Woche: Adria morgen 100 %, verlinkt');
+[, $html] = holen($sitePort, "index.php?km=1000&ansicht=woche&nach=$morgen");
+pruefe(str_contains($html, 'class="m-aktiv"') && ohne_php_meldung($html), 'Woche nach einem Tag sortiert: Spalte markiert');
 foreach (['impressum.html', 'datenschutz.html', 'karte.svg', 'stil.css', 'sw.js', 'offline.html', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon.svg', 'icon-maskable-512.png', 'favicon.svg', 'favicon.ico', 'schrift/barlow-condensed-600.woff', 'schrift/OFL.txt'] as $f) {
     [$code] = holen($sitePort, $f);
     pruefe($code === 200, "$f erreichbar");
