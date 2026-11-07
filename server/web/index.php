@@ -173,7 +173,7 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
 </nav>
 
 <p class="leise klein erklaerung">
-  <?= h($sport['name']) ?>, <?= h($wind) ?>, mindestens <?= MIN_STUNDEN ?> Stunden am Stück zwischen 9 Uhr und Sonnenuntergang.
+  <?= h($sport['name']) ?>, <?= h($wind) ?>, mindestens <?= MIN_STUNDEN ?> Stunden am Stück zwischen 9 Uhr und Sonnenuntergang<?= $ansicht === 'bald' ? ', heute erst ab einer halben Stunde nach jetzt' : '' ?>.
   Prozent = Anteil der 51 Läufe des ECMWF-Ensembles, an denen das klappt.
 </p>
 
@@ -197,10 +197,18 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
           $d = $e['tage'][$t];
           $c = $d['ens']['chance'] ?? null;
       ?>
-        <div class="tag <?= stufe($c) ?>" title="<?= h($c === null ? 'keine Ensemble-Daten' : zahl(100 * $c) . ' % der Läufe') ?>">
+        <?php if (!empty($d['vorbei'])): ?>
+        <div class="tag leer" title="Für heute bleibt nicht mehr genug Zeit bis Sonnenuntergang">
           <span class="t"><?= h(tag_kurz($t, $heute)) ?></span>
+          <span class="w vorbei">vorbei</span>
+        </div>
+        <?php else: ?>
+        <div class="tag <?= stufe($c) ?>" title="<?= h(($c === null ? 'keine Ensemble-Daten' : zahl(100 * $c) . ' % der Läufe')
+                                                     . (!empty($d['rest']) ? ', nur noch ' . $d['fenster'][0] . '–' . $d['fenster'][1] . ' Uhr' : '')) ?>">
+          <span class="t"><?= h(tag_kurz($t, $heute)) ?><?= !empty($d['rest']) && $d['fenster'][0] > FENSTER_AB ? ' ab ' . $d['fenster'][0] : '' ?></span>
           <span class="w"><?= $c === null ? ($d['det']['geht'] ? 'ja' : '–') : zahl(100 * $c) . '<small>%</small>' ?></span>
         </div>
+        <?php endif ?>
       <?php endforeach ?>
     </div>
     <?php if ($guteTage): ?>

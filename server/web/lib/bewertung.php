@@ -26,6 +26,7 @@
 
 const MIN_STUNDEN = 2;
 const FENSTER_AB = 9;          // Ortszeit, wie stegen-wind seit 22.10.2026
+const REST_VORLAUF_MIN = 30;   // heute: erst ab jetzt + 30 min (Anfahrt, Aufbau), wie stegen-wind
 
 /** Voreinstellungen wie in stegen-wind (sport.php): nur 14 kn Directional ist dort kalibriert */
 const SPORTARTEN = [
@@ -266,6 +267,30 @@ function tagesfenster(string $tag, DateTimeZone $tz, float $lat, float $lon): ar
     return [$ab, max($ab, $bis)];
 }
 
+/**
+ * Restfenster fuer heute (seit 7.11.2026, wie stegen-wind seit 26.10.2026):
+ * ab jetzt + REST_VORLAUF_MIN, auf die naechste volle Modellstunde gerundet,
+ * bis zum Ende des Tagesfensters. Fuer andere Tage unveraendert.
+ * Rueckgabe [fenster, rest (bool), vorbei (bool)]. Vorbei, wenn weniger als
+ * MIN_STUNDEN bleiben - dann kann der Tag nicht mehr gehen.
+ * Grenze: die Ensemble-Chance ist fuer ganze Tage gedacht; ein Rest von wenigen
+ * Stunden ist eine Naeherung mit derselben Regel.
+ */
+function restfenster(array $fenster, string $tag, DateTimeZone $tz, DateTimeImmutable $jetzt): array
+{
+    $lok = $jetzt->setTimezone($tz);
+    if ($lok->format('Y-m-d') !== $tag) {
+        return [$fenster, false, false];
+    }
+    $start = $lok->modify('+' . REST_VORLAUF_MIN . ' minutes');
+    $ab = $start->format('Y-m-d') === $tag
+        ? (int)$start->format('G') + ((int)$start->format('i') >= 30 ? 1 : 0)
+        : 24;
+    [$fAb, $fBis] = $fenster;
+    $ab = max($fAb, $ab);
+    return [[$ab, max($ab, $fBis)], true, $fBis - $ab < MIN_STUNDEN];
+}
+
 // ===================================================================
 // STUNDE UND TAG
 // ===================================================================
@@ -416,8 +441,9 @@ function ensemble_chance(array $laeufe, string $tag, array $fenster, array $spor
  * $daten: ['vorhersage' => eintrag|null, 'ensemble' => eintrag|null, 'welle' => eintrag|null]
  * Rueckgabe [tag => ['spot' => id|null, 'spot_name', 'det' => tag_bewerten, 'ens' => chance|null, 'alle' => [...]]]
  */
-function region_bewerten(array $region, array $daten, array $sport, array $tage): array
+function region_bewerten(array $region, array $daten, array $sport, array $tage, ?DateTimeImmutable $jetzt = null): array
 {
+    $jetzt ??= new DateTimeImmutable('now');
     $tz = new DateTimeZone($region['zeitzone']);
     [$lat, $lon] = $region['punkt'];
     $vh = $daten['vorhersage'] ? vorhersage_stunden($daten['vorhersage'], $tz) : [];
@@ -430,7 +456,13 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage)
 
     $out = [];
     foreach ($tage as $tag) {
-        $fenster = tagesfenster($tag, $tz, (float)$lat, (float)$lon);
+        [$fenster, $rest, $vorbei] = restfenster(tagesfenster($tag, $tz, (float)$lat, (float)$lon), $tag, $tz, $jetzt);
+        if ($vorbei) {
+            $leer = ['geht' => false, 'stunden' => 0, 'grund' => 'Tag vorbei'];
+            $out[$tag] = ['spot' => null, 'spot_name' => null, 'det' => $leer, 'ens' => null,
+                          'fenster' => $fenster, 'rest' => true, 'vorbei' => true, 'alle' => []];
+            continue;
+        }
         $stunden = $vh[$tag] ?? [];
         // Welle auch bei Seen setzen (dann null): eine Wave-Sportart soll dort
         // "keine Wellendaten" bekommen, statt ungeprueft durchzugehen
@@ -448,7 +480,7 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage)
             ];
         }
         usort($alle, 'spot_vergleich');
-        $out[$tag] = $alle[0] + ['fenster' => $fenster, 'alle' => $alle];
+        $out[$tag] = $alle[0] + ['fenster' => $fenster, 'rest' => $rest, 'vorbei' => false, 'alle' => $alle];
     }
     return $out;
 }
@@ -483,7 +515,7 @@ function entfernung_km(array $a, array $b): float
  * Sortiert nach der Summe der Chancen ueber die Tage (= erwartete gute Tage),
  * ohne Ensemble nach Zahl der Tage, die nach dem Modellmittel gehen.
  */
-function rangliste(array $regionen, array $stand, array $sport, array $heim, float $radiusKm, array $tage): array
+function rangliste(array $regionen, array $stand, array $sport, array $heim, float $radiusKm, array $tage, ?DateTimeImmutable $jetzt = null): array
 {
     $liste = [];
     foreach ($regionen as $r) {
@@ -499,7 +531,7 @@ function rangliste(array $regionen, array $stand, array $sport, array $heim, flo
         if (!$daten['vorhersage'] && !$daten['ensemble']) {
             continue;
         }
-        $proTag = region_bewerten($r, $daten, $sport, $tage);
+        $proTag = region_bewerten($r, $daten, $sport, $tage, $jetzt);
         $erwartet = null;
         $det = 0;
         foreach ($proTag as $t) {

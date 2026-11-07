@@ -135,6 +135,31 @@ pruefe($adriaW['det']['grund'] === 'zu wenig Welle', 'Wave Adria morgen: zu weni
 $amW = array_values(array_filter($rlw, fn($e) => $e['region']['id'] === 'ammersee'))[0]['tage'][$morgen];
 pruefe($amW['det']['grund'] === 'keine Wellendaten', 'Wave Ammersee: keine Wellendaten (See)');
 
+echo "Restfenster heute\n";
+$rom = new DateTimeZone('Europe/Rome');
+$adriaR = array_values(array_filter($regionen, fn($r) => $r['id'] === 'adria-nord'))[0];
+$datenAdria = ['vorhersage' => $stand['vorhersage']['adria-nord'], 'ensemble' => $stand['ensemble']['adria-nord'],
+               'welle' => $stand['welle']['adria-nord'] ?? null];
+// Testdaten Adria morgen: Bora 20 kn von 10 bis 15 Uhr Ortszeit, Fenster 9-17 Uhr
+$um = fn(string $zeit) => new DateTimeImmutable("$morgen $zeit", $rom);
+$r = region_bewerten($adriaR, $datenAdria, $kite, [$morgen, $uebermorgen], $um('12:00'))[$morgen];
+pruefe($r['rest'] && !$r['vorbei'] && $r['fenster'] === [13, 17], 'um 12 Uhr: Rest 13-17 Uhr (12:30 aufgerundet)');
+pruefe($r['det']['geht'] && $r['det']['von'] === 13 && $r['det']['bis'] === 15, "um 12 Uhr: geht noch 13-15 Uhr (ist {$r['det']['von']}-{$r['det']['bis']})");
+pruefe(abs($r['ens']['chance'] - 1.0) < 1e-9, 'um 12 Uhr: Ensemble rechnet nur den Rest, weiter 100 %');
+$r = region_bewerten($adriaR, $datenAdria, $kite, [$morgen], $um('14:10'))[$morgen];
+pruefe($r['rest'] && !$r['vorbei'] && !$r['det']['geht'] && abs($r['ens']['chance']) < 1e-9, 'um 14:10 Uhr: Rest 15-17 Uhr ohne Wind, 0 %');
+$r = region_bewerten($adriaR, $datenAdria, $kite, [$morgen], $um('15:40'))[$morgen];
+pruefe($r['vorbei'] && $r['ens'] === null && $r['det']['grund'] === 'Tag vorbei', 'um 15:40 Uhr: nur noch 1 Stunde, vorbei');
+$r = region_bewerten($adriaR, $datenAdria, $kite, [$uebermorgen], $um('15:40'))[$uebermorgen];
+pruefe(!$r['rest'] && $r['fenster'][0] === 9 && $r['det']['geht'], 'andere Tage: ganzes Fenster');
+[$f, $rest, $vorbei] = restfenster([9, 17], $morgen, $rom, $um('23:45'));
+pruefe($rest && $vorbei, 'kurz vor Mitternacht: vorbei');
+[$f, $rest, $vorbei] = restfenster([9, 17], $morgen, $rom, $um('06:00'));
+pruefe($rest && !$vorbei && $f === [9, 17], 'früh am Morgen: Rest = ganzes Fenster');
+$rl = rangliste($regionen, $stand, $kite, $inning, 1000, [$morgen, $uebermorgen], $um('15:40'));
+$adriaRl = array_values(array_filter($rl, fn($e) => $e['region']['id'] === 'adria-nord'))[0];
+pruefe(abs($adriaRl['erwartete_tage'] - 1.0) < 1e-9, 'Rangliste: ein Tag, der vorbei ist, zählt nicht zu den erwarteten Tagen');
+
 // ---------------------------------------------------------------
 echo "Sammler als GitHub Action\n";
 $server = proc_open(['php', '-S', "127.0.0.1:$port", __DIR__ . '/fake_openmeteo.php'],

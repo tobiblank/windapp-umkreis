@@ -61,6 +61,7 @@ a { color: var(--akzent); }
 .tag.maybe { background: var(--maybe-bg); } .tag.maybe .w { color: var(--maybe); }
 .tag.no { background: var(--no-bg); } .tag.no .w { color: var(--no); }
 .tag.nix .w, .tag.leer .w { color: var(--nix); }
+.tag .w.vorbei { font: 600 15px/1.9 system-ui, -apple-system, "Segoe UI", sans-serif; }
 
 .details { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; }
 .details li { padding-top: 6px; border-top: 1px solid var(--linie); }
