@@ -68,7 +68,7 @@ Eine Stunde ist fahrbar, wenn sie im Tagesfenster liegt (9 Uhr Ortszeit oder Son
 
 - **Modellmittel:** Mittel aller Modelle mit Wert, Richtung als Vektormittel. Liefert Fenster, Windlage, mittleren Wind, Böen.
 - **Chance:** Anteil der 51 Läufe des ECMWF-Ensembles (0,25°), an denen der Tag nach denselben Regeln geht, ohne Böen, Gewitter und Welle (liefert das Ensemble nicht).
-- **Rangliste:** Regionen im Umkreis (Luftlinie zum Vorhersagepunkt), sortiert nach erwarteten guten Tagen = Summe der Chancen über die gewählten Tage.
+- **Rangliste:** Regionen im Umkreis (Luftlinie zum Vorhersagepunkt). Sortierung wählbar (seit 7.11.2026, Parameter `nach`): **alle Tage** (Standard) = erwartete gute Tage, also Summe der Chancen über die angezeigten Tage; **ein einzelner Tag** = Chance an diesem Tag, dann Fenster nach Modellmittel, dann näher zuerst; **Entfernung**. Bei Gleichstand gewinnt die nähere Region.
 
 **Alle Zahlen sind Rohwerte, nicht kalibriert.** An Thermik-Spots unterschätzen die Modelle den Wind vermutlich. Sportart-Voreinstellungen wie in stegen-wind (14 / 14 / 11 / 16 / 17 / 12 / 5–18 kn); dort ist nur 14 kn Directional kalibriert, der Rest sind Faustwerte.
 

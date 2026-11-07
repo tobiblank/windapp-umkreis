@@ -139,6 +139,16 @@ pruefe($adriaW['det']['grund'] === 'zu wenig Welle', 'Wave Adria morgen: zu weni
 $amW = array_values(array_filter($rlw, fn($e) => $e['region']['id'] === 'ammersee'))[0]['tage'][$morgen];
 pruefe($amW['det']['grund'] === 'keine Wellendaten', 'Wave Ammersee: keine Wellendaten (See)');
 
+echo "Sortierung\n";
+$heuteT = gmdate('Y-m-d');
+$rlS = rangliste($regionen, $stand, $kite, $inning, 1000, [$heuteT, $morgen, $uebermorgen]);
+$ids = fn(array $l) => array_map(fn($e) => $e['region']['id'], $l);
+pruefe($ids(rangliste_sortieren($rlS, 'summe')) === ['adria-nord', 'ammersee'], 'alle Tage: Adria (2 Bora-Tage) vor Ammersee');
+pruefe($ids(rangliste_sortieren($rlS, 'km')) === ['ammersee', 'adria-nord'], 'Entfernung: Ammersee zuerst');
+pruefe($ids(rangliste_sortieren($rlS, $heuteT)) === ['ammersee', 'adria-nord'], 'heute: beide ohne Wind, dann näher zuerst');
+pruefe($ids(rangliste_sortieren($rlS, $morgen)) === ['adria-nord', 'ammersee'], 'morgen: Adria 100 % vor Ammersee 71 %');
+pruefe($ids(rangliste_sortieren($rlS, '2000-01-01')) === ['adria-nord', 'ammersee'], 'unbekannter Tag: wie alle Tage');
+
 echo "Restfenster heute\n";
 $rom = new DateTimeZone('Europe/Rome');
 $adriaR = array_values(array_filter($regionen, fn($r) => $r['id'] === 'adria-nord'))[0];
@@ -221,7 +231,7 @@ pruefe($code === 503, 'ohne config.php: 503');
 
 file_put_contents("$site/config.php", '<?php return ' . var_export(['data_dir' => "$tmp/action"], true) . ';');
 foreach (['', '?sport=wingfoil&km=100', '?ansicht=reise', '?ort=45.6,13.1&km=400', '?sport=xx&km=abc&ort=foo&ansicht=x',
-          '?sport=segeln&km=2500&ort=48.07,11.15'] as $q) {
+          '?sport=segeln&km=2500&ort=48.07,11.15', '?nach=km', '?nach=' . gmdate('Y-m-d', time() + 86400), '?nach=quatsch&ansicht=reise'] as $q) {
     [$code, $html] = holen($sitePort, "index.php$q");
     pruefe($code === 200 && ohne_php_meldung($html), "index.php$q: 200, keine PHP-Meldung");
 }

@@ -88,6 +88,12 @@ function tag_kurz(string $tag, DateTimeImmutable $heute): string
 // --- Rechnen ----------------------------------------------------------
 $stand = daten_laden(rtrim($cfg['data_dir'], '/'));
 $liste = rangliste($regionen, $stand, $sport, $heim, (float)$km, $tage);
+// Sortierung: alle Tage (summe), ein angezeigter Tag oder Entfernung
+$nach = (string)($_GET['nach'] ?? 'summe');
+if ($nach !== 'km' && !in_array($nach, $tage, true)) {
+    $nach = 'summe';
+}
+$liste = rangliste_sortieren($liste, $nach);
 
 $zeiten = [];
 foreach ($stand['_ts'] as $proRegion) {
@@ -112,8 +118,11 @@ function stufe(?float $chance): string
 
 function link_mit(array $aenderung): string
 {
-    global $sportId, $km, $ansicht, $heim, $eigenerOrt;
+    global $sportId, $km, $ansicht, $heim, $eigenerOrt, $nach;
     $p = ['sport' => $sportId, 'km' => $km, 'ansicht' => $ansicht];
+    if ($nach !== 'summe') {
+        $p['nach'] = $nach;
+    }
     if ($eigenerOrt) {
         $p['ort'] = $heim[0] . ',' . $heim[1];
     }
@@ -168,8 +177,17 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
 </form>
 
 <nav class="reiter" aria-label="Zeitraum">
-  <a href="<?= h(link_mit(['ansicht' => 'bald'])) ?>"<?= $ansicht === 'bald' ? ' aria-current="page"' : '' ?>>Heute bis übermorgen</a>
-  <a href="<?= h(link_mit(['ansicht' => 'reise'])) ?>"<?= $ansicht === 'reise' ? ' aria-current="page"' : '' ?>>Tag 3 bis 7</a>
+  <a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>"<?= $ansicht === 'bald' ? ' aria-current="page"' : '' ?>>Heute bis übermorgen</a>
+  <a href="<?= h(link_mit(['ansicht' => 'reise', 'nach' => null])) ?>"<?= $ansicht === 'reise' ? ' aria-current="page"' : '' ?>>Tag 3 bis 7</a>
+</nav>
+
+<nav class="sortierung klein" aria-label="Sortierung">
+  <span class="leise">Sortiert nach</span>
+  <a href="<?= h(link_mit(['nach' => null])) ?>"<?= $nach === 'summe' ? ' aria-current="true"' : '' ?>>alle Tage</a>
+  <?php foreach ($tage as $t): ?>
+    <a href="<?= h(link_mit(['nach' => $t])) ?>"<?= $nach === $t ? ' aria-current="true"' : '' ?>><?= h(tag_kurz($t, $heute)) ?></a>
+  <?php endforeach ?>
+  <a href="<?= h(link_mit(['nach' => 'km'])) ?>"<?= $nach === 'km' ? ' aria-current="true"' : '' ?>>Entfernung</a>
 </nav>
 
 <p class="leise klein erklaerung">
@@ -203,7 +221,7 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
           <span class="w vorbei">vorbei</span>
         </div>
         <?php else: ?>
-        <div class="tag <?= stufe($c) ?>" title="<?= h(($c === null ? 'keine Ensemble-Daten' : zahl(100 * $c) . ' % der Läufe')
+        <div class="tag <?= stufe($c) ?><?= $nach === $t ? ' gewaehlt' : '' ?>" title="<?= h(($c === null ? 'keine Ensemble-Daten' : zahl(100 * $c) . ' % der Läufe')
                                                      . (!empty($d['rest']) ? ', nur noch ' . $d['fenster'][0] . '–' . $d['fenster'][1] . ' Uhr' : '')) ?>">
           <span class="t"><?= h(tag_kurz($t, $heute)) ?><?= !empty($d['rest']) && $d['fenster'][0] > FENSTER_AB ? ' ab ' . $d['fenster'][0] : '' ?></span>
           <span class="w"><?= $c === null ? ($d['det']['geht'] ? 'ja' : '–') : zahl(100 * $c) . '<small>%</small>' ?></span>

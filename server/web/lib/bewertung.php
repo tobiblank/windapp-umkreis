@@ -543,8 +543,36 @@ function rangliste(array $regionen, array $stand, array $sport, array $heim, flo
         $liste[] = ['region' => $r, 'km' => round($km), 'tage' => $proTag,
                     'erwartete_tage' => $erwartet, 'tage_modellmittel' => $det];
     }
-    usort($liste, fn($a, $b) => [$b['erwartete_tage'] ?? -1, $b['tage_modellmittel'], -$b['km']]
-                            <=> [$a['erwartete_tage'] ?? -1, $a['tage_modellmittel'], -$a['km']]);
+    return rangliste_sortieren($liste, 'summe');
+}
+
+/**
+ * Reihenfolge der Rangliste (seit 7.11.2026 waehlbar):
+ *   'summe'      erwartete gute Tage ueber alle angezeigten Tage (Standard),
+ *                dann Tage nach Modellmittel, dann naeher zuerst
+ *   'YYYY-MM-DD' nur dieser Tag: Chance, dann geht/laengeres Fenster/staerker
+ *                nach Modellmittel, dann naeher zuerst; ohne Daten oder vorbei zuletzt
+ *   'km'         naeher zuerst
+ * Ein Tag, der nicht in der Liste vorkommt, wird wie 'summe' behandelt.
+ */
+function rangliste_sortieren(array $liste, string $nach): array
+{
+    if ($nach === 'km') {
+        usort($liste, fn($a, $b) => $a['km'] <=> $b['km']);
+        return $liste;
+    }
+    $tagDa = $liste && preg_match('/^\d{4}-\d{2}-\d{2}$/', $nach) && isset($liste[0]['tage'][$nach]);
+    if (!$tagDa) {
+        usort($liste, fn($a, $b) => [$b['erwartete_tage'] ?? -1, $b['tage_modellmittel'], -$b['km']]
+                                <=> [$a['erwartete_tage'] ?? -1, $a['tage_modellmittel'], -$a['km']]);
+        return $liste;
+    }
+    $schluessel = function (array $e) use ($nach): array {
+        $t = $e['tage'][$nach] ?? null;
+        $det = $t['det'] ?? ['geht' => false, 'stunden' => 0];
+        return [$t['ens']['chance'] ?? -1, $det['geht'] ? 1 : 0, $det['stunden'] ?? 0, $det['mittel_kn'] ?? 0, -$e['km']];
+    };
+    usort($liste, fn($a, $b) => $schluessel($b) <=> $schluessel($a));
     return $liste;
 }
 
