@@ -55,17 +55,37 @@
       ]
     },
     {
-      "id": "adria-nord",
-      "name": "Nördliche Adria",
+      "id": "adria-nordwest",
+      "name": "Adria Nordwest (Sottomarina)",
+      "land": "IT",
       "typ": "meer",
-      "punkt": [45.5, 13.0],
+      "punkt": [45.2, 12.36],
       "zeitzone": "Europe/Rome",
-      "hinweis": "Funktioniert bei Bora und Scirocco überall (Tobias). Sektorgrenzen geschätzt, bitte prüfen. Punkt auf dem Wasser zwischen der Lagune von Venedig und Istrien.",
+      "hinweis": "Aus adria-nord geteilt (Tobias). Bora und Scirocco wie bisher (Tobias: funktionieren bei beiden). kite-and-windsurfing-guide.com: Bora mit 1–2,5 m Welle, Scirocco mit den besten Wellen, meist um 20 kn; reiner Nordwind flach; Sommerthermik aus Ost bis etwa 15 kn. Strand nach Osten offen (Kartenkenntnis), Ablandig-Sektor geschätzt. Punkt vor Sottomarina nicht auf der Karte kontrolliert.",
+      "windlagen": [
+        {"name": "Bora", "sektor": [20, 80], "charakter": "böig"},
+        {"name": "Thermik", "sektor": [80, 120], "charakter": "Sommer, bis etwa 15 kn"},
+        {"name": "Scirocco", "sektor": [135, 200]}
+      ],
+      "spots": [
+        {"id": "sottomarina", "name": "Sottomarina", "ablandig": [[225, 330]]}
+      ]
+    },
+    {
+      "id": "adria-nordost",
+      "name": "Adria Nordost (Grado)",
+      "land": "IT",
+      "typ": "meer",
+      "punkt": [45.64, 13.38],
+      "zeitzone": "Europe/Rome",
+      "hinweis": "Aus adria-nord geteilt (Tobias). Bora und Scirocco wie bisher (Tobias: funktionieren bei beiden). kite-and-windsurfing-guide.com (Grado Pineta): Bora eher zum Springen, starker Süd selten; großes Stehrevier, Gezeiten 60–80 cm entscheidend, bei Niedrigwasser zu flach; Kiten nur außerhalb der Hochsaison. spiagge.it: Startplätze Sacca dei Moreri und Punta Barbacale. Ablandig-Sektor geschätzt, Punkt im Golf von Triest nicht auf der Karte kontrolliert.",
       "windlagen": [
         {"name": "Bora", "sektor": [20, 80], "charakter": "böig"},
         {"name": "Scirocco", "sektor": [135, 200]}
       ],
-      "spots": []
+      "spots": [
+        {"id": "grado-pineta", "name": "Grado Pineta", "ablandig": [[300, 20]]}
+      ]
     },
     {
       "id": "walchensee",
