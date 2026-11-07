@@ -175,9 +175,9 @@ if ($nach !== 'km' && !in_array($nach, $tage, true)) {
 }
 // Fahrzeit (seit 7.11.2026): genau fuer den Startort von fahrzeiten.json, sonst aus der Luftlinie geschaetzt
 $fahrzeiten = fahrzeiten_laden($dataDir);
-$fahrtFaktor = fahrt_faktor($fahrzeiten, $regionen);
+$fahrtModell = fahrt_modell($fahrzeiten, $regionen);
 foreach ($liste as $i => $e) {
-    $liste[$i]['fahrt'] = fahrzeit($e['region'], $heim, (float)$e['km'], $fahrzeiten, $fahrtFaktor);
+    $liste[$i]['fahrt'] = fahrzeit($e['region'], $heim, (float)$e['km'], $fahrzeiten, $fahrtModell);
 }
 $liste = rangliste_sortieren($liste, $nach);
 
