@@ -557,6 +557,23 @@ $a = abfahrt('2026-11-08', 10, 16, new DateTimeZone('Atlantic/Canary'), 60, $ber
 pruefe($a['zeit']->format('G:i') === '9:45', 'andere Zeitzone: Fenster 10 Uhr Kanaren = 11 Uhr Berlin, Abfahrt 9:45 Berlin');
 $sk = rangliste_sortieren([['km' => 100, 'fahrt' => ['min' => 200]], ['km' => 300, 'fahrt' => ['min' => 150]], ['km' => 50, 'fahrt' => ['min' => null]]], 'km');
 pruefe(array_column($sk, 'km') === [300, 100, 50], 'Sortierung Fahrzeit: kürzeste Fahrt zuerst, ohne Landweg zuletzt');
+// Umkreis nach Strasse (seit 7.11.2026)
+pruefe(im_umkreis(['km' => 319.0, 'fahrt' => ['km' => 401.2, 'min' => 301]], 400.0) === false
+       && im_umkreis(['km' => 319.0, 'fahrt' => ['km' => 401.2, 'min' => 301]], 700.0)
+       && im_umkreis(['km' => 90.0, 'fahrt' => ['km' => null, 'min' => null, 'kein_landweg' => true]], 100.0)
+       && !im_umkreis(['km' => 120.0, 'fahrt' => ['km' => null, 'min' => null, 'kein_landweg' => true]], 100.0)
+       && im_umkreis(['km' => 5000.0, 'fahrt' => ['km' => null, 'min' => 20, 'flug' => 'X']], 100.0) === false
+       && im_umkreis(['km' => 50.0, 'fahrt' => ['km' => null, 'min' => 20, 'flug' => 'X']], 100.0),
+       'Umkreis: Straßen-km zählen, ohne Landweg die Luftlinie');
+$fzU = ['start' => $fzM['start'], 'ziele' => array_map(fn($z, $k) => ['min' => $z['min'], 'km' => $k * 1.3],
+        $modellZiele, [30, 100, 200, 400, 800])];
+$fzU['ziele'] = array_combine(array_keys($modellZiele), $fzU['ziele']);
+pruefe(abs(fahrt_umweg($fzU, $modellReg) - 1.3) < 0.01 && fahrt_umweg(null, $modellReg) === FAHRT_UMWEG
+       && fahrt_umweg(['start' => $fzM['start'], 'ziele' => array_slice($fzU['ziele'], 0, 4)], $modellReg) === FAHRT_UMWEG,
+       'Umwegfaktor: Median Straße/Luftlinie, sonst 1,25');
+$fG = fahrzeit($adriaReg, [47.5, 9.7], 300.0, $fzL, [10.0, 0.9], 1.3);
+pruefe($fG['geschaetzt'] && $fG['km'] == 390, 'anderer Standort: Straßen-km geschätzt, 300 km x 1,3');
+pruefe(fahrzeit($adriaReg, [48.07, 11.15], 319.0, $fzL)['km'] === 401.2, 'ab Inning: Straßen-km aus der Datei');
 
 // ---------------------------------------------------------------
 echo "Seite\n";
@@ -647,7 +664,21 @@ pruefe(preg_match('/fahrzeit"[^>]*>5 min Fahrt<span class="km">3 km Straße</', 
 [, $html] = holen($sitePort, 'index.php?km=100&ort=46.6,30.0');
 pruefe(str_contains($html, '>kein Landweg<') && ohne_php_meldung($html), 'Region ohne Route ab dem Startort: kein Landweg');
 [, $html] = holen($sitePort, 'index.php?km=1000&ort=47.5,9.7');
-pruefe(str_contains($html, '>≈ ') && str_contains($html, ' km Luftlinie</span>') && ohne_php_meldung($html), 'anderer Standort: Fahrzeit geschätzt (≈), dazu die Luftlinie');
+pruefe(str_contains($html, '>≈ ') && preg_match('/<span class="km">≈ [0-9.]+0 km Straße<\/span>/u', $html) && ohne_php_meldung($html), 'anderer Standort: Fahrzeit und Straßen-km geschätzt (≈)');
+[, $html] = holen($sitePort, 'index.php?km=400');
+[, $html7] = holen($sitePort, 'index.php?km=700');
+pruefe(!str_contains($html, 'id="r-adria-nord"') && str_contains($html, 'id="r-ammersee"') && str_contains($html7, 'id="r-adria-nord"')
+       && str_contains($html, 'der Umkreis zählt die Straße'),
+       'Umkreis 400 km: Adria (319 km Luftlinie, 401 km Straße) fehlt, bei 700 km dabei');
+// Hell/Dunkel (seit 7.11.2026)
+$css = (string)file_get_contents(__DIR__ . '/../server/web/stil.css');
+preg_match('/@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme="light"\]\) \{(.*?)\}\s*\}/s', $css, $mA);
+preg_match('/:root\[data-theme="dark"\] \{(.*?)\}/s', $css, $mB);
+$norm = fn($t) => preg_replace('/\s+/', ' ', trim($t ?? ''));
+pruefe(isset($mA[1], $mB[1]) && $norm($mA[1]) === $norm($mB[1]) && str_contains($mA[1], '--grund: #0f1e24'),
+       'Dunkel: Block für das Gerät und für die Wahl gleich');
+pruefe(str_contains($html, 'id="design"') && str_contains($html, 'data-design="dark"') && str_contains($html, "localStorage.getItem(\"wohinfahrma_design\")")
+       && substr_count($html, 'name="theme-color"') === 2, 'Design-Schalter im Fuß, Wahl vor dem ersten Zeichnen gesetzt');
 [, $html] = holen($sitePort, "index.php?region=adria-nord&nach=$morgen");
 pruefe(!str_contains($html, 'class="leise klein fahrzeit"') && !str_contains($html, 'class="abfahrt"'), 'geteilte Vorhersage: ohne Fahrzeit und Abfahrt');
 [$code, $html] = holen($sitePort, 'index.php?anreise=flug');

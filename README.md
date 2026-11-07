@@ -21,8 +21,8 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 |---|---|
 | Regionen-Katalog (`daten/regionen.json`) | 7.11.2026: Ammersee (Stegen, Herrsching, Eching; Link zu ammerseewind.de), Nördliche Adria (Bora, Scirocco), Walchensee (grob, mit Link zu Marcos Vorhersage); als Entwurf, ungeprüft: Leucate/Gruissan, Hyères/Almanarre, Fehmarn, Île de Ré, Bretagne, Normandie, Pas de Calais, Deutsche Bucht, Klitmøller, Władysławowo; dazu 15 Seen (Starnberger See, Kochelsee, Chiemsee, Bodensee, Achensee, Reschensee, Silvaplana, Gardasee Nord, Comer See Nord, Urnersee, Neuenburgersee, Attersee, Traunsee, Zeller See, Neusiedler See). 28 Regionen. Sektorgrenzen teils geschätzt, siehe `hinweis` je Eintrag. Die Tests nutzen einen eigenen festen Katalog (`tests/regionen_test.json`) |
 | Sammler (`server/sammler.php`) | 7.11.2026, läuft als GitHub Action zweimal am Tag (`sammeln.yml`); gegen einen Open-Meteo-Ersatz getestet, **noch nie gegen das echte Open-Meteo gelaufen** |
-| Bewertung (`server/web/lib/bewertung.php`) | 7.11.2026: Stunde fahrbar, bester Block ≥ 2 h, Ensemble-Chance, Rangliste nach Luftlinie |
-| Seite Rangliste (`server/web/index.php`) | 7.11.2026: Sportart, Umkreis (Luftlinie), Standort (auf 0,1° gerundet), „Heute bis übermorgen“ und „Tag 3 bis 7“, Knopf „Teilen“ an guten Tagen (siehe „Teilen“); ohne Anmeldung, nicht in Suchmaschinen (`noindex`) |
+| Bewertung (`server/web/lib/bewertung.php`) | 7.11.2026: Stunde fahrbar, bester Block ≥ 2 h, Ensemble-Chance, Rangliste |
+| Seite Rangliste (`server/web/index.php`) | 7.11.2026: Sportart, Umkreis (seit 7.11.2026 Straßen-km, siehe „Fahrzeit und Abfahrt“), Standort (auf 0,1° gerundet), „Heute bis übermorgen“ und „Tag 3 bis 7“, Knopf „Teilen“ an guten Tagen (siehe „Teilen“); ohne Anmeldung, nicht in Suchmaschinen (`noindex`) |
 | Impressum, Datenschutz (`server/web/*.html`) | 7.11.2026, aus stegen-wind abgeleitet – bitte prüfen |
 | Rangliste auf der Kommandozeile (`server/rangliste.php`) | zum Ausprobieren gegen Rohdaten |
 | Hosting | Hetzner Webhosting, seit 7.11.2026 unter **wohinfahrma.de** (Ordner `public_html/wohinfahrma`, Let's Encrypt); wohinfahrma.dablank.de und www leiten dauerhaft um (`server/web/.htaccess`). Deploy per GitHub Action |
@@ -31,7 +31,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Regel-Windlagen | 7.11.2026: Druckdifferenzen und Grundströmung statt Modellwind für Thermik- und Föhnlagen; Reschensee, Silvaplana, Gardasee Nord, Urnersee. Stärken, Tageszeiten und Saison geschätzt, siehe „Regel-Windlagen“ |
 | Verlauf über die Abrufe | 7.11.2026: dieselbe Chance aus bis zu drei früheren Abrufen, Pfeil in der Kachel und „stabil / steigt / fällt / schwankt“ in der Detailzeile, mit Zwischenspeicher; siehe „Verlauf über die Abrufe“ |
 | Landkarte | 7.11.2026: Regionen als Punkte über der Rangliste, eingefärbt nach der Chance am gewählten Tag, mit Umkreis; eigene SVG-Grundlage aus Natural Earth, keine fremden Server; siehe „Landkarte“ |
-| Fahrzeit und Abfahrt | 7.11.2026: Fahrzeit ab Inning laut openrouteservice (GitHub Action `fahrzeiten.yml`, braucht Secret `ORS_API_KEY`), sonst aus der Luftlinie geschätzt; „Abfahrt bis …“ an guten Tagen; Sortierung „Fahrzeit“. **Noch nie gegen das echte ORS gelaufen**; siehe „Fahrzeit und Abfahrt“ |
+| Fahrzeit und Abfahrt | 7.11.2026: Fahrzeit ab Inning laut openrouteservice (GitHub Action `fahrzeiten.yml`, braucht Secret `ORS_API_KEY`), sonst aus der Luftlinie geschätzt; „Abfahrt bis …“ an guten Tagen; Sortierung „Fahrzeit“; Umkreis nach Straßen-km. Echter ORS-Lauf am 7.11.2026: 40 von 40 Zielen; siehe „Fahrzeit und Abfahrt“ |
 | Flugziele | 7.11.2026: Auswahl „Anreise: Auto / Flug“; Flug zeigt alle Flugziele ohne Umkreis, mit Flughafen und geschätztem Transfer; siehe „Flugziele“ |
 | Roadtrip | 7.11.2026: dritter Reiter, Reise vom Standort und zurück über bis zu 7 Tage, Hin-, Rückfahrt und Etappen bis 5 h; die App sucht die beste Länge; siehe „Roadtrip“ |
 | Woche | 7.11.2026: Reiter „Woche“, Matrix Regionen × 7 Tage; siehe „Woche“ |
@@ -41,6 +41,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Spot-Infos | 7.11.2026: Katalogfeld `infos` (Niveau, Zone, Sperre, Saison, Achtung, Tipp) für 15 Regionen, aus den Quellen im `hinweis`; Sperren mit Monaten wirken auf die Bewertung; siehe „Spot-Infos“ |
 | Bedienung | 7.11.2026 aufgeräumt: Sortierung als Auswahlfeld im Formular; drei Ansichten Liste · Woche · Roadtrip; Zeitraum (Heute – Übermorgen / Tag 3 – 7) nur in der Liste; Erklärung eingeklappt hinter „Wie wird gerechnet?“ |
 | Farbe | 7.11.2026: Einstellungen und Ansichten in Wasserblau (`--steuer`, `--akzent`), damit sie sich von den Ergebnissen abheben; Grün/Gelb/Rot bleiben der Bewertung vorbehalten. Regionen und Roadtrips mit Farbbalken links nach dem besten Tag (`beste_stufe()`) |
+| Hell / Dunkel | 7.11.2026: wie das Gerät, im Fuß festlegbar auf „Hell“ oder „Dunkel“ (nur im Browser gespeichert); siehe „Hell und Dunkel“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -87,7 +88,7 @@ Eine Stunde ist fahrbar, wenn sie im Tagesfenster liegt (9 Uhr Ortszeit oder Son
 
 - **Modellmittel:** Mittel aller Modelle mit Wert, Richtung als Vektormittel. Liefert Fenster, Windlage, mittleren Wind, Böen.
 - **Chance:** Anteil der 51 Läufe des ECMWF-Ensembles (0,25°), an denen der Tag nach denselben Regeln geht, ohne Böen, Gewitter und Welle (liefert das Ensemble nicht).
-- **Rangliste:** Regionen im Umkreis (Luftlinie zum Vorhersagepunkt). Sortierung wählbar (seit 7.11.2026, Parameter `nach`): **alle Tage** (Standard) = erwartete gute Tage, also Summe der Chancen über die angezeigten Tage; **ein einzelner Tag** = Chance an diesem Tag, dann Fenster nach Modellmittel, dann näher zuerst; **Entfernung**. Bei Gleichstand gewinnt die nähere Region.
+- **Rangliste:** Regionen im Umkreis (seit 7.11.2026 nach Straßen-km, siehe „Fahrzeit und Abfahrt“; vorher Luftlinie zum Vorhersagepunkt). Sortierung wählbar (seit 7.11.2026, Parameter `nach`): **alle Tage** (Standard) = erwartete gute Tage, also Summe der Chancen über die angezeigten Tage; **ein einzelner Tag** = Chance an diesem Tag, dann Fenster nach Modellmittel, dann näher zuerst; **Entfernung**. Bei Gleichstand gewinnt die nähere Region.
 
 ## Teilen
 
@@ -121,13 +122,15 @@ Seit 7.11.2026. Über der Rangliste, einklappbar (der Browser merkt sich den Zus
 
 - **Punkte:** je Region am Vorhersagepunkt. Farbe und Zahl wie in den Kacheln: die Chance am Tag, der unter „Sortiert nach“ gewählt ist; bei „alle Tage“ oder „Entfernung“ die beste Chance im Zeitraum (Tooltip nennt den Tag). Zahl erst ab 15 %. Gute Punkte liegen oben. Antippen springt zur Karte der Region (`#r-<id>`).
 - **Namen:** die besten zuerst, rechts oder links vom Punkt, nur wo sie nichts verdecken; im großen Umkreis bekommen deshalb nicht alle einen.
-- **Ausschnitt:** alle Regionen im Umkreis und der Standort, etwas höher als breit; gestrichelt der Umkreis (Kreis um den Standort, in Mercator nur ungefähr).
+- **Ausschnitt:** alle Regionen im Umkreis und der Standort, etwas höher als breit; gestrichelt der Umkreis als Luftlinie (Kreis um den Standort, in Mercator nur ungefähr). Weil der Umkreis die Straße zählt, fehlen am Rand manche Regionen innerhalb des Kreises; das steht unter der Karte.
 - **Grundlage:** `server/web/karte.svg` (108 KB, gezippt rund 30 KB), Länder mit großen Seen aus Natural Earth 1:50 Mio. (gemeinfrei), 20° W bis 36° O, 22° bis 64° N, Mercator. Kleine Seen wie der Ammersee fehlen in diesem Maßstab. Neu erzeugen mit `python3 tools/karte_bauen.py <ne_50m_admin_0_countries_lakes.geojson> server/web/karte.svg` (nur Standardbibliothek); die Projektion steht zusätzlich in `lib/karte.php`, der Test vergleicht beide. Regionen außerhalb des Ausschnitts meldet der Test.
 - Die Seite bindet die Grundlage mit `<use href="karte.svg#land">` ein: einmal geladen, dann aus dem Browser-Cache, und die Farben kommen aus `stil.css` (hell und dunkel).
 
 ## Fahrzeit und Abfahrt
 
-Seit 7.11.2026. Der Umkreis bleibt Luftlinie; angezeigt und sortiert wird nach Fahrzeit mit dem Auto, ohne Verkehr, Pausen und Grenzwartezeiten.
+Seit 7.11.2026. Angezeigt und sortiert wird nach Fahrzeit mit dem Auto, ohne Verkehr, Pausen und Grenzwartezeiten.
+
+- **Umkreis nach Straße** (seit 7.11.2026, Wunsch: bei 1.000 km standen Île de Ré mit 1.298 km und Normandie mit 1.117 km Straße in der Liste): Eine Region gehört zum Umkreis, wenn die Straßen-km höchstens so groß sind. Genau aus `fahrzeiten.json`, sonst geschätzt als Luftlinie × Umwegfaktor (`fahrt_umweg()`: Median Straße/Luftlinie der genauen Werte bis 1500 km, ab 5 Werten, begrenzt auf 1,05–1,8; ohne Datei 1,25; ab Inning mit den Daten vom 7.11.2026: 1,30). Ohne Landweg zählt die Luftlinie. Angezeigt „≈ 1.180 km Straße“, auf 10 km gerundet. Mit den echten Daten ab Inning fallen bei 1.000 km sieben Regionen weg (Leucate, Île de Ré, Normandie, Władysławowo, Sinis, Golf de Roses, Gargano), bei 400 km die beiden Adria-Regionen und der Neuenburgersee. Die Vorauswahl beim Laden bleibt die Luftlinie (Straße ist praktisch nie kürzer).
 
 - **Abruf:** `server/fahrzeiten.php` als GitHub Action `fahrzeiten.yml` (bei Änderung des Katalogs auf `main`, am 1. jedes Monats, von Hand). Ziel je Region ist `anfahrt`, sonst der `punkt` des ersten Spots, sonst der Vorhersagepunkt. Erst rastet jedes Ziel auf die nächste Straße ein (ORS-Snapping mit 2, 10, 30 km Radius; lehnt der Server einen Radius ab, bleibt es beim kleineren), dann **eine** Matrix-Anfrage von Inning zu allen Zielen. Ergebnis `fahrzeiten.json` im Datenordner. Gesendet werden nur Katalog-Koordinaten und Inning, **nie der Standort von Besuchern**.
 - **Kontingent:** Kostenloser ORS-Plan mit API-Schlüssel; laut ORS-Forum 500 Matrix-Anfragen am Tag und bis zu 3500 Strecken je Anfrage. Hier eine Anfrage je Lauf, dazu eine Snapping-Anfrage je Radius.
@@ -200,6 +203,10 @@ Seit 7.11.2026. Katalogfeld `infos` je Region (siehe Tabelle oben), angezeigt al
 - **Pflege:** Neue Infos mit Quelle eintragen; ohne Quelle lieber weglassen.
 
 **Alle Zahlen sind Rohwerte, nicht kalibriert.** An Thermik-Spots unterschätzen die Modelle den Wind vermutlich. Sportart-Voreinstellungen wie in stegen-wind (14 / 14 / 11 / 16 / 17 / 12 / 5–18 kn); dort ist nur 14 kn Directional kalibriert, der Rest sind Faustwerte.
+
+## Hell und Dunkel
+
+Seit 7.11.2026. Standard wie das Gerät (`prefers-color-scheme`, z. B. Android „Dunkles Design“ mit Zeitplan). Im Fuß der Rangliste und der Stundenseite: **Wie Gerät · Hell · Dunkel**. Die Wahl steht nur im Browser (`localStorage`, `wohinfahrma_design`) und setzt `data-theme="light|dark"` auf `<html>`; ein kleines Skript im Kopf setzt sie vor dem ersten Zeichnen, damit nichts aufblitzt, und passt die Farbe der Browserleiste an (`lib/design.php`). In `stil.css` stehen die dunklen Farben zweimal (für das Gerät und für die Wahl); der Test prüft, dass beide gleich sind. Ohne JavaScript ist der Schalter unsichtbar, dann gilt das Gerät. Impressum und Datenschutz folgen weiter nur dem Gerät.
 
 ## Regel-Windlagen
 

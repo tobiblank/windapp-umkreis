@@ -4,7 +4,7 @@
  *
  * Parameter (alle optional, die Seite merkt sich die Wahl im Browser):
  *   sport   Schluessel aus SPORTARTEN (bewertung.php)
- *   km      Umkreis in km Luftlinie
+ *   km      Umkreis in km Straße (genau oder geschätzt; ohne Landweg Luftlinie)
  *   ort     "Breite,Laenge", auf 0,1 Grad gerundet (ca. 10 km) - genauer wird
  *           nichts angenommen, damit kein genauer Standort im Zugriffsprotokoll steht
  *   ansicht bald (heute bis uebermorgen) oder reise (Tag 3 bis 7)
@@ -19,6 +19,7 @@ require __DIR__ . '/lib/fahrzeit.php';
 require __DIR__ . '/lib/roadtrip.php';
 require __DIR__ . '/lib/neopren.php';
 require __DIR__ . '/lib/spotinfo.php';
+require __DIR__ . '/lib/design.php';
 
 const TZ_SEITE = 'Europe/Berlin';
 const HEIM_STANDARD = [48.07, 11.15];      // Inning am Ammersee
@@ -185,12 +186,19 @@ if ($nach !== 'km' && !in_array($nach, $tage, true)) {
 // Fahrzeit (seit 7.11.2026): genau fuer den Startort von fahrzeiten.json, sonst aus der Luftlinie geschaetzt
 $fahrzeiten = fahrzeiten_laden($dataDir);
 $fahrtModell = fahrt_modell($fahrzeiten, $regionen);
+$fahrtUmweg = fahrt_umweg($fahrzeiten, $regionen);
 foreach ($liste as $i => $e) {
     $fh = $e['region']['flughafen'] ?? null;
     $liste[$i]['fahrt'] = $flug || !in_array('auto', region_anreise($e['region']), true)
         // Flugziel: "Fahrzeit" ist der Transfer vom Flughafen, sortiert wird danach
         ? ['min' => $fh['transfer_min'] ?? null, 'km' => null, 'geschaetzt' => false, 'kein_landweg' => false, 'flug' => $fh['name'] ?? 'Flugziel']
-        : fahrzeit($e['region'], $heim, (float)$e['km'], $fahrzeiten, $fahrtModell);
+        : fahrzeit($e['region'], $heim, (float)$e['km'], $fahrzeiten, $fahrtModell, $fahrtUmweg);
+}
+// Umkreis (seit 7.11.2026) zaehlt die Strasse: vorher war es die Luftlinie, und bei
+// 1.000 km standen Ziele mit 1.300 km Fahrt in der Liste. Vorauswahl oben bleibt
+// die Luftlinie (Strasse praktisch nie kuerzer), hier fallen die zu weiten raus.
+if (!$geteilt && !$flug) {
+    $liste = array_values(array_filter($liste, fn($e) => im_umkreis($e, (float)$km)));
 }
 $liste = rangliste_sortieren($liste, $nach);
 $jetztSeite = $jetzt->setTimezone($tzSeite);
@@ -410,14 +418,17 @@ function fahrzeit_mit_wort(array $f): string
     return fahrzeit_text($f) . ($f['min'] !== null ? ' Fahrt' : '');
 }
 
-/** "412 km Straße" (genau), "380 km Luftlinie"; Flugziel: "≈ 25 min Transfer" */
+/** "412 km Straße" (genau), "≈ 480 km Straße" (geschaetzt), "380 km Luftlinie" (kein Landweg); Flugziel: "≈ 25 min Transfer" */
 function km_text(array $e): string
 {
     $f = $e['fahrt'];
     if (isset($f['flug'])) {
         return $f['min'] !== null ? '≈ ' . fahrzeit_text($f) . ' Transfer' : '';   // Transfer ist immer geschaetzt
     }
-    return $f['km'] !== null ? zahl((float)$f['km']) . ' km Straße' : zahl((float)$e['km']) . ' km Luftlinie';
+    if ($f['km'] === null) {
+        return zahl((float)$e['km']) . ' km Luftlinie';
+    }
+    return $f['geschaetzt'] ? '≈ ' . zahl(round((float)$f['km'] / 10) * 10) . ' km Straße' : zahl((float)$f['km']) . ' km Straße';
 }
 
 function fahrzeit_titel(array $e): string
@@ -432,7 +443,7 @@ function fahrzeit_titel(array $e): string
         return 'Vom Startort aus keine Route auf der Straße (Insel?). ' . $luft;
     }
     if ($f['geschaetzt']) {
-        return 'Fahrzeit geschätzt aus der ' . $luft . ($fahrzeiten ? ' (genau nur ab ' . ($fahrzeiten['start']['name'] ?? 'Startort') . ')' : '');
+        return 'Fahrzeit und Straßen-km geschätzt aus der ' . $luft . ($fahrzeiten ? ' (genau nur ab ' . ($fahrzeiten['start']['name'] ?? 'Startort') . ')' : '');
     }
     return 'Fahrzeit mit dem Auto laut openrouteservice, ' . zahl((float)$f['km']) . ' km Straße, ohne Verkehr. ' . $luft;
 }
@@ -480,8 +491,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="Fahrma">
-<meta name="theme-color" content="#eef3f4" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0f1e24" media="(prefers-color-scheme: dark)">
+<?= design_kopf() ?>
 </head>
 <body>
 <main class="seite">
@@ -635,7 +645,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     </a>
     <?php endforeach ?>
   </svg>
-  <p class="leise klein landkarte-fuss">Punkt antippen: zur Region.<?= $flug ? '' : ' Kreis: Umkreis von ' . zahl($km) . ' km Luftlinie, ungefähr.' ?> Karte: Natural Earth.</p>
+  <p class="leise klein landkarte-fuss">Punkt antippen: zur Region.<?= $flug ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße, darum fehlen manche Ziele innerhalb des Kreises.' ?> Karte: Natural Earth.</p>
 </details>
 <?php endif ?>
 
@@ -818,9 +828,10 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
 
 <footer class="fuss klein leise">
   <p><b>Regel</b> heißt: Die Windlage ist aus Druckdifferenzen und Grundströmung abgeleitet (nach lokalen Vorhersageseiten wie kitewetter.at), die Stärke ist ein geschätzter typischer Wert.</p>
-  <p><b>Rohwerte, nicht kalibriert.</b> Modelle unterschätzen lokale Thermik oft (Seen mit „Thermik“ markiert, dort lieber die verlinkte lokale Vorhersage ansehen); Böen und Gewitter prüft nur das Modellmittel. Umkreis als Luftlinie zum Vorhersagepunkt der Region; Fahrzeit mit dem Auto ohne Verkehr und Pausen, „≈“ heißt aus der Luftlinie geschätzt. Flugziele (Anreise „Flug“): ohne Umkreis, mit geschätztem Transfer vom Flughafen.</p>
+  <p><b>Rohwerte, nicht kalibriert.</b> Modelle unterschätzen lokale Thermik oft (Seen mit „Thermik“ markiert, dort lieber die verlinkte lokale Vorhersage ansehen); Böen und Gewitter prüft nur das Modellmittel. Umkreis nach Straßen-km mit dem Auto (ohne Landweg: Luftlinie zum Vorhersagepunkt); Fahrzeit ohne Verkehr und Pausen, „≈“ heißt aus der Luftlinie geschätzt. Flugziele (Anreise „Flug“): ohne Umkreis, mit geschätztem Transfer vom Flughafen.</p>
   <?php if ($fahrzeiten): ?><p>Fahrzeiten ab <?= h($fahrzeiten['start']['name'] ?? 'Startort') ?>: © <a href="https://openrouteservice.org/">openrouteservice.org</a> by HeiGIT, Kartendaten © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende.</p><?php endif ?>
   <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0) · Für Stegen genauer: <a href="https://ammerseewind.de">ammerseewind.de</a></p>
+  <?= design_schalter() ?>
   <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
 </footer>
 </main>

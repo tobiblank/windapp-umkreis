@@ -12,12 +12,18 @@
  * Regionen, die vom Startort keine Route haben (Inseln), bleiben auch geschaetzt
  * ohne Fahrzeit.
  * Ohne Verkehr, Pausen und Grenzwartezeiten.
+ *
+ * Strassen-km (seit 7.11.2026, fuer den Umkreis): genau aus der Datei, sonst
+ * Luftlinie x Umwegfaktor (Median Strasse/Luftlinie der genauen Werte bis
+ * FAHRT_MODELL_MAX_KM, ohne Datei FAHRT_UMWEG).
  */
 
 const FAHRT_STANDARD = [15.0, 0.75];  // [Sockel min, min je km Luftlinie]: Umweg ~1,25, Autobahn ~100 km/h; geschaetzt
 const FAHRT_GRENZEN = [[0.0, 60.0], [0.5, 1.2]];   // erlaubte Spanne fuer Sockel und Faktor aus der Anpassung
 const FAHRT_MIN_PUNKTE = 5;            // so viele genaue Werte braucht die Anpassung
 const FAHRT_MODELL_MAX_KM = 1500;      // weitere Ziele (Faehren, Kanaren) nicht in die Anpassung
+const FAHRT_UMWEG = 1.25;             // Strasse / Luftlinie ohne Datei; geschaetzt
+const FAHRT_UMWEG_GRENZEN = [1.05, 1.8];
 const FAHRT_GLEICHER_START = 0.05;    // Grad: so nah gilt der Standort als Startort der Datei
 const ABFAHRT_AUFBAU_MIN = 15;        // Aufbauen vor dem Fenster
 const ABFAHRT_FRUEHESTENS = 5;        // frueher losfahren heisst: am Vortag anreisen
@@ -79,11 +85,39 @@ function fahrt_modell(?array $fz, array $regionen): array
 }
 
 /**
- * Fahrzeit vom Standort zu einer Region.
- * Rueckgabe ['min' => int, 'km' => ?float (Strasse), 'geschaetzt' => bool] oder
- * ['min' => null, 'kein_landweg' => true], wenn es vom Startort keine Route gibt.
+ * Umwegfaktor Strasse / Luftlinie: Median der genauen Werte (bis
+ * FAHRT_MODELL_MAX_KM, mindestens FAHRT_MIN_PUNKTE), auf FAHRT_UMWEG_GRENZEN
+ * begrenzt; sonst FAHRT_UMWEG.
  */
-function fahrzeit(array $region, array $heim, float $luftKm, ?array $fz, array $modell = FAHRT_STANDARD): array
+function fahrt_umweg(?array $fz, array $regionen): float
+{
+    if (!$fz) {
+        return FAHRT_UMWEG;
+    }
+    $q = [];
+    foreach ($regionen as $r) {
+        $z = $fz['ziele'][$r['id']] ?? null;
+        $luft = entfernung_km($fz['start']['punkt'], $r['punkt']);
+        if (is_array($z) && isset($z['km']) && $luft > 20 && $luft <= FAHRT_MODELL_MAX_KM) {
+            $q[] = (float)$z['km'] / $luft;
+        }
+    }
+    $n = count($q);
+    if ($n < FAHRT_MIN_PUNKTE) {
+        return FAHRT_UMWEG;
+    }
+    sort($q);
+    $m = $n % 2 ? $q[intdiv($n, 2)] : ($q[$n / 2 - 1] + $q[$n / 2]) / 2;
+    return min(max($m, FAHRT_UMWEG_GRENZEN[0]), FAHRT_UMWEG_GRENZEN[1]);
+}
+
+/**
+ * Fahrzeit vom Standort zu einer Region.
+ * Rueckgabe ['min' => int, 'km' => float (Strasse), 'geschaetzt' => bool] oder
+ * ['min' => null, 'km' => null, 'kein_landweg' => true], wenn es vom Startort keine
+ * Route gibt. Geschaetzt: km = Luftlinie x $umweg.
+ */
+function fahrzeit(array $region, array $heim, float $luftKm, ?array $fz, array $modell = FAHRT_STANDARD, float $umweg = FAHRT_UMWEG): array
 {
     $bekannt = $fz && array_key_exists($region['id'], $fz['ziele']);
     if ($bekannt && $fz['ziele'][$region['id']] === null) {
@@ -95,7 +129,18 @@ function fahrzeit(array $region, array $heim, float $luftKm, ?array $fz, array $
         $z = $fz['ziele'][$region['id']];
         return ['min' => (int)$z['min'], 'km' => (float)$z['km'], 'geschaetzt' => false, 'kein_landweg' => false];
     }
-    return ['min' => (int)round($modell[0] + $modell[1] * $luftKm), 'km' => null, 'geschaetzt' => true, 'kein_landweg' => false];
+    return ['min' => (int)round($modell[0] + $modell[1] * $luftKm), 'km' => round($luftKm * $umweg), 'geschaetzt' => true, 'kein_landweg' => false];
+}
+
+/**
+ * Liegt die Region im Umkreis? Gezaehlt wird die Strasse (genau oder geschaetzt);
+ * ohne Landweg und fuer Flugziele die Luftlinie.
+ */
+function im_umkreis(array $e, float $km): bool
+{
+    $f = $e['fahrt'] ?? null;
+    $strasse = is_array($f) && !isset($f['flug']) && isset($f['km']) ? (float)$f['km'] : null;
+    return ($strasse ?? (float)$e['km']) <= $km;
 }
 
 /** "1:45 h", geschaetzt auf 15 Minuten gerundet: "≈ 3:30 h"; unter einer Stunde "40 min" */

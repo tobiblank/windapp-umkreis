@@ -17,6 +17,7 @@ declare(strict_types=1);
 date_default_timezone_set('UTC');
 require __DIR__ . '/lib/regionen.php';
 require __DIR__ . '/lib/bewertung.php';
+require __DIR__ . '/lib/design.php';
 require __DIR__ . '/lib/stunden.php';
 require __DIR__ . '/lib/neopren.php';
 require __DIR__ . '/lib/spotinfo.php';
@@ -361,6 +362,7 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
 <title><?= h($region['name']) ?> – Wohinfahrma</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="stil.css">
+<?= design_kopf() ?>
 </head>
 <body>
 <main class="seite">
@@ -419,6 +421,7 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
 </p>
 <footer class="fuss klein leise">
   <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0). Rohwerte, nicht kalibriert.</p>
+  <?= design_schalter() ?>
   <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
 </footer>
 </main>
