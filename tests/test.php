@@ -357,6 +357,32 @@ pruefe(neopren(['wasser' => null, 'luft' => 10.0, 'kn' => 15.0])['text'] === nul
 pruefe(abs(gefuehlt(0.0, 20.0) - (-7.5)) < 0.6 && gefuehlt(15.0, 20.0) === 15.0, 'Windchill: 0 °C bei 20 kn etwa -7 °C; über 10 °C die Luft');
 
 // ---------------------------------------------------------------
+echo "Wellen\n";
+$surf = SPORTARTEN['wellenreiten'];
+$spotW = ['id' => 'w', 'ablandig' => [[45, 135]]];   // Land im Osten
+$wi = fn($h, $p, $r) => ['hoehe' => $h, 'periode' => $p, 'richtung' => $r, 'swell' => $h, 'swell_periode' => $p, 'swell_richtung' => $r];
+$stdW = fn($kn, $dir, $info) => ['kn' => $kn, 'richtung' => $dir, 'welle' => $info['hoehe'] ?? null, 'welle_info' => $info, 'gewitter' => false];
+pruefe(stunde_surfbar($stdW(6, 270, $wi(1.4, 11, 280)), $surf, $spotW)[0] === true, 'Wellenreiten: 1,4 m, 11 s aus W, schwacher Wind: geht');
+pruefe(stunde_surfbar($stdW(20, 90, $wi(1.4, 11, 280)), $surf, $spotW)[0] === true
+       && stunde_surfbar($stdW(20, 90, $wi(1.4, 11, 280)), $surf, $spotW)[2]['charakter'] === 'Wind ablandig', 'starker ablandiger Wind: geht (ablandig gut)');
+pruefe(stunde_surfbar($stdW(20, 270, $wi(1.4, 11, 280)), $surf, $spotW)[1] === 'zu viel Wind', 'starker auflandiger Wind: zu viel Wind');
+pruefe(stunde_surfbar($stdW(6, 270, $wi(0.5, 11, 280)), $surf, $spotW)[1] === 'zu wenig Welle'
+       && stunde_surfbar($stdW(6, 270, $wi(1.4, 6, 280)), $surf, $spotW)[1] === 'Periode zu kurz'
+       && stunde_surfbar($stdW(6, 270, $wi(1.4, 11, 90)), $surf, $spotW)[1] === 'Dünung kommt vom Land', 'zu wenig Welle, Periode zu kurz, Dünung vom Land');
+pruefe(stunde_fahrbar(['kn' => 6, 'richtung' => 270, 'welle_info' => null, 'gewitter' => false], $surf, [], $spotW)[1] === 'keine Wellendaten'
+       && stunde_fahrbar(['kn' => 6, 'richtung' => 270], $surf, [], $spotW)[0] === false, 'ohne Wellendaten (See) und im Ensemble: nie');
+$bewS = region_bewerten($adriaR, $datA, $surf, [$morgen])[$morgen];
+pruefe($bewS['ens'] === null && !$bewS['det']['geht'], 'Wellenreiten an der Adria mit 0,3 m Dünung: geht nicht, keine Ensemble-Chance');
+$bewW = region_bewerten($adriaR, $datA, $kite, [$morgen])[$morgen]['welle'];
+pruefe(abs($bewW['hoehe'] - 0.8) < 1e-9 && abs($bewW['swell'] - 0.3) < 1e-9 && abs($bewW['periode'] - 5.0) < 1e-9, 'Welle je Tag: Höhe, Dünung, Periode gemittelt');
+$kw = region_bewerten($adriaR, $datA, SPORTARTEN['kite_wave'], [$morgen])[$morgen];
+pruefe(!$kw['det']['geht'] && isset($kw['ens']['chance']) && $kw['ens']['chance'] == 0, 'Kite Wave an der Adria (0,8 m Welle, mind. 1 m): auch die Ensemble-Chance ist 0');
+$kw2 = region_bewerten($adriaR, $datA, SPORTARTEN['kite_twintip'], [$morgen])[$morgen];
+pruefe(($kw2['ens']['chance'] ?? 0) > 0.9, 'Kite Twintip am selben Tag: Welle egal, Chance unverändert');
+pruefe(duenung($wi(1.0, 9, 200)) === [1.0, 9, 200] && duenung(['hoehe' => 0.8, 'periode' => 5, 'richtung' => 60, 'swell' => null, 'swell_periode' => null, 'swell_richtung' => null]) === [0.8, 5, 60],
+       'Dünung: Swell, ohne Swell die gesamte Welle');
+
+// ---------------------------------------------------------------
 echo "Verlauf über die Abrufe\n";
 pruefe(verlauf_trend([], 0.5) === null && verlauf_trend([['ts' => 'x', 'chance' => 0.5]], null) === null, 'ohne frühere Werte oder ohne Chance: kein Verlauf');
 $art = fn(array $w) => verlauf_trend(array_map(fn($c) => ['ts' => 'x', 'chance' => $c], array_slice($w, 0, -1)), end($w))['art'];
@@ -650,6 +676,12 @@ pruefe($code === 404, 'Stundenseite: unbekannte Region 404');
 pruefe(str_contains($html, 'class="stunden-link" href="stunden.php?region=adria-nord'), 'Rangliste verlinkt die Stundenseite');
 [, $html] = holen($sitePort, 'index.php?km=1000');
 pruefe(str_contains($html, 'Wasser 14 °C, 5/4 mm, Schuhe') && str_contains($html, 'Luft 12 °C'), 'Detailzeile: Meer mit Wasser und Neopren, See mit Luft');
+[, $html] = holen($sitePort, 'index.php?km=1000');
+pruefe(str_contains($html, 'Welle 0,8 m (Dünung 0,3 m, 5 s aus ONO)'), 'Detailzeile am Meer: Welle mit Dünung');
+[$code, $html] = holen($sitePort, "stunden.php?region=adria-nord&tag=$morgen");
+pruefe($code === 200 && str_contains($html, 'welle-bild') && substr_count($html, 'class="s-welle"') > 5, 'Stundenseite am Meer: Wellendiagramm');
+[$code, $html] = holen($sitePort, "index.php?km=1000&sport=wellenreiten");
+pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'ab 0,8 m Dünung'), 'Rangliste Wellenreiten ohne Fehler');
 foreach (['impressum.html', 'datenschutz.html', 'karte.svg', 'stil.css', 'sw.js', 'offline.html', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon.svg', 'icon-maskable-512.png', 'favicon.svg', 'favicon.ico', 'schrift/barlow-condensed-600.woff', 'schrift/OFL.txt'] as $f) {
     [$code] = holen($sitePort, $f);
     pruefe($code === 200, "$f erreichbar");

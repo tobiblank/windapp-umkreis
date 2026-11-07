@@ -37,6 +37,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Woche | 7.11.2026: Reiter „Woche“, Matrix Regionen × 7 Tage; siehe „Woche“ |
 | Stunden | 7.11.2026: `stunden.php`, Diagramm je Stunde mit allen Modellen, Ensemble-Spanne, Böen, Richtung, fahrbaren Stunden; Vergleich zweier Regionen; siehe „Stunden“ |
 | Wasser und Neopren | 7.11.2026: Meerestemperatur aus der Marine API (neue Quelle `wasser`), Neopren-Faustregel in der Detailzeile und auf der Stundenseite; Seen nur Luft und gefühlt. **Variablenname noch nie gegen das echte Open-Meteo geprüft**; siehe „Wasser und Neopren“ |
+| Wellen | 7.11.2026: Welle und Dünung in der Detailzeile und als Diagramm auf der Stundenseite; Sportarten Kite Wave, Windsurf Wave (mit Mindestwelle) und Wellenreiten; siehe „Wellen“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -176,6 +177,15 @@ Seit 7.11.2026.
 - **Neopren** (`lib/neopren.php`), Faustregel nach dem Wasser, Grenzen geschätzt (Quellen schwanken um 1–2 °C): ab 24 °C Lycra/Shorty, 21 Shorty 2 mm, 18 3/2, 15 4/3, 12 5/4 + Schuhe, 9 5/4–6/5 mit Haube, Schuhen, Handschuhen, darunter 6/5 mit allem. Eine Stufe wärmer, wenn die gefühlte Temperatur mehr als 5 °C unter dem Wasser liegt. Gefühlt = Windchill (Environment Canada/NWS) bis 10 °C Luft und ab 4,8 km/h Wind, darüber die Luft.
 - **Seen:** keine Wassertemperatur, deshalb keine Empfehlung, nur „Luft 12 °C, gefühlt 6 °C“. Im Frühjahr ist das Wasser viel kälter als die Luft, im Herbst wärmer; die Luft allein wäre irreführend. Später denkbar: Messwerte bayerischer Seen (Gewässerkundlicher Dienst), Nutzungsbedingungen prüfen.
 - **Anzeige:** in der Detailzeile guter Tage „· Wasser 14 °C, 5/4 mm, Schuhe“ (Tooltip mit Luft und Begründung), auf der Stundenseite unter dem Fenster.
+
+## Wellen
+
+Seit 7.11.2026. Die Wellendaten der Marine API (Quelle `welle`, nur Meer) sammelt die App seit dem Anfang; jetzt werden sie gezeigt und bewertet.
+
+- **Anzeige:** In der Detailzeile guter Tage am Meer „· Welle 1,2 m (Dünung 1,0 m, 11 s aus W)“, gemittelt über das Fenster (`tag_welle()`). Auf der Stundenseite ein zweites Diagramm: Balken = gesamte Welle, Linie = Dünung, Pfeile = wohin die Dünung läuft, Zahlen = Periode.
+- **Kite Wave, Windsurf Wave:** Wind wie Kite/Windsurf, dazu Welle ab 1,0 m (Faustwert). Das Ensemble hat keine Welle; damit die Chance keine Tage mit zu kleiner Welle zählt, bekommt jeder Lauf die Wellenhöhe der Marine-Vorhersage (`ensemble_welle_einmischen()`).
+- **Wellenreiten** (`surf`, `stunde_surfbar()`): kein Mindestwind. Eine Stunde geht bei Dünung ab 0,8 m und Periode ab 8 s (Faustwerte), wenn die Dünung nicht aus einem ablandigen Sektor des Spots kommt (vom Land kommt keine Welle; Spots ohne `ablandig` sind „grob“), der Wind höchstens 12 kn hat oder ablandig ist (dann gut, im Text „Wind ablandig“), und kein Gewitter. Dünung = Swell der Marine API, ohne Swell die gesamte Welle. Keine Ensemble-Chance; die Kacheln zeigen „ja“ oder „–“. Seen gehen nie.
+- **Grenzen:** Die Marine API rechnet auf einem groben Gitter vor der Küste; Brandung, Riffe und Abschattung an einem Strand kennt sie nicht. Für die Session vor Ort eine Surfvorhersage für den Spot nehmen.
 
 **Alle Zahlen sind Rohwerte, nicht kalibriert.** An Thermik-Spots unterschätzen die Modelle den Wind vermutlich. Sportart-Voreinstellungen wie in stegen-wind (14 / 14 / 11 / 16 / 17 / 12 / 5–18 kn); dort ist nur 14 kn Directional kalibriert, der Rest sind Faustwerte.
 
@@ -341,7 +351,7 @@ tools/karte_bauen.py    erzeugt server/web/karte.svg aus Natural Earth
 6. ~~Matrix Regionen × Tage~~ (erledigt, siehe „Woche“)
 7. ~~Stundenansicht je Region, Vergleich zweier Regionen~~ (erledigt, siehe „Stunden“)
 8. ~~Wassertemperatur und Neoprenempfehlung~~ (erledigt fürs Meer, siehe „Wasser und Neopren“)
-9. Gezeiten für Atlantik-Spots (ungeprüft, ob Open-Meteo das brauchbar liefert)
+9. ~~Gezeiten~~ (verworfen 7.11.2026: entscheidet nicht „wohin“, sondern „wann“; das klärt eine Gezeitentabelle vor Ort. Stattdessen Wellen, siehe „Wellen“)
 10. Spot-Infos (Niveau, Zonen, Sperrzeiten, Saison) auf der Seite
 11. Kalendereintrag (.ics) für ein gutes Fenster
 12. Rückblick mit Messwerten (Pioupiou offen; Holfuy, Windguru-Stationen: Lizenz klären)

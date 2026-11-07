@@ -285,7 +285,8 @@ function link_mit(array $aenderung): string
     return '?' . http_build_query(array_merge($p, $aenderung));
 }
 
-$wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . ' kn';
+$wind = !empty($sport['surf']) ? 'ab ' . zahl($sport['welle_min'], 1) . ' m Dünung, Periode ab ' . $sport['periode_min'] . ' s, Wind bis ' . $sport['wind_max'] . ' kn oder ablandig'
+      : $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . ' kn' . (isset($sport['welle_min']) ? ', Welle ab ' . zahl($sport['welle_min'], 1) . ' m' : '');
 
 /** Teilen nur, wenn die Vorhersage gut ist: Fenster im Modellmittel und Chance ab 40 % (oder kein Ensemble) */
 function teilenswert(array $d): bool
@@ -300,16 +301,48 @@ function teilen_link(array $region, string $tag): string
     return '?' . http_build_query(['sport' => $sportId, 'region' => $region['id'], 'nach' => $tag]);
 }
 
+/**
+ * Staerke eines guten Tages (seit 7.11.2026 zentral): Wellenreiten "1,4 m, 11 s,
+ * Wind 6 kn"; Regel "typisch 15–22 kn"; sonst "Ø 18 kn, Böen bis 26 kn".
+ */
+function staerke_text(array $d, array $sport, bool $boeen = true): string
+{
+    $det = $d['det'];
+    if (!empty($sport['surf'])) {
+        [$hoehe, $periode] = $d['welle'] ? duenung($d['welle']) : [null, null];
+        $kn = $d['temp']['kn'] ?? null;
+        return ($hoehe !== null ? zahl($hoehe, 1) . ' m' : '?') . ($periode !== null ? ', ' . zahl($periode) . ' s' : '')
+             . ($kn !== null ? ', Wind ' . zahl($kn) . ' kn' : '');
+    }
+    if (!empty($det['regel'])) {
+        return 'typisch ' . zahl((float)$det['staerke'][0]) . '–' . zahl((float)$det['staerke'][1]) . ' kn';
+    }
+    return 'Ø ' . zahl($det['mittel_kn']) . ' kn' . ($boeen && $det['boe_max'] !== null ? ', Böen bis ' . zahl($det['boe_max']) . ' kn' : '');
+}
+
+/** Welle am Meer fuer die Detailzeile: "Welle 1,2 m (Dünung 1,0 m, 11 s aus W)"; null an Seen, beim Wellenreiten und ohne Daten */
+function welle_text(array $d, array $sport): ?string
+{
+    $w = $d['welle'] ?? null;
+    if (!$w || !empty($sport['surf']) || $w['hoehe'] === null) {
+        return null;
+    }
+    $t = 'Welle ' . zahl($w['hoehe'], 1) . ' m';
+    if ($w['swell'] !== null) {
+        $t .= ' (Dünung ' . zahl($w['swell'], 1) . ' m' . ($w['swell_periode'] !== null ? ', ' . zahl($w['swell_periode']) . ' s' : '')
+            . ($w['swell_richtung'] !== null ? ' aus ' . himmelsrichtung($w['swell_richtung']) : '') . ')';
+    } elseif ($w['periode'] !== null) {
+        $t .= ', ' . zahl($w['periode']) . ' s';
+    }
+    return $t;
+}
+
 /** Stand zum Zeitpunkt des Teilens; der Link zeigt beim Empfaenger die dann aktuelle Vorhersage */
 function teilen_text(array $region, string $tag, array $d, array $sport, DateTimeZone $tz): string
 {
     $det = $d['det'];
     $teile = [$d['spot_name'] ?? null, $det['windlage'] ?? null, $det['von'] . '–' . $det['bis'] . ' Uhr'];
-    if (!empty($det['regel'])) {
-        $teile[] = 'typisch ' . zahl((float)$det['staerke'][0]) . '–' . zahl((float)$det['staerke'][1]) . ' kn';
-    } else {
-        $teile[] = 'Ø ' . zahl($det['mittel_kn']) . ' kn' . ($det['boe_max'] !== null ? ', Böen bis ' . zahl($det['boe_max']) . ' kn' : '');
-    }
+    $teile[] = staerke_text($d, $sport);
     $c = $d['ens']['chance'] ?? null;
     if ($c !== null) {
         $teile[] = zahl(100 * $c) . ' % Chance';
@@ -624,7 +657,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
           <span class="trip-wert <?= $c === null ? 'go' : stufe($c) ?>"><?= $c === null ? 'ja' : zahl(100 * $c) ?></span>
           <span><b><?= h(tag_kurz($t, $heute)) ?></b> <a href="<?= h(link_mit(['ansicht' => $ti <= 2 ? 'bald' : 'reise', 'nach' => $t])) ?>#r-<?= h($te['region']['id']) ?>" class="trip-region"><?= h($te['region']['name']) ?></a><?php if ($det['geht']): ?> ·
             <?= h($det['windlage'] ?? 'jede Richtung') ?> · <?= $det['von'] ?>–<?= $det['bis'] ?> Uhr ·
-            <?= !empty($det['regel']) ? 'typisch ' . zahl((float)$det['staerke'][0]) . '–' . zahl((float)$det['staerke'][1]) . ' kn' : 'Ø ' . zahl($det['mittel_kn']) . ' kn' ?>
+            <?= h(staerke_text($d, $sport, false)) ?>
             <?php else: ?> · <span class="leise">nur ein Teil der Ensemble-Läufe sieht ein Fenster</span><?php endif ?></span>
         </li>
         <?php else: ?>
@@ -664,7 +697,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
               $text = $vorbei ? '' : ($c === null ? ($geht ? 'ja' : '') : ($c < 0.005 ? '' : zahl(100 * $c)));
               $titel = $r['name'] . ', ' . tag_kurz($t, $heute) . ': ' . ($vorbei ? 'vorbei'
                      : ($c === null ? ($geht ? 'Fenster nach Modellmittel' : 'kein Fenster') : zahl(100 * $c) . ' %')
-                     . ($geht ? ', ' . $d['det']['von'] . '–' . $d['det']['bis'] . ' Uhr' . (!empty($d['det']['regel']) ? ', Regel' : ', Ø ' . zahl($d['det']['mittel_kn']) . ' kn') : ''));
+                     . ($geht ? ', ' . $d['det']['von'] . '–' . $d['det']['bis'] . ' Uhr' . ', ' . staerke_text($d, $sport, false) : ''));
           ?>
             <td class="<?= $klasse ?>" title="<?= h($titel) ?>"><a href="stunden.php?<?= h(http_build_query(['region' => $r['id'], 'sport' => $sportId, 'tag' => $t])) ?>"><?= h($text) ?></a></td>
           <?php endforeach ?>
@@ -719,12 +752,9 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
               <?= h($d['spot_name'] ?? 'ganze Region') ?> ·
               <?= h($det['windlage'] ?? 'jede Richtung') ?> ·
               <?= $det['von'] ?>–<?= $det['bis'] ?> Uhr ·
-              <?php if (!empty($det['regel'])): ?>
-                typisch <?= zahl((float)$det['staerke'][0]) ?>–<?= zahl((float)$det['staerke'][1]) ?> kn
-              <?php else: ?>
-                Ø <?= zahl($det['mittel_kn']) ?> kn<?php if ($det['boe_max'] !== null): ?>, Böen bis <?= zahl($det['boe_max']) ?> kn<?php endif ?>
-              <?php endif ?>
+              <?= h(staerke_text($d, $sport)) ?>
               <?php if ($det['charakter']): ?><span class="leise">(<?= h($det['charakter']) ?>)</span><?php endif ?>
+              <?php if ($wt = welle_text($d, $sport)): ?><span class="temp">· <?= h($wt) ?></span><?php endif ?>
               <?php if ($tt = temp_text($d)): ?><span class="temp" title="<?= h($tt[1]) ?>">· <?= h($tt[0]) ?></span><?php endif ?>
               <?php if ($det['grob']): ?><span class="marker">grob</span><?php endif ?>
               <?php if (!empty($det['regel'])): ?><span class="marker regel" title="Aus Druckdifferenz und/oder Grundströmung abgeleitet, nicht aus dem Modellwind am See. Die Stärke ist ein geschätzter typischer Wert.">Regel</span><?php endif ?>

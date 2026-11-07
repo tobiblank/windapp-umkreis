@@ -128,7 +128,16 @@ $st = $daten['vorhersage'] ? region_stunden($region, $daten, $sport, $tag, $jetz
 $stV = $vergleich ? region_stunden($vergleich, daten_fuer($vergleich, $stand), $sport, $tag, $jetzt) : null;
 
 // Gemeinsamer Massstab: hoechster Wert beider Regionen, mindestens das Windfenster
-$ymax = (float)(($sport['max'] ?? $sport['min']) + 6);
+$ymax = (float)(($sport['max'] ?? max($sport['min'], $sport['wind_max'] ?? 0)) + 6);
+$mmax = max(1.0, (float)($sport['welle_min'] ?? 0) + 0.5);
+foreach ([$st, $stV] as $x) {
+    foreach ($x['stunden'] ?? [] as $z) {
+        if ($z['welle']) {
+            $mmax = max($mmax, $z['welle']['hoehe'] ?? 0, $z['welle']['swell'] ?? 0);
+        }
+    }
+}
+$mmax = ceil($mmax * 2) / 2;
 foreach ([$st, $stV] as $x) {
     foreach ($x['stunden'] ?? [] as $z) {
         $ymax = max($ymax, $z['ens_p90'] ?? 0, $z['boe'] ?? 0, $z['kn'] ?? 0, ...array_values($z['modelle'] ?: [0]));
@@ -241,12 +250,78 @@ function stunden_svg(array $st, array $sport, float $ymax): string
     return implode("\n", $o);
 }
 
-$wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . ' kn';
+/**
+ * Wellen als SVG (seit 7.11.2026, nur Meer): Balken = gesamte Welle, Linie =
+ * Duenung, darueber Pfeile (wohin die Duenung laeuft), darunter die Periode.
+ */
+function welle_svg(array $st, array $sport, float $mmax): string
+{
+    $W = 360;
+    $L = 28;
+    $R = 6;
+    $oben = 26;
+    $hoehe = 80;
+    $unten = $oben + $hoehe;
+    $n = $st['bis'] - $st['von'];
+    $bw = ($W - $L - $R) / max(1, $n);
+    $x = fn(float $s) => $L + ($s - $st['von']) * $bw;
+    $xm = fn(int $s) => $L + ($s - $st['von'] + 0.5) * $bw;
+    $y = fn(float $m) => $unten - min($m, $mmax) / $mmax * $hoehe;
+    $r = fn(float $v) => (string)round($v, 1);
+    $o = ['<svg class="stunden-bild welle-bild" viewBox="0 0 ' . $W . ' ' . ($unten + 34) . '" role="img" aria-label="Wellen je Stunde">'];
+    [$fa, $fb] = $st['fenster'];
+    $o[] = '<rect class="s-fenster" x="' . $r($x($fa)) . '" y="' . $oben . '" width="' . $r(($fb - $fa) * $bw) . '" height="' . $hoehe . '"/>';
+    $schritt = $mmax > 4 ? 1 : 0.5;
+    for ($k = 0; $k <= $mmax + 1e-9; $k += $schritt) {
+        $o[] = '<line class="s-raster" x1="' . $L . '" x2="' . ($W - $R) . '" y1="' . $r($y($k)) . '" y2="' . $r($y($k)) . '"/>';
+        $o[] = '<text class="s-achse" x="' . ($L - 4) . '" y="' . $r($y($k) + 3) . '" text-anchor="end">' . str_replace('.', ',', (string)$k) . '</text>';
+    }
+    $o[] = '<text class="s-achse" x="' . ($L - 4) . '" y="' . ($oben - 14) . '" text-anchor="end">m</text>';
+    if (isset($sport['welle_min'])) {
+        $o[] = '<line class="s-grenze" x1="' . $L . '" x2="' . ($W - $R) . '" y1="' . $r($y($sport['welle_min'])) . '" y2="' . $r($y($sport['welle_min'])) . '"><title>Mindestwelle ' . h($sport['name']) . '</title></line>';
+    }
+    $p = [];
+    foreach ($st['stunden'] as $s => $z) {
+        $w = $z['welle'];
+        if ($w === null) {
+            continue;
+        }
+        if ($w['hoehe'] !== null) {
+            $o[] = '<rect class="s-welle" x="' . $r($x($s) + 2) . '" y="' . $r($y($w['hoehe'])) . '" width="' . $r($bw - 4) . '" height="' . $r($unten - $y($w['hoehe'])) . '" rx="2">'
+                 . '<title>' . h($s . ' Uhr: Welle ' . number_format($w['hoehe'], 1, ',', '') . ' m' . ($w['periode'] !== null ? ', ' . round($w['periode']) . ' s' : '')) . '</title></rect>';
+        }
+        [$dh, $dp, $dr] = duenung($w);
+        if ($w['swell'] !== null) {
+            $p[] = $r($xm($s)) . ',' . $r($y($w['swell']));
+        }
+        if ($dr !== null) {
+            $o[] = '<g class="s-pfeil" transform="translate(' . $r($xm($s)) . ' ' . ($oben - 12) . ') rotate(' . round(fmod($dr + 180, 360)) . ')"><title>Dünung aus ' . round($dr) . '° (' . himmelsrichtung($dr) . ')</title>'
+                 . '<path d="M0 -6 L0 6 M-3.5 2.5 L0 6 L3.5 2.5"/></g>';
+        }
+        if ($dp !== null) {
+            $o[] = '<text class="s-achse s-periode" x="' . $r($xm($s)) . '" y="' . ($unten + 13) . '" text-anchor="middle">' . round($dp) . '</text>';
+        }
+    }
+    if (count($p) > 1) {
+        $o[] = '<polyline class="s-swell" points="' . implode(' ', $p) . '"><title>Dünung (Swell)</title></polyline>';
+    }
+    $o[] = '<text class="s-achse" x="' . ($L - 4) . '" y="' . ($unten + 13) . '" text-anchor="end">s</text>';
+    foreach ($st['stunden'] as $s => $_) {
+        if (($s - $st['von']) % 2 === 0) {
+            $o[] = '<text class="s-achse" x="' . $r($xm($s)) . '" y="' . ($unten + 28) . '" text-anchor="middle">' . $s . '</text>';
+        }
+    }
+    $o[] = '</svg>';
+    return implode("\n", $o);
+}
+
+$wind = !empty($sport['surf']) ? 'ab ' . str_replace('.', ',', (string)$sport['welle_min']) . ' m Dünung, ' . $sport['periode_min'] . ' s'
+      : $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . ' kn' . (isset($sport['welle_min']) ? ', Welle ab ' . str_replace('.', ',', (string)$sport['welle_min']) . ' m' : '');
 $andere = $regionen;
 usort($andere, fn($a, $b) => strcoll($a['name'], $b['name']));
 
 /** Abschnitt einer Region: Kopf, Diagramm */
-function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag, DateTimeImmutable $heute): string
+function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag, DateTimeImmutable $heute, float $mmax = 2.0): string
 {
     $o = '<section class="karte stunden-region"><div class="region-kopf"><h2>' . h($r['name']) . '</h2>';
     if (!$st) {
@@ -270,7 +345,11 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
         $teile[] = $n['text'] !== null ? 'Neopren: ' . $n['text'] . ($n['waermer'] ? ' (eine Stufe wärmer wegen Wind)' : '') : 'Wassertemperatur unbekannt';
         $o .= '<p class="klein leise">' . h(implode(' · ', $teile)) . '</p>';
     }
-    return $o . stunden_svg($st, $sport, $ymax) . '</section>';
+    $o .= stunden_svg($st, $sport, $ymax);
+    if (!empty($st['hat_welle'])) {
+        $o .= '<p class="klein leise welle-titel">Wellen: Balken = gesamte Welle, Linie = Dünung, Pfeile = wohin die Dünung läuft, Zahlen = Periode in Sekunden</p>' . welle_svg($st, $sport, $mmax);
+    }
+    return $o . '</section>';
 }
 ?><!doctype html>
 <html lang="de">
@@ -304,9 +383,9 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
   <?php endforeach ?>
 </nav>
 
-<?= abschnitt($region, $st, $sport, $ymax, $tag, $heute) ?>
+<?= abschnitt($region, $st, $sport, $ymax, $tag, $heute, $mmax) ?>
 <?php if ($vergleich): ?>
-<?= abschnitt($vergleich, $stV, $sport, $ymax, $tag, $heute) ?>
+<?= abschnitt($vergleich, $stV, $sport, $ymax, $tag, $heute, $mmax) ?>
 <?php endif ?>
 
 <form class="wahl karte" method="get">
