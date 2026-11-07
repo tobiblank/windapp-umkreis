@@ -26,6 +26,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Impressum, Datenschutz (`server/web/*.html`) | 7.11.2026, aus stegen-wind abgeleitet – bitte prüfen |
 | Rangliste auf der Kommandozeile (`server/rangliste.php`) | zum Ausprobieren gegen Rohdaten |
 | Hosting | Hetzner Webhosting, Subdomain wohinfahrma.dablank.de (`public_html/wohinfahrma`), Deploy per GitHub Action |
+| Quellen für Regionen | 7.11.2026 gesichtet, siehe „Quellen für Regionen und Spots“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -55,6 +56,8 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | `hinweis` | Herkunft und offene Fragen |
 
 Sektoren in Grad, **woher** der Wind kommt, im Uhrzeigersinn, `von` inklusive, `bis` exklusive. `[275, 20]` geht über Norden. Eine Region sollte nicht über eine Wetterscheide reichen (Gardasee Nord und Süd verhalten sich verschieden).
+
+Geplante zusätzliche Felder (`grundstroemung`, `druck`, `saison`, `links`) siehe „Quellen für Regionen und Spots“.
 
 ## Bewertung
 
@@ -102,6 +105,40 @@ Format wie stegen-wind (als Cronjob eine Datei pro Quelle und Tag, ab vorgestern
 
 Größe grob, aus dem Test hochgerechnet: rund 20 KB je Region und Vorhersage-Abruf, 75 KB je Region und Ensemble-Abruf, ungezippt.
 
+## Quellen für Regionen und Spots
+
+Stand 7.11.2026. Für Windlagen, Sektoren und `hinweis`; Regeln in eigenen Worten übernehmen, mit Link, nichts automatisch abgreifen.
+
+| Quelle | Was sie liefert | Nutzung |
+|---|---|---|
+| [kitewetter.at](https://www.kitewetter.at) | Spotseiten für rund 20 Alpenreviere (u. a. Ammersee/Starnberger See, Achensee, Attersee, Bodensee, Chiemsee, Comer See, Gardasee/Idrosee, Reschensee, Silvaplana, Traunsee, Walchensee/Kochelsee, Zell am See, Neusiedler See, Adria). Arbeitet mit AROME 1,3 km, ICON-D2, INCA, MOSMIX, Föhndiagramm (Druckdifferenz Bozen–Innsbruck, Lugano–Zürich aus DWD Open Data), Thermikvorhersage, Radiosonde München | Kandidatenliste für den Katalog, Vorbild für die Methode, Link je Region. Nutzungsbedingungen nicht geprüft |
+| [kitesailing.ch](https://kitesailing.ch/en/spot/weather-kitesurfing) | Silvaplana: Kiten nur bei S bis SW, N sehr selten fahrbar. Malojawind ab kurz vor Mittag bis später Nachmittag; Höhenströmung N–SO schwächt, kräftige W–SW stärkt. Schwellen der Druckdifferenz: ab 0 hPa Südföhn (gut), 0 bis −4 hPa Maloja setzt sich meist durch, unter −6 hPa Nordföhn meist zu stark | Aktuelle Quelle für Silvaplana, auch für Zonen und Saison |
+| [unhooked.ch](https://www.unhooked.ch/2008/spotguide/) | Spotguide Schweiz mit „Windverhältnisse“ je Spot. **Keine eigene Vorhersage** (anders als kitesailing.ch schreibt): Das Team wertet meteoblue-Karten (10 m, 850, 700 hPa) von Hand aus | Faustregeln für die Grundströmung, siehe unten. Copyright 2008, jüngstes gesehenes Archiv 2016, keine Nutzungsbedingungen gefunden |
+| Walchensee Wind Predictor (Marco Schanda), `walchenseewindpredictor.onrender.com/forecast` | Je Tag `chance`, `status` (go/maybe/no), `peak_kt`, dazu `generated_at`, `stale`; rechnet um 6, 10 und 21 Uhr; Thermikfenster laut stegen-wind 11–18 Uhr | In ammerseewind.de seit 6./7.11.2026 eingebunden, **Zustimmung gilt nur dafür**. Für Wohinfahrma erst Marco fragen. Dann nicht erneut abrufen, sondern die Datei mitlesen, die der Sammler von ammerseewind.de holt (zweiter Pfad in `config.php`). Walchensee bekommt seine Zahl statt des Rohwerts, nur für Kite-Sportarten, markiert „Prognose von Marco Schanda“; Frische wie in prognose.php: höchstens 18 h alt, nicht `stale` |
+| [addicted-sports.com](https://www.addicted-sports.com/forecast/) | Spotvorhersage Walchensee Urfeld aus eigenem MOS-Modell: Grundwind, Böen, Windwahrscheinlichkeit, Druckgradient, Höhenwind 850 hPa, Schichtung 2 m–850 hPa | Link je Region, Vorbild für Thermik-Kennwerte |
+| [kiteloopers.com](https://www.kiteloopers.com/legal/terms) | Rund 1700 Spots weltweit | **Nur von Hand zum Gegenprüfen.** Die Bedingungen verbieten Scraping und automatisierte Extraktion; die Übernahme wesentlicher Teile der Datenbank (Spots, Windstatistik) gilt dort als Verletzung des Datenbankrechts |
+
+### Faustregeln aus unhooked.ch
+
+- **Silvaplana:** SW-Grundströmung 4–10 kn und gutes Wetter → Malojawind laut Seite in etwa 95 % der Fälle; schon leichte Nordströmung vom Julier verhindert ihn. Mitte Februar bis Ende Oktober, Einsetzen 11–14 Uhr, bis 17–20 Uhr.
+- **Urnersee:** Thermiktag, wenn Windfinder um 14 Uhr 4–8 kn aus NW bis NO zeigt. Südföhn eher für Windsurfer. Kiten im November und Dezember verboten, nur in ausgewiesenen Zonen.
+- **Estavayer (Neuenburgersee):** Bise und Westwind, ab etwa 9–10 kn auf Windfinder.
+
+**Wie belastbar:** Der Mechanismus hängt an der Topographie und gilt vermutlich weiter. Die Knotenwerte sind dagegen auf das Modell geeicht, das Windfinder damals zeigte (vermutlich grob, etwa GFS). Wohinfahrma rechnet mit einem anderen Modellmittel, deshalb sind sie nur Startwerte und im `hinweis` als „geschätzt, nach unhooked“ zu kennzeichnen, später gegen eigene Tage am Spot prüfen. Zonen, Verbote, Gebühren und Saison nicht von unhooked übernehmen, sondern aus einer aktuellen Quelle (z. B. kitesailing.ch). Klimawandel wirkt eher auf die Saison (Eiszeit am Silvaplanersee, Wassertemperatur) als auf den Mechanismus; belastbare Zahlen dazu liegen nicht vor.
+
+### Folgen für die Bewertung
+
+Thermik-Spots (Silvaplana, Walchensee, Gardasee, Urnersee) bildet das 10-m-Modellmittel schlecht ab. Die Spezialseiten stützen sich deshalb auf Grundströmung, Druckdifferenzen, Höhenwind und Schichtung. Geplante optionale Felder im Katalog:
+
+| Feld | Bedeutung |
+|---|---|
+| `windlagen[].grundstroemung` | `{sektor, kn_min, kn_max}`: die Windlage zählt, wenn die Grundströmung (10 m oder 850 hPa, noch offen) passt, statt des Modellwinds am Spot |
+| `windlagen[].druck` | später: Druckdifferenz zweier Punkte mit Schwelle (z. B. Lugano–Zürich für Maloja). Ungeprüft, ob Open-Meteo Luftdruck und 850-hPa-Werte für alle Modelle im Abruf liefert |
+| `saison` | Monate, in denen der Spot geht oder erlaubt ist (z. B. Urnersee nicht Nov/Dez) |
+| `links` | lokale Spezialprognose je Region (kitewetter.at, kitesailing.ch, addicted-sports). Wohinfahrma sagt „wohin“, die lokale Seite „wie genau“ |
+
+Bis das eingebaut ist, Thermik-Regionen als „grob“ markieren.
+
 ## Einrichtung
 
 1. Im Repo unter *Settings → Secrets and variables → Actions*:
@@ -137,10 +174,11 @@ tests/                  Tests und Open-Meteo-Ersatz
 
 ## Nächste Schritte
 
-1. Erster echter Lauf des Sammlers, offene Punkte oben prüfen
-2. Weitere Regionen eintragen
-3. Web-App zum Installieren (Manifest, Service Worker)
-4. Zugang aus stegen-wind übernehmen, Wohnort und Sportarten je Person
-5. Stegen: kalibrierte Chance aus ammerseewind.de über einen kleinen Endpoint übernehmen
-6. Mail-Benachrichtigung
-7. Später: Spot-Meldungen, Korrektur je Spot aus Sessions
+1. Offene Punkte zum Sammler oben prüfen
+2. Weitere Regionen eintragen; zuerst Silvaplana und Urnersee mit den neuen Feldern `grundstroemung`, `saison`, `links`
+3. Marco Schanda fragen, ob Wohinfahrma seine Walchensee-Prognose zeigen darf; erst danach einbauen
+4. Web-App zum Installieren (Manifest, Service Worker)
+5. Zugang aus stegen-wind übernehmen, Wohnort und Sportarten je Person
+6. Stegen: kalibrierte Chance aus ammerseewind.de über einen kleinen Endpoint übernehmen
+7. Mail-Benachrichtigung
+8. Später: Druckdifferenz als Bedingung (`druck`), Spot-Meldungen, Korrektur je Spot aus Sessions
