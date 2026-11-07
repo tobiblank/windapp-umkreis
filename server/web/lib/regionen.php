@@ -4,7 +4,8 @@
  *
  * Aufbau siehe README, Abschnitt "Regionen-Katalog". Kurz:
  *   Region: id, name, typ (see|meer), punkt [lat, lon], zeitzone,
- *           windlagen [{name, sektor [von, bis], charakter?}], spots [...]
+ *           windlagen [{name, sektor [von, bis], charakter?}], spots [...],
+ *           links? [{name, url}] (lokale Spezialprognose, nur verlinkt)
  *   Spot:   id, name, punkt?, windlagen? (ersetzt die der Region),
  *           ablandig? [[von, bis], ...], hinweis?
  * Sektoren in Grad, aus welcher Richtung der Wind kommt, von inklusive,
@@ -56,6 +57,11 @@ function regionen_pruefen(array $d): array
         }
         foreach (windlagen_pruefen($r['windlagen'] ?? null) as $m) {
             $f[] = "$wo: $m";
+        }
+        foreach ($r['links'] ?? [] as $l) {
+            if (empty($l['name']) || !is_string($l['url'] ?? null) || !preg_match('#^https://[^\s"<>]+$#', $l['url'])) {
+                $f[] = "$wo: links braucht name und eine https-Adresse";
+            }
         }
         $spotIds = [];
         foreach ($r['spots'] ?? [] as $k => $s) {

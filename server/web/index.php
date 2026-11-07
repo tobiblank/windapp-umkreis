@@ -234,6 +234,11 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
     <?php else: ?>
       <p class="klein leise">Kein passender Tag in diesem Zeitraum.</p>
     <?php endif ?>
+    <?php if (!empty($r['links'])): ?>
+      <p class="links klein">Genauer:
+        <?php foreach ($r['links'] as $i => $l): ?><?= $i ? ' · ' : '' ?><a href="<?= h($l['url']) ?>" rel="noopener"><?= h($l['name']) ?> ↗</a><?php endforeach ?>
+      </p>
+    <?php endif ?>
   </article>
 <?php endforeach ?>
 

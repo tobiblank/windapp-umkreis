@@ -65,6 +65,7 @@ a { color: var(--akzent); }
 
 .details { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; }
 .details li { padding-top: 6px; border-top: 1px solid var(--linie); }
+.links { margin: 10px 0 0; color: var(--leise); }
 .marker { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 1px 6px; border-radius: 6px; background: var(--kachel); color: var(--leise); }
 
 .fuss { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--linie); }

@@ -56,6 +56,69 @@
         {"name": "Scirocco", "sektor": [135, 200]}
       ],
       "spots": []
+    },
+    {
+      "id": "walchensee",
+      "name": "Walchensee",
+      "land": "DE",
+      "typ": "see",
+      "punkt": [47.59, 11.34],
+      "zeitzone": "Europe/Berlin",
+      "hinweis": "Thermik-See: das 10-m-Modellmittel bildet die Thermik schlecht ab, deshalb ohne Windlagen (grob), bis grundstroemung eingebaut ist. Richtung der Thermik noch offen. Marcos Prognose nur verlinkt; seine Zahlen erst nach seiner Zustimmung für Wohinfahrma. Punkt geschätzt (Seemitte), bitte prüfen.",
+      "windlagen": [],
+      "spots": [],
+      "links": [
+        {"name": "Walchensee-Vorhersage von Marco Schanda", "url": "https://walchenseewindpredictor.onrender.com/"}
+      ]
+    },
+    {
+      "id": "leucate",
+      "name": "Leucate / Gruissan",
+      "land": "FR",
+      "typ": "meer",
+      "punkt": [42.9, 3.15],
+      "zeitzone": "Europe/Paris",
+      "hinweis": "Entwurf (Claude), ungeprüft: Windlagen aus allgemeinem Wissen, Sektorgrenzen geschätzt, Punkt vor der Küste nicht auf der Karte kontrolliert.",
+      "windlagen": [
+        {"name": "Tramontane", "sektor": [280, 340]},
+        {"name": "Marin", "sektor": [100, 160]}
+      ],
+      "spots": []
+    },
+    {
+      "id": "hyeres",
+      "name": "Hyères / Almanarre",
+      "land": "FR",
+      "typ": "meer",
+      "punkt": [43.04, 6.05],
+      "zeitzone": "Europe/Paris",
+      "hinweis": "Entwurf (Claude), ungeprüft: Mistral aus allgemeinem Wissen, Ostwind-Lagen fehlen, Sektorgrenzen geschätzt, Punkt vor Giens nicht auf der Karte kontrolliert.",
+      "windlagen": [
+        {"name": "Mistral", "sektor": [260, 320]}
+      ],
+      "spots": []
+    },
+    {
+      "id": "fehmarn",
+      "name": "Fehmarn",
+      "land": "DE",
+      "typ": "meer",
+      "punkt": [54.55, 11.2],
+      "zeitzone": "Europe/Berlin",
+      "hinweis": "Entwurf (Claude), ungeprüft: ohne Windlagen (grob), weil rund um die Insel fast jede Richtung irgendwo geht. Punkt im Fehmarnbelt nördlich der Insel nicht auf der Karte kontrolliert.",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "ile-de-re",
+      "name": "Île de Ré",
+      "land": "FR",
+      "typ": "meer",
+      "punkt": [46.15, -1.55],
+      "zeitzone": "Europe/Paris",
+      "hinweis": "Entwurf (Claude), ungeprüft: ohne Windlagen (grob). Gezeiten fehlen ganz. Punkt im Pertuis d'Antioche nicht auf der Karte kontrolliert.",
+      "windlagen": [],
+      "spots": []
     }
   ]
 }

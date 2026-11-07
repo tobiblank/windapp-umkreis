@@ -41,6 +41,10 @@ $kaputt = ['regionen' => [
 ]];
 pruefe(count(regionen_pruefen($kaputt)) === 5, 'kaputter Katalog: 5 Fehler gefunden (typ, punkt, zeitzone, sektor, id doppelt)');
 
+$mitLink = ['regionen' => [['id' => 'x', 'name' => 'X', 'typ' => 'see', 'punkt' => [1, 1], 'zeitzone' => 'UTC', 'windlagen' => [],
+    'links' => [['name' => 'gut', 'url' => 'https://example.org/a'], ['name' => 'schlecht', 'url' => 'javascript:alert(1)']]]]];
+pruefe(count(regionen_pruefen($mitLink)) === 1, 'links: nur https-Adressen erlaubt');
+
 echo "Tagesfenster\n";
 [$ab, $bis] = tagesfenster('2026-11-07', new DateTimeZone('Europe/Berlin'), 48.0, 11.13);
 pruefe($ab === 9 && $bis === 17, "Ammersee 7.11.: 9 bis 17 Uhr (ist $ab bis $bis)");
@@ -53,7 +57,7 @@ $tmp = sys_get_temp_dir() . '/umkreis-test-' . getmypid();
 @mkdir("$tmp/web/lib", 0700, true);
 @mkdir("$tmp/daten", 0700, true);
 copy("$ROOT/server/web/lib/regionen.php", "$tmp/web/lib/regionen.php");
-copy("$ROOT/daten/regionen.json", "$tmp/regionen.json");
+copy(__DIR__ . "/regionen_test.json", "$tmp/regionen.json");
 $port = 18000 + getmypid() % 1000;
 file_put_contents("$tmp/web/config.php", '<?php return ' . var_export([
     'data_dir' => "$tmp/daten",
@@ -169,7 +173,7 @@ for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $port); $i++) {
 }
 $cmd = 'UMKREIS_TEST_URL=' . escapeshellarg("http://127.0.0.1:$port")
      . ' php ' . escapeshellarg("$ROOT/server/sammler.php")
-     . ' --action ' . escapeshellarg("$ROOT/daten/regionen.json") . ' ' . escapeshellarg("$tmp/action") . ' 2>&1';
+     . ' --action ' . escapeshellarg(__DIR__ . "/regionen_test.json") . ' ' . escapeshellarg("$tmp/action") . ' 2>&1';
 exec($cmd, $ausA, $rcA);
 pruefe($rcA === 0 && $ausA === [], 'Action-Lauf ohne Fehler' . ($ausA ? ': ' . implode(' | ', $ausA) : ''));
 foreach (['vorhersage', 'ensemble', 'welle'] as $q) {
@@ -185,7 +189,7 @@ exec('php ' . escapeshellarg("$ROOT/server/sammler.php") . ' --action 2>&1', $au
 pruefe($rcF === 1, 'Action ohne Pfade: Hinweis und Exit 1');
 // Fehlgeschlagener Abruf: Open-Meteo nicht erreichbar
 $cmd = 'UMKREIS_TEST_URL=http://127.0.0.1:1 php ' . escapeshellarg("$ROOT/server/sammler.php")
-     . ' --action ' . escapeshellarg("$ROOT/daten/regionen.json") . ' ' . escapeshellarg("$tmp/kaputt") . ' 2>&1';
+     . ' --action ' . escapeshellarg(__DIR__ . "/regionen_test.json") . ' ' . escapeshellarg("$tmp/kaputt") . ' 2>&1';
 exec($cmd, $ausK, $rcK);
 pruefe($rcK === 1 && str_contains(implode("\n", $ausK), 'vorhersage: Abruf fehlgeschlagen'), 'Action bei Fehler: Meldung und Exit 1');
 proc_terminate($server);
@@ -194,7 +198,7 @@ proc_terminate($server);
 echo "Seite\n";
 $site = "$tmp/site";
 exec('cp -r ' . escapeshellarg("$ROOT/server/web") . ' ' . escapeshellarg($site));
-copy("$ROOT/daten/regionen.json", "$site/lib/regionen.json");
+copy(__DIR__ . "/regionen_test.json", "$site/lib/regionen.json");
 $sitePort = $port + 1;
 $web = proc_open(['php', '-d', 'display_errors=1', '-d', 'error_reporting=-1', '-d', 'opcache.enable=0', '-d', 'opcache.enable_cli=0', '-S', "127.0.0.1:$sitePort", '-t', $site],
                  [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $pipes);
@@ -232,7 +236,7 @@ pruefe(!str_contains($html, '<script>alert') && ohne_php_meldung($html), 'unbeka
 
 // Eigene Kopie im Unterordner statt config.php auszutauschen: unabhaengig von Zwischenspeichern
 exec('cp -r ' . escapeshellarg("$ROOT/server/web") . ' ' . escapeshellarg("$site/leer"));
-copy("$ROOT/daten/regionen.json", "$site/leer/lib/regionen.json");
+copy(__DIR__ . "/regionen_test.json", "$site/leer/lib/regionen.json");
 file_put_contents("$site/leer/config.php", '<?php return ' . var_export(['data_dir' => "$tmp/leer"], true) . ';');
 [$code, $html] = holen($sitePort, 'leer/index.php');
 $ok = $code === 200 && str_contains($html, 'Noch keine Vorhersagedaten') && ohne_php_meldung($html);
