@@ -227,9 +227,17 @@
       "typ": "meer",
       "punkt": [54.15, 8.2],
       "zeitzone": "Europe/Berlin",
-      "hinweis": "Entwurf (Claude), ungeprüft: Deutsche Bucht ist groß, vorerst ein Punkt vor Eiderstedt (St. Peter-Ording); Sylt, Ostfriesland wären eigene Regionen. Punkt muss außerhalb des Watts liegen, nicht auf der Karte kontrolliert. Ohne Windlagen (grob), ablandiger Wind wird nicht ausgeschlossen. Gezeiten fehlen.",
+      "hinweis": "Entwurf (Claude), ungeprüft: Deutsche Bucht ist groß, vorerst ein Punkt vor Eiderstedt (St. Peter-Ording); Sylt, Ostfriesland wären eigene Regionen. Punkt muss außerhalb des Watts liegen, nicht auf der Karte kontrolliert. Ohne Windlagen (grob); ablandiger Wind über den Spot St. Peter-Ording ausgeschlossen. Gezeiten fehlen.",
       "windlagen": [],
-      "spots": []
+      "spots": [
+        {
+          "id": "st-peter-ording",
+          "name": "St. Peter-Ording",
+          "punkt": [54.33, 8.59],
+          "ablandig": [[30, 150]],
+          "hinweis": "Strand Ording, nach Westen offen. Punkt und Ablandig-Sektor (Ost) aus der Uferausrichtung geschätzt, nicht auf der Karte kontrolliert. Bei Ebbe weit ins Watt, Gezeiten fehlen."
+        }
+      ]
     },
     {
       "id": "klitmoeller",
