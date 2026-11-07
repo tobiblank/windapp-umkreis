@@ -397,13 +397,14 @@
       "zeitzone": "Europe/Rome",
       "thermik": true,
       "anfahrt": [46.117, 12.35],
-      "hinweis": "Nach surf-magazin.de (2021), venetoaroundme (Region Venetien) und kite-and-windsurfing-guide.com: Thermik aus Süd bei Hochdruck und schönem Wetter, meist ab 11–13 Uhr bis Sonnenuntergang, etwa 10–20 kn (Frühjahr bis 7 Bft); März/April und September–November am stärksten, Ende Juli/August oft schwach, im Winter kaum. Der Nordwind am Morgen ist am See nur 1–2 Bft (er weht am Lago Morto, 9 km südlich). Kiten in Farra d'Alpago am Nordufer (auflandig, Flachwasser, am Wochenende voll); am Poetto (Baywatch-Bar) laut surf-magazin.de offiziell Kiteverbot. Eine Vorhersageregel nennt keine Quelle (venetoaroundme: keine echten Vorhersagen), deshalb noch ohne Regel-Windlage: das 10-m-Modellmittel unterschätzt die Thermik vermutlich. Geschätzt (Claude): Sektor 140–220°, ablandig in Farra 300–60°. Punkt (Seemitte) nach peakvisor; Anfahrt Ortsmitte Farra d'Alpago, ungefähr.",
+      "hinweis": "Nach surf-magazin.de (2021), venetoaroundme (Region Venetien) und kite-and-windsurfing-guide.com: Thermik aus Süd bei Hochdruck und schönem Wetter, meist ab 11–13 Uhr bis Sonnenuntergang, etwa 10–20 kn (Frühjahr bis 7 Bft); März/April und September–November am stärksten, Ende Juli/August oft schwach, im Winter kaum. Der Nordwind am Morgen ist am See nur 1–2 Bft (er weht am Lago Morto, 9 km südlich). Kiten in Farra d'Alpago am Nordufer (auflandig, Flachwasser, am Wochenende voll); am Poetto (Baywatch-Bar) laut surf-magazin.de offiziell Kiteverbot. Eine Vorhersageregel nennt keine Quelle (venetoaroundme: keine echten Vorhersagen), deshalb noch ohne Regel-Windlage: das 10-m-Modellmittel unterschätzt die Thermik vermutlich. Geschätzt (Claude): Sektor 140–220°, ablandig in Farra 300–60°. kitewetter.at (Spotseite Santa Croce) zeigt AROME, ICON-D2, INCA, MOS für Farra, die Station MeteoKite Santa Croce und ein Bora-Diagramm (Druckdifferenz Maribor/Trieste, Bora wahrscheinlich unter −4 hPa); welche Wirkung die Bora am See hat und in welcher Richtung die Differenz gerechnet ist, sagt die Seite nicht, deshalb nicht eingebaut. Punkt (Seemitte) nach peakvisor; Anfahrt Ortsmitte Farra d'Alpago, ungefähr.",
       "windlagen": [
         {"name": "Thermik (Süd)", "sektor": [140, 220], "charakter": "Thermik, ab Mittag"}
       ],
       "spots": [
         {"id": "farra-dalpago", "name": "Farra d'Alpago", "ablandig": [[300, 60]], "hinweis": "Kitespot vor dem Campingplatz, Süd auflandig."}
-      ]
+      ],
+      "links": [{"name": "kitewetter.at", "url": "https://www.kitewetter.at/?page_id=5"}]
     },
     {
       "id": "comer-see-nord",
