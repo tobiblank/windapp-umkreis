@@ -15,6 +15,7 @@ require "$ROOT/server/web/lib/karte.php";
 require "$ROOT/server/web/lib/fahrzeit.php";
 require "$ROOT/server/web/lib/roadtrip.php";
 require "$ROOT/server/web/lib/stunden.php";
+require "$ROOT/server/web/lib/neopren.php";
 
 $fehler = 0;
 function pruefe(bool $ok, string $was): void
@@ -170,7 +171,7 @@ pruefe($rc2 === 0 && $zeilen === 2, "zweiter Lauf in derselben Stunde ruft nicht
 exec('php ' . escapeshellarg("$tmp/sammler.php") . ' --debug 2>&1', $aus3);
 pruefe(in_array('vorhersage/0: unveraendert', $aus3, true) && in_array('vorhersage/1: unveraendert', $aus3, true), 'gleiche Werte werden nicht doppelt geschrieben');
 $zaehl = json_decode(file_get_contents("$tmp/daten/.state/openmeteo.json"), true);
-pruefe(($zaehl[$heute]['abrufe'] ?? 0) === 18, 'Open-Meteo-Zählung: 18 Abrufe (2 Läufe x 9: Vorhersage und Ensemble je See/Meer, Welle, Druck und Höhenwind je Modell/Ensemble)');
+pruefe(($zaehl[$heute]['abrufe'] ?? 0) === 20, 'Open-Meteo-Zählung: 20 Abrufe (2 Läufe x 10: Vorhersage und Ensemble je See/Meer, Welle, Wasser, Druck und Höhenwind je Modell/Ensemble)');
 
 // Eine fehlerhafte Antwort darf nichts kaputt machen
 $zz = array_map(fn($l) => json_decode($l, true), file($tmp . "/daten/vorhersage/$heute.ndjson"));
@@ -343,6 +344,17 @@ pruefe(count($stA['modelle']) >= 2 && abs($stA['stunden'][$detA['von']]['ens_ant
        && $stA['stunden'][$detA['von']]['ens_p10'] <= $stA['stunden'][$detA['von']]['ens_p90'], 'je Stunde Modelle, Anteil der Läufe, Spanne p10 bis p90');
 pruefe($stA['von'] === $stA['fenster'][0] - STUNDEN_RAND && perzentil([1, 2, 3, 4], 0.5) === 2.5, 'gezeigt: Fenster mit Rand; Perzentil interpoliert');
 pruefe(region_stunden($adriaR, ['vorhersage' => null], $kite, $morgen) === null, 'ohne Vorhersage: keine Stundenwerte');
+
+// ---------------------------------------------------------------
+echo "Wasser und Neopren\n";
+$tA = region_bewerten($adriaR, $datA + ['wasser' => $standA['wasser']['adria-nord'] ?? null], $kite, [$morgen])[$morgen]['temp'];
+pruefe(abs(($tA['wasser'] ?? 0) - 14.0) < 1e-9 && abs(($tA['luft'] ?? 0) - 12.0) < 1e-9 && $tA['kn'] > 14, 'Adria morgen: Wasser 14 °C, Luft 12 °C, Wind im Fenster');
+pruefe(neopren(['wasser' => 14.0, 'luft' => 12.0, 'kn' => 20.0])['text'] === '5/4 mm, Schuhe', 'Wasser 14 °C, Luft 12 °C: 5/4 mm, Schuhe');
+pruefe(neopren(['wasser' => 19.0, 'luft' => 25.0, 'kn' => 18.0])['text'] === '3/2 mm', 'Wasser 19 °C, warme Luft: 3/2 mm');
+$nk = neopren(['wasser' => 16.0, 'luft' => 5.0, 'kn' => 22.0]);
+pruefe($nk['waermer'] && $nk['text'] === '5/4 mm, Schuhe' && $nk['gefuehlt'] < 0, 'kalte Luft bei Wind (gefühlt unter 0 °C): eine Stufe wärmer');
+pruefe(neopren(['wasser' => null, 'luft' => 10.0, 'kn' => 15.0])['text'] === null, 'ohne Wassertemperatur (See): keine Empfehlung');
+pruefe(abs(gefuehlt(0.0, 20.0) - (-7.5)) < 0.6 && gefuehlt(15.0, 20.0) === 15.0, 'Windchill: 0 °C bei 20 kn etwa -7 °C; über 10 °C die Luft');
 
 // ---------------------------------------------------------------
 echo "Verlauf über die Abrufe\n";
@@ -636,6 +648,8 @@ pruefe($code === 200 && preg_match('/aria-current="true">(Morgen|Mo|Di|Mi|Do|Fr|
 pruefe($code === 404, 'Stundenseite: unbekannte Region 404');
 [, $html] = holen($sitePort, 'index.php?km=1000');
 pruefe(str_contains($html, 'class="stunden-link" href="stunden.php?region=adria-nord'), 'Rangliste verlinkt die Stundenseite');
+[, $html] = holen($sitePort, 'index.php?km=1000');
+pruefe(str_contains($html, 'Wasser 14 °C, 5/4 mm, Schuhe') && str_contains($html, 'Luft 12 °C'), 'Detailzeile: Meer mit Wasser und Neopren, See mit Luft');
 foreach (['impressum.html', 'datenschutz.html', 'karte.svg', 'stil.css', 'sw.js', 'offline.html', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon.svg', 'icon-maskable-512.png', 'favicon.svg', 'favicon.ico', 'schrift/barlow-condensed-600.woff', 'schrift/OFL.txt'] as $f) {
     [$code] = holen($sitePort, $f);
     pruefe($code === 200, "$f erreichbar");

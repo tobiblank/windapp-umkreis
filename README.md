@@ -36,6 +36,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Roadtrip | 7.11.2026: dritter Reiter, Reise vom Standort und zurück über bis zu 7 Tage, Hin-, Rückfahrt und Etappen bis 5 h; die App sucht die beste Länge; siehe „Roadtrip“ |
 | Woche | 7.11.2026: Reiter „Woche“, Matrix Regionen × 7 Tage; siehe „Woche“ |
 | Stunden | 7.11.2026: `stunden.php`, Diagramm je Stunde mit allen Modellen, Ensemble-Spanne, Böen, Richtung, fahrbaren Stunden; Vergleich zweier Regionen; siehe „Stunden“ |
+| Wasser und Neopren | 7.11.2026: Meerestemperatur aus der Marine API (neue Quelle `wasser`), Neopren-Faustregel in der Detailzeile und auf der Stundenseite; Seen nur Luft und gefühlt. **Variablenname noch nie gegen das echte Open-Meteo geprüft**; siehe „Wasser und Neopren“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -166,6 +167,16 @@ Seit 7.11.2026. Eigene Seite `server/web/stunden.php?region=<id>&sport=…&tag=Y
 - **Vergleich:** zweite Region im selben Maßstab darunter (Auswahl am Ende der Seite).
 - Bei Regel-Windlagen rechnet die Bewertung mit der typischen Stärke, die Linien zeigen trotzdem den Modellwind.
 
+## Wasser und Neopren
+
+Seit 7.11.2026.
+
+- **Quelle:** Sammler-Quelle `wasser`, Marine API `hourly=sea_surface_temperature`, nur `typ: meer`, alle 6 h, mit `cell_selection=sea` wie die anderen Meer-Abrufe. Eigene Quelle, damit ein Fehler dort die Wellendaten nicht mitreißt. Den Variablennamen kenne ich aus der Variablenliste der Rust-Bibliothek openmeteo-rs, nicht aus einem echten Abruf: beim ersten Lauf in der Action prüfen, ob `wasser` grün ist.
+- **Je Tag** (`tag_temperaturen()`): Mittel von Luft, Wasser und Wind über das gefundene Fenster (sonst das Tagesfenster), in `region_bewerten()` als `temp`.
+- **Neopren** (`lib/neopren.php`), Faustregel nach dem Wasser, Grenzen geschätzt (Quellen schwanken um 1–2 °C): ab 24 °C Lycra/Shorty, 21 Shorty 2 mm, 18 3/2, 15 4/3, 12 5/4 + Schuhe, 9 5/4–6/5 mit Haube, Schuhen, Handschuhen, darunter 6/5 mit allem. Eine Stufe wärmer, wenn die gefühlte Temperatur mehr als 5 °C unter dem Wasser liegt. Gefühlt = Windchill (Environment Canada/NWS) bis 10 °C Luft und ab 4,8 km/h Wind, darüber die Luft.
+- **Seen:** keine Wassertemperatur, deshalb keine Empfehlung, nur „Luft 12 °C, gefühlt 6 °C“. Im Frühjahr ist das Wasser viel kälter als die Luft, im Herbst wärmer; die Luft allein wäre irreführend. Später denkbar: Messwerte bayerischer Seen (Gewässerkundlicher Dienst), Nutzungsbedingungen prüfen.
+- **Anzeige:** in der Detailzeile guter Tage „· Wasser 14 °C, 5/4 mm, Schuhe“ (Tooltip mit Luft und Begründung), auf der Stundenseite unter dem Fenster.
+
 **Alle Zahlen sind Rohwerte, nicht kalibriert.** An Thermik-Spots unterschätzen die Modelle den Wind vermutlich. Sportart-Voreinstellungen wie in stegen-wind (14 / 14 / 11 / 16 / 17 / 12 / 5–18 kn); dort ist nur 14 kn Directional kalibriert, der Rest sind Faustwerte.
 
 ## Regel-Windlagen
@@ -212,6 +223,7 @@ Sind alle Bedingungen einer Stunde erfüllt, rechnet die Bewertung mit der Mitte
 | `vorhersage` | ICON-D2, ICON-EU, ECMWF IFS 9 km, GFS, AROME-HD: Wind, Richtung, Böen, Temperatur, Wettercode, Regen, Bewölkung; 7 Tage | stündlich |
 | `ensemble` | ECMWF IFS 0,25°, 51 Läufe: Wind, Richtung, Bewölkung; 8 Tage | alle 6 h |
 | `welle` | Marine API: Wellenhöhe, -richtung, -periode, Swell; nur `typ: meer`; 7 Tage | alle 3 h |
+| `wasser` | Marine API: Meerestemperatur (`sea_surface_temperature`); nur `typ: meer`; 7 Tage | alle 6 h |
 | `druck` / `druck_ensemble` | Meeresspiegeldruck an den `druckpunkte`, Modelle wie `vorhersage` bzw. ECMWF-Ensemble | stündlich / alle 6 h |
 | `hoehe` / `hoehe_ensemble` | Wind in 850 und 700 hPa, nur Regionen mit Grundströmung in dieser Höhe | stündlich / alle 6 h |
 
@@ -328,7 +340,7 @@ tools/karte_bauen.py    erzeugt server/web/karte.svg aus Natural Earth
 5. ~~Roadtrip-Modus~~ (erledigt, siehe „Roadtrip“)
 6. ~~Matrix Regionen × Tage~~ (erledigt, siehe „Woche“)
 7. ~~Stundenansicht je Region, Vergleich zweier Regionen~~ (erledigt, siehe „Stunden“)
-8. Wassertemperatur und Neoprenempfehlung (ob die Marine API das liefert, ungeprüft)
+8. ~~Wassertemperatur und Neoprenempfehlung~~ (erledigt fürs Meer, siehe „Wasser und Neopren“)
 9. Gezeiten für Atlantik-Spots (ungeprüft, ob Open-Meteo das brauchbar liefert)
 10. Spot-Infos (Niveau, Zonen, Sperrzeiten, Saison) auf der Seite
 11. Kalendereintrag (.ics) für ein gutes Fenster
