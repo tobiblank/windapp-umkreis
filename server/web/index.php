@@ -14,6 +14,7 @@ declare(strict_types=1);
 date_default_timezone_set('UTC');
 require __DIR__ . '/lib/regionen.php';
 require __DIR__ . '/lib/bewertung.php';
+require __DIR__ . '/lib/karte.php';
 
 const TZ_SEITE = 'Europe/Berlin';
 const HEIM_STANDARD = [48.07, 11.15];      // Inning am Ammersee
@@ -372,6 +373,51 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   „↑ von 40“ = vor bis zu drei Abrufen (zweimal am Tag) stand dort 40 %.
 </p>
 
+<?php if ($liste && !$geteilt):
+    // Landkarte (seit 7.11.2026): Punkte nach der Chance am gewaehlten Tag,
+    // ohne gewaehlten Tag die beste Chance im Zeitraum. Tippen springt zur Region.
+    $kartenTag = in_array($nach, $tage, true) ? $nach : null;
+    $heimXY = karte_punkt($heim[0], $heim[1]);
+    $punkte = [];
+    foreach ($liste as $e) {
+        $punkte[] = ['e' => $e, 'xy' => karte_punkt((float)$e['region']['punkt'][0], (float)$e['region']['punkt'][1]),
+                     'wert' => karte_wert($e, $kartenTag)];
+    }
+    // Schlechte zuerst zeichnen, gute liegen oben
+    usort($punkte, fn($a, $b) => ($a['wert']['chance'] ?? ($a['wert']['geht'] ? 1 : -1)) <=> ($b['wert']['chance'] ?? ($b['wert']['geht'] ? 1 : -1)));
+    [$vx, $vy, $vw, $vh] = karte_ausschnitt(array_merge([$heimXY], array_column($punkte, 'xy')));
+    $rp = $vw / 42;   // Punktgroesse folgt dem Ausschnitt, auf dem Handy rund 9 px
+    $namen = karte_namen(array_map(fn($p) => ['xy' => $p['xy'], 'name' => $p['e']['region']['name'],
+                                              'rang' => $p['wert']['chance'] ?? ($p['wert']['geht'] ? 1 : -1)], $punkte),
+                         $rp, [$vx, $vy, $vw, $vh]);
+?>
+<details class="karte landkarte" id="landkarte" open>
+  <summary><b>Karte</b> <span class="leise klein"><?= $kartenTag ? 'Chance ' . h(tag_kurz($kartenTag, $heute)) : 'beste Chance im Zeitraum' ?> · Tag über „Sortiert nach“ wählen</span></summary>
+  <svg class="landkarte-bild" viewBox="<?= "$vx $vy $vw $vh" ?>" role="img" aria-label="Karte der Regionen im Umkreis">
+    <rect class="meer" x="<?= $vx ?>" y="<?= $vy ?>" width="<?= $vw ?>" height="<?= $vh ?>"/>
+    <use href="karte.svg#land" class="land"/>
+    <circle class="umkreis" cx="<?= round($heimXY[0], 1) ?>" cy="<?= round($heimXY[1], 1) ?>" r="<?= round(karte_km((float)$km, $heim[0]), 1) ?>"/>
+    <circle class="heim" cx="<?= round($heimXY[0], 1) ?>" cy="<?= round($heimXY[1], 1) ?>" r="<?= round($rp * 0.45, 2) ?>"><title><?= $eigenerOrt ? 'Dein Standort' : 'Inning am Ammersee' ?></title></circle>
+    <?php foreach ($punkte as $nr => $p):
+        $r = $p['e']['region'];
+        $c = $p['wert']['chance'];
+        $klasse = $c === null ? ($p['wert']['geht'] ? 'go' : 'leer') : stufe($c);
+        $zahl = $c !== null && $c >= 0.15;
+        $titel = $r['name'] . ': ' . ($c === null ? ($p['wert']['geht'] ? 'Fenster nach Modellmittel' : 'keine Ensemble-Daten')
+               : zahl(100 * $c) . ' %') . ($p['wert']['tag'] && !$kartenTag ? ' (' . tag_kurz($p['wert']['tag'], $heute) . ')' : '');
+    ?>
+    <a href="#r-<?= h($r['id']) ?>" class="punkt <?= $klasse ?>">
+      <title><?= h($titel) ?></title>
+      <circle cx="<?= round($p['xy'][0], 1) ?>" cy="<?= round($p['xy'][1], 1) ?>" r="<?= round($zahl ? $rp : $rp * 0.55, 2) ?>"/>
+      <?php if ($zahl): ?><text class="zahl" x="<?= round($p['xy'][0], 1) ?>" y="<?= round($p['xy'][1] + $rp * 0.36, 2) ?>" font-size="<?= round($rp * 1.05, 2) ?>"><?= zahl(100 * $c) ?></text><?php endif ?>
+      <?php if (isset($namen[$nr])): $rechts = $namen[$nr] === 'rechts'; ?><text class="name<?= $rechts ? '' : ' links' ?>" x="<?= round($p['xy'][0] + ($rechts ? 1 : -1) * $rp * 1.3, 2) ?>" y="<?= round($p['xy'][1] + $rp * 0.35, 2) ?>" font-size="<?= round($rp, 2) ?>" stroke-width="<?= round($rp * 0.3, 2) ?>"><?= h($r['name']) ?></text><?php endif ?>
+    </a>
+    <?php endforeach ?>
+  </svg>
+  <p class="leise klein landkarte-fuss">Punkt antippen: zur Region. Kreis: Umkreis von <?= zahl($km) ?> km Luftlinie, ungefähr. Karte: Natural Earth.</p>
+</details>
+<?php endif ?>
+
 <?php if (!$zeiten): ?>
   <p class="karte">Noch keine Vorhersagedaten. Der Sammler läuft zweimal am Tag, gegen 6:30 und 18:30 Uhr.</p>
 <?php elseif (!$liste && $geteilt): ?>
@@ -384,7 +430,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     $r = $e['region'];
     $guteTage = array_filter($e['tage'], fn($t) => $t['det']['geht'] || (($t['ens']['chance'] ?? 0) >= 0.15));
 ?>
-  <article class="karte region<?= $guteTage ? '' : ' still' ?>">
+  <article class="karte region<?= $guteTage ? '' : ' still' ?>" id="r-<?= h($r['id']) ?>">
     <div class="region-kopf">
       <h2><?= h($r['name']) ?><?php if (!empty($r['thermik'])): ?> <span class="marker thermik" title="Thermik bilden die Modelle schlecht ab: die Zahl ist hier vermutlich zu niedrig">Thermik</span><?php endif ?></h2>
       <?php if (!$geteilt): ?><span class="leise klein"><?= zahl($e['km']) ?> km</span><?php endif ?>
@@ -534,6 +580,16 @@ if ('serviceWorker' in navigator) {
         kopieren();
       }
     });
+  });
+})();
+// Landkarte auf- oder zugeklappt merken
+(function () {
+  var k = document.getElementById('landkarte');
+  if (!k) { return; }
+  var SCHLUESSEL = 'wohinfahrma_karte';
+  try { if (localStorage.getItem(SCHLUESSEL) === 'zu') { k.open = false; } } catch (e) {}
+  k.addEventListener('toggle', function () {
+    try { localStorage.setItem(SCHLUESSEL, k.open ? 'auf' : 'zu'); } catch (e) {}
   });
 })();
 (function () {

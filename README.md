@@ -30,6 +30,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Quellen für Regionen | 7.11.2026 gesichtet, siehe „Quellen für Regionen und Spots“ |
 | Regel-Windlagen | 7.11.2026: Druckdifferenzen und Grundströmung statt Modellwind für Thermik- und Föhnlagen; Reschensee, Silvaplana, Gardasee Nord, Urnersee. Stärken, Tageszeiten und Saison geschätzt, siehe „Regel-Windlagen“ |
 | Verlauf über die Abrufe | 7.11.2026: dieselbe Chance aus bis zu drei früheren Abrufen, Pfeil in der Kachel und „stabil / steigt / fällt / schwankt“ in der Detailzeile, mit Zwischenspeicher; siehe „Verlauf über die Abrufe“ |
+| Landkarte | 7.11.2026: Regionen als Punkte über der Rangliste, eingefärbt nach der Chance am gewählten Tag, mit Umkreis; eigene SVG-Grundlage aus Natural Earth, keine fremden Server; siehe „Landkarte“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -99,6 +100,16 @@ Seit 7.11.2026. Vor einer langen Fahrt zählt nicht nur die Chance, sondern ob s
 - Die Seite gibt die Rohdaten nach der Rangliste frei.
 - Ergebnis mit denselben Daten: 96 MB (1000 km), 108 MB (2500 km), Seite unverändert. Den Rest braucht vor allem `ensemble_stunden()` für die größte Region und der Stand selbst; er wächst mit der Zahl der Regionen im Umkreis.
 - `index.php` bittet um 256 MB, falls weniger eingestellt ist (wirkt nur, wo der Server das erlaubt), und zeigt bei einem Abbruch eine lesbare Seite mit dem eingestellten `memory_limit` statt eines leeren HTTP 500.
+
+## Landkarte
+
+Seit 7.11.2026. Über der Rangliste, einklappbar (der Browser merkt sich den Zustand), nicht in der geteilten Ansicht.
+
+- **Punkte:** je Region am Vorhersagepunkt. Farbe und Zahl wie in den Kacheln: die Chance am Tag, der unter „Sortiert nach“ gewählt ist; bei „alle Tage“ oder „Entfernung“ die beste Chance im Zeitraum (Tooltip nennt den Tag). Zahl erst ab 15 %. Gute Punkte liegen oben. Antippen springt zur Karte der Region (`#r-<id>`).
+- **Namen:** die besten zuerst, rechts oder links vom Punkt, nur wo sie nichts verdecken; im großen Umkreis bekommen deshalb nicht alle einen.
+- **Ausschnitt:** alle Regionen im Umkreis und der Standort, etwas höher als breit; gestrichelt der Umkreis (Kreis um den Standort, in Mercator nur ungefähr).
+- **Grundlage:** `server/web/karte.svg` (108 KB, gezippt rund 30 KB), Länder mit großen Seen aus Natural Earth 1:50 Mio. (gemeinfrei), 20° W bis 36° O, 22° bis 64° N, Mercator. Kleine Seen wie der Ammersee fehlen in diesem Maßstab. Neu erzeugen mit `python3 tools/karte_bauen.py <ne_50m_admin_0_countries_lakes.geojson> server/web/karte.svg` (nur Standardbibliothek); die Projektion steht zusätzlich in `lib/karte.php`, der Test vergleicht beide. Regionen außerhalb des Ausschnitts meldet der Test.
+- Die Seite bindet die Grundlage mit `<use href="karte.svg#land">` ein: einmal geladen, dann aus dem Browser-Cache, und die Farben kommen aus `stil.css` (hell und dunkel).
 
 **Alle Zahlen sind Rohwerte, nicht kalibriert.** An Thermik-Spots unterschätzen die Modelle den Wind vermutlich. Sportart-Voreinstellungen wie in stegen-wind (14 / 14 / 11 / 16 / 17 / 12 / 5–18 kn); dort ist nur 14 kn Directional kalibriert, der Rest sind Faustwerte.
 
@@ -224,7 +235,7 @@ Ausprobieren auf der Kommandozeile: `php server/rangliste.php wingfoil 800 48.07
 php tests/test.php
 ```
 
-Ohne Netz: Einzelfunktionen, Katalog, Tagesfenster, der Sammler in beiden Betriebsarten gegen `tests/fake_openmeteo.php` (eingebauter PHP-Server), die Rangliste aus den geschriebenen Daten, der Verlauf über frühere Abrufe und ein Rauchtest der Seite (HTTP-Status, keine PHP-Meldungen, Rundung des Standorts, geteilte Vorhersage und Teilen-Knopf, ohne Daten, ohne config.php). Läuft vor jedem Deploy (`deploy.yml`) und auf anderen Branches (`pruefen.yml`).
+Ohne Netz: Einzelfunktionen, Katalog, Tagesfenster, der Sammler in beiden Betriebsarten gegen `tests/fake_openmeteo.php` (eingebauter PHP-Server), die Rangliste aus den geschriebenen Daten, der Verlauf über frühere Abrufe, die Landkarte (Projektion, Ausschnitt, Namen) und ein Rauchtest der Seite (HTTP-Status, keine PHP-Meldungen, Rundung des Standorts, geteilte Vorhersage und Teilen-Knopf, ohne Daten, ohne config.php). Läuft vor jedem Deploy (`deploy.yml`) und auf anderen Branches (`pruefen.yml`).
 
 ## Ordner
 
@@ -235,6 +246,7 @@ server/rangliste.php    Rangliste auf der Kommandozeile
 server/web/             Webordner der App
 server/web/lib/         Katalog und Bewertung (per .htaccess gesperrt)
 tests/                  Tests und Open-Meteo-Ersatz
+tools/karte_bauen.py    erzeugt server/web/karte.svg aus Natural Earth
 ```
 
 ## Nächste Schritte
@@ -252,7 +264,7 @@ tests/                  Tests und Open-Meteo-Ersatz
 ### Ideen, in dieser Reihenfolge (7.11.2026)
 
 1. ~~Verlauf über die Abrufe~~ (erledigt, siehe oben)
-2. Karte: Regionen als Punkte, eingefärbt nach der Chance am gewählten Tag
+2. ~~Karte~~ (erledigt, siehe „Landkarte“)
 3. Fahrzeit statt Luftlinie, mit Abfahrtsempfehlung (OpenRouteService oder OSRM; Kontingent und Bedingungen prüfen)
 4. Fahr- und Flugziele trennen (Kanaren, Tarifa)
 5. Roadtrip-Modus: mehrere gute Tage hintereinander oder zwei nahe Regionen im Wechsel
