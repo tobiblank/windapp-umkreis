@@ -1,5 +1,5 @@
 /* Wohinfahrma - Optik
- * Hell und dunkel nach Systemeinstellung. Systemschrift fuer Text; fuer Logo und
+ * Hell und dunkel nach Systemeinstellung oder Wahl im Fuss (lib/design.php). Systemschrift fuer Text; fuer Logo und
  * Zahlen Barlow Condensed 600, selbst ausgeliefert (keine Anfrage an Google),
  * auf Latein + Latin-1 verkleinert. Lizenz: schrift/OFL.txt (SIL OFL 1.1).
  */
@@ -30,8 +30,10 @@
   --zahlen: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
   color-scheme: light;
 }
+/* Dunkel: wie das Geraet, ausser im Fuss ist "Hell" gewaehlt (data-theme), oder fest
+   "Dunkel". Beide Bloecke muessen gleich bleiben (tests/test.php prueft das). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --grund: #0f1e24; --karte: #16282f; --kachel: #1d343c; --linie: #24404a;
     --text: #e8eef0; --leise: #9db0b7;
     --go: #4fd1a5; --maybe: #f2b84b; --no: #f08a7a; --nix: #7a929b;
@@ -44,6 +46,19 @@
     --akzent-auf: #08202a;
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+    --grund: #0f1e24; --karte: #16282f; --kachel: #1d343c; --linie: #24404a;
+    --text: #e8eef0; --leise: #9db0b7;
+    --go: #4fd1a5; --maybe: #f2b84b; --no: #f08a7a; --nix: #7a929b;
+    --go-text: #4fd1a5; --maybe-text: #f2b84b;
+    --marke: #4fd1a5; --marke-fahne: #0f1e24;
+    --go-bg: #173d35; --maybe-bg: #3d3420; --no-bg: #3e2826; --nix-bg: #1a2e35;
+    --akzent: #5cc8f0;
+    --meer: #0c1a20; --land: #1f3640; --grenze: #33525d;
+    --steuer: #123543; --steuer-feld: #0e2833; --steuer-linie: #1f4a5c; --steuer-text: #a9dcef;
+    --akzent-auf: #08202a;
+    color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { background: var(--grund); }
@@ -147,6 +162,12 @@ a { color: var(--akzent); }
 
 .fuss { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--linie); }
 .fuss p { margin: 0 0 8px; }
+/* Design-Schalter im Fuss (seit 7.11.2026) */
+.design { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 12px; }
+.design[hidden] { display: none; }
+.design span { margin-right: 4px; }
+.design button { font: inherit; color: var(--steuer-text); background: var(--steuer); border: 1px solid var(--steuer-linie); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+.design button[aria-pressed="true"] { background: var(--akzent); border-color: var(--akzent); color: var(--akzent-auf); font-weight: 600; }
 
 @media (max-width: 380px) {
   .wahl { grid-template-columns: 1fr; }
