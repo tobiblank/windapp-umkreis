@@ -11,6 +11,7 @@ date_default_timezone_set('UTC');
 $ROOT = dirname(__DIR__);
 require "$ROOT/server/web/lib/regionen.php";
 require "$ROOT/server/web/lib/bewertung.php";
+require "$ROOT/server/web/lib/karte.php";
 
 $fehler = 0;
 function pruefe(bool $ok, string $was): void
@@ -53,6 +54,39 @@ echo "Tagesfenster\n";
 pruefe($ab === 9 && $bis === 17, "Ammersee 7.11.: 9 bis 17 Uhr (ist $ab bis $bis)");
 [$ab, $bis] = tagesfenster('2026-06-21', new DateTimeZone('Europe/Berlin'), 48.0, 11.13);
 pruefe($ab === 9 && $bis === 21, "Ammersee 21.6.: 9 bis 21 Uhr (ist $ab bis $bis)");
+
+echo "Landkarte\n";
+$svg = (string)file_get_contents("$ROOT/server/web/karte.svg");
+preg_match('/viewBox="0 0 ([\d.]+) ([\d.]+)" data-lon0="([-\d.]+)" data-lat-max="([-\d.]+)" data-k="([\d.]+)"/', $svg, $kv);
+pruefe($kv && (float)$kv[3] === KARTE_LON0 && (float)$kv[4] === KARTE_LAT_MAX && (float)$kv[5] === KARTE_K
+       && abs((float)$kv[1] - KARTE_BREITE) < 0.05 && abs((float)$kv[2] - KARTE_HOEHE) < 0.05,
+       'karte.svg und lib/karte.php nutzen dieselbe Projektion');
+pruefe(str_contains($svg, 'id="land"') && str_contains($svg, 'Natural Earth') && strlen($svg) < 200000, 'karte.svg: Pfad land, Quelle genannt, unter 200 KB');
+[$x, $y] = karte_punkt(KARTE_LAT_MAX, KARTE_LON0);
+pruefe(abs($x) < 1e-9 && abs($y) < 1e-9, 'Ecke oben links ist (0, 0)');
+[$x, $y] = karte_punkt(22.0, 36.0);
+pruefe(abs($x - KARTE_BREITE) < 0.05 && abs($y - KARTE_HOEHE) < 0.05, 'Ecke unten rechts passt zur Grundlage');
+$alle = [];
+foreach ($katalog['regionen'] as $r) {
+    [$x, $y] = karte_punkt((float)$r['punkt'][0], (float)$r['punkt'][1]);
+    if ($x < 0 || $x > KARTE_BREITE || $y < 0 || $y > KARTE_HOEHE) {
+        $alle[] = $r['id'];
+    }
+}
+pruefe($alle === [], 'alle Regionen des Katalogs liegen auf der Karte' . ($alle ? ': außerhalb ' . implode(', ', $alle) : ''));
+$a = karte_ausschnitt([karte_punkt(48.07, 11.15)]);
+pruefe(abs($a[3] / $a[2] - KARTE_SEITE) < 0.01 && $a[2] >= KARTE_MIN_GRAD * KARTE_K, 'ein Punkt: Mindestausschnitt im Seitenverhältnis');
+$a = karte_ausschnitt([karte_punkt(63, -19), karte_punkt(23, 35)]);
+pruefe($a[0] >= 0 && $a[1] >= 0 && $a[0] + $a[2] <= KARTE_BREITE + 0.1 && $a[1] + $a[3] <= KARTE_HOEHE + 0.1, 'großer Ausschnitt bleibt innerhalb der Grundlage');
+$np = ['a' => ['xy' => [100, 100], 'name' => 'Erster', 'rang' => 1.0], 'b' => ['xy' => [101, 100.5], 'name' => 'Zweiter', 'rang' => 0.5],
+       'c' => ['xy' => [140, 100], 'name' => 'Weit weg', 'rang' => 0.0]];
+$nm = karte_namen($np, 1.0, [80, 80, 80, 88]);
+pruefe(($nm['a'] ?? null) !== null && ($nm['c'] ?? null) === 'rechts' && count($nm) <= 3, 'Namen: der beste bekommt einen, freie Punkte rechts');
+pruefe(!isset($nm['b']) || $nm['b'] !== $nm['a'], 'Namen: zwei nahe Punkte nicht auf derselben Seite');
+$e = ['tage' => ['t1' => ['det' => ['geht' => true], 'ens' => ['chance' => 0.3]], 't2' => ['det' => ['geht' => false], 'ens' => ['chance' => 0.8]],
+                 't3' => ['det' => ['geht' => false], 'ens' => null, 'vorbei' => true]]];
+pruefe(karte_wert($e, null)['tag'] === 't2' && abs(karte_wert($e, 't1')['chance'] - 0.3) < 1e-9 && karte_wert($e, 't3')['tag'] === null,
+       'Punktwert: ohne Tag die beste Chance, mit Tag dieser Tag, vorbei zählt nicht');
 
 // ---------------------------------------------------------------
 echo "Sammler gegen Open-Meteo-Ersatz\n";
@@ -391,7 +425,15 @@ file_put_contents("$site/verlauf/config.php", '<?php return ' . var_export(['dat
 pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, '<span class="v steigt">↑ von 0</span>')
        && str_contains($html, 'steigt (0 → 49 → 100 %)') && str_contains($html, 'Frühere Abrufe: '),
        'Seite mit früheren Abrufen: Pfeil in der Kachel, Verlauf in der Detailzeile');
-foreach (['impressum.html', 'datenschutz.html', 'stil.css', 'sw.js', 'offline.html', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon.svg', 'icon-maskable-512.png', 'favicon.svg', 'favicon.ico', 'schrift/barlow-condensed-600.woff', 'schrift/OFL.txt'] as $f) {
+[, $html] = holen($sitePort, 'index.php?km=1000');
+pruefe(str_contains($html, 'id="landkarte"') && substr_count($html, 'class="punkt ') === 2 && str_contains($html, 'href="#r-adria-nord"')
+       && str_contains($html, 'id="r-adria-nord"') && str_contains($html, 'karte.svg#land'),
+       'Landkarte: ein Punkt je Region, verlinkt auf die Region');
+[, $html] = holen($sitePort, 'index.php?km=1000&nach=' . $morgen);
+pruefe(str_contains($html, 'Chance Morgen') && preg_match('/class="punkt go".*?<text class="zahl"[^>]*>100</s', $html), 'Landkarte mit gewähltem Tag: Adria 100 %');
+[, $html] = holen($sitePort, "index.php?region=ammersee&nach=$morgen");
+pruefe(!str_contains($html, 'id="landkarte"'), 'geteilte Vorhersage: keine Landkarte');
+foreach (['impressum.html', 'datenschutz.html', 'karte.svg', 'stil.css', 'sw.js', 'offline.html', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon.svg', 'icon-maskable-512.png', 'favicon.svg', 'favicon.ico', 'schrift/barlow-condensed-600.woff', 'schrift/OFL.txt'] as $f) {
     [$code] = holen($sitePort, $f);
     pruefe($code === 200, "$f erreichbar");
 }

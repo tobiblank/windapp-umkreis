@@ -21,6 +21,8 @@
   --marke: #1f9d74; --marke-fahne: #ffffff;
   --go-bg: #d7f2e8; --maybe-bg: #fbedcf; --no-bg: #f8dfd9; --nix-bg: #edf1f2;
   --akzent: #0f7fa8;
+  /* Landkarte */
+  --meer: #d6e7ee; --land: #f4f6f2; --grenze: #b9c6c9;
   --zahlen: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
   color-scheme: light;
 }
@@ -33,6 +35,7 @@
     --marke: #4fd1a5; --marke-fahne: #0f1e24;
     --go-bg: #173d35; --maybe-bg: #3d3420; --no-bg: #3e2826; --nix-bg: #1a2e35;
     --akzent: #5cc8f0;
+    --meer: #0c1a20; --land: #1f3640; --grenze: #33525d;
     color-scheme: dark;
   }
 }
@@ -94,6 +97,27 @@ a { color: var(--akzent); }
 .tag .v.faellt { color: var(--no); }
 .verlauf { color: var(--leise); white-space: nowrap; }
 .verlauf.faellt { color: var(--no); }
+
+/* Landkarte (seit 7.11.2026); .karte ist hier die Kachel, die Karte selbst heisst landkarte */
+.landkarte summary { cursor: pointer; list-style-position: outside; }
+.landkarte summary .leise { font-weight: 400; }
+.landkarte-bild { display: block; width: 100%; height: auto; margin-top: 10px; border-radius: 12px; overflow: hidden; touch-action: manipulation; }
+.landkarte .meer { fill: var(--meer); }
+.landkarte .land { fill: var(--land); stroke: var(--grenze); stroke-width: 0.6px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.landkarte .umkreis { fill: none; stroke: var(--leise); stroke-width: 1px; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; opacity: .7; }
+.landkarte .heim { fill: var(--text); stroke: var(--karte); stroke-width: 2px; vector-effect: non-scaling-stroke; }
+.landkarte .punkt circle { fill: var(--nix); stroke: var(--karte); stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+.landkarte .punkt.go circle { fill: var(--go); }
+.landkarte .punkt.maybe circle { fill: var(--maybe); }
+.landkarte .punkt.no circle { fill: var(--no); }
+.landkarte .punkt.leer circle, .landkarte .punkt.nix circle { fill: var(--nix); opacity: .75; }
+.landkarte .punkt text.zahl { fill: var(--karte); font-family: var(--zahlen); font-weight: 600; text-anchor: middle; pointer-events: none; }
+.landkarte .punkt text.name.links { text-anchor: end; }
+.landkarte .punkt text.name { fill: var(--text); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-weight: 500; paint-order: stroke; stroke: var(--land); stroke-linejoin: round; }
+.landkarte .punkt:hover circle, .landkarte .punkt:focus circle { stroke: var(--text); stroke-width: 2px; }
+.landkarte-fuss { margin: 8px 0 0; }
+.region { scroll-margin-top: 12px; }
+.region:target { box-shadow: 0 0 0 2px var(--akzent); }
 
 .details { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; }
 .details li { padding-top: 6px; border-top: 1px solid var(--linie); }
