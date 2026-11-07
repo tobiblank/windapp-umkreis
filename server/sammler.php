@@ -84,7 +84,7 @@ $OM_LIMIT = (int)($CFG['openmeteo_limit'] ?? 10000);
 $OM_WARNUNG_AB = 0.7;
 
 try {
-    $REGIONEN = regionen_laden($CFG['regionen_datei'] ?? "$WEB_DIR/lib/regionen.json");
+    $KATALOG = katalog_laden($CFG['regionen_datei'] ?? "$WEB_DIR/lib/regionen.json");
 } catch (RuntimeException $e) {
     echo $e->getMessage(), "\n";
     exit(1);
@@ -106,10 +106,29 @@ try {
  *             Variablennamen der Marine API hier NICHT live geprueft -
  *             beim ersten Lauf mit --debug kontrollieren.
  */
-function quellen(array $regionen, string $modelle): array
+function quellen(array $katalog, string $modelle): array
 {
-    $alle = $regionen;
-    $meer = array_values(array_filter($regionen, fn($r) => $r['typ'] === 'meer'));
+    $alle = $katalog['regionen'];
+    $meer = array_values(array_filter($alle, fn($r) => $r['typ'] === 'meer'));
+    // Druckpunkte als eigene "Orte" (typ druck): nur Luftdruck
+    $druck = [];
+    foreach ($katalog['druckpunkte'] as $id => $p) {
+        $druck[] = ['id' => $id, 'typ' => 'druck', 'punkt' => $p['punkt']];
+    }
+    // Hoehenwind nur fuer Regionen, deren Regel-Windlagen ihn brauchen
+    $hoehe = array_values(array_filter($alle, function ($r) {
+        $ws = $r['windlagen'] ?? [];
+        foreach ($r['spots'] ?? [] as $sp) {
+            $ws = array_merge($ws, $sp['windlagen'] ?? []);
+        }
+        foreach ($ws as $w) {
+            if (isset($w['grundstroemung']['hoehe']) && $w['grundstroemung']['hoehe'] !== '10m') {
+                return true;
+            }
+        }
+        return false;
+    }));
+    $hoeheVars = 'wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa';
 
     return [
         'vorhersage' => [
@@ -124,8 +143,34 @@ function quellen(array $regionen, string $modelle): array
             'every'    => 360,
             'regionen' => $alle,
             'basis'    => 'https://ensemble-api.open-meteo.com/v1/ensemble',
-            'query'    => 'hourly=wind_speed_10m,wind_direction_10m'
+            'query'    => 'hourly=wind_speed_10m,wind_direction_10m,cloud_cover'
                         . '&models=ecmwf_ifs025&wind_speed_unit=kn&forecast_days=8&timezone=UTC',
+        ],
+        // Seit 7.11.2026, fuer Regel-Windlagen: eigene Abrufe, damit ein Fehler
+        // (etwa ein Modell ohne Druckniveaus) die Vorhersage nicht mitreisst.
+        'druck' => [
+            'every'    => 60,
+            'regionen' => $druck,
+            'basis'    => 'https://api.open-meteo.com/v1/forecast',
+            'query'    => "hourly=pressure_msl&models=$modelle&forecast_days=7&timezone=UTC",
+        ],
+        'druck_ensemble' => [
+            'every'    => 360,
+            'regionen' => $druck,
+            'basis'    => 'https://ensemble-api.open-meteo.com/v1/ensemble',
+            'query'    => 'hourly=pressure_msl&models=ecmwf_ifs025&forecast_days=8&timezone=UTC',
+        ],
+        'hoehe' => [
+            'every'    => 60,
+            'regionen' => $hoehe,
+            'basis'    => 'https://api.open-meteo.com/v1/forecast',
+            'query'    => "hourly=$hoeheVars&models=$modelle&wind_speed_unit=kn&forecast_days=7&timezone=UTC",
+        ],
+        'hoehe_ensemble' => [
+            'every'    => 360,
+            'regionen' => $hoehe,
+            'basis'    => 'https://ensemble-api.open-meteo.com/v1/ensemble',
+            'query'    => "hourly=$hoeheVars&models=ecmwf_ifs025&wind_speed_unit=kn&forecast_days=8&timezone=UTC",
         ],
         'welle' => [
             'every'    => 180,
@@ -151,7 +196,7 @@ function quellen(array $regionen, string $modelle): array
 function teile(array $regionen, int $groesse): array
 {
     $out = [];
-    foreach (['see' => '', 'meer' => '&cell_selection=sea'] as $typ => $zusatz) {
+    foreach (['see' => '', 'meer' => '&cell_selection=sea', 'druck' => ''] as $typ => $zusatz) {
         $gruppe = array_values(array_filter($regionen, fn($r) => $r['typ'] === $typ));
         foreach (array_chunk($gruppe, $groesse) as $teil) {
             $out[] = [$teil, $zusatz];
@@ -337,7 +382,7 @@ function alte_zippen(string $dataDir, string $quelle): void
 $probleme = [];
 $bericht  = [];
 
-foreach (quellen($REGIONEN, $MODELLE) as $name => $q) {
+foreach (quellen($KATALOG, $MODELLE) as $name => $q) {
     if (!$q['regionen']) {
         continue;
     }

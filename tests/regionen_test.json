@@ -7,7 +7,10 @@
       "name": "Ammersee",
       "land": "DE",
       "typ": "see",
-      "punkt": [48.0, 11.135],
+      "punkt": [
+        48.0,
+        11.135
+      ],
       "zeitzone": "Europe/Berlin",
       "hinweis": "Punkt in der Seemitte. Richtungen hängen hier am Spot, deshalb keine Windlagen auf Regionsebene.",
       "windlagen": [],
@@ -15,12 +18,43 @@
         {
           "id": "stegen",
           "name": "Stegen",
-          "punkt": [48.0489, 11.1614],
+          "punkt": [
+            48.0489,
+            11.1614
+          ],
           "windlagen": [
-            {"name": "Süd-Südwest", "sektor": [165, 240], "charakter": "konstant"},
-            {"name": "West", "sektor": [240, 275], "charakter": "brauchbar"},
-            {"name": "Westnordwest-Nord", "sektor": [275, 20], "charakter": "böig"},
-            {"name": "Ost", "sektor": [45, 135], "charakter": "gleichmäßig"}
+            {
+              "name": "Süd-Südwest",
+              "sektor": [
+                165,
+                240
+              ],
+              "charakter": "konstant"
+            },
+            {
+              "name": "West",
+              "sektor": [
+                240,
+                275
+              ],
+              "charakter": "brauchbar"
+            },
+            {
+              "name": "Westnordwest-Nord",
+              "sektor": [
+                275,
+                20
+              ],
+              "charakter": "böig"
+            },
+            {
+              "name": "Ost",
+              "sektor": [
+                45,
+                135
+              ],
+              "charakter": "gleichmäßig"
+            }
           ],
           "ablandig": [],
           "hinweis": "Sektoren aus stegen-wind (analysis/README.md, nach Tobias' Erfahrung). Prüfen: ist WNW-N an Stegen fahrbar oder ablandig?"
@@ -29,7 +63,13 @@
           "id": "herrsching",
           "name": "Herrsching",
           "windlagen": [
-            {"name": "West", "sektor": [240, 300]}
+            {
+              "name": "West",
+              "sektor": [
+                240,
+                300
+              ]
+            }
           ],
           "ablandig": [],
           "hinweis": "Reiner Westwind-Spot (Tobias). Sektorgrenzen geschätzt."
@@ -38,7 +78,14 @@
           "id": "eching",
           "name": "Eching",
           "windlagen": [
-            {"name": "Ost", "sektor": [45, 135], "charakter": "gleichmäßig"}
+            {
+              "name": "Ost",
+              "sektor": [
+                45,
+                135
+              ],
+              "charakter": "gleichmäßig"
+            }
           ],
           "ablandig": [],
           "hinweis": "Bei Ostwind (Tobias). Sektor wie Ost in stegen-wind."
@@ -49,14 +96,120 @@
       "id": "adria-nord",
       "name": "Nördliche Adria",
       "typ": "meer",
-      "punkt": [45.5, 13.0],
+      "punkt": [
+        45.5,
+        13.0
+      ],
       "zeitzone": "Europe/Rome",
       "hinweis": "Funktioniert bei Bora und Scirocco überall (Tobias). Sektorgrenzen geschätzt, bitte prüfen. Punkt auf dem Wasser zwischen der Lagune von Venedig und Istrien.",
       "windlagen": [
-        {"name": "Bora", "sektor": [20, 80], "charakter": "böig"},
-        {"name": "Scirocco", "sektor": [135, 200]}
+        {
+          "name": "Bora",
+          "sektor": [
+            20,
+            80
+          ],
+          "charakter": "böig"
+        },
+        {
+          "name": "Scirocco",
+          "sektor": [
+            135,
+            200
+          ]
+        }
+      ],
+      "spots": []
+    },
+    {
+      "id": "testsee-druck",
+      "name": "Testsee Druck",
+      "typ": "see",
+      "punkt": [
+        46.5,
+        30.0
+      ],
+      "zeitzone": "Europe/Berlin",
+      "thermik": true,
+      "windlagen": [
+        {
+          "name": "Thermik",
+          "sektor": [
+            150,
+            210
+          ],
+          "druck": [
+            {
+              "plus": "a",
+              "minus": "b",
+              "min": 0
+            }
+          ],
+          "wetter": "sonnig",
+          "zeit": [
+            11,
+            17
+          ],
+          "staerke": [
+            16,
+            22
+          ]
+        }
+      ],
+      "spots": []
+    },
+    {
+      "id": "testsee-hoehe",
+      "name": "Testsee Höhe",
+      "typ": "see",
+      "punkt": [
+        46.7,
+        30.0
+      ],
+      "zeitzone": "Europe/Berlin",
+      "windlagen": [
+        {
+          "name": "Talwind",
+          "sektor": [
+            0,
+            60
+          ],
+          "grundstroemung": {
+            "hoehe": "700hPa",
+            "sektor": [
+              180,
+              270
+            ],
+            "kn_min": 4,
+            "kn_max": 10
+          },
+          "zeit": [
+            11,
+            17
+          ],
+          "staerke": [
+            14,
+            20
+          ]
+        }
       ],
       "spots": []
     }
-  ]
+  ],
+  "druckpunkte": {
+    "a": {
+      "name": "Testpunkt A",
+      "punkt": [
+        47.0,
+        30.0
+      ]
+    },
+    "b": {
+      "name": "Testpunkt B",
+      "punkt": [
+        46.0,
+        30.0
+      ]
+    }
+  }
 }

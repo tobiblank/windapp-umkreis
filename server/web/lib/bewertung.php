@@ -19,6 +19,14 @@
  * Ein Tag geht, wenn mindestens MIN_STUNDEN fahrbare Stunden am Stueck kommen
  * (wie das beste 2-h-Fenster in stegen-wind).
  *
+ * REGEL-WINDLAGEN (seit 7.11.2026, fuer Thermik- und Foehnlagen): Eine Windlage
+ * mit druck und/oder grundstroemung ersetzt den Modellwind am See. Sind alle
+ * ihre Bedingungen erfuellt (Druckdifferenzen, Grundstroemung, wetter, zeit,
+ * saison), gilt die Stunde mit der typischen Staerke der Windlage (Mitte von
+ * staerke) und der Mitte ihres Sektors; danach dieselben Pruefungen wie sonst
+ * (Windfenster der Sportart, ablandig, Gewitter). Boeen gibt es dafuer keine.
+ * Im Ensemble wird jeder Lauf mit seinen eigenen Druck- und Hoehenwerten geprueft.
+ *
  * Die Chance ist der Anteil der Laeufe des ECMWF-Ensembles, an denen der Tag
  * nach denselben Regeln geht - ohne Boeen, Gewitter und Welle, weil das
  * Ensemble nur Wind und Richtung liefert. ROHWERTE, NICHT KALIBRIERT.
@@ -154,10 +162,11 @@ function vorhersage_stunden(array $eintrag, DateTimeZone $tz): array
     $boe = modell_reihen($h, 'wind_gusts_10m');
     $wc  = modell_reihen($h, 'weather_code');
     $tmp = modell_reihen($h, 'temperature_2m');
+    $wol = modell_reihen($h, 'cloud_cover');
     $out = [];
     foreach ($h['time'] as $i => $t) {
         $lok = (new DateTimeImmutable($t . ':00Z'))->setTimezone($tz);
-        $v = $d = $b = $te = [];
+        $v = $d = $b = $te = $wo = [];
         $gew = $codes = 0;
         foreach ($kn as $m => $reihe) {
             if (!isset($reihe[$i])) {
@@ -172,6 +181,9 @@ function vorhersage_stunden(array $eintrag, DateTimeZone $tz): array
             }
             if (isset($tmp[$m][$i])) {
                 $te[] = (float)$tmp[$m][$i];
+            }
+            if (isset($wol[$m][$i])) {
+                $wo[] = (float)$wol[$m][$i];
             }
             if (isset($wc[$m][$i])) {
                 $codes++;
@@ -190,6 +202,7 @@ function vorhersage_stunden(array $eintrag, DateTimeZone $tz): array
             'boe_max'  => $b ? max($b) : null,
             'temp'     => $te ? array_sum($te) / count($te) : null,
             'gewitter' => $codes > 0 && $gew * 2 >= $codes,
+            'wolken'   => $wo ? array_sum($wo) / count($wo) : null,
             'modelle'  => count($v),
         ];
     }
@@ -215,8 +228,11 @@ function welle_stunden(?array $eintrag, DateTimeZone $tz): array
 }
 
 /**
- * Ensemble: je Lauf (Kontrolllauf + Member) Wind und Richtung je Ortstag/Stunde.
- * Rueckgabe [lauf => [tag => [stunde => ['kn' =>, 'richtung' =>]]]]
+ * Ensemble: je Lauf (Kontrolllauf + Member) Wind, Richtung und Bewoelkung je Ortstag/Stunde.
+ * Schluessel des Laufs ist das Suffix der Open-Meteo-Variablen: '' (Kontrolllauf)
+ * oder '_member01' usw. - damit lassen sich Laeufe verschiedener Abrufe (Druck,
+ * Hoehenwind) demselben Lauf zuordnen.
+ * Rueckgabe [lauf => [tag => [stunde => ['kn' =>, 'richtung' =>, 'wolken' =>]]]]
  */
 function ensemble_stunden(?array $eintrag, DateTimeZone $tz): array
 {
@@ -231,18 +247,153 @@ function ensemble_stunden(?array $eintrag, DateTimeZone $tz): array
         }
         $suffix = $m[1] ?? '';
         $richtung = $h['wind_direction_10m' . $suffix] ?? [];
+        $wolken = $h['cloud_cover' . $suffix] ?? [];
         foreach ($h['time'] as $i => $t) {
             if (!isset($reihe[$i])) {
                 continue;
             }
             $lok = (new DateTimeImmutable($t . ':00Z'))->setTimezone($tz);
-            $laeufe[$k][$lok->format('Y-m-d')][(int)$lok->format('G')] = [
+            $laeufe[$suffix][$lok->format('Y-m-d')][(int)$lok->format('G')] = [
                 'kn'       => (float)$reihe[$i],
                 'richtung' => isset($richtung[$i]) ? (float)$richtung[$i] : null,
+                'wolken'   => isset($wolken[$i]) ? (float)$wolken[$i] : null,
             ];
         }
     }
     return $laeufe;
+}
+
+/**
+ * Modellmittel einer Variable je Ortstag und Stunde (alle Modelle mit Wert).
+ * $richtung: als Vektormittel (fuer Windrichtungen).
+ */
+function mittel_stunden(?array $eintrag, string $var, DateTimeZone $tz, bool $richtung = false): array
+{
+    if (!$eintrag) {
+        return [];
+    }
+    $h = $eintrag['hourly'];
+    $reihen = modell_reihen($h, $var);
+    $out = [];
+    foreach ($h['time'] as $i => $t) {
+        $v = [];
+        foreach ($reihen as $reihe) {
+            if (isset($reihe[$i])) {
+                $v[] = (float)$reihe[$i];
+            }
+        }
+        if (!$v) {
+            continue;
+        }
+        $lok = (new DateTimeImmutable($t . ':00Z'))->setTimezone($tz);
+        $out[$lok->format('Y-m-d')][(int)$lok->format('G')] = $richtung ? richtung_mittel($v) : array_sum($v) / count($v);
+    }
+    return $out;
+}
+
+/** Ensemble: eine Variable je Lauf (Suffix wie in ensemble_stunden), Ortstag und Stunde */
+function ensemble_reihe(?array $eintrag, string $var, DateTimeZone $tz): array
+{
+    if (!$eintrag) {
+        return [];
+    }
+    $h = $eintrag['hourly'];
+    $out = [];
+    foreach ($h as $k => $reihe) {
+        if (!preg_match('/^' . preg_quote($var, '/') . '(_member\d+)?$/', $k, $m)) {
+            continue;
+        }
+        foreach ($h['time'] as $i => $t) {
+            if (!isset($reihe[$i])) {
+                continue;
+            }
+            $lok = (new DateTimeImmutable($t . ':00Z'))->setTimezone($tz);
+            $out[$m[1] ?? ''][$lok->format('Y-m-d')][(int)$lok->format('G')] = (float)$reihe[$i];
+        }
+    }
+    return $out;
+}
+
+/** Ist das eine Regel-Windlage (Druck oder Grundstroemung statt Modellwind)? */
+function ist_regel(array $w): bool
+{
+    return isset($w['druck']) || isset($w['grundstroemung']);
+}
+
+/** Druckachsen und Hoehen, die die Windlagen einer Region brauchen */
+function region_bedarf(array $region): array
+{
+    $achsen = $hoehen = [];
+    $alle = $region['windlagen'] ?? [];
+    foreach ($region['spots'] ?? [] as $sp) {
+        $alle = array_merge($alle, $sp['windlagen'] ?? []);
+    }
+    foreach ($alle as $w) {
+        foreach ($w['druck'] ?? [] as $d) {
+            $achsen[$d['plus'] . '-' . $d['minus']] = [$d['plus'], $d['minus']];
+        }
+        if (isset($w['grundstroemung']['hoehe'])) {
+            $hoehen[$w['grundstroemung']['hoehe']] = true;
+        }
+    }
+    return [$achsen, array_keys($hoehen)];
+}
+
+function in_monaten(int $monat, array $saison): bool
+{
+    [$a, $b] = $saison;
+    return $a <= $b ? ($monat >= $a && $monat <= $b) : ($monat >= $a || $monat <= $b);
+}
+
+/**
+ * Bedingungen einer Regel-Windlage fuer eine Stunde. null = erfuellt, sonst der Grund.
+ * $w braucht '_h' (Ortsstunde), '_monat', je nach Regel 'druck' [achse => hPa],
+ * 'hoehe' [hoehe => ['kn', 'richtung']], 'wolken'.
+ */
+function regel_grund(array $r, array $w): ?string
+{
+    if (isset($r['saison']) && !in_monaten((int)$w['_monat'], $r['saison'])) {
+        return 'außerhalb der Saison';
+    }
+    if (isset($r['zeit']) && ($w['_h'] < $r['zeit'][0] || $w['_h'] >= $r['zeit'][1])) {
+        return 'außerhalb der Tageszeit der Windlage';
+    }
+    foreach ($r['druck'] ?? [] as $d) {
+        $v = $w['druck'][$d['plus'] . '-' . $d['minus']] ?? null;
+        if ($v === null) {
+            return 'keine Druckdaten';
+        }
+        if ((isset($d['min']) && $v < $d['min']) || (isset($d['max']) && $v > $d['max'])) {
+            return 'Druckdifferenz passt nicht';
+        }
+    }
+    if (isset($r['grundstroemung'])) {
+        $g = $r['grundstroemung'];
+        $h = $w['hoehe'][$g['hoehe']] ?? null;
+        if ($h === null || $h['kn'] === null || $h['richtung'] === null) {
+            return 'keine Höhenwinddaten';
+        }
+        if ((isset($g['kn_min']) && $h['kn'] < $g['kn_min']) || (isset($g['kn_max']) && $h['kn'] > $g['kn_max'])
+            || (isset($g['sektor']) && !winkel_in_sektor($h['richtung'], $g['sektor']))) {
+            return 'Grundströmung passt nicht';
+        }
+    }
+    if (($r['wetter'] ?? null) === 'sonnig') {
+        if (!isset($w['wolken'])) {
+            return 'keine Wolkendaten';
+        }
+        if ($w['wolken'] > 50) {
+            return 'zu bewölkt';
+        }
+    }
+    return null;
+}
+
+/** Mitte eines Sektors (im Uhrzeigersinn von 'von' nach 'bis') */
+function sektor_mitte(array $s): float
+{
+    $breite = fmod($s[1] - $s[0] + 360, 360);
+    return fmod($s[0] + $breite / 2, 360);
 }
 
 // ===================================================================
@@ -296,44 +447,90 @@ function restfenster(array $fenster, string $tag, DateTimeZone $tz, DateTimeImmu
 // ===================================================================
 
 /**
- * Ist eine Stunde fahrbar? Rueckgabe [ok, grund, windlage]
- * $w: ['kn', 'richtung', optional 'boe', 'gewitter', 'welle']
+ * Ist eine Stunde fahrbar? Rueckgabe [ok, grund, windlage, kn]
+ * kn ist der Wind, mit dem gerechnet wurde: Modellwind oder bei einer
+ * Regel-Windlage deren typische Staerke.
+ * $w: ['kn', 'richtung', optional 'boe', 'gewitter', 'welle', 'wolken', 'druck',
+ *      'hoehe', '_h', '_monat']
  */
 function stunde_fahrbar(array $w, array $sport, array $windlagen, ?array $spot): array
 {
+    $normal = array_values(array_filter($windlagen, fn($l) => !ist_regel($l)));
+    $regeln = array_values(array_filter($windlagen, 'ist_regel'));
+
+    // Regel-Windlagen zuerst: sie ersetzen den Modellwind
+    $regelGrund = null;
+    foreach ($regeln as $r) {
+        $g = regel_grund($r, $w);
+        if ($g === null) {
+            $w2 = $w;
+            $w2['kn'] = ($r['staerke'][0] + $r['staerke'][1]) / 2;
+            $w2['richtung'] = sektor_mitte($r['sektor']);
+            $w2['boe'] = null;
+            $g = wind_grund($w2, $sport) ?? rest_grund($w2, $sport, $spot);
+            if ($g === null) {
+                return [true, null, $r + ['regel' => true], $w2['kn']];
+            }
+        }
+        $regelGrund ??= $g;
+    }
+    if (!$normal && $regeln) {
+        return [false, $regelGrund ?? 'Lage passt nicht', null, null];
+    }
+
+    $g = wind_grund($w, $sport);
+    if ($g !== null) {
+        return [false, $regelGrund ?? $g, null, null];
+    }
+    $lage = windlage_fuer($w['richtung'], $normal);
+    if ($lage === null) {
+        return [false, $regelGrund ?? 'Richtung passt nicht', null, null];
+    }
+    $g = rest_grund($w, $sport, $spot);
+    if ($g !== null) {
+        return [false, $g, null, null];
+    }
+    return [true, null, $lage, $w['kn']];
+}
+
+/** Windstaerke und Boeen gegen das Fenster der Sportart. null = passt */
+function wind_grund(array $w, array $sport): ?string
+{
     if ($w['kn'] < $sport['min']) {
-        return [false, 'zu wenig Wind', null];
+        return 'zu wenig Wind';
     }
     if (isset($sport['max']) && $w['kn'] > $sport['max']) {
-        return [false, 'zu viel Wind', null];
+        return 'zu viel Wind';
     }
     if (isset($sport['boe_max'], $w['boe']) && $w['boe'] > $sport['boe_max']) {
-        return [false, 'Böen zu stark', null];
+        return 'Böen zu stark';
     }
-    $lage = windlage_fuer($w['richtung'], $windlagen);
-    if ($lage === null) {
-        return [false, 'Richtung passt nicht', null];
-    }
+    return null;
+}
+
+/** Ablandig, Gewitter, Welle. null = passt */
+function rest_grund(array $w, array $sport, ?array $spot): ?string
+{
     if (ist_ablandig($w['richtung'], $spot)) {
-        return [false, 'ablandig', null];
+        return 'ablandig';
     }
     if (!empty($w['gewitter'])) {
-        return [false, 'Gewitter', null];
+        return 'Gewitter';
     }
     if (isset($sport['welle_min']) || isset($sport['welle_max'])) {
         if (!array_key_exists('welle', $w)) {
             // Ensemble hat keine Welle: dort nicht pruefen
         } elseif ($w['welle'] === null) {
             if (isset($sport['welle_min'])) {
-                return [false, 'keine Wellendaten', null];
+                return 'keine Wellendaten';
             }
         } elseif (isset($sport['welle_min']) && $w['welle'] < $sport['welle_min']) {
-            return [false, 'zu wenig Welle', null];
+            return 'zu wenig Welle';
         } elseif (isset($sport['welle_max']) && $w['welle'] > $sport['welle_max']) {
-            return [false, 'zu viel Welle', null];
+            return 'zu viel Welle';
         }
     }
-    return [true, null, $lage];
+    return null;
 }
 
 /**
@@ -341,7 +538,7 @@ function stunde_fahrbar(array $w, array $sport, array $windlagen, ?array $spot):
  * $stunden: [stunde => werte], $fenster: [ab, bis)
  * Rueckgabe ['geht', 'von', 'bis', 'stunden', 'mittel_kn', 'boe_max', 'windlage', 'grob', 'grund']
  */
-function tag_bewerten(array $stunden, array $fenster, array $sport, array $windlagen, ?array $spot): array
+function tag_bewerten(array $stunden, array $fenster, array $sport, array $windlagen, ?array $spot, int $monat = 0): array
 {
     [$ab, $bis] = $fenster;
     $best = null;
@@ -350,17 +547,17 @@ function tag_bewerten(array $stunden, array $fenster, array $sport, array $windl
     for ($s = $ab; $s <= $bis; $s++) {
         $ok = false;
         if ($s < $bis && isset($stunden[$s])) {
-            [$ok, $grund, $lage] = stunde_fahrbar($stunden[$s], $sport, $windlagen, $spot);
+            [$ok, $grund, $lage, $knEff] = stunde_fahrbar($stunden[$s] + ['_h' => $s, '_monat' => $monat], $sport, $windlagen, $spot);
             if (!$ok) {
                 $gruende[$grund] = ($gruende[$grund] ?? 0) + 1;
             }
         }
         if ($ok) {
-            $lauf[$s] = $lage;
+            $lauf[$s] = ['lage' => $lage, 'kn' => $knEff];
             continue;
         }
         if ($lauf && ($best === null || count($lauf) > count($best)
-                      || (count($lauf) === count($best) && lauf_mittel($lauf, $stunden) > lauf_mittel($best, $stunden)))) {
+                      || (count($lauf) === count($best) && lauf_mittel($lauf) > lauf_mittel($best)))) {
             $best = $lauf;
         }
         $lauf = [];
@@ -373,34 +570,42 @@ function tag_bewerten(array $stunden, array $fenster, array $sport, array $windl
     }
 
     // Haeufigste Windlage im Fenster
-    $namen = array_count_values(array_map(fn($l) => (string)($l['name'] ?? ''), $best));
+    $namen = array_count_values(array_map(fn($l) => (string)($l['lage']['name'] ?? ''), $best));
     arsort($namen);
     $lageName = array_key_first($namen);
     $lage = null;
     foreach ($best as $l) {
-        if ((string)($l['name'] ?? '') === (string)$lageName) {
-            $lage = $l;
+        if ((string)($l['lage']['name'] ?? '') === (string)$lageName) {
+            $lage = $l['lage'];
             break;
         }
     }
-    $boen = array_filter(array_map(fn($s) => $stunden[$s]['boe_max'] ?? null, array_keys($best)), fn($v) => $v !== null);
+    // Boeen nur aus Stunden mit Modellwind; Regel-Stunden haben keine
+    $boen = [];
+    foreach ($best as $st => $l) {
+        if (empty($l['lage']['regel']) && isset($stunden[$st]['boe_max'])) {
+            $boen[] = $stunden[$st]['boe_max'];
+        }
+    }
     return [
         'geht'      => true,
         'von'       => array_key_first($best),
         'bis'       => array_key_last($best) + 1,
         'stunden'   => count($best),
-        'mittel_kn' => round(lauf_mittel($best, $stunden), 1),
+        'mittel_kn' => round(lauf_mittel($best), 1),
         'boe_max'   => $boen ? round(max($boen), 1) : null,
         'windlage'  => $lage['name'] ?? null,
         'charakter' => $lage['charakter'] ?? null,
         'grob'      => !empty($lage['grob']),
+        'regel'     => !empty($lage['regel']),
+        'staerke'   => !empty($lage['regel']) ? $lage['staerke'] : null,
         'grund'     => null,
     ];
 }
 
-function lauf_mittel(array $lauf, array $stunden): float
+function lauf_mittel(array $lauf): float
 {
-    $v = array_map(fn($s) => $stunden[$s]['kn'], array_keys($lauf));
+    $v = array_column($lauf, 'kn');
     return $v ? array_sum($v) / count($v) : 0.0;
 }
 
@@ -425,7 +630,7 @@ function ensemble_chance(array $laeufe, string $tag, array $fenster, array $spor
             continue;
         }
         $n++;
-        if (tag_bewerten($st, $fenster, $sport, $windlagen, $spot)['geht']) {
+        if (tag_bewerten($st, $fenster, $sport, $windlagen, $spot, (int)substr($tag, 5, 2))['geht']) {
             $ja++;
         }
     }
@@ -449,6 +654,7 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
     $vh = $daten['vorhersage'] ? vorhersage_stunden($daten['vorhersage'], $tz) : [];
     $ws = welle_stunden($daten['welle'] ?? null, $tz);
     $ens = ensemble_stunden($daten['ensemble'] ?? null, $tz);
+    [$vh, $ens] = regel_daten_einmischen($region, $daten, $tz, $vh, $ens);
     $spots = $region['spots'] ?? [];
     if (!$spots) {
         $spots = [null];   // Region selbst, mit ihren Windlagen
@@ -475,7 +681,7 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
             $alle[] = [
                 'spot'      => $spot['id'] ?? null,
                 'spot_name' => $spot['name'] ?? null,
-                'det'       => tag_bewerten($stunden, $fenster, $sport, $wl, $spot),
+                'det'       => tag_bewerten($stunden, $fenster, $sport, $wl, $spot, (int)substr($tag, 5, 2)),
                 'ens'       => ensemble_chance($ens, $tag, $fenster, $sport, $wl, $spot),
             ];
         }
@@ -483,6 +689,81 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
         $out[$tag] = $alle[0] + ['fenster' => $fenster, 'rest' => $rest, 'vorbei' => false, 'alle' => $alle];
     }
     return $out;
+}
+
+/**
+ * Druckdifferenzen, Hoehenwind (und 10-m-Wind als Grundstroemung) in die
+ * Stundenwerte einmischen, die die Regel-Windlagen der Region brauchen.
+ * $daten['druck'] / ['druck_ensemble']: [druckpunkt => eintrag]
+ * $daten['hoehe'] / ['hoehe_ensemble']: eintrag der Region
+ */
+function regel_daten_einmischen(array $region, array $daten, DateTimeZone $tz, array $vh, array $ens): array
+{
+    [$achsen, $hoehen] = region_bedarf($region);
+    if (!$achsen && !$hoehen) {
+        return [$vh, $ens];
+    }
+    // Modellmittel
+    foreach ($achsen as $key => [$plus, $minus]) {
+        $a = mittel_stunden($daten['druck'][$plus] ?? null, 'pressure_msl', $tz);
+        $b = mittel_stunden($daten['druck'][$minus] ?? null, 'pressure_msl', $tz);
+        foreach ($vh as $tag => $proStunde) {
+            foreach ($proStunde as $st => $_) {
+                if (isset($a[$tag][$st], $b[$tag][$st])) {
+                    $vh[$tag][$st]['druck'][$key] = $a[$tag][$st] - $b[$tag][$st];
+                }
+            }
+        }
+    }
+    foreach ($hoehen as $hh) {
+        if ($hh === '10m') {
+            foreach ($vh as $tag => $proStunde) {
+                foreach ($proStunde as $st => $w) {
+                    $vh[$tag][$st]['hoehe']['10m'] = ['kn' => $w['kn'], 'richtung' => $w['richtung']];
+                }
+            }
+            continue;
+        }
+        $kn = mittel_stunden($daten['hoehe'] ?? null, "wind_speed_$hh", $tz);
+        $ri = mittel_stunden($daten['hoehe'] ?? null, "wind_direction_$hh", $tz, true);
+        foreach ($vh as $tag => $proStunde) {
+            foreach ($proStunde as $st => $_) {
+                if (isset($kn[$tag][$st])) {
+                    $vh[$tag][$st]['hoehe'][$hh] = ['kn' => $kn[$tag][$st], 'richtung' => $ri[$tag][$st] ?? null];
+                }
+            }
+        }
+    }
+    // Ensemble: Lauf fuer Lauf
+    foreach ($achsen as $key => [$plus, $minus]) {
+        $a = ensemble_reihe($daten['druck_ensemble'][$plus] ?? null, 'pressure_msl', $tz);
+        $b = ensemble_reihe($daten['druck_ensemble'][$minus] ?? null, 'pressure_msl', $tz);
+        foreach ($ens as $lauf => $proTag) {
+            foreach ($proTag as $tag => $proStunde) {
+                foreach ($proStunde as $st => $_) {
+                    if (isset($a[$lauf][$tag][$st], $b[$lauf][$tag][$st])) {
+                        $ens[$lauf][$tag][$st]['druck'][$key] = $a[$lauf][$tag][$st] - $b[$lauf][$tag][$st];
+                    }
+                }
+            }
+        }
+    }
+    foreach ($hoehen as $hh) {
+        $kn = $hh === '10m' ? null : ensemble_reihe($daten['hoehe_ensemble'] ?? null, "wind_speed_$hh", $tz);
+        $ri = $hh === '10m' ? null : ensemble_reihe($daten['hoehe_ensemble'] ?? null, "wind_direction_$hh", $tz);
+        foreach ($ens as $lauf => $proTag) {
+            foreach ($proTag as $tag => $proStunde) {
+                foreach ($proStunde as $st => $w) {
+                    if ($hh === '10m') {
+                        $ens[$lauf][$tag][$st]['hoehe']['10m'] = ['kn' => $w['kn'], 'richtung' => $w['richtung']];
+                    } elseif (isset($kn[$lauf][$tag][$st])) {
+                        $ens[$lauf][$tag][$st]['hoehe'][$hh] = ['kn' => $kn[$lauf][$tag][$st], 'richtung' => $ri[$lauf][$tag][$st] ?? null];
+                    }
+                }
+            }
+        }
+    }
+    return [$vh, $ens];
 }
 
 /** Besser zuerst: hoehere Chance, dann geht/laenger/staerker nach Modellmittel */
@@ -527,6 +808,10 @@ function rangliste(array $regionen, array $stand, array $sport, array $heim, flo
             'vorhersage' => $stand['vorhersage'][$r['id']] ?? null,
             'ensemble'   => $stand['ensemble'][$r['id']] ?? null,
             'welle'      => $stand['welle'][$r['id']] ?? null,
+            'druck'          => $stand['druck'] ?? [],
+            'druck_ensemble' => $stand['druck_ensemble'] ?? [],
+            'hoehe'          => $stand['hoehe'][$r['id']] ?? null,
+            'hoehe_ensemble' => $stand['hoehe_ensemble'][$r['id']] ?? null,
         ];
         if (!$daten['vorhersage'] && !$daten['ensemble']) {
             continue;
@@ -586,7 +871,7 @@ function rangliste_sortieren(array $liste, string $nach): array
  * und eine gezippte je Lauf (GitHub Action, 2026-11-07_0525.ndjson.gz).
  * Rueckgabe [quelle => [region_id => eintrag]], dazu ['_ts'][quelle][region_id].
  */
-function daten_laden(string $dataDir, array $quellen = ['vorhersage', 'ensemble', 'welle']): array
+function daten_laden(string $dataDir, array $quellen = ['vorhersage', 'ensemble', 'welle', 'druck', 'druck_ensemble', 'hoehe', 'hoehe_ensemble']): array
 {
     $out = ['_ts' => []];
     foreach ($quellen as $q) {

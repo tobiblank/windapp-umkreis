@@ -1,5 +1,12 @@
 {
   "stand": "2026-11-07",
+  "druckpunkte": {
+    "bozen": {"name": "Bozen", "punkt": [46.5, 11.35]},
+    "innsbruck": {"name": "Innsbruck", "punkt": [47.26, 11.39]},
+    "lugano": {"name": "Lugano", "punkt": [46.0, 8.95]},
+    "zuerich": {"name": "Zürich", "punkt": [47.38, 8.55]},
+    "brescia": {"name": "Brescia/Ghedi", "punkt": [45.43, 10.27]}
+  },
   "regionen": [
     {
       "id": "ammersee",
@@ -252,8 +259,11 @@
       "punkt": [46.82, 10.525],
       "zeitzone": "Europe/Rome",
       "thermik": true,
-      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
-      "windlagen": [],
+      "hinweis": "Regeln nach kitewetter.at (Wind am Reschensee I/II, Föhndiagramm): Talwind aus Süd bei sonnigem Sommerwetter und Druckdifferenz Bozen − Innsbruck ab 0 hPa (besser über +2); unter −4 hPa heben sich Nord und Süd gegen Mittag auf. Nordföhn bei −4 bis −6 hPa oder stärker. Geschätzt (Claude): Stärken, Tageszeit 11–18 Uhr, Saison Mai–September für den Talwind. kitewetter nutzt DWD-Stationsdruck, hier Modell-Meeresspiegeldruck: Schwellen nicht 1:1 übertragbar. Punkt (Seemitte) geschätzt.",
+      "windlagen": [
+        {"name": "Südwind (Talwind)", "sektor": [150, 210], "charakter": "Thermik", "druck": [{"plus": "bozen", "minus": "innsbruck", "min": 0}], "wetter": "sonnig", "zeit": [11, 18], "saison": [5, 9], "staerke": [14, 20]},
+        {"name": "Nordföhn", "sektor": [330, 30], "charakter": "böig", "druck": [{"plus": "bozen", "minus": "innsbruck", "max": -4}], "staerke": [16, 25]}
+      ],
       "spots": []
     },
     {
@@ -264,9 +274,9 @@
       "punkt": [46.455, 9.79],
       "zeitzone": "Europe/Zurich",
       "thermik": true,
-      "hinweis": "Kiten nur bei S bis SW (kitesailing.ch), Sektorgrenzen geschätzt. Malojawind ab kurz vor Mittag bis später Nachmittag; Saison laut unhooked Mitte Februar bis Ende Oktober (noch nicht ausgewertet). Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "hinweis": "Regel nach kitesailing.ch und unhooked: Kiten nur bei S bis SW; Malojawind bei gutem Wetter und SW-Grundströmung (unhooked: 4–10 kn, kräftige W–SW-Strömung stärkt laut kitesailing.ch, deshalb ohne Obergrenze); Nordströmung verhindert ihn; Druckdifferenz Lugano − Zürich ab −4 hPa schwächer, unter −6 selten. Geschätzt (Claude): Höhe der Grundströmung 700 hPa (unhooked nennt keine), Stärke, Tageszeit 12–18 Uhr, Saison Mai–Oktober (unhooked: Mitte Februar bis Ende Oktober, früh im Jahr oft noch Eis). Punkt (Seemitte) geschätzt.",
       "windlagen": [
-        {"name": "Malojawind", "sektor": [170, 240], "charakter": "Thermik"}
+        {"name": "Malojawind", "sektor": [180, 250], "charakter": "Thermik", "druck": [{"plus": "lugano", "minus": "zuerich", "min": -4}], "grundstroemung": {"hoehe": "700hPa", "sektor": [180, 290], "kn_min": 4}, "wetter": "sonnig", "zeit": [12, 18], "saison": [5, 10], "staerke": [15, 22]}
       ],
       "spots": [],
       "links": [
@@ -281,10 +291,10 @@
       "punkt": [45.85, 10.86],
       "zeitzone": "Europe/Rome",
       "thermik": true,
-      "hinweis": "Entwurf (Claude), ungeprüft: Pelèr (N, morgens) und Ora (S, nachmittags) aus allgemeinem Wissen, Sektorgrenzen geschätzt. Gardasee Süd wäre eine eigene Region. Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "hinweis": "Regel nach kitewetter.at (Föhndiagramm): Druckdifferenz Bozen − Brescia/Ghedi; höherer Druck in Brescia bringt Ora, umgekehrt Vento (Pelèr). Eine Schwelle nennt die Seite nicht, hier 0 hPa. Geschätzt (Claude): Stärken, Tageszeiten (Pelèr bis 12, Ora ab 12 Uhr), Saison April–Oktober. Gardasee Süd wäre eine eigene Region. Punkt geschätzt.",
       "windlagen": [
-        {"name": "Pelèr", "sektor": [330, 30], "charakter": "morgens"},
-        {"name": "Ora", "sektor": [150, 210], "charakter": "nachmittags"}
+        {"name": "Pelèr", "sektor": [330, 30], "charakter": "morgens", "druck": [{"plus": "bozen", "minus": "brescia", "min": 0}], "zeit": [6, 12], "saison": [4, 10], "staerke": [14, 22]},
+        {"name": "Ora", "sektor": [150, 210], "charakter": "nachmittags, Thermik", "druck": [{"plus": "bozen", "minus": "brescia", "max": 0}], "wetter": "sonnig", "zeit": [12, 18], "saison": [4, 10], "staerke": [14, 22]}
       ],
       "spots": []
     },
@@ -311,8 +321,10 @@
       "punkt": [46.93, 8.6],
       "zeitzone": "Europe/Zurich",
       "thermik": true,
-      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Laut unhooked Thermiktag bei 4–8 kn aus NW bis NO um 14 Uhr (gilt für die Grundströmung, nicht als Sektor am See); Südföhn eher für Windsurfer. Kiten im November und Dezember verboten, nur in ausgewiesenen Zonen (unhooked, nicht aktuell geprüft). Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
-      "windlagen": [],
+      "hinweis": "Regel nach unhooked: Thermiktag, wenn um 14 Uhr 4–8 kn aus NW bis NO vorhergesagt sind (dort auf Windfinder bezogen, hier 10-m-Modellwind am Vorhersagepunkt). Südföhn eher für Windsurfer, noch nicht eingetragen. Kiten im November und Dezember verboten, nur in ausgewiesenen Zonen (unhooked, nicht aktuell geprüft). Geschätzt (Claude): Stärke, Tageszeit 12–18 Uhr, Saison Mai–September. Punkt (Seemitte) geschätzt.",
+      "windlagen": [
+        {"name": "Thermik (Nord)", "sektor": [330, 30], "charakter": "Thermik", "grundstroemung": {"hoehe": "10m", "sektor": [315, 45], "kn_min": 4, "kn_max": 8}, "wetter": "sonnig", "zeit": [12, 18], "saison": [5, 9], "staerke": [12, 20]}
+      ],
       "spots": []
     },
     {

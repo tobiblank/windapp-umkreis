@@ -240,9 +240,14 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
               <?= h($d['spot_name'] ?? 'ganze Region') ?> ·
               <?= h($det['windlage'] ?? 'jede Richtung') ?> ·
               <?= $det['von'] ?>–<?= $det['bis'] ?> Uhr ·
-              Ø <?= zahl($det['mittel_kn']) ?> kn<?php if ($det['boe_max'] !== null): ?>, Böen bis <?= zahl($det['boe_max']) ?> kn<?php endif ?>
+              <?php if (!empty($det['regel'])): ?>
+                typisch <?= zahl((float)$det['staerke'][0]) ?>–<?= zahl((float)$det['staerke'][1]) ?> kn
+              <?php else: ?>
+                Ø <?= zahl($det['mittel_kn']) ?> kn<?php if ($det['boe_max'] !== null): ?>, Böen bis <?= zahl($det['boe_max']) ?> kn<?php endif ?>
+              <?php endif ?>
               <?php if ($det['charakter']): ?><span class="leise">(<?= h($det['charakter']) ?>)</span><?php endif ?>
               <?php if ($det['grob']): ?><span class="marker">grob</span><?php endif ?>
+              <?php if (!empty($det['regel'])): ?><span class="marker regel" title="Aus Druckdifferenz und/oder Grundströmung abgeleitet, nicht aus dem Modellwind am See. Die Stärke ist ein geschätzter typischer Wert.">Regel</span><?php endif ?>
             <?php else: ?>
               <span class="leise">Modellmittel: <?= h($det['grund']) ?>, nur ein Teil der Ensemble-Läufe sieht ein Fenster</span>
             <?php endif ?>
@@ -261,6 +266,7 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
 <?php endforeach ?>
 
 <footer class="fuss klein leise">
+  <p><b>Regel</b> heißt: Die Windlage ist aus Druckdifferenzen und Grundströmung abgeleitet (nach lokalen Vorhersageseiten wie kitewetter.at), die Stärke ist ein geschätzter typischer Wert.</p>
   <p><b>Rohwerte, nicht kalibriert.</b> Modelle unterschätzen lokale Thermik oft (Seen mit „Thermik“ markiert, dort lieber die verlinkte lokale Vorhersage ansehen); Böen und Gewitter prüft nur das Modellmittel. Entfernung als Luftlinie zum Vorhersagepunkt der Region.</p>
   <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0) · Für Stegen genauer: <a href="https://ammerseewind.de">ammerseewind.de</a></p>
   <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>

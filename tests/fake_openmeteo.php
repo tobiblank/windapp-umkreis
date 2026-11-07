@@ -5,6 +5,12 @@
  *   Breite 48,0 (Ammersee): Westwind 250 Grad, 16 kn, morgen 10-15 UTC, sonst 6 kn
  *   Breite 45,5 (Adria): Nordost 40 Grad (Bora), 20 kn, morgen und uebermorgen 9-14 UTC
  *   andere Orte: Suedwind 180 Grad, 8 kn
+ * Fuer Regel-Windlagen (Testkatalog):
+ *   Druckpunkt A (Breite 47,0): morgen 3 hPa ueber B, sonst 5 hPa darunter;
+ *     im Ensemble skaliert die Abweichung mit dem Lauf (Vorzeichen bleibt)
+ *   Druckpunkt B (Breite 46,0): 1015 hPa
+ *   700/850 hPa: morgen 8 kn aus SW (225 Grad), sonst 20 kn aus N; im Ensemble
+ *     skaliert die Staerke mit dem Lauf
  * Mehrere Orte -> Liste, ein Ort -> Objekt (wie Open-Meteo).
  */
 
@@ -37,7 +43,12 @@ function wert(int $ort, string $var, int $i, float $faktor): ?float
         $kn = 8;
         $dir = 180;
     }
+    $hoehe = $tag === 1 ? [8, 225] : [20, 0];
+    $druck = 1015.0 + ($ort === 3 ? ($tag === 1 ? 3 : -5) * $faktor : 0);
     return match ($var) {
+        'pressure_msl'       => round($druck, 2),
+        'wind_speed_850hPa', 'wind_speed_700hPa'         => round($hoehe[0] * $faktor, 1),
+        'wind_direction_850hPa', 'wind_direction_700hPa' => $hoehe[1],
         'wind_speed_10m'     => round($kn * $faktor, 1),
         'wind_direction_10m' => $dir,
         'wind_gusts_10m'     => round($kn * $faktor * 1.4, 1),
@@ -56,7 +67,13 @@ function wert(int $ort, string $var, int $i, float $faktor): ?float
 $liste = [];
 foreach ($lats as $lat) {
     // Testorte nach Breite erkennen (die Abrufe sind nach Typ getrennt)
-    $ort = abs((float)$lat - 48.0) < 0.01 ? 0 : (abs((float)$lat - 45.5) < 0.01 ? 1 : 2);
+    $ort = match (true) {
+        abs((float)$lat - 48.0) < 0.01 => 0,
+        abs((float)$lat - 45.5) < 0.01 => 1,
+        abs((float)$lat - 47.0) < 0.01 => 3,
+        abs((float)$lat - 46.0) < 0.01 => 4,
+        default => 2,
+    };
     $hourly = ['time' => $zeiten];
     foreach ($vars as $v) {
         if (str_ends_with($pfad, '/ensemble')) {

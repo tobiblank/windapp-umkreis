@@ -73,6 +73,7 @@ a { color: var(--akzent); }
 .links { margin: 10px 0 0; color: var(--leise); }
 .region-kopf .marker { vertical-align: middle; margin-left: 4px; }
 .marker.thermik { background: var(--maybe-bg); color: var(--maybe); }
+.marker.regel { background: var(--go-bg); color: var(--go); }
 .marker { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 1px 6px; border-radius: 6px; background: var(--kachel); color: var(--leise); }
 
 .fuss { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--linie); }

@@ -90,11 +90,11 @@ pruefe($rc2 === 0 && $zeilen === 2, "zweiter Lauf in derselben Stunde ruft nicht
 exec('php ' . escapeshellarg("$tmp/sammler.php") . ' --debug 2>&1', $aus3);
 pruefe(in_array('vorhersage/0: unveraendert', $aus3, true) && in_array('vorhersage/1: unveraendert', $aus3, true), 'gleiche Werte werden nicht doppelt geschrieben');
 $zaehl = json_decode(file_get_contents("$tmp/daten/.state/openmeteo.json"), true);
-pruefe(($zaehl[$heute]['abrufe'] ?? 0) === 10, 'Open-Meteo-Zählung: 10 Abrufe (2 Läufe x 5: Vorhersage und Ensemble je See/Meer, Welle)');
+pruefe(($zaehl[$heute]['abrufe'] ?? 0) === 18, 'Open-Meteo-Zählung: 18 Abrufe (2 Läufe x 9: Vorhersage und Ensemble je See/Meer, Welle, Druck und Höhenwind je Modell/Ensemble)');
 
 // Eine fehlerhafte Antwort darf nichts kaputt machen
 $zz = array_map(fn($l) => json_decode($l, true), file($tmp . "/daten/vorhersage/$heute.ndjson"));
-pruefe($zz[0]['regionen'] === ['ammersee'] && count($zz[0]['payload']) === 1 && $zz[1]['regionen'] === ['adria-nord'],
+pruefe($zz[0]['regionen'] === ['ammersee', 'testsee-druck', 'testsee-hoehe'] && count($zz[0]['payload']) === 3 && $zz[1]['regionen'] === ['adria-nord'],
        'payload als Liste, Abrufe getrennt nach See und Meer');
 pruefe($zz[0]['payload'][0]['test_cell_selection'] === null && $zz[1]['payload'][0]['test_cell_selection'] === 'sea',
        'Meer-Regionen mit cell_selection=sea, Seen ohne');
@@ -141,6 +141,50 @@ $adriaW = array_values(array_filter($rlw, fn($e) => $e['region']['id'] === 'adri
 pruefe($adriaW['det']['grund'] === 'zu wenig Welle', 'Wave Adria morgen: zu wenig Welle (0,8 m)');
 $amW = array_values(array_filter($rlw, fn($e) => $e['region']['id'] === 'ammersee'))[0]['tage'][$morgen];
 pruefe($amW['det']['grund'] === 'keine Wellendaten', 'Wave Ammersee: keine Wellendaten (See)');
+
+echo "Regel-Windlagen\n";
+foreach (['druck', 'druck_ensemble', 'hoehe', 'hoehe_ensemble'] as $q) {
+    pruefe(is_file("$tmp/daten/$q/$heute.ndjson"), "$q geschrieben");
+}
+$zd = json_decode(file("$tmp/daten/druck/$heute.ndjson")[0], true);
+pruefe($zd['regionen'] === ['a', 'b'], 'Druck für die Druckpunkte A und B');
+$zh = json_decode(file("$tmp/daten/hoehe/$heute.ndjson")[0], true);
+pruefe($zh['regionen'] === ['testsee-hoehe'], 'Höhenwind nur für die Region mit Grundströmung in 700 hPa');
+$rlR = rangliste($regionen, $stand, $kite, [46.6, 30.0], 100, [$morgen, $uebermorgen], new DateTimeImmutable('today 06:00', new DateTimeZone('Europe/Berlin')));
+$byId = [];
+foreach ($rlR as $e) {
+    $byId[$e['region']['id']] = $e;
+}
+$td = $byId['testsee-druck']['tage'][$morgen] ?? null;
+pruefe($td && $td['det']['geht'] && $td['det']['regel'] && $td['det']['von'] === 11 && $td['det']['bis'] === min(17, $td['fenster'][1]),
+       'Druckregel morgen: A−B ≥ 0, sonnig → ab 11 Uhr (Zeit der Windlage) bis Ende der Windlage oder des Tagesfensters'
+       . ($td && $td['det']['geht'] ? " (ist {$td['det']['von']}-{$td['det']['bis']}, Fenster " . implode('-', $td['fenster']) . ')' : ''));
+pruefe($td && abs($td['det']['mittel_kn'] - 19) < 1e-9 && $td['det']['boe_max'] === null && $td['det']['staerke'] === [16, 22],
+       'Druckregel: typische Stärke 19 kn (Mitte 16-22), keine Böen');
+pruefe($td && abs($td['ens']['chance'] - 1.0) < 1e-9, 'Druckregel morgen: alle Ensemble-Läufe');
+$td2 = $byId['testsee-druck']['tage'][$uebermorgen] ?? null;
+pruefe($td2 && !$td2['det']['geht'] && $td2['det']['grund'] === 'Druckdifferenz passt nicht' && abs($td2['ens']['chance']) < 1e-9,
+       'Druckregel übermorgen: A−B < 0 → Druckdifferenz passt nicht, 0 %');
+$th = $byId['testsee-hoehe']['tage'][$morgen] ?? null;
+pruefe($th && $th['det']['geht'] && $th['det']['windlage'] === 'Talwind' && abs($th['det']['mittel_kn'] - 17) < 1e-9,
+       'Grundströmung morgen: 700 hPa SW ~8 kn → Talwind 17 kn');
+pruefe($th && abs($th['ens']['chance'] - 47 / 51) < 1e-9, sprintf('Grundströmung: 47 von 51 Läufen bis 10 kn (10,0 gerundet zählt) (ist %.3f)', $th['ens']['chance'] ?? -1));
+$th2 = $byId['testsee-hoehe']['tage'][$uebermorgen] ?? null;
+pruefe($th2 && $th2['det']['grund'] === 'Grundströmung passt nicht', 'Grundströmung übermorgen: 20 kn aus N passt nicht');
+$rlSeg = rangliste($regionen, $stand, SPORTARTEN['segeln'], [46.6, 30.0], 100, [$morgen], new DateTimeImmutable('today 06:00', new DateTimeZone('Europe/Berlin')));
+$segD = array_values(array_filter($rlSeg, fn($e) => $e['region']['id'] === 'testsee-druck'))[0]['tage'][$morgen];
+pruefe(!$segD['det']['geht'] && $segD['det']['grund'] === 'zu viel Wind', 'Segeln (bis 18 kn): Regel mit 19 kn ist zu viel Wind');
+$r = ['name' => 'X', 'sektor' => [0, 90], 'druck' => [['plus' => 'a', 'minus' => 'b', 'min' => 0]], 'staerke' => [10, 20], 'saison' => [5, 9]];
+pruefe(regel_grund($r, ['_h' => 12, '_monat' => 11, 'druck' => ['a-b' => 3]]) === 'außerhalb der Saison', 'Saison Mai-Sep: im November nicht');
+pruefe(regel_grund($r, ['_h' => 12, '_monat' => 7, 'druck' => ['a-b' => 3]]) === null, 'Saison Mai-Sep: im Juli erfüllt');
+pruefe(regel_grund($r + ['saison' => [11, 2]], ['_h' => 12, '_monat' => 1, 'druck' => ['a-b' => 3]]) === 'außerhalb der Saison', 'Saison wird nicht überschrieben (Grundwert)');
+pruefe(regel_grund(['saison' => [11, 2]] + $r, ['_h' => 12, '_monat' => 1, 'druck' => ['a-b' => 3]]) === null, 'Saison Nov-Feb über den Jahreswechsel: Januar erfüllt');
+pruefe(regel_grund($r, ['_h' => 12, '_monat' => 7]) === 'keine Druckdaten', 'ohne Druckdaten: nicht erfüllt');
+$kat = json_decode(file_get_contents(__DIR__ . '/regionen_test.json'), true);
+$kat['regionen'][2]['windlagen'][0]['druck'][0]['plus'] = 'gibtsnicht';
+unset($kat['regionen'][3]['windlagen'][0]['staerke']);
+$kat['regionen'][0]['spots'][1]['windlagen'][0]['zeit'] = [10, 12];
+pruefe(count(regionen_pruefen($kat)) === 3, 'Prüfung: unbekannter Druckpunkt, Regel ohne Stärke, zeit ohne Regel');
 
 echo "Sortierung\n";
 $heuteT = gmdate('Y-m-d');

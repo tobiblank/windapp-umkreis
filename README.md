@@ -27,6 +27,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Rangliste auf der Kommandozeile (`server/rangliste.php`) | zum Ausprobieren gegen Rohdaten |
 | Hosting | Hetzner Webhosting, Subdomain wohinfahrma.dablank.de (`public_html/wohinfahrma`), Deploy per GitHub Action |
 | Quellen für Regionen | 7.11.2026 gesichtet, siehe „Quellen für Regionen und Spots“ |
+| Regel-Windlagen | 7.11.2026: Druckdifferenzen und Grundströmung statt Modellwind für Thermik- und Föhnlagen; Reschensee, Silvaplana, Gardasee Nord, Urnersee. Stärken, Tageszeiten und Saison geschätzt, siehe „Regel-Windlagen“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -73,6 +74,36 @@ Eine Stunde ist fahrbar, wenn sie im Tagesfenster liegt (9 Uhr Ortszeit oder Son
 
 **Alle Zahlen sind Rohwerte, nicht kalibriert.** An Thermik-Spots unterschätzen die Modelle den Wind vermutlich. Sportart-Voreinstellungen wie in stegen-wind (14 / 14 / 11 / 16 / 17 / 12 / 5–18 kn); dort ist nur 14 kn Directional kalibriert, der Rest sind Faustwerte.
 
+## Regel-Windlagen
+
+Seit 7.11.2026, nach dem Vorbild lokaler Vorhersageseiten (kitewetter.at, kitesailing.ch, unhooked). Für Thermik- und Föhnlagen ist der 10-m-Modellwind am See schlecht; diese Seiten schließen aus Druckdifferenzen und Grundströmung, **ob** die Windlage kommt. Eine Windlage mit `druck` und/oder `grundstroemung` ist eine Regel-Windlage:
+
+```json
+{"name": "Malojawind", "sektor": [180, 250], "charakter": "Thermik",
+ "druck": [{"plus": "lugano", "minus": "zuerich", "min": -4}],
+ "grundstroemung": {"hoehe": "700hPa", "sektor": [180, 290], "kn_min": 4},
+ "wetter": "sonnig", "zeit": [12, 18], "saison": [5, 10], "staerke": [15, 22]}
+```
+
+| Feld | Bedeutung |
+|---|---|
+| `druck` | Liste von Bedingungen: Differenz `plus` − `minus` (Meeresspiegeldruck, hPa) zwischen zwei `druckpunkte`, mit `min` und/oder `max`. Alle müssen erfüllt sein |
+| `grundstroemung` | Wind in `10m`, `850hPa` oder `700hPa` am Vorhersagepunkt: `sektor`, `kn_min`, `kn_max` |
+| `wetter` | `sonnig`: mittlere Bewölkung höchstens 50 % |
+| `zeit` | Ortsstunden [ab, bis), in denen die Windlage weht |
+| `saison` | Monate [von, bis], auch über den Jahreswechsel |
+| `staerke` | **Pflicht:** typische Stärke in kn, wenn die Lage zutrifft |
+
+Sind alle Bedingungen einer Stunde erfüllt, rechnet die Bewertung mit der Mitte von `staerke` und der Mitte des `sektor` und prüft dann wie sonst Windfenster der Sportart, ablandig und Gewitter. Böen gibt es dafür keine. Das Ensemble prüft jeden der 51 Läufe mit seinen eigenen Druck- und Höhenwerten; die Chance ist der Anteil der Läufe, an denen die Regel trägt. Die Seite zeigt solche Tage mit „typisch 15–22 kn“ und dem Hinweis **Regel**.
+
+`druckpunkte` stehen oben im Katalog (`{id: {name, punkt}}`); der Sammler holt Luftdruck nur für sie und Höhenwind nur für Regionen, deren Regeln 850 oder 700 hPa brauchen.
+
+**Grenzen:**
+- Die Schwellen stammen von Seiten, die mit Stationsdruck (DWD Open Data) arbeiten; hier ist es Modell-Meeresspiegeldruck. Sie sind deshalb nur Startwerte.
+- Stärken, Tageszeiten, Saison und die Höhe der Grundströmung bei Silvaplana sind geschätzt (im `hinweis` je Region vermerkt) und sollten aus eigener Erfahrung korrigiert werden.
+- Ob das ECMWF-Ensemble bei Open-Meteo Druckniveaus (700/850 hPa) liefert, ist ungeprüft; die Quellen `hoehe` und `hoehe_ensemble` laufen deshalb getrennt, ein Fehler dort lässt die Vorhersage unberührt.
+- Bora (Maribor − Triest) und Bise (Genf − Güttingen) bleiben normale Windlagen, weil die Modelle diese großräumigen Winde gut erfassen.
+
 ## Sammler
 
 `server/sammler.php`, ein Abruf für bis zu 25 Regionen (Koordinaten kommagetrennt). Zwei Betriebsarten:
@@ -83,8 +114,10 @@ Eine Stunde ist fahrbar, wenn sie im Tagesfenster liegt (9 Uhr Ortszeit oder Son
 | Quelle | Inhalt | Takt als Cronjob |
 |---|---|---|
 | `vorhersage` | ICON-D2, ICON-EU, ECMWF IFS 9 km, GFS, AROME-HD: Wind, Richtung, Böen, Temperatur, Wettercode, Regen, Bewölkung; 7 Tage | stündlich |
-| `ensemble` | ECMWF IFS 0,25°, 51 Läufe: Wind, Richtung; 8 Tage | alle 6 h |
+| `ensemble` | ECMWF IFS 0,25°, 51 Läufe: Wind, Richtung, Bewölkung; 8 Tage | alle 6 h |
 | `welle` | Marine API: Wellenhöhe, -richtung, -periode, Swell; nur `typ: meer`; 7 Tage | alle 3 h |
+| `druck` / `druck_ensemble` | Meeresspiegeldruck an den `druckpunkte`, Modelle wie `vorhersage` bzw. ECMWF-Ensemble | stündlich / alle 6 h |
+| `hoehe` / `hoehe_ensemble` | Wind in 850 und 700 hPa, nur Regionen mit Grundströmung in dieser Höhe | stündlich / alle 6 h |
 
 Außerhalb ihres Gebiets liefert Open-Meteo für ein Modell null; das Mittel nimmt dann die übrigen.
 
@@ -183,4 +216,5 @@ tests/                  Tests und Open-Meteo-Ersatz
 5. Zugang aus stegen-wind übernehmen, Wohnort und Sportarten je Person
 6. Stegen: kalibrierte Chance aus ammerseewind.de über einen kleinen Endpoint übernehmen
 7. Mail-Benachrichtigung
-8. Später: Druckdifferenz als Bedingung (`druck`), Spot-Meldungen, Korrektur je Spot aus Sessions
+8. Regel-Windlagen nach dem ersten echten Lauf prüfen (Druckniveaus im Ensemble, plausible Tage); Stärken aus eigener Erfahrung eintragen
+9. Später: weitere Regeln (Achensee, Walchensee, Mistral), Spot-Meldungen, Korrektur je Spot aus Sessions

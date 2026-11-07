@@ -11,9 +11,21 @@
  *           ablandig? [[von, bis], ...], hinweis?
  * Sektoren in Grad, aus welcher Richtung der Wind kommt, von inklusive,
  * bis exklusive, im Uhrzeigersinn; [330, 30] geht ueber Norden.
+ *
+ * Regel-Windlagen (seit 7.11.2026) haben zusaetzlich:
+ *   druck          [{plus, minus, min?, max?}]  Druckdifferenz plus - minus in hPa,
+ *                  plus/minus sind Schluessel aus druckpunkte (oberste Ebene)
+ *   grundstroemung {hoehe: 10m|850hPa|700hPa, sektor?, kn_min?, kn_max?}
+ *   wetter         "sonnig" (mittlere Bewoelkung hoechstens 50 %)
+ *   zeit           [ab, bis) Ortsstunden, saison [von, bis] Monate (1-12)
+ *   staerke        [von, bis] kn: typische Staerke, wenn die Lage zutrifft (Pflicht)
+ * Oberste Ebene: druckpunkte {id: {name, punkt}}.
  */
 
-function regionen_laden(string $datei): array
+const HOEHEN = ['10m', '850hPa', '700hPa'];
+
+/** Ganzer Katalog (Regionen und Druckpunkte), geprueft */
+function katalog_laden(string $datei): array
 {
     $txt = @file_get_contents($datei);
     if ($txt === false) {
@@ -27,7 +39,13 @@ function regionen_laden(string $datei): array
     if ($fehler) {
         throw new RuntimeException("Regionen-Datei fehlerhaft:\n- " . implode("\n- ", $fehler));
     }
-    return $d['regionen'];
+    $d['druckpunkte'] ??= [];
+    return $d;
+}
+
+function regionen_laden(string $datei): array
+{
+    return katalog_laden($datei)['regionen'];
 }
 
 /** Liste von Fehlermeldungen, leer = in Ordnung */
@@ -35,6 +53,16 @@ function regionen_pruefen(array $d): array
 {
     $f = [];
     $ids = [];
+    $druckpunkte = $d['druckpunkte'] ?? [];
+    if (!is_array($druckpunkte)) {
+        $f[] = 'druckpunkte muss ein Objekt sein';
+        $druckpunkte = [];
+    }
+    foreach ($druckpunkte as $id => $p) {
+        if (!preg_match('/^[a-z0-9-]+$/', (string)$id) || empty($p['name']) || !punkt_ok($p['punkt'] ?? null)) {
+            $f[] = "Druckpunkt $id: braucht id (a-z, 0-9, -), name und punkt";
+        }
+    }
     foreach ($d['regionen'] ?? [] as $n => $r) {
         $wo = "Region " . ($r['id'] ?? "#$n");
         $id = $r['id'] ?? '';
@@ -56,7 +84,7 @@ function regionen_pruefen(array $d): array
         if (!in_array($r['zeitzone'] ?? '', timezone_identifiers_list(), true)) {
             $f[] = "$wo: zeitzone unbekannt";
         }
-        foreach (windlagen_pruefen($r['windlagen'] ?? null) as $m) {
+        foreach (windlagen_pruefen($r['windlagen'] ?? null, $druckpunkte) as $m) {
             $f[] = "$wo: $m";
         }
         if (isset($r['thermik']) && !is_bool($r['thermik'])) {
@@ -84,7 +112,7 @@ function regionen_pruefen(array $d): array
                 $f[] = "$sw: punkt muss [Breite, Laenge] sein";
             }
             if (array_key_exists('windlagen', $s)) {
-                foreach (windlagen_pruefen($s['windlagen']) as $m) {
+                foreach (windlagen_pruefen($s['windlagen'], $druckpunkte) as $m) {
                     $f[] = "$sw: $m";
                 }
             }
@@ -98,18 +126,70 @@ function regionen_pruefen(array $d): array
     return $f;
 }
 
-function windlagen_pruefen($wl): array
+function windlagen_pruefen($wl, array $druckpunkte = []): array
 {
     if (!is_array($wl)) {
         return ['windlagen muss eine Liste sein (darf leer sein)'];
     }
     $f = [];
     foreach ($wl as $w) {
+        $n = 'Windlage ' . ($w['name'] ?? '?');
         if (empty($w['name'])) {
             $f[] = 'Windlage ohne name';
         }
         if (!sektor_ok($w['sektor'] ?? null)) {
-            $f[] = 'Windlage ' . ($w['name'] ?? '?') . ': sektor muss [von, bis] in 0-360 Grad sein';
+            $f[] = "$n: sektor muss [von, bis] in 0-360 Grad sein";
+        }
+        if (isset($w['druck'])) {
+            if (!is_array($w['druck']) || !$w['druck']) {
+                $f[] = "$n: druck muss eine nicht leere Liste sein";
+            } else {
+                foreach ($w['druck'] as $d) {
+                    if (!isset($druckpunkte[$d['plus'] ?? '']) || !isset($druckpunkte[$d['minus'] ?? ''])) {
+                        $f[] = "$n: druck braucht plus und minus aus druckpunkte";
+                    }
+                    if (!isset($d['min']) && !isset($d['max'])) {
+                        $f[] = "$n: druck braucht min oder max (hPa)";
+                    }
+                    foreach (['min', 'max'] as $k) {
+                        if (isset($d[$k]) && !is_numeric($d[$k])) {
+                            $f[] = "$n: druck.$k muss eine Zahl sein";
+                        }
+                    }
+                }
+            }
+        }
+        if (isset($w['grundstroemung'])) {
+            $g = $w['grundstroemung'];
+            if (!in_array($g['hoehe'] ?? null, HOEHEN, true)) {
+                $f[] = "$n: grundstroemung.hoehe muss " . implode(', ', HOEHEN) . ' sein';
+            }
+            if (isset($g['sektor']) && !sektor_ok($g['sektor'])) {
+                $f[] = "$n: grundstroemung.sektor ungueltig";
+            }
+            if (!isset($g['sektor']) && !isset($g['kn_min']) && !isset($g['kn_max'])) {
+                $f[] = "$n: grundstroemung braucht sektor, kn_min oder kn_max";
+            }
+        }
+        if (isset($w['wetter']) && $w['wetter'] !== 'sonnig') {
+            $f[] = "$n: wetter kennt nur \"sonnig\"";
+        }
+        if (isset($w['zeit']) && !(is_array($w['zeit']) && count($w['zeit']) === 2
+                && is_int($w['zeit'][0]) && is_int($w['zeit'][1]) && $w['zeit'][0] >= 0 && $w['zeit'][1] <= 24 && $w['zeit'][0] < $w['zeit'][1])) {
+            $f[] = "$n: zeit muss [ab, bis] in vollen Stunden 0-24 sein";
+        }
+        if (isset($w['saison']) && !(is_array($w['saison']) && count($w['saison']) === 2
+                && is_int($w['saison'][0]) && is_int($w['saison'][1])
+                && $w['saison'][0] >= 1 && $w['saison'][0] <= 12 && $w['saison'][1] >= 1 && $w['saison'][1] <= 12)) {
+            $f[] = "$n: saison muss [von, bis] in Monaten 1-12 sein";
+        }
+        $regel = isset($w['druck']) || isset($w['grundstroemung']);
+        if ($regel && !(is_array($w['staerke'] ?? null) && count($w['staerke']) === 2
+                && is_numeric($w['staerke'][0]) && is_numeric($w['staerke'][1]) && $w['staerke'][0] <= $w['staerke'][1])) {
+            $f[] = "$n: Regel-Windlage braucht staerke [von, bis] in kn";
+        }
+        if (!$regel && (isset($w['staerke']) || isset($w['wetter']) || isset($w['zeit']) || isset($w['saison']))) {
+            $f[] = "$n: staerke, wetter, zeit und saison gibt es nur bei Regel-Windlagen (mit druck oder grundstroemung)";
         }
     }
     return $f;
