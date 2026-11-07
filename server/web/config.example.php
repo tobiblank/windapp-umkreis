@@ -7,19 +7,15 @@
  */
 
 return [
-    // Rohdaten-Ordner des Sammlers, AUSSERHALB des Web-Roots
+    // Rohdaten-Ordner, AUSSERHALB des Web-Roots. Hier legt die GitHub Action
+    // "Sammeln" die Daten ab (<HOME_DIR>/umkreisdaten). Absoluter Pfad.
     'data_dir' => '/usr/home/DEINUSER/umkreisdaten',
 
-    // Regionen-Katalog (im Repo: daten/regionen.json)
-    'regionen_datei' => '/usr/home/DEINUSER/umkreis/regionen.json',
+    // Optional: Regionen-Katalog. Standard: lib/regionen.json im Webordner,
+    // dorthin laedt die Action "Deploy" daten/regionen.json.
+    // 'regionen_datei' => '/usr/home/DEINUSER/umkreis/regionen.json',
 
-    // Optional: Modelle fuer die Vorhersage, ein Abruf fuer alle Regionen.
-    // Ausserhalb ihres Gebiets liefert Open-Meteo fuer ein Modell null, das ist
-    // kein Fehler (ICON-D2 deckt etwa nur Mitteleuropa und die Alpen ab).
+    // Nur fuer den Sammler als Cronjob (server/sammler.php ohne --action):
     // 'modelle' => 'icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd',
-
-    // Optional: freie Open-Meteo-Aufrufe je Tag fuer die Warnung in der Cron-Mail.
-    // Laufen ammerseewind.de und diese App vom selben Server, teilen sie sich
-    // vermutlich das Kontingent (Begrenzung je IP) - dann hier entsprechend weniger.
     // 'openmeteo_limit' => 10000,
 ];

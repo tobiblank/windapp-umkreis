@@ -522,19 +522,27 @@ function rangliste(array $regionen, array $stand, array $sport, array $heim, flo
 
 /**
  * Neuester erfolgreicher Eintrag je Region und Quelle (heute oder gestern, UTC).
+ * Liest beide Formen des Sammlers: eine Datei je Tag (Cron, 2026-11-07.ndjson)
+ * und eine gezippte je Lauf (GitHub Action, 2026-11-07_0525.ndjson.gz).
  * Rueckgabe [quelle => [region_id => eintrag]], dazu ['_ts'][quelle][region_id].
  */
 function daten_laden(string $dataDir, array $quellen = ['vorhersage', 'ensemble', 'welle']): array
 {
-    $out = [];
+    $out = ['_ts' => []];
     foreach ($quellen as $q) {
         $out[$q] = [];
+        $dateien = [];
         foreach ([gmdate('Y-m-d'), gmdate('Y-m-d', time() - 86400)] as $d) {
-            $f = "$dataDir/$q/$d.ndjson";
-            if (!is_file($f)) {
-                continue;
+            $dateien = array_merge($dateien, glob("$dataDir/$q/$d.ndjson") ?: [], glob("$dataDir/$q/{$d}_*.ndjson.gz") ?: []);
+        }
+        rsort($dateien);   // neueste zuerst
+        foreach ($dateien as $f) {
+            // Nicht gzfile(): das teilt lange Zeilen (ein Abruf = eine Zeile, oft > 100 KB)
+            $txt = (string)@file_get_contents($f);
+            if (str_ends_with($f, '.gz')) {
+                $txt = (string)@gzdecode($txt);
             }
-            $zeilen = file($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            $zeilen = array_values(array_filter(array_map('trim', explode("\n", $txt))));
             for ($i = count($zeilen) - 1; $i >= 0; $i--) {
                 $z = json_decode($zeilen[$i], true);
                 if (!is_array($z) || empty($z['ok']) || !isset($z['payload'], $z['regionen'])) {

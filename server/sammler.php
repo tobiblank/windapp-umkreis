@@ -19,6 +19,14 @@
  *       /usr/bin/php /usr/home/DEINUSER/sammler.php
  * 4. Test von der Kommandozeile:  php sammler.php --debug
  *
+ * ALS GITHUB ACTION (seit 7.11.2026, .github/workflows/sammeln.yml):
+ *       php server/sammler.php --action daten/regionen.json ausgabe/
+ *    Ohne config.php, ohne Takt: ruft jede Quelle genau einmal ab und schreibt
+ *    je Quelle eine gezippte Datei fuer diesen Lauf, z. B.
+ *       ausgabe/vorhersage/2026-11-07_0525.ndjson.gz
+ *    Die Action laedt sie per FTPS in den Datenordner. Exit 1 bei jedem Fehler,
+ *    dann mailt GitHub; erfolgreiche Teile werden trotzdem hochgeladen.
+ *
  * VERHALTEN: bei Erfolg still, nur im Fehlerfall Ausgabe (Cron-Mail).
  *
  * AUSGABE: eine Datei pro Quelle und Tag, aeltere Tage gezippt:
@@ -47,12 +55,28 @@ $TIMEOUT      = 20;   // Sekunden pro Request (viele Regionen = groessere Antwor
 $TEIL_GROESSE = 25;   // Regionen pro Open-Meteo-Abruf (URL-Laenge, Antwortgroesse)
 $DEBUG        = in_array('--debug', $argv ?? [], true) || isset($_GET['debug']);
 
+// Modus GitHub Action: --action <regionen.json> <ausgabe-ordner>
+$ACTION = false;
+$i = array_search('--action', $argv ?? [], true);
+if ($i !== false) {
+    if (!isset($argv[$i + 2])) {
+        echo "Aufruf: php sammler.php --action <regionen.json> <ausgabe-ordner>\n";
+        exit(1);
+    }
+    $ACTION = true;
+    $WEB_DIR = __DIR__ . '/web';
+    $CFG = ['regionen_datei' => $argv[$i + 1], 'data_dir' => $argv[$i + 2]];
+}
+$LAUF = $ACTION ? gmdate('Y-m-d_Hi') : null;
+
 require $WEB_DIR . '/lib/regionen.php';
 
-$CFG = @include $WEB_DIR . '/config.php';
-if (!is_array($CFG)) {
-    echo "config.php fehlt in $WEB_DIR (Vorlage: config.example.php)\n";
-    exit(1);
+if (!$ACTION) {
+    $CFG = @include $WEB_DIR . '/config.php';
+    if (!is_array($CFG)) {
+        echo "config.php fehlt in $WEB_DIR (Vorlage: config.example.php)\n";
+        exit(1);
+    }
 }
 $DATA_DIR = rtrim($CFG['data_dir'], '/');
 $MODELLE  = $CFG['modelle'] ?? 'icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd';
@@ -60,7 +84,7 @@ $OM_LIMIT = (int)($CFG['openmeteo_limit'] ?? 10000);
 $OM_WARNUNG_AB = 0.7;
 
 try {
-    $REGIONEN = regionen_laden($CFG['regionen_datei']);
+    $REGIONEN = regionen_laden($CFG['regionen_datei'] ?? "$WEB_DIR/lib/regionen.json");
 } catch (RuntimeException $e) {
     echo $e->getMessage(), "\n";
     exit(1);
@@ -236,13 +260,28 @@ function om_zaehlen(string $dataDir, float $gewicht): float
 // SCHREIBEN
 // ===================================================================
 
-function anhaengen(string $dataDir, string $quelle, array $zeile): bool
+/** $lauf: im Action-Modus eigene Datei je Lauf (Y-m-d_Hi), sonst eine je Tag */
+function anhaengen(string $dataDir, string $quelle, array $zeile, ?string $lauf = null): bool
 {
     $dir = "$dataDir/$quelle";
     @mkdir($dir, 0700, true);
     $json = json_encode($zeile, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    $name = $lauf ?? gmdate('Y-m-d');
     return $json !== false
-        && @file_put_contents("$dir/" . gmdate('Y-m-d') . '.ndjson', $json . "\n", FILE_APPEND | LOCK_EX) !== false;
+        && @file_put_contents("$dir/$name.ndjson", $json . "\n", FILE_APPEND | LOCK_EX) !== false;
+}
+
+/** Action-Modus: Dateien dieses Laufs zippen (gelesen werden sie gezippt) */
+function lauf_zippen(string $dataDir, string $quelle, string $lauf): void
+{
+    $f = "$dataDir/$quelle/$lauf.ndjson";
+    if (!is_file($f)) {
+        return;
+    }
+    $gz = gzencode((string)file_get_contents($f), 9);
+    if ($gz !== false && file_put_contents("$f.gz", $gz) !== false) {
+        unlink($f);
+    }
 }
 
 /**
@@ -286,7 +325,7 @@ foreach (quellen($REGIONEN, $MODELLE) as $name => $q) {
     $stempelDatei = "$DATA_DIR/.state/$name.block";
     $block  = max(1, intdiv($q['every'], 60));
     $diesen = gmdate('Y-m-d_') . sprintf('%02d', intdiv((int)gmdate('G'), $block) * $block);
-    if (!$DEBUG && @file_get_contents($stempelDatei) === $diesen) {
+    if (!$DEBUG && !$ACTION && @file_get_contents($stempelDatei) === $diesen) {
         continue;
     }
 
@@ -295,13 +334,15 @@ foreach (quellen($REGIONEN, $MODELLE) as $name => $q) {
         $ids = array_column($teil, 'id');
         $url = $q['basis'] . '?' . koordinaten($teil) . '&' . $q['query'];
         // Nur fuer tests/sammler_test.php: Open-Meteo durch einen lokalen Ersatz tauschen
-        if (!empty($CFG['test_url_ersatz'])) {
-            $url = preg_replace('#^https://[a-z-]+\.open-meteo\.com#', $CFG['test_url_ersatz'], $url);
+        $ersatz = $CFG['test_url_ersatz'] ?? (getenv('UMKREIS_TEST_URL') ?: null);
+        if ($ersatz) {
+            $url = preg_replace('#^https://[a-z-]+\.open-meteo\.com#', $ersatz, $url);
         }
         $r = fetch($url, $TIMEOUT);
 
-        $omHeute = om_zaehlen($DATA_DIR, om_gewicht($q['query'], count($teil)));
-        if ($omHeute >= $OM_LIMIT * $OM_WARNUNG_AB) {
+        // Im Action-Modus nicht zaehlen: kein bleibender Zustand, Abrufe von GitHub-IPs
+        $omHeute = $ACTION ? 0.0 : om_zaehlen($DATA_DIR, om_gewicht($q['query'], count($teil)));
+        if (!$ACTION && $omHeute >= $OM_LIMIT * $OM_WARNUNG_AB) {
             $warnStempel = "$DATA_DIR/.state/openmeteo.warnung";
             if (@file_get_contents($warnStempel) !== gmdate('Y-m-d')) {
                 $probleme[] = sprintf('Open-Meteo: heute geschaetzt %d von %d freien Aufrufen (%d %%)',
@@ -325,12 +366,12 @@ foreach (quellen($REGIONEN, $MODELLE) as $name => $q) {
         if ($ok) {
             $fp = fingerabdruck($liste);
             $fpDatei = "$DATA_DIR/.state/$name.$teilNr.fp";
-            if (@file_get_contents($fpDatei) === $fp . '|' . implode(',', $ids)) {
+            if (!$ACTION && @file_get_contents($fpDatei) === $fp . '|' . implode(',', $ids)) {
                 $bericht[] = "$name/$teilNr: unveraendert";
                 continue;
             }
             $zeile['payload'] = $liste;
-            if (!anhaengen($DATA_DIR, $name, $zeile)) {
+            if (!anhaengen($DATA_DIR, $name, $zeile, $LAUF)) {
                 $probleme[] = "$name: Schreiben in $DATA_DIR fehlgeschlagen";
                 $alleOk = false;
                 continue;
@@ -340,11 +381,19 @@ foreach (quellen($REGIONEN, $MODELLE) as $name => $q) {
         } else {
             $alleOk = false;
             $zeile['err'] = $r['err'] !== '' ? $r['err'] : substr(preg_replace('/\s+/', ' ', $r['body']), 0, 300);
-            anhaengen($DATA_DIR, $name, $zeile);
+            anhaengen($DATA_DIR, $name, $zeile, $LAUF);
             $bericht[] = "$name/$teilNr: FEHLER http={$r['http']} {$zeile['err']}";
         }
     }
 
+    if ($ACTION) {
+        // Ein Lauf, kein zweiter Versuch: jeder Fehler wird gemeldet
+        if (!$alleOk) {
+            $probleme[] = "$name: Abruf fehlgeschlagen (Einzelheiten in der Datei dieses Laufs)";
+        }
+        lauf_zippen($DATA_DIR, $name, $LAUF);
+        continue;
+    }
     if ($alleOk) {
         @mkdir("$DATA_DIR/.state", 0700, true);
         @file_put_contents($stempelDatei, $diesen);
@@ -364,4 +413,7 @@ if ($DEBUG) {
 }
 if ($probleme) {
     echo "Windapp Umkreis Sammler:\n- ", implode("\n- ", $probleme), "\n";
+    if ($ACTION) {
+        exit(1);
+    }
 }

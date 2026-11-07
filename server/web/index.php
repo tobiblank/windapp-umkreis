@@ -1,0 +1,277 @@
+<?php
+/**
+ * Wohinfahrma - Rangliste der Regionen im Umkreis
+ *
+ * Parameter (alle optional, die Seite merkt sich die Wahl im Browser):
+ *   sport   Schluessel aus SPORTARTEN (bewertung.php)
+ *   km      Umkreis in km Luftlinie
+ *   ort     "Breite,Laenge", auf 0,1 Grad gerundet (ca. 10 km) - genauer wird
+ *           nichts angenommen, damit kein genauer Standort im Zugriffsprotokoll steht
+ *   ansicht bald (heute bis uebermorgen) oder reise (Tag 3 bis 7)
+ */
+
+declare(strict_types=1);
+date_default_timezone_set('UTC');
+require __DIR__ . '/lib/regionen.php';
+require __DIR__ . '/lib/bewertung.php';
+
+const TZ_SEITE = 'Europe/Berlin';
+const HEIM_STANDARD = [48.07, 11.15];      // Inning am Ammersee
+const UMKREISE = [100, 200, 400, 700, 1000, 1500, 2500];
+const WOCHENTAGE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+
+function h(?string $s): string
+{
+    return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function zahl(float $v, int $stellen = 0): string
+{
+    return number_format($v, $stellen, ',', '.');
+}
+
+function fehlerseite(string $text): never
+{
+    http_response_code(503);
+    echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+       . '<title>Wohinfahrma</title><link rel="stylesheet" href="stil.css"><main class="seite"><h1 class="marke">Wohinfahrma</h1>'
+       . '<p class="karte">' . h($text) . '</p></main>';
+    exit;
+}
+
+$cfg = @include __DIR__ . '/config.php';
+if (!is_array($cfg) || empty($cfg['data_dir'])) {
+    fehlerseite('Die App ist noch nicht eingerichtet (config.php fehlt).');
+}
+try {
+    $regionen = regionen_laden($cfg['regionen_datei'] ?? __DIR__ . '/lib/regionen.json');
+} catch (RuntimeException $e) {
+    fehlerseite('Der Regionen-Katalog ist nicht lesbar.');
+}
+
+// --- Auswahl ----------------------------------------------------------
+$sportId = isset($_GET['sport']) && isset(SPORTARTEN[$_GET['sport']]) ? (string)$_GET['sport'] : 'kite_twintip';
+$sport = SPORTARTEN[$sportId];
+$km = isset($_GET['km']) && in_array((int)$_GET['km'], UMKREISE, true) ? (int)$_GET['km'] : 1000;
+$ansicht = ($_GET['ansicht'] ?? '') === 'reise' ? 'reise' : 'bald';
+
+$heim = HEIM_STANDARD;
+$eigenerOrt = false;
+if (isset($_GET['ort']) && preg_match('/^(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)$/', (string)$_GET['ort'], $m)) {
+    $lat = round((float)$m[1], 1);
+    $lon = round((float)$m[2], 1);
+    if (abs($lat) <= 90 && abs($lon) <= 180) {
+        $heim = [$lat, $lon];
+        $eigenerOrt = true;
+    }
+}
+
+$tzSeite = new DateTimeZone(TZ_SEITE);
+$heute = new DateTimeImmutable('today', $tzSeite);
+[$von, $bis] = $ansicht === 'reise' ? [3, 6] : [0, 2];
+$tage = [];
+for ($i = $von; $i <= $bis; $i++) {
+    $tage[] = $heute->modify("+$i day")->format('Y-m-d');
+}
+
+function tag_kurz(string $tag, DateTimeImmutable $heute): string
+{
+    $d = new DateTimeImmutable($tag, $heute->getTimezone());
+    $diff = (int)$heute->diff($d)->format('%r%a');
+    return match ($diff) {
+        0 => 'Heute',
+        1 => 'Morgen',
+        default => WOCHENTAGE[(int)$d->format('w')] . ' ' . $d->format('j.'),
+    };
+}
+
+// --- Rechnen ----------------------------------------------------------
+$stand = daten_laden(rtrim($cfg['data_dir'], '/'));
+$liste = rangliste($regionen, $stand, $sport, $heim, (float)$km, $tage);
+
+$zeiten = [];
+foreach ($stand['_ts'] as $proRegion) {
+    foreach ($proRegion as $ts) {
+        $zeiten[] = $ts;
+    }
+}
+$standText = null;
+if ($zeiten) {
+    $neu = (new DateTimeImmutable(max($zeiten)))->setTimezone($tzSeite);
+    $standText = ($neu->format('Y-m-d') === $heute->format('Y-m-d') ? 'heute' : WOCHENTAGE[(int)$neu->format('w')] . ' ' . $neu->format('j.n.'))
+               . ' ' . $neu->format('H:i') . ' Uhr';
+}
+
+function stufe(?float $chance): string
+{
+    if ($chance === null) {
+        return 'leer';
+    }
+    return $chance >= 0.7 ? 'go' : ($chance >= 0.4 ? 'maybe' : ($chance >= 0.15 ? 'no' : 'nix'));
+}
+
+function link_mit(array $aenderung): string
+{
+    global $sportId, $km, $ansicht, $heim, $eigenerOrt;
+    $p = ['sport' => $sportId, 'km' => $km, 'ansicht' => $ansicht];
+    if ($eigenerOrt) {
+        $p['ort'] = $heim[0] . ',' . $heim[1];
+    }
+    return '?' . http_build_query(array_merge($p, $aenderung));
+}
+
+$wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . ' kn';
+?>
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Wohinfahrma</title>
+<link rel="stylesheet" href="stil.css">
+</head>
+<body>
+<main class="seite">
+
+<header class="kopf">
+  <div>
+    <h1 class="marke">Wohinfahrma</h1>
+    <p class="leise klein">Wo ist Wind? Fahr ma.</p>
+  </div>
+  <?php if ($standText): ?><p class="leise klein rechts">Stand<br><?= h($standText) ?></p><?php endif ?>
+</header>
+
+<form class="wahl karte" method="get" id="wahl">
+  <label>Sportart
+    <select name="sport">
+      <?php foreach (SPORTARTEN as $id => $s): ?>
+        <option value="<?= h($id) ?>"<?= $id === $sportId ? ' selected' : '' ?>><?= h($s['name']) ?></option>
+      <?php endforeach ?>
+    </select>
+  </label>
+  <label>Umkreis
+    <select name="km">
+      <?php foreach (UMKREISE as $u): ?>
+        <option value="<?= $u ?>"<?= $u === $km ? ' selected' : '' ?>><?= zahl($u) ?> km</option>
+      <?php endforeach ?>
+    </select>
+  </label>
+  <input type="hidden" name="ansicht" value="<?= h($ansicht) ?>">
+  <?php if ($eigenerOrt): ?><input type="hidden" name="ort" value="<?= h($heim[0] . ',' . $heim[1]) ?>"><?php endif ?>
+  <p class="ort klein leise">
+    Von <?= $eigenerOrt ? 'deinem Standort (auf etwa 10 km gerundet)' : 'Inning am Ammersee' ?> ·
+    <button type="button" class="textknopf" id="standort">Meinen Standort nehmen</button>
+    <?php if ($eigenerOrt): ?> · <a href="<?= h(link_mit(['ort' => null])) ?>">Inning</a><?php endif ?>
+  </p>
+  <noscript><button class="knopf">Anzeigen</button></noscript>
+</form>
+
+<nav class="reiter" aria-label="Zeitraum">
+  <a href="<?= h(link_mit(['ansicht' => 'bald'])) ?>"<?= $ansicht === 'bald' ? ' aria-current="page"' : '' ?>>Heute bis übermorgen</a>
+  <a href="<?= h(link_mit(['ansicht' => 'reise'])) ?>"<?= $ansicht === 'reise' ? ' aria-current="page"' : '' ?>>Tag 3 bis 7</a>
+</nav>
+
+<p class="leise klein erklaerung">
+  <?= h($sport['name']) ?>, <?= h($wind) ?>, mindestens <?= MIN_STUNDEN ?> Stunden am Stück zwischen 9 Uhr und Sonnenuntergang.
+  Prozent = Anteil der 51 Läufe des ECMWF-Ensembles, an denen das klappt.
+</p>
+
+<?php if (!$zeiten): ?>
+  <p class="karte">Noch keine Vorhersagedaten. Der Sammler läuft zweimal am Tag, gegen 6:30 und 18:30 Uhr.</p>
+<?php elseif (!$liste): ?>
+  <p class="karte">Keine Region im Umkreis von <?= zahl($km) ?> km. <a href="<?= h(link_mit(['km' => UMKREISE[count(UMKREISE) - 1]])) ?>">Umkreis vergrößern</a></p>
+<?php endif ?>
+
+<?php foreach ($liste as $e):
+    $r = $e['region'];
+    $guteTage = array_filter($e['tage'], fn($t) => $t['det']['geht'] || (($t['ens']['chance'] ?? 0) >= 0.15));
+?>
+  <article class="karte region<?= $guteTage ? '' : ' still' ?>">
+    <div class="region-kopf">
+      <h2><?= h($r['name']) ?></h2>
+      <span class="leise klein"><?= zahl($e['km']) ?> km</span>
+    </div>
+    <div class="tage" style="--n: <?= count($tage) ?>">
+      <?php foreach ($tage as $t):
+          $d = $e['tage'][$t];
+          $c = $d['ens']['chance'] ?? null;
+      ?>
+        <div class="tag <?= stufe($c) ?>" title="<?= h($c === null ? 'keine Ensemble-Daten' : zahl(100 * $c) . ' % der Läufe') ?>">
+          <span class="t"><?= h(tag_kurz($t, $heute)) ?></span>
+          <span class="w"><?= $c === null ? ($d['det']['geht'] ? 'ja' : '–') : zahl(100 * $c) . '<small>%</small>' ?></span>
+        </div>
+      <?php endforeach ?>
+    </div>
+    <?php if ($guteTage): ?>
+      <ul class="details klein">
+        <?php foreach ($guteTage as $t => $d):
+            $det = $d['det'];
+        ?>
+          <li>
+            <b><?= h(tag_kurz($t, $heute)) ?>:</b>
+            <?php if ($det['geht']): ?>
+              <?= h($d['spot_name'] ?? 'ganze Region') ?> ·
+              <?= h($det['windlage'] ?? 'jede Richtung') ?> ·
+              <?= $det['von'] ?>–<?= $det['bis'] ?> Uhr ·
+              Ø <?= zahl($det['mittel_kn']) ?> kn<?php if ($det['boe_max'] !== null): ?>, Böen bis <?= zahl($det['boe_max']) ?> kn<?php endif ?>
+              <?php if ($det['charakter']): ?><span class="leise">(<?= h($det['charakter']) ?>)</span><?php endif ?>
+              <?php if ($det['grob']): ?><span class="marker">grob</span><?php endif ?>
+            <?php else: ?>
+              <span class="leise">Modellmittel: <?= h($det['grund']) ?>, nur ein Teil der Ensemble-Läufe sieht ein Fenster</span>
+            <?php endif ?>
+          </li>
+        <?php endforeach ?>
+      </ul>
+    <?php else: ?>
+      <p class="klein leise">Kein passender Tag in diesem Zeitraum.</p>
+    <?php endif ?>
+  </article>
+<?php endforeach ?>
+
+<footer class="fuss klein leise">
+  <p><b>Rohwerte, nicht kalibriert.</b> Modelle unterschätzen lokale Thermik oft; Böen und Gewitter prüft nur das Modellmittel. Entfernung als Luftlinie zum Vorhersagepunkt der Region.</p>
+  <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0) · Für Stegen genauer: <a href="https://ammerseewind.de">ammerseewind.de</a></p>
+  <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
+</footer>
+</main>
+
+<script>
+(function () {
+  var form = document.getElementById('wahl');
+  var SCHLUESSEL = 'wohinfahrma_wahl';
+  function lesen() { try { return JSON.parse(localStorage.getItem(SCHLUESSEL) || 'null'); } catch (e) { return null; } }
+  function merken(p) { try { localStorage.setItem(SCHLUESSEL, JSON.stringify(p)); } catch (e) {} }
+
+  // Ohne Parameter: letzte Wahl wiederherstellen
+  if (!location.search) {
+    var alt = lesen();
+    if (alt && alt.sport) {
+      location.replace('?' + new URLSearchParams(alt).toString());
+      return;
+    }
+  }
+  var jetzt = Object.fromEntries(new URLSearchParams(location.search));
+  if (jetzt.sport) { merken(jetzt); }
+
+  form.querySelectorAll('select').forEach(function (s) {
+    s.addEventListener('change', function () { form.submit(); });
+  });
+
+  var knopf = document.getElementById('standort');
+  if (!('geolocation' in navigator)) { knopf.hidden = true; return; }
+  knopf.addEventListener('click', function () {
+    knopf.textContent = 'Standort wird bestimmt …';
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      // Auf 0,1 Grad runden, bevor irgendetwas den Browser verlässt
+      var ort = form.querySelector('input[name=ort]') || form.appendChild(Object.assign(document.createElement('input'), { type: 'hidden', name: 'ort' }));
+      ort.value = pos.coords.latitude.toFixed(1) + ',' + pos.coords.longitude.toFixed(1);
+      form.submit();
+    }, function () {
+      knopf.textContent = 'Standort nicht verfügbar';
+    }, { maximumAge: 3600000, timeout: 10000 });
+  });
+})();
+</script>
+</body>
+</html>

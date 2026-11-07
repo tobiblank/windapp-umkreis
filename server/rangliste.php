@@ -29,7 +29,7 @@ $tage = [];
 for ($i = 0; $i < 7; $i++) {
     $tage[] = gmdate('Y-m-d', time() + 86400 * $i);
 }
-$regionen = regionen_laden($CFG['regionen_datei']);
+$regionen = regionen_laden($CFG['regionen_datei'] ?? "$WEB_DIR/lib/regionen.json");
 $stand = daten_laden(rtrim($CFG['data_dir'], '/'));
 $liste = rangliste($regionen, $stand, $sport, $heim, $radius, $tage);
 

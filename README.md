@@ -1,4 +1,6 @@
-# Windapp Umkreis
+# Wohinfahrma
+
+*Wo ist Wind? Fahr ma.* – [wohinfahrma.dablank.de](https://wohinfahrma.dablank.de)
 
 Rangliste von Windsport-Regionen im einstellbaren Umkreis: Wo lohnt es sich in den nächsten Tagen, für die eigene Sportart? Von den Spots um den Ammersee bis Adria, Ostsee, Mittelmeer und Atlantik.
 
@@ -18,11 +20,13 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Baustein | Status |
 |---|---|
 | Regionen-Katalog (`daten/regionen.json`) | 7.11.2026: Ammersee (Stegen, Herrsching, Eching) und Nördliche Adria (Bora, Scirocco). Sektorgrenzen teils geschätzt, siehe `hinweis` je Eintrag |
-| Sammler (`server/sammler.php`) | 7.11.2026, gegen einen Open-Meteo-Ersatz getestet, **noch nie gegen das echte Open-Meteo gelaufen** |
+| Sammler (`server/sammler.php`) | 7.11.2026, läuft als GitHub Action zweimal am Tag (`sammeln.yml`); gegen einen Open-Meteo-Ersatz getestet, **noch nie gegen das echte Open-Meteo gelaufen** |
 | Bewertung (`server/web/lib/bewertung.php`) | 7.11.2026: Stunde fahrbar, bester Block ≥ 2 h, Ensemble-Chance, Rangliste nach Luftlinie |
-| Rangliste auf der Kommandozeile (`server/rangliste.php`) | zum Ausprobieren, bevor es eine Seite gibt |
-| Seiten, Zugang, Benachrichtigung | offen |
-| Hosting, Domain, Deployment | offen |
+| Seite Rangliste (`server/web/index.php`) | 7.11.2026: Sportart, Umkreis (Luftlinie), Standort (auf 0,1° gerundet), „Heute bis übermorgen“ und „Tag 3 bis 7“; ohne Anmeldung, nicht in Suchmaschinen (`noindex`) |
+| Impressum, Datenschutz (`server/web/*.html`) | 7.11.2026, aus stegen-wind abgeleitet – bitte prüfen |
+| Rangliste auf der Kommandozeile (`server/rangliste.php`) | zum Ausprobieren gegen Rohdaten |
+| Hosting | Hetzner Webhosting, Subdomain wohinfahrma.dablank.de (`public_html/wohinfahrma`), Deploy per GitHub Action |
+| Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
 
@@ -64,9 +68,12 @@ Eine Stunde ist fahrbar, wenn sie im Tagesfenster liegt (9 Uhr Ortszeit oder Son
 
 ## Sammler
 
-`server/sammler.php`, Cronjob alle 10 Minuten. Ein Abruf für bis zu 25 Regionen (Koordinaten kommagetrennt).
+`server/sammler.php`, ein Abruf für bis zu 25 Regionen (Koordinaten kommagetrennt). Zwei Betriebsarten:
 
-| Quelle | Inhalt | Takt |
+- **GitHub Action** (Standard seit 7.11.2026, `.github/workflows/sammeln.yml`): zweimal am Tag, 5:25 und 17:25 UTC (6:25 / 18:25 Uhr im Winter, eine Stunde später im Sommer). `php server/sammler.php --action daten/regionen.json ausgabe` ruft jede Quelle einmal ab und schreibt je Quelle eine gezippte Datei für den Lauf (`vorhersage/2026-11-07_0525.ndjson.gz`); die Action lädt sie per FTPS nach `<HOME_DIR>/umkreisdaten/`. Kein Cronjob auf Hetzner, Abrufe von GitHub-IPs, also nicht aus dem Open-Meteo-Kontingent von ammerseewind.de. Bei jedem Fehler wird die Action rot (GitHub mailt); was geklappt hat, ist trotzdem hochgeladen.
+- **Cronjob** (alle 10 Minuten, ohne `--action`): Takt je Quelle wie unten, eine Datei je Tag, Wiederholung bei Fehlern. Für später, falls mehr Abrufe am Tag nötig werden.
+
+| Quelle | Inhalt | Takt als Cronjob |
 |---|---|---|
 | `vorhersage` | ICON-D2, ICON-EU, ECMWF IFS 9 km, GFS, AROME-HD: Wind, Richtung, Böen, Temperatur, Wettercode, Regen, Bewölkung; 7 Tage | stündlich |
 | `ensemble` | ECMWF IFS 0,25°, 51 Läufe: Wind, Richtung; 8 Tage | alle 6 h |
@@ -74,30 +81,36 @@ Eine Stunde ist fahrbar, wenn sie im Tagesfenster liegt (9 Uhr Ortszeit oder Son
 
 Außerhalb ihres Gebiets liefert Open-Meteo für ein Modell null (ICON-D2 an der Adria); das Mittel nimmt dann die übrigen.
 
-Format wie stegen-wind, eine Datei pro Quelle und Tag, ab vorgestern gezippt:
+Format wie stegen-wind (als Cronjob eine Datei pro Quelle und Tag, ab vorgestern gezippt; als Action eine gezippte je Lauf). `daten_laden()` liest beides:
 
 ```json
 {"ts":"2026-11-07T12:00:03Z","source":"vorhersage","ok":true,"http":200,"ms":812,
  "regionen":["ammersee","adria-nord"],"payload":[{...},{...}]}
 ```
 
-`payload` ist immer eine Liste in der Reihenfolge von `regionen`. Bleiben die Stundenwerte gleich (kein neuer Modelllauf), wird nichts geschrieben. Ein fehlgeschlagener Abruf wird protokolliert und im nächsten Lauf wiederholt; per Cron-Mail gemeldet wird erst, wenn im ganzen Takt nichts geklappt hat.
+`payload` ist immer eine Liste in der Reihenfolge von `regionen`. Als Cronjob: Bleiben die Stundenwerte gleich (kein neuer Modelllauf), wird nichts geschrieben. Ein fehlgeschlagener Abruf wird protokolliert und im nächsten Lauf wiederholt; per Cron-Mail gemeldet wird erst, wenn im ganzen Takt nichts geklappt hat.
 
 **Ungeprüft, beim ersten echten Lauf mit `php sammler.php --debug` kontrollieren:**
 
 - dass Open-Meteo mehrere Koordinaten in einem Abruf annimmt und als Liste zurückgibt,
 - die Variablennamen der Marine API,
-- die Zählung: `om_gewicht()` nimmt an, dass jeder Ort einzeln zählt, Ensemble-Läufe aber nicht extra. Beides ist eine Annahme. Läuft die App auf demselben Server wie ammerseewind.de, teilen sich beide vermutlich das freie Kontingent (`openmeteo_limit` in `config.php`).
+- nur Cronjob: die Zählung. `om_gewicht()` nimmt an, dass jeder Ort einzeln zählt, Ensemble-Läufe aber nicht extra. Beides ist eine Annahme. Als Cronjob auf demselben Server wie ammerseewind.de teilen sich beide vermutlich das freie Kontingent (`openmeteo_limit` in `config.php`).
 
 Größe grob, aus dem Test hochgerechnet: rund 20 KB je Region und Vorhersage-Abruf, 75 KB je Region und Ensemble-Abruf, ungezippt.
 
 ## Einrichtung
 
-1. `server/web/config.example.php` als `config.php` in den Webordner legen und ausfüllen (nie ins Repo).
-2. `server/sammler.php` und `server/rangliste.php` außerhalb des Webordners ablegen, `$WEB_DIR` darin anpassen.
-3. `daten/regionen.json` an den Ort aus `regionen_datei` legen.
-4. Cronjob: `/usr/bin/php /usr/home/DEINUSER/sammler.php`
-5. Ausprobieren: `php rangliste.php wingfoil 800 48.07,11.15`
+1. Im Repo unter *Settings → Secrets and variables → Actions*:
+   - Secrets `FTP_HOST`, `FTP_USER`, `FTP_PASSWORD` (dieselben Werte wie bei stegen-wind)
+   - Variable `WEB_DIR`: Webordner relativ zum FTP-Startordner, z. B. `public_html/wohinfahrma`
+   - Variable `HOME_DIR` (optional): Ordner, in dem `umkreisdaten/` angelegt wird, relativ zum FTP-Startordner; leer = Startordner
+2. Auf dem Server `config.php` in den Webordner legen (Vorlage `server/web/config.example.php`, nie ins Repo), mit `data_dir` = absoluter Pfad zu `<HOME_DIR>/umkreisdaten`.
+3. SSL für die Subdomain in der konsoleH (SSL Manager) einschalten.
+4. Unter *Actions* einmal „Deploy zu Hetzner“ und „Sammeln“ von Hand starten (*Run workflow*).
+
+Ein Push auf `main` mit Änderungen an `server/web/` oder `daten/regionen.json` lädt nach bestandener Prüfung automatisch hoch (`deploy.yml`). Es wird nie etwas gelöscht. `daten/regionen.json` landet als `lib/regionen.json` im Webordner (per `.htaccess` gesperrt).
+
+Ausprobieren auf der Kommandozeile: `php server/rangliste.php wingfoil 800 48.07,11.15` (braucht `server/web/config.php` mit `data_dir`).
 
 ## Prüfen
 
@@ -105,7 +118,7 @@ Größe grob, aus dem Test hochgerechnet: rund 20 KB je Region und Vorhersage-Ab
 php tests/test.php
 ```
 
-Ohne Netz: Einzelfunktionen, Katalog, Tagesfenster, dann der Sammler gegen `tests/fake_openmeteo.php` (eingebauter PHP-Server) und die Rangliste aus den geschriebenen Daten. Läuft auch als GitHub Action bei jedem Push (`.github/workflows/pruefen.yml`).
+Ohne Netz: Einzelfunktionen, Katalog, Tagesfenster, der Sammler in beiden Betriebsarten gegen `tests/fake_openmeteo.php` (eingebauter PHP-Server), die Rangliste aus den geschriebenen Daten und ein Rauchtest der Seite (HTTP-Status, keine PHP-Meldungen, Rundung des Standorts, ohne Daten, ohne config.php). Läuft vor jedem Deploy (`deploy.yml`) und auf anderen Branches (`pruefen.yml`).
 
 ## Ordner
 
@@ -120,10 +133,10 @@ tests/                  Tests und Open-Meteo-Ersatz
 
 ## Nächste Schritte
 
-1. Hosting und Domain festlegen, erster echter Lauf des Sammlers
+1. Erster echter Lauf des Sammlers, offene Punkte oben prüfen
 2. Weitere Regionen eintragen
-3. Seite „Rangliste“: Sportart, Umkreis, Tagesmodus (heute bis übermorgen) und Reisemodus (Tag 3–7)
-4. Zugang und Gastmodus aus stegen-wind übernehmen, Wohnort je Person
+3. Web-App zum Installieren (Manifest, Service Worker)
+4. Zugang aus stegen-wind übernehmen, Wohnort und Sportarten je Person
 5. Stegen: kalibrierte Chance aus ammerseewind.de über einen kleinen Endpoint übernehmen
 6. Mail-Benachrichtigung
 7. Später: Spot-Meldungen, Korrektur je Spot aus Sessions

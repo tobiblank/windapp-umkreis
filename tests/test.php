@@ -130,6 +130,85 @@ pruefe($adriaW['det']['grund'] === 'zu wenig Welle', 'Wave Adria morgen: zu weni
 $amW = array_values(array_filter($rlw, fn($e) => $e['region']['id'] === 'ammersee'))[0]['tage'][$morgen];
 pruefe($amW['det']['grund'] === 'keine Wellendaten', 'Wave Ammersee: keine Wellendaten (See)');
 
+// ---------------------------------------------------------------
+echo "Sammler als GitHub Action\n";
+$server = proc_open(['php', '-S', "127.0.0.1:$port", __DIR__ . '/fake_openmeteo.php'],
+                    [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $pipes);
+for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $port); $i++) {
+    usleep(100000);
+}
+$cmd = 'UMKREIS_TEST_URL=' . escapeshellarg("http://127.0.0.1:$port")
+     . ' php ' . escapeshellarg("$ROOT/server/sammler.php")
+     . ' --action ' . escapeshellarg("$ROOT/daten/regionen.json") . ' ' . escapeshellarg("$tmp/action") . ' 2>&1';
+exec($cmd, $ausA, $rcA);
+pruefe($rcA === 0 && $ausA === [], 'Action-Lauf ohne Fehler' . ($ausA ? ': ' . implode(' | ', $ausA) : ''));
+foreach (['vorhersage', 'ensemble', 'welle'] as $q) {
+    $gz = glob("$tmp/action/$q/" . gmdate('Y-m-d') . '_*.ndjson.gz');
+    $roh = glob("$tmp/action/$q/*.ndjson");
+    pruefe(count($gz) === 1 && !$roh, "$q: eine gezippte Datei für den Lauf");
+}
+pruefe(!is_dir("$tmp/action/.state"), 'kein Zustand im Ausgabeordner (wird nicht hochgeladen)');
+$standA = daten_laden("$tmp/action");
+$rlA = rangliste($regionen, $standA, $kite, $inning, 1000, [$morgen]);
+pruefe(count($rlA) === 2 && abs($rlA[0]['tage'][$morgen]['ens']['chance'] - 1.0) < 1e-9, 'gezippte Läufe werden gelesen, gleiche Rangliste');
+exec('php ' . escapeshellarg("$ROOT/server/sammler.php") . ' --action 2>&1', $ausF, $rcF);
+pruefe($rcF === 1, 'Action ohne Pfade: Hinweis und Exit 1');
+// Fehlgeschlagener Abruf: Open-Meteo nicht erreichbar
+$cmd = 'UMKREIS_TEST_URL=http://127.0.0.1:1 php ' . escapeshellarg("$ROOT/server/sammler.php")
+     . ' --action ' . escapeshellarg("$ROOT/daten/regionen.json") . ' ' . escapeshellarg("$tmp/kaputt") . ' 2>&1';
+exec($cmd, $ausK, $rcK);
+pruefe($rcK === 1 && str_contains(implode("\n", $ausK), 'vorhersage: Abruf fehlgeschlagen'), 'Action bei Fehler: Meldung und Exit 1');
+proc_terminate($server);
+
+// ---------------------------------------------------------------
+echo "Seite\n";
+$site = "$tmp/site";
+exec('cp -r ' . escapeshellarg("$ROOT/server/web") . ' ' . escapeshellarg($site));
+copy("$ROOT/daten/regionen.json", "$site/lib/regionen.json");
+$sitePort = $port + 1;
+$web = proc_open(['php', '-d', 'display_errors=1', '-d', 'error_reporting=-1', '-S', "127.0.0.1:$sitePort", '-t', $site],
+                 [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $pipes);
+for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $sitePort); $i++) {
+    usleep(100000);
+}
+function holen(int $port, string $pfad): array
+{
+    $body = @file_get_contents("http://127.0.0.1:$port/$pfad", false, stream_context_create(['http' => ['ignore_errors' => true]]));
+    preg_match('#HTTP/\S+ (\d+)#', $http_response_header[0] ?? '', $m);
+    return [(int)($m[1] ?? 0), (string)$body];
+}
+function ohne_php_meldung(string $html): bool
+{
+    return !preg_match('/(Warning|Notice|Deprecated|Fatal error|Parse error|Uncaught)/', $html);
+}
+
+[$code] = holen($sitePort, '');
+pruefe($code === 503, 'ohne config.php: 503');
+
+file_put_contents("$site/config.php", '<?php return ' . var_export(['data_dir' => "$tmp/action"], true) . ';');
+foreach (['', '?sport=wingfoil&km=100', '?ansicht=reise', '?ort=45.6,13.1&km=400', '?sport=xx&km=abc&ort=foo&ansicht=x',
+          '?sport=segeln&km=2500&ort=48.07,11.15'] as $q) {
+    [$code, $html] = holen($sitePort, "index.php$q");
+    pruefe($code === 200 && ohne_php_meldung($html), "index.php$q: 200, keine PHP-Meldung");
+}
+[, $html] = holen($sitePort, 'index.php?km=1000');
+pruefe(str_contains($html, 'Nördliche Adria') && str_contains($html, 'Ammersee') && str_contains($html, 'Bora'), 'Rangliste zeigt Adria (Bora) und Ammersee');
+[, $html] = holen($sitePort, 'index.php?km=100');
+pruefe(!str_contains($html, 'Nördliche Adria') && str_contains($html, 'Ammersee'), 'Umkreis 100 km: nur Ammersee');
+[, $html] = holen($sitePort, 'index.php?ort=45.6789,13.1234');
+pruefe(str_contains($html, 'value="45.7,13.1"'), 'Standort wird auf 0,1 Grad gerundet');
+[, $html] = holen($sitePort, 'index.php?sport=<script>');
+pruefe(!str_contains($html, '<script>alert') && ohne_php_meldung($html), 'unbekannte Sportart: Standard, nichts ungefiltert ausgegeben');
+
+file_put_contents("$site/config.php", '<?php return ' . var_export(['data_dir' => "$tmp/leer"], true) . ';');
+[$code, $html] = holen($sitePort, 'index.php');
+pruefe($code === 200 && str_contains($html, 'Noch keine Vorhersagedaten') && ohne_php_meldung($html), 'ohne Daten: Hinweis statt Fehler');
+foreach (['impressum.html', 'datenschutz.html', 'stil.css'] as $f) {
+    [$code] = holen($sitePort, $f);
+    pruefe($code === 200, "$f erreichbar");
+}
+proc_terminate($web);
+
 // Aufraeumen
 exec('rm -rf ' . escapeshellarg($tmp));
 

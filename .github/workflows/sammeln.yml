@@ -1,0 +1,80 @@
+name: Sammeln
+
+# Ruft zweimal am Tag die Vorhersage fuer alle Regionen bei Open-Meteo ab und
+# laedt die Rohdaten per FTPS in den Datenordner auf dem Webspace.
+# Damit braucht die App keinen Cronjob auf Hetzner, und die Abrufe kommen von
+# GitHub, nicht vom Server von ammerseewind.de (eigenes Open-Meteo-Kontingent).
+#
+# Zeiten in UTC: 5:25 und 17:25 = 6:25 und 18:25 Uhr im Winter, eine Stunde
+# spaeter im Sommer. Geplante Actions starten oft einige Minuten verspaetet.
+#
+#   ausgabe/<quelle>/<lauf>.ndjson.gz  ->  <HOME_DIR>/umkreisdaten/<quelle>/<lauf>.ndjson.gz
+#
+# Benoetigt unter Settings > Secrets and variables > Actions:
+#   Secrets:   FTP_HOST, FTP_USER, FTP_PASSWORD (dieselben wie bei stegen-wind)
+#   Variables: HOME_DIR (optional; Ordner, in dem umkreisdaten/ liegt, relativ
+#              zum FTP-Startordner; leer = Startordner)
+#
+# Rot heisst: mindestens ein Abruf ist fehlgeschlagen (GitHub mailt). Was geklappt
+# hat, ist trotzdem hochgeladen; die App zeigt dann den letzten guten Stand.
+
+on:
+  schedule:
+    - cron: "25 5,17 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sammeln
+  cancel-in-progress: false
+
+jobs:
+  sammeln:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+
+      - name: Abrufen
+        id: abruf
+        run: |
+          set +e
+          php server/sammler.php --action daten/regionen.json ausgabe --debug
+          echo "rc=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Hochladen
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          HOME_DIR: ${{ vars.HOME_DIR }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FTP_HOST}" ] || [ -z "${FTP_USER}" ] || [ -z "${FTP_PASSWORD}" ]; then
+            echo "::error::Secrets FTP_HOST, FTP_USER oder FTP_PASSWORD fehlen."
+            exit 1
+          fi
+          home="${HOME_DIR%/}"; [ -n "$home" ] && home="$home/"
+          n=0
+          while IFS= read -r f; do
+            ziel="${home}umkreisdaten/${f#ausgabe/}"
+            echo "→ $f  ⇒  $ziel"
+            curl --fail --silent --show-error --ssl-reqd --ftp-create-dirs \
+                 --user "${FTP_USER}:${FTP_PASSWORD}" \
+                 -T "$f" "ftp://${FTP_HOST}/${ziel}"
+            n=$((n + 1))
+          done < <(find ausgabe -name '*.ndjson.gz' | sort)
+          echo "$n Dateien hochgeladen."
+
+      - name: Ergebnis
+        if: steps.abruf.outputs.rc != '0'
+        run: |
+          echo "::error::Mindestens ein Abruf ist fehlgeschlagen, siehe Schritt Abrufen."
+          exit 1

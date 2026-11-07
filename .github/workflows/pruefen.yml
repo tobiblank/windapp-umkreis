@@ -2,10 +2,11 @@ name: Prüfen
 
 # PHP-Syntax, Regionen-Katalog und Tests (tests/test.php: Sammler gegen einen
 # lokalen Open-Meteo-Ersatz, Rangliste). Ohne Netzzugriff auf Open-Meteo.
-# Hochladen zum Server kommt dazu, sobald feststeht, wo die App laeuft.
+# Auf main prueft deploy.yml dasselbe vor dem Hochladen, hier nur andere Branches.
 
 on:
   push:
+    branches-ignore: [main]
   pull_request:
   workflow_dispatch:
 

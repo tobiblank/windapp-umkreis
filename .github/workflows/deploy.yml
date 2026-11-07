@@ -1,0 +1,75 @@
+name: Deploy zu Hetzner
+
+# Laedt die Web-App per FTPS auf den Webspace, nur nach bestandener Pruefung.
+# Loescht nie etwas. Laedt jedes Mal alle Dateien (es sind wenige).
+#
+#   server/web/*         -> <WEB_DIR>/                 (Webordner von wohinfahrma.dablank.de)
+#   daten/regionen.json  -> <WEB_DIR>/lib/regionen.json (per .htaccess gesperrt)
+#
+# Benoetigt unter Settings > Secrets and variables > Actions:
+#   Secrets:   FTP_HOST, FTP_USER, FTP_PASSWORD (dieselben wie bei stegen-wind)
+#   Variables: WEB_DIR (Webordner relativ zum FTP-Startordner, z. B. public_html/wohinfahrma)
+#
+# config.php ist nicht im Repo und wird nie hochgeladen oder ueberschrieben.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "server/web/**"
+      - "daten/regionen.json"
+      - "tests/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+      - name: PHP-Syntax
+        run: for f in $(git ls-files '*.php'); do php -l "$f" >/dev/null || exit 1; done
+      - name: Tests
+        run: php tests/test.php
+
+  deploy:
+    needs: pruefen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Hochladen
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          WEB_DIR: ${{ vars.WEB_DIR }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FTP_HOST}" ] || [ -z "${FTP_USER}" ] || [ -z "${FTP_PASSWORD}" ] || [ -z "${WEB_DIR}" ]; then
+            echo "::error::Secrets FTP_HOST, FTP_USER, FTP_PASSWORD oder Variable WEB_DIR fehlen."
+            exit 1
+          fi
+          web="${WEB_DIR%/}/"
+          hoch() {
+            echo "→ $1  ⇒  $2"
+            curl --fail --silent --show-error --ssl-reqd --ftp-create-dirs \
+                 --user "${FTP_USER}:${FTP_PASSWORD}" \
+                 -T "$1" "ftp://${FTP_HOST}/$2"
+          }
+          for f in $(git ls-files server/web); do
+            case "$(basename "$f")" in config.php|config.example.php) continue ;; esac
+            hoch "$f" "${web}${f#server/web/}"
+          done
+          hoch daten/regionen.json "${web}lib/regionen.json"
+          echo "Fertig."

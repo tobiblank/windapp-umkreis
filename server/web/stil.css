@@ -1,0 +1,75 @@
+/* Wohinfahrma - Optik
+ * Hell und dunkel nach Systemeinstellung. Systemschriften, keine Downloads.
+ */
+:root {
+  --grund: #eef3f4; --karte: #ffffff; --kachel: #e4ecee; --linie: #d3dee1;
+  --text: #13242a; --leise: #5a6f77;
+  --go: #1f9d74; --maybe: #c98a12; --no: #c8553f; --nix: #9aabb1;
+  --go-bg: #d7f2e8; --maybe-bg: #fbedcf; --no-bg: #f8dfd9; --nix-bg: #edf1f2;
+  --akzent: #0f7fa8;
+  --zahlen: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --grund: #0f1e24; --karte: #16282f; --kachel: #1d343c; --linie: #24404a;
+    --text: #e8eef0; --leise: #9db0b7;
+    --go: #4fd1a5; --maybe: #f2b84b; --no: #f08a7a; --nix: #5d7781;
+    --go-bg: #173d35; --maybe-bg: #3d3420; --no-bg: #3e2826; --nix-bg: #1a2e35;
+    --akzent: #5cc8f0;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { background: var(--grund); }
+body { margin: 0; color: var(--text); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-text-size-adjust: 100%; }
+a { color: var(--akzent); }
+.seite { max-width: 560px; margin: 0 auto; padding: 0 16px 48px; }
+.leise { color: var(--leise); }
+.klein { font-size: 14px; }
+
+.kopf { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; padding: 22px 2px 14px; }
+.kopf p { margin: 2px 0 0; }
+.kopf .rechts { text-align: right; }
+.marke { margin: 0; font: 600 34px/1 var(--zahlen); letter-spacing: .01em; }
+
+.karte { background: var(--karte); border-radius: 18px; padding: 16px; margin: 0 0 12px; }
+
+.wahl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.wahl label { display: grid; gap: 4px; font-size: 13px; color: var(--leise); }
+.wahl select { font: inherit; font-size: 16px; color: var(--text); background: var(--kachel); border: 1px solid var(--linie); border-radius: 10px; padding: 9px 10px; min-width: 0; }
+.wahl .ort { grid-column: 1 / -1; margin: 0; }
+.textknopf { font: inherit; color: var(--akzent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+.knopf { grid-column: 1 / -1; font: inherit; font-weight: 600; padding: 10px; border-radius: 10px; border: 0; background: var(--text); color: var(--karte); }
+
+.reiter { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--kachel); padding: 4px; border-radius: 12px; margin: 0 0 10px; }
+.reiter a { text-align: center; padding: 8px 6px; border-radius: 9px; color: var(--leise); text-decoration: none; font-size: 14px; font-weight: 600; }
+.reiter a[aria-current] { background: var(--karte); color: var(--text); }
+
+.erklaerung { margin: 0 2px 14px; }
+
+.region-kopf { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.region-kopf h2 { margin: 0; font-size: 18px; }
+.region.still .tage { opacity: .75; }
+
+.tage { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 6px; }
+.tag { border-radius: 12px; padding: 8px 6px 6px; text-align: center; background: var(--nix-bg); }
+.tag .t { display: block; font-size: 12px; color: var(--leise); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tag .w { display: block; font: 600 28px/1.05 var(--zahlen); font-variant-numeric: tabular-nums; }
+.tag .w small { font-size: 16px; }
+.tag.go { background: var(--go-bg); } .tag.go .w { color: var(--go); }
+.tag.maybe { background: var(--maybe-bg); } .tag.maybe .w { color: var(--maybe); }
+.tag.no { background: var(--no-bg); } .tag.no .w { color: var(--no); }
+.tag.nix .w, .tag.leer .w { color: var(--nix); }
+
+.details { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; }
+.details li { padding-top: 6px; border-top: 1px solid var(--linie); }
+.marker { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 1px 6px; border-radius: 6px; background: var(--kachel); color: var(--leise); }
+
+.fuss { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--linie); }
+.fuss p { margin: 0 0 8px; }
+
+@media (max-width: 380px) {
+  .wahl { grid-template-columns: 1fr; }
+  .tag .w { font-size: 24px; }
+}
