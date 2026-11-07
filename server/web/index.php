@@ -16,6 +16,7 @@ require __DIR__ . '/lib/regionen.php';
 require __DIR__ . '/lib/bewertung.php';
 require __DIR__ . '/lib/karte.php';
 require __DIR__ . '/lib/fahrzeit.php';
+require __DIR__ . '/lib/roadtrip.php';
 
 const TZ_SEITE = 'Europe/Berlin';
 const HEIM_STANDARD = [48.07, 11.15];      // Inning am Ammersee
@@ -80,7 +81,8 @@ try {
 $sportId = isset($_GET['sport']) && isset(SPORTARTEN[$_GET['sport']]) ? (string)$_GET['sport'] : 'kite_twintip';
 $sport = SPORTARTEN[$sportId];
 $km = isset($_GET['km']) && in_array((int)$_GET['km'], UMKREISE, true) ? (int)$_GET['km'] : 1000;
-$ansicht = ($_GET['ansicht'] ?? '') === 'reise' ? 'reise' : 'bald';
+$ansicht = in_array($_GET['ansicht'] ?? '', ['reise', 'roadtrip'], true) ? $_GET['ansicht'] : 'bald';
+$roadtrip = $ansicht === 'roadtrip';   // seit 7.11.2026: Reisevorschlaege ueber alle 7 Tage
 // Anreise (seit 7.11.2026): Auto = Umkreis um den Standort, Flug = alle Flugziele ohne Umkreis
 $anreise = ($_GET['anreise'] ?? '') === 'flug' ? 'flug' : 'auto';
 $flug = $anreise === 'flug';
@@ -125,7 +127,7 @@ if ($geteilt && is_string($_GET['nach'] ?? null) && preg_match('/^\d{4}-\d{2}-\d
     }
 }
 
-[$von, $bis] = $ansicht === 'reise' ? [3, 6] : [0, 2];
+[$von, $bis] = match ($ansicht) { 'reise' => [3, 6], 'roadtrip' => [0, 6], default => [0, 2] };
 $tage = [];
 for ($i = $von; $i <= $bis; $i++) {
     $tage[] = $heute->modify("+$i day")->format('Y-m-d');
@@ -170,8 +172,8 @@ foreach (array_keys($stand) as $q) {
 }
 // Verlauf: dieselbe Chance aus frueheren Abrufen (mit Zwischenspeicher, Standard <data_dir>/cache)
 $cacheDir = array_key_exists('cache_dir', $cfg) ? ($cfg['cache_dir'] === null ? null : rtrim((string)$cfg['cache_dir'], '/')) : "$dataDir/cache";
-$verlauf = verlauf_mit_cache($geteilt ? [$geteilt] : $regionen, $dataDir, $cacheDir, $stand, $sport, $tage, $jetzt,
-                             $cfg['regionen_datei'] ?? __DIR__ . '/lib/regionen.json');
+$verlauf = $roadtrip ? [] : verlauf_mit_cache($geteilt ? [$geteilt] : $regionen, $dataDir, $cacheDir, $stand, $sport, $tage, $jetzt,
+                                              $cfg['regionen_datei'] ?? __DIR__ . '/lib/regionen.json');
 // Sortierung: alle Tage (summe), ein angezeigter Tag oder Entfernung
 $nach = (string)($_GET['nach'] ?? 'summe');
 if ($nach !== 'km' && !in_array($nach, $tage, true)) {
@@ -188,6 +190,7 @@ foreach ($liste as $i => $e) {
         : fahrzeit($e['region'], $heim, (float)$e['km'], $fahrzeiten, $fahrtModell);
 }
 $liste = rangliste_sortieren($liste, $nach);
+$trips = $roadtrip && !$geteilt ? roadtrip_vorschlaege($liste, $tage) : [];
 
 $zeiten = [];
 foreach ($stand['_ts'] as $proRegion) {
@@ -439,7 +442,9 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
 <nav class="reiter" aria-label="Zeitraum">
   <a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>"<?= $ansicht === 'bald' ? ' aria-current="page"' : '' ?>>Heute bis übermorgen</a>
   <a href="<?= h(link_mit(['ansicht' => 'reise', 'nach' => null])) ?>"<?= $ansicht === 'reise' ? ' aria-current="page"' : '' ?>>Tag 3 bis 7</a>
+  <a href="<?= h(link_mit(['ansicht' => 'roadtrip', 'nach' => null])) ?>"<?= $roadtrip ? ' aria-current="page"' : '' ?>>Roadtrip</a>
 </nav>
+<?php if (!$roadtrip): ?>
 
 <nav class="sortierung klein" aria-label="Sortierung">
   <span class="leise">Sortiert nach</span>
@@ -450,14 +455,19 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <a href="<?= h(link_mit(['nach' => 'km'])) ?>"<?= $nach === 'km' ? ' aria-current="true"' : '' ?>><?= $flug ? 'Transfer' : 'Fahrzeit' ?></a>
 </nav>
 <?php endif ?>
+<?php endif ?>
 
 <p class="leise klein erklaerung">
   <?= h($sport['name']) ?>, <?= h($wind) ?>, mindestens <?= MIN_STUNDEN ?> Stunden am Stück zwischen 9 Uhr und Sonnenuntergang<?= $ansicht === 'bald' ? ', heute erst ab einer halben Stunde nach jetzt' : '' ?>.
   Prozent = Anteil der 51 Läufe des ECMWF-Ensembles, an denen das klappt.
+  <?php if ($roadtrip): ?>
+  Roadtrip: mindestens <?= ROADTRIP_MIN_TAGE ?> Tage hintereinander mit mindestens <?= zahl(100 * ROADTRIP_MIN_CHANCE) ?> % Chance, jeden Tag an derselben oder einer Region bis <?= ROADTRIP_NAH_KM ?> km entfernt.
+  <?php else: ?>
   „↑ von 40“ = vor bis zu drei Abrufen (zweimal am Tag) stand dort 40 %.
+  <?php endif ?>
 </p>
 
-<?php if ($liste && !$geteilt):
+<?php if ($liste && !$geteilt && !$roadtrip):
     // Landkarte (seit 7.11.2026): Punkte nach der Chance am gewaehlten Tag,
     // ohne gewaehlten Tag die beste Chance im Zeitraum. Tippen springt zur Region.
     $kartenTag = in_array($nach, $tage, true) ? $nach : null;
@@ -517,7 +527,44 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <?php endif ?>
 <?php endif ?>
 
-<?php foreach ($liste as $e):
+<?php if ($roadtrip && $liste && !$trips): ?>
+  <p class="karte">Kein Roadtrip in Sicht: an keinen <?= ROADTRIP_MIN_TAGE ?> Tagen hintereinander mindestens <?= zahl(100 * ROADTRIP_MIN_CHANCE) ?> % in nahen Regionen. <?= $flug ? '' : '<a href="' . h(link_mit(['km' => UMKREISE[count(UMKREISE) - 1]])) . '">Umkreis vergrößern</a>' ?></p>
+<?php endif ?>
+<?php foreach ($trips as $trip):
+    $ersterE = $liste[$trip['tage'][0]['i']];
+    $letzter = $trip['tage'][count($trip['tage']) - 1]['tag'];
+?>
+  <article class="karte trip">
+    <div class="region-kopf">
+      <h2><?= count($trip['tage']) ?> Tage · <?= h(tag_kurz($trip['tage'][0]['tag'], $heute)) ?> – <?= h(tag_kurz($letzter, $heute)) ?></h2>
+      <span class="leise klein fahrzeit">Ø <?= zahl(100 * $trip['mittel']) ?> %<span class="km"><?= h(isset($ersterE['fahrt']['flug']) ? fahrzeit_mit_wort($ersterE['fahrt']) : 'Anreise ' . fahrzeit_mit_wort($ersterE['fahrt'])) ?></span></span>
+    </div>
+    <ol class="trip-tage klein">
+      <?php foreach ($trip['tage'] as $k => $tt):
+          $te = $liste[$tt['i']];
+          $d = $te['tage'][$tt['tag']];
+          $det = $d['det'];
+          $c = $d['ens']['chance'] ?? null;
+          $vorher = $k > 0 ? $liste[$trip['tage'][$k - 1]['i']] : null;
+      ?>
+        <?php if ($vorher && $vorher['region']['id'] !== $te['region']['id']):
+            $wkm = entfernung_km($vorher['region']['punkt'], $te['region']['punkt']);
+        ?>
+          <li class="wechsel leise">↳ weiter nach <?= h($te['region']['name']) ?>, <?= h(fahrzeit_text(['min' => (int)round($fahrtModell[0] + $fahrtModell[1] * $wkm), 'geschaetzt' => true])) ?> (<?= zahl($wkm) ?> km Luftlinie)</li>
+        <?php endif ?>
+        <li>
+          <span class="trip-wert <?= $c === null ? 'go' : stufe($c) ?>"><?= $c === null ? 'ja' : zahl(100 * $c) ?></span>
+          <span><b><?= h(tag_kurz($tt['tag'], $heute)) ?></b> <a href="<?= h(link_mit(['ansicht' => array_search($tt['tag'], $tage, true) <= 2 ? 'bald' : 'reise', 'nach' => $tt['tag']])) ?>#r-<?= h($te['region']['id']) ?>" class="trip-region"><?= h($te['region']['name']) ?></a><?php if ($det['geht']): ?> ·
+            <?= h($det['windlage'] ?? 'jede Richtung') ?> · <?= $det['von'] ?>–<?= $det['bis'] ?> Uhr ·
+            <?= !empty($det['regel']) ? 'typisch ' . zahl((float)$det['staerke'][0]) . '–' . zahl((float)$det['staerke'][1]) . ' kn' : 'Ø ' . zahl($det['mittel_kn']) . ' kn' ?>
+            <?php else: ?> · <span class="leise">nur ein Teil der Ensemble-Läufe sieht ein Fenster</span><?php endif ?></span>
+        </li>
+      <?php endforeach ?>
+    </ol>
+  </article>
+<?php endforeach ?>
+
+<?php foreach ($roadtrip && !$geteilt ? [] : $liste as $e):
     $r = $e['region'];
     $guteTage = array_filter($e['tage'], fn($t) => $t['det']['geht'] || (($t['ens']['chance'] ?? 0) >= 0.15));
 ?>

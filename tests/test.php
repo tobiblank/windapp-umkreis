@@ -13,6 +13,7 @@ require "$ROOT/server/web/lib/regionen.php";
 require "$ROOT/server/web/lib/bewertung.php";
 require "$ROOT/server/web/lib/karte.php";
 require "$ROOT/server/web/lib/fahrzeit.php";
+require "$ROOT/server/web/lib/roadtrip.php";
 
 $fehler = 0;
 function pruefe(bool $ok, string $was): void
@@ -95,6 +96,23 @@ $e = ['tage' => ['t1' => ['det' => ['geht' => true], 'ens' => ['chance' => 0.3]]
                  't3' => ['det' => ['geht' => false], 'ens' => null, 'vorbei' => true]]];
 pruefe(karte_wert($e, null)['tag'] === 't2' && abs(karte_wert($e, 't1')['chance'] - 0.3) < 1e-9 && karte_wert($e, 't3')['tag'] === null,
        'Punktwert: ohne Tag die beste Chance, mit Tag dieser Tag, vorbei zählt nicht');
+
+echo "Roadtrip\n";
+$rtT = ['d0', 'd1', 'd2', 'd3', 'd4'];
+$rtTag = fn($c) => ['det' => ['geht' => $c !== null && $c >= 0.5], 'ens' => $c === null ? null : ['chance' => $c]];
+$rtE = fn($id, $p, $cs) => ['region' => ['id' => $id, 'punkt' => $p], 'tage' => array_combine($rtT, array_map($rtTag, $cs))];
+$rtL = [$rtE('A', [43.0, 3.0], [0.9, 0.8, 0.1, 0.0, 0.0]), $rtE('B', [43.5, 3.5], [0.0, 0.6, 0.7, 0.9, 0.0]),
+        $rtE('C', [47.0, 11.0], [0.6, 0.7, 0.0, 0.0, 0.0]), $rtE('D', [47.5, 11.5], [0.0, 0.0, 0.0, 0.8, 0.9])];
+$rtV = roadtrip_vorschlaege($rtL, $rtT);
+$rtK = array_map(fn($v) => implode(' ', array_map(fn($x) => $x['tag'] . $rtL[$x['i']]['region']['id'], $v['tage'])), $rtV);
+pruefe(($rtK[0] ?? '') === 'd0A d1A d2B d3B', 'längste Kette zuerst: zwei Tage A, dann ins nahe B (ein Wechsel lohnt erst, wenn A nachlässt)');
+pruefe(in_array('d3D d4D', $rtK, true) && in_array('d0C d1C', $rtK, true) && count($rtK) === 3, 'weitere Ketten; Teilstücke fallen weg');
+pruefe(!array_filter($rtK, fn($k) => str_contains($k, 'A') && str_contains($k, 'D')), 'keine Sprünge über mehr als 150 km');
+pruefe(roadtrip_wert(['vorbei' => true, 'det' => ['geht' => true], 'ens' => ['chance' => 1.0]]) === null
+       && roadtrip_wert(['det' => ['geht' => true], 'ens' => null]) === ROADTRIP_OHNE_ENSEMBLE
+       && roadtrip_wert(['det' => ['geht' => false], 'ens' => ['chance' => 0.49]]) === null, 'guter Tag: nicht vorbei, ab 50 %, ohne Ensemble mit Fenster');
+$rtGleich = [$rtE('A', [43.0, 3.0], [0.9, 0.9, 0.9, 0.0, 0.0]), $rtE('A2', [43.1, 3.1], [0.85, 0.85, 0.85, 0.0, 0.0])];
+pruefe(count(roadtrip_vorschlaege($rtGleich, $rtT)) === 1, 'fast gleiche Vorschläge (gleiche Tage, mindestens halb am selben Ort): nur einer');
 
 // ---------------------------------------------------------------
 echo "Sammler gegen Open-Meteo-Ersatz\n";
@@ -558,6 +576,12 @@ pruefe(!str_contains($html, 'name="km"><') && !str_contains($html, 'class="umkre
        'Flugziele: kein Umkreis, kein Standort, keine Abfahrt, Links behalten die Anreise');
 [, $html] = holen($sitePort, 'index.php?km=100&ort=46.6,30.0');
 pruefe(str_contains($html, 'id="r-testsee-druck"') && !str_contains($html, 'Testflughafen'), 'Anreise Auto: Region mit Auto und Flug bleibt mit Fahrzeit');
+[$code, $html] = holen($sitePort, 'index.php?km=1000&ansicht=roadtrip');
+pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'class="karte trip"') && str_contains($html, '>Nördliche Adria</a>')
+       && !str_contains($html, 'id="landkarte"') && !str_contains($html, 'aria-label="Sortierung"') && str_contains($html, '>Roadtrip</a>'),
+       'Roadtrip: Vorschlag Adria morgen und übermorgen, ohne Karte und Sortierung');
+[, $html] = holen($sitePort, 'index.php?km=100&ansicht=roadtrip');
+pruefe(str_contains($html, 'Kein Roadtrip in Sicht'), 'Roadtrip ohne passende Tage: Hinweis');
 foreach (['impressum.html', 'datenschutz.html', 'karte.svg', 'stil.css', 'sw.js', 'offline.html', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon.svg', 'icon-maskable-512.png', 'favicon.svg', 'favicon.ico', 'schrift/barlow-condensed-600.woff', 'schrift/OFL.txt'] as $f) {
     [$code] = holen($sitePort, $f);
     pruefe($code === 200, "$f erreichbar");

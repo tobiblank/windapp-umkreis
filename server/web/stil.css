@@ -66,7 +66,7 @@ a { color: var(--akzent); }
 .textknopf { font: inherit; color: var(--akzent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
 .knopf { grid-column: 1 / -1; font: inherit; font-weight: 600; padding: 10px; border-radius: 10px; border: 0; background: var(--text); color: var(--karte); }
 
-.reiter { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--kachel); padding: 4px; border-radius: 12px; margin: 0 0 10px; }
+.reiter { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; background: var(--kachel); padding: 4px; border-radius: 12px; margin: 0 0 10px; }
 .reiter a { text-align: center; padding: 8px 6px; border-radius: 9px; color: var(--leise); text-decoration: none; font-size: 14px; font-weight: 600; }
 .reiter a[aria-current] { background: var(--karte); color: var(--text); }
 
@@ -147,3 +147,13 @@ a { color: var(--akzent); }
 .installieren p { margin: 0 0 8px; }
 .installieren-knoepfe { display: flex; align-items: center; gap: 16px; }
 .knopf-klein { font: inherit; font-weight: 600; padding: 8px 16px; border-radius: 999px; border: 0; background: var(--text); color: var(--karte); cursor: pointer; }
+
+/* Roadtrip (seit 7.11.2026) */
+.trip-tage { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.trip-tage li { display: flex; gap: 10px; align-items: baseline; line-height: 1.45; }
+.trip-tage li.wechsel { padding-left: 46px; font-size: 13px; }
+.trip-wert { flex: 0 0 36px; text-align: center; border-radius: 8px; padding: 2px 0; font-family: var(--zahlen); font-weight: 600; background: var(--nix-bg); color: var(--nix); }
+.trip-wert.go { background: var(--go-bg); color: var(--go-text); }
+.trip-wert.maybe { background: var(--maybe-bg); color: var(--maybe-text); }
+.trip-wert.no { background: var(--no-bg); color: var(--no); }
+.trip-region { color: inherit; font-weight: 600; }

@@ -33,6 +33,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Landkarte | 7.11.2026: Regionen als Punkte über der Rangliste, eingefärbt nach der Chance am gewählten Tag, mit Umkreis; eigene SVG-Grundlage aus Natural Earth, keine fremden Server; siehe „Landkarte“ |
 | Fahrzeit und Abfahrt | 7.11.2026: Fahrzeit ab Inning laut openrouteservice (GitHub Action `fahrzeiten.yml`, braucht Secret `ORS_API_KEY`), sonst aus der Luftlinie geschätzt; „Abfahrt bis …“ an guten Tagen; Sortierung „Fahrzeit“. **Noch nie gegen das echte ORS gelaufen**; siehe „Fahrzeit und Abfahrt“ |
 | Flugziele | 7.11.2026: Auswahl „Anreise: Auto / Flug“; Flug zeigt alle Flugziele ohne Umkreis, mit Flughafen und geschätztem Transfer; siehe „Flugziele“ |
+| Roadtrip | 7.11.2026: dritter Reiter, Ketten guter Tage über alle 7 Tage an derselben oder einer nahen Region; siehe „Roadtrip“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -136,6 +137,16 @@ Seit 7.11.2026. Im Formular „Anreise: Auto / Flug“ (Parameter `anreise=flug`
 - **Flug:** alle Regionen mit `flug` in `anreise`, ohne Umkreis und ohne Standort. Im Kopf „Flug: Lanzarote (ACE)“ und „≈ 25 min Transfer“; „Sortiert nach Transfer“ statt Fahrzeit; keine Abfahrtszeit; Karte ohne Standort und Umkreis. Flugzeiten, Verbindungen und Preise sind nicht berücksichtigt.
 - **Eingetragen** (von Claude, Flughafen und Transfer geschätzt, im `hinweis` vermerkt): nur Flug: Famara (ACE, 25 min), Fuerteventura Nord (FUE, 35), El Médano (TFS, 10), Prasonisi (RHO, 90). Auto und Flug: Sinis (CAG, 90), Kartibubbo (TPS, 40), Tarifa (AGP, 105). Sardinien und Sizilien gehen mit Fähre auch mit dem Auto, Tarifa ist rund 20 Stunden entfernt.
 - Der Fahrzeiten-Abruf überspringt reine Flugziele.
+
+## Roadtrip
+
+Seit 7.11.2026. Dritter Reiter neben „Heute bis übermorgen“ und „Tag 3 bis 7“ (`ansicht=roadtrip`), über alle 7 Tage, für Auto und Flug. Statt der Regionen stehen dort bis zu 5 Reisevorschläge (`lib/roadtrip.php`):
+
+- **Guter Tag:** nicht vorbei, Chance mindestens 50 % (ohne Ensemble: Modellmittel sieht ein Fenster, zählt als 50 %).
+- **Kette:** mindestens 2 gute Tage hintereinander, jeden Tag an derselben Region oder einer bis 150 km Luftlinie entfernt. Je Starttag sucht eine dynamische Programmierung die Folge mit der höchsten Summe der Chancen; ein Wechsel kostet 5 Punkte, damit nur gewechselt wird, wenn es etwas bringt.
+- **Reihenfolge:** mehr Tage zuerst, dann höhere mittlere Chance. Es fallen weg: Teilstücke eines gewählten Vorschlags, Vorschläge mit mindestens der Hälfte der Tage am selben Ort wie ein gewählter, und Vorschläge an schon abgedeckten Tagen, die nur in der Nähe eines gewählten liegen.
+- **Anzeige:** „6 Tage · Morgen – Fr 13. · Ø 93 %“, Anreise vom Standort zur ersten Region, je Tag Chance, Region (Link zur Region in der passenden Ansicht), Windlage, Fenster, Wind; bei einem Wechsel „↳ weiter nach …, ≈ 1:30 h“ (Schätzung aus der Luftlinie, Formel wie bei der Fahrzeit). Ohne Karte und Sortierung; der Verlauf wird hier nicht gerechnet.
+- **Grenzen:** Ob das Wetter zwischen zwei Tagen stabil bleibt, prüft niemand; jeder Tag zählt für sich. Ein Ruhetag mitten im Trip unterbricht die Kette.
 
 **Alle Zahlen sind Rohwerte, nicht kalibriert.** An Thermik-Spots unterschätzen die Modelle den Wind vermutlich. Sportart-Voreinstellungen wie in stegen-wind (14 / 14 / 11 / 16 / 17 / 12 / 5–18 kn); dort ist nur 14 kn Directional kalibriert, der Rest sind Faustwerte.
 
@@ -295,7 +306,7 @@ tools/karte_bauen.py    erzeugt server/web/karte.svg aus Natural Earth
 2. ~~Karte~~ (erledigt, siehe „Landkarte“)
 3. ~~Fahrzeit statt Luftlinie, mit Abfahrtsempfehlung~~ (erledigt, siehe „Fahrzeit und Abfahrt“; später: Umkreis in Stunden, genaue Zeiten auch für andere Startorte)
 4. ~~Fahr- und Flugziele trennen~~ (erledigt, siehe „Flugziele“)
-5. Roadtrip-Modus: mehrere gute Tage hintereinander oder zwei nahe Regionen im Wechsel
+5. ~~Roadtrip-Modus~~ (erledigt, siehe „Roadtrip“; später vielleicht: Ruhetage zulassen, Übernachtungsort)
 6. Matrix Regionen × Tage als Übersicht
 7. Stundenansicht je Region mit Streuung der Modelle, Vergleich zweier Regionen
 8. Wassertemperatur und Neoprenempfehlung (ob die Marine API das liefert, ungeprüft)
