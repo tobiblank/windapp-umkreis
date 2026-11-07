@@ -96,6 +96,8 @@ a { color: var(--akzent); }
 .tag .v.steigt { color: var(--go-text); }
 .tag .v.faellt { color: var(--no); }
 .verlauf { color: var(--leise); white-space: nowrap; }
+.abfahrt { white-space: nowrap; }
+.fahrzeit { white-space: nowrap; }
 .verlauf.faellt { color: var(--no); }
 
 /* Landkarte (seit 7.11.2026); .karte ist hier die Kachel, die Karte selbst heisst landkarte */

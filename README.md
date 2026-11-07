@@ -31,6 +31,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Regel-Windlagen | 7.11.2026: Druckdifferenzen und Grundströmung statt Modellwind für Thermik- und Föhnlagen; Reschensee, Silvaplana, Gardasee Nord, Urnersee. Stärken, Tageszeiten und Saison geschätzt, siehe „Regel-Windlagen“ |
 | Verlauf über die Abrufe | 7.11.2026: dieselbe Chance aus bis zu drei früheren Abrufen, Pfeil in der Kachel und „stabil / steigt / fällt / schwankt“ in der Detailzeile, mit Zwischenspeicher; siehe „Verlauf über die Abrufe“ |
 | Landkarte | 7.11.2026: Regionen als Punkte über der Rangliste, eingefärbt nach der Chance am gewählten Tag, mit Umkreis; eigene SVG-Grundlage aus Natural Earth, keine fremden Server; siehe „Landkarte“ |
+| Fahrzeit und Abfahrt | 7.11.2026: Fahrzeit ab Inning laut openrouteservice (GitHub Action `fahrzeiten.yml`, braucht Secret `ORS_API_KEY`), sonst aus der Luftlinie geschätzt; „Abfahrt bis …“ an guten Tagen; Sortierung „Fahrzeit“. **Noch nie gegen das echte ORS gelaufen**; siehe „Fahrzeit und Abfahrt“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -60,6 +61,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | `hinweis` | Herkunft und offene Fragen (nicht auf der Seite) |
 | `links` | optional, `[{name, url}]`: lokale Spezialprognose, auf der Seite als „Genauer: …“ verlinkt; nur `https://` |
 | `thermik` | optional, `true`: Thermik-See. Die Seite zeigt den Hinweis „Thermik“, weil das Modellmittel den Wind dort vermutlich unterschätzt |
+| `anfahrt` | optional, `[Breite, Länge]`: Ziel für die Fahrzeit (Parkplatz am Spot). Ohne: `punkt` des ersten Spots, sonst der Vorhersagepunkt (der auf dem Wasser liegt und erst auf die nächste Straße einrasten muss) |
 
 Sektoren in Grad, **woher** der Wind kommt, im Uhrzeigersinn, `von` inklusive, `bis` exklusive. `[275, 20]` geht über Norden. Eine Region sollte nicht über eine Wetterscheide reichen (Gardasee Nord und Süd verhalten sich verschieden).
 
@@ -110,6 +112,18 @@ Seit 7.11.2026. Über der Rangliste, einklappbar (der Browser merkt sich den Zus
 - **Ausschnitt:** alle Regionen im Umkreis und der Standort, etwas höher als breit; gestrichelt der Umkreis (Kreis um den Standort, in Mercator nur ungefähr).
 - **Grundlage:** `server/web/karte.svg` (108 KB, gezippt rund 30 KB), Länder mit großen Seen aus Natural Earth 1:50 Mio. (gemeinfrei), 20° W bis 36° O, 22° bis 64° N, Mercator. Kleine Seen wie der Ammersee fehlen in diesem Maßstab. Neu erzeugen mit `python3 tools/karte_bauen.py <ne_50m_admin_0_countries_lakes.geojson> server/web/karte.svg` (nur Standardbibliothek); die Projektion steht zusätzlich in `lib/karte.php`, der Test vergleicht beide. Regionen außerhalb des Ausschnitts meldet der Test.
 - Die Seite bindet die Grundlage mit `<use href="karte.svg#land">` ein: einmal geladen, dann aus dem Browser-Cache, und die Farben kommen aus `stil.css` (hell und dunkel).
+
+## Fahrzeit und Abfahrt
+
+Seit 7.11.2026. Der Umkreis bleibt Luftlinie; angezeigt und sortiert wird nach Fahrzeit mit dem Auto, ohne Verkehr, Pausen und Grenzwartezeiten.
+
+- **Abruf:** `server/fahrzeiten.php` als GitHub Action `fahrzeiten.yml` (bei Änderung des Katalogs auf `main`, am 1. jedes Monats, von Hand). Ziel je Region ist `anfahrt`, sonst der `punkt` des ersten Spots, sonst der Vorhersagepunkt. Erst rastet jedes Ziel auf die nächste Straße ein (ORS-Snapping mit 2, 10, 30 km Radius; lehnt der Server einen Radius ab, bleibt es beim kleineren), dann **eine** Matrix-Anfrage von Inning zu allen Zielen. Ergebnis `fahrzeiten.json` im Datenordner. Gesendet werden nur Katalog-Koordinaten und Inning, **nie der Standort von Besuchern**.
+- **Kontingent:** Kostenloser ORS-Plan mit API-Schlüssel; laut ORS-Forum 500 Matrix-Anfragen am Tag und bis zu 3500 Strecken je Anfrage. Hier eine Anfrage je Lauf, dazu eine Snapping-Anfrage je Radius.
+- **Genau oder geschätzt:** Genau nur, wenn der Standort Inning ist (± 0,05°). Sonst `10 min + Faktor × km Luftlinie`, der Faktor ist der Median aus den genauen Werten (ohne Datei 0,95 min/km); angezeigt mit „≈“, auf 15 Minuten gerundet. Ohne Straße am Ziel fehlt die Region in der Datei und wird ebenfalls geschätzt (Abhilfe: `anfahrt` setzen). Findet ORS eine Straße, aber keine Route (Insel ohne Fähre im Netz), steht dort „kein Landweg“, auch für andere Standorte.
+- **Abfahrt** in der Detailzeile guter Tage: Beginn des Fensters (Ortszeit der Region) minus Fahrzeit minus 15 Minuten Aufbau, in deutscher Zeit, auf 5 Minuten abgerundet: „Abfahrt bis 9:15“. Vor 5 Uhr: „Anreise am Vortag“. Heute, wenn die Zeit vorbei ist: „jetzt los: ab 13:15 dort“ (Ortszeit), sofern danach noch 2 Stunden im Fenster bleiben, sonst „heute nicht mehr erreichbar“. Nicht in der geteilten Ansicht.
+- **Quellenangabe** im Fuß, wenn die Datei da ist: openrouteservice/HeiGIT und OpenStreetMap (ODbL).
+
+**Ungeprüft** (nur gegen `tests/fake_ors.php`): die Pfade `/v2/snap/driving-car` und `/v2/matrix/driving-car` beim gehosteten ORS, der größte erlaubte Snapping-Radius, die Einheit von `snapped_distance` (angenommen Meter), ob die Matrix bei fehlender Route `null` oder `0` liefert (beides gilt als keine Route) und wie ORS Fähren einrechnet (Sardinien, Sizilien). Beim ersten Lauf die Ausgabe von `--debug` in der Action ansehen.
 
 **Alle Zahlen sind Rohwerte, nicht kalibriert.** An Thermik-Spots unterschätzen die Modelle den Wind vermutlich. Sportart-Voreinstellungen wie in stegen-wind (14 / 14 / 11 / 16 / 17 / 12 / 5–18 kn); dort ist nur 14 kn Directional kalibriert, der Rest sind Faustwerte.
 
@@ -221,9 +235,10 @@ Bis das eingebaut ist, Thermik-Regionen als „grob“ markieren.
    - Secrets `FTP_HOST`, `FTP_USER`, `FTP_PASSWORD` (dieselben Werte wie bei stegen-wind)
    - Variable `WEB_DIR`: Webordner relativ zum FTP-Startordner, z. B. `public_html/wohinfahrma`
    - Variable `HOME_DIR` (optional): Ordner, in dem `umkreisdaten/` angelegt wird, relativ zum FTP-Startordner; leer = Startordner
+   - Secret `ORS_API_KEY` (optional, für genaue Fahrzeiten): kostenloser Schlüssel bei openrouteservice.org; ohne Schlüssel schätzt die Seite aus der Luftlinie
 2. Auf dem Server `config.php` in den Webordner legen (Vorlage `server/web/config.example.php`, nie ins Repo), mit `data_dir` = absoluter Pfad zu `<HOME_DIR>/umkreisdaten`.
 3. SSL für die Subdomain in der konsoleH (SSL Manager) einschalten.
-4. Unter *Actions* einmal „Deploy zu Hetzner“ und „Sammeln“ von Hand starten (*Run workflow*).
+4. Unter *Actions* einmal „Deploy zu Hetzner“, „Sammeln“ und „Fahrzeiten“ von Hand starten (*Run workflow*).
 
 Ein Push auf `main` mit Änderungen an `server/web/` oder `daten/regionen.json` lädt nach bestandener Prüfung automatisch hoch (`deploy.yml`). Es wird nie etwas gelöscht. `daten/regionen.json` landet als `lib/regionen.json` im Webordner (per `.htaccess` gesperrt).
 
@@ -235,7 +250,7 @@ Ausprobieren auf der Kommandozeile: `php server/rangliste.php wingfoil 800 48.07
 php tests/test.php
 ```
 
-Ohne Netz: Einzelfunktionen, Katalog, Tagesfenster, der Sammler in beiden Betriebsarten gegen `tests/fake_openmeteo.php` (eingebauter PHP-Server), die Rangliste aus den geschriebenen Daten, der Verlauf über frühere Abrufe, die Landkarte (Projektion, Ausschnitt, Namen) und ein Rauchtest der Seite (HTTP-Status, keine PHP-Meldungen, Rundung des Standorts, geteilte Vorhersage und Teilen-Knopf, ohne Daten, ohne config.php). Läuft vor jedem Deploy (`deploy.yml`) und auf anderen Branches (`pruefen.yml`).
+Ohne Netz: Einzelfunktionen, Katalog, Tagesfenster, der Sammler in beiden Betriebsarten gegen `tests/fake_openmeteo.php` (eingebauter PHP-Server), die Rangliste aus den geschriebenen Daten, der Verlauf über frühere Abrufe, die Landkarte (Projektion, Ausschnitt, Namen), die Fahrzeiten gegen `tests/fake_ors.php` (Einrasten, Schätzung, Abfahrt) und ein Rauchtest der Seite (HTTP-Status, keine PHP-Meldungen, Rundung des Standorts, geteilte Vorhersage und Teilen-Knopf, ohne Daten, ohne config.php). Läuft vor jedem Deploy (`deploy.yml`) und auf anderen Branches (`pruefen.yml`).
 
 ## Ordner
 
@@ -243,6 +258,7 @@ Ohne Netz: Einzelfunktionen, Katalog, Tagesfenster, der Sammler in beiden Betrie
 daten/regionen.json     Regionen-Katalog
 server/sammler.php      Sammler (Cron), außerhalb des Webordners
 server/rangliste.php    Rangliste auf der Kommandozeile
+server/fahrzeiten.php   Fahrzeiten bei openrouteservice (GitHub Action)
 server/web/             Webordner der App
 server/web/lib/         Katalog und Bewertung (per .htaccess gesperrt)
 tests/                  Tests und Open-Meteo-Ersatz
@@ -265,7 +281,7 @@ tools/karte_bauen.py    erzeugt server/web/karte.svg aus Natural Earth
 
 1. ~~Verlauf über die Abrufe~~ (erledigt, siehe oben)
 2. ~~Karte~~ (erledigt, siehe „Landkarte“)
-3. Fahrzeit statt Luftlinie, mit Abfahrtsempfehlung (OpenRouteService oder OSRM; Kontingent und Bedingungen prüfen)
+3. ~~Fahrzeit statt Luftlinie, mit Abfahrtsempfehlung~~ (erledigt, siehe „Fahrzeit und Abfahrt“; später: Umkreis in Stunden, genaue Zeiten auch für andere Startorte)
 4. Fahr- und Flugziele trennen (Kanaren, Tarifa)
 5. Roadtrip-Modus: mehrere gute Tage hintereinander oder zwei nahe Regionen im Wechsel
 6. Matrix Regionen × Tage als Übersicht

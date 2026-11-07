@@ -12,6 +12,7 @@ $ROOT = dirname(__DIR__);
 require "$ROOT/server/web/lib/regionen.php";
 require "$ROOT/server/web/lib/bewertung.php";
 require "$ROOT/server/web/lib/karte.php";
+require "$ROOT/server/web/lib/fahrzeit.php";
 
 $fehler = 0;
 function pruefe(bool $ok, string $was): void
@@ -379,6 +380,70 @@ pruefe(verlauf_rechnen($regionen, "$tmp/action", $standFrei, $kite, $tageV, $jet
        === verlauf_rechnen($regionen, "$tmp/action", $standA, $kite, $tageV, $jetztV),
        'Verlauf braucht die Rohdaten nicht mehr');
 
+// ---------------------------------------------------------------
+echo "Fahrzeiten\n";
+$orsPort = $port + 2;
+$ors = proc_open(['php', '-S', "127.0.0.1:$orsPort", __DIR__ . '/fake_ors.php'],
+                 [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $pipes);
+for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $orsPort); $i++) {
+    usleep(100000);
+}
+$fzCmd = fn(string $key, string $ziel) => ($key !== '' ? 'ORS_API_KEY=' . escapeshellarg($key) . ' ' : 'ORS_API_KEY= ')
+    . 'UMKREIS_ORS_URL=' . escapeshellarg("http://127.0.0.1:$orsPort")
+    . ' php ' . escapeshellarg("$ROOT/server/fahrzeiten.php") . ' ' . escapeshellarg(__DIR__ . '/regionen_test.json') . ' ' . escapeshellarg($ziel) . ' 2>&1';
+exec($fzCmd('testschluessel', "$tmp/action/fahrzeiten.json"), $ausZ, $rcZ);
+$fzJ = json_decode((string)@file_get_contents("$tmp/action/fahrzeiten.json"), true);
+pruefe($rcZ === 0 && $ausZ === [] && is_array($fzJ), 'Abruf ohne Fehler, fahrzeiten.json geschrieben' . ($ausZ ? ': ' . implode(' | ', $ausZ) : ''));
+pruefe(($fzJ['ziele']['ammersee']['ziel'] ?? null) === [48.0489, 11.1619] && ($fzJ['ziele']['ammersee']['snap_m'] ?? null) == 50,
+       'Ziel Ammersee: Punkt des ersten Spots, auf die Straße eingerastet');
+pruefe(($fzJ['ziele']['adria-nord']['snap_m'] ?? null) == 9500 && ($fzJ['ziele']['adria-nord']['min'] ?? 0) > 200,
+       'Adria auf dem Wasser: rastet erst mit größerem Radius ein');
+pruefe(array_key_exists('testsee-druck', $fzJ['ziele'] ?? []) && $fzJ['ziele']['testsee-druck'] === null, 'ohne Route: null');
+exec('ORS_API_KEY=testschluessel UMKREIS_ORS_URL=' . escapeshellarg("http://127.0.0.1:$orsPort") . ' php ' . escapeshellarg("$ROOT/server/fahrzeiten.php")
+     . ' ' . escapeshellarg("$ROOT/daten/regionen.json") . ' ' . escapeshellarg("$tmp/fz-echt.json") . ' 2>&1', $ausZ4, $rcZ4);
+$fzE = json_decode((string)@file_get_contents("$tmp/fz-echt.json"), true);
+pruefe($rcZ4 === 0 && !array_key_exists('tarifa', $fzE['ziele'] ?? ['tarifa' => 1]) && str_contains(implode(' ', $ausZ4), 'Snapping mit 30000 m abgelehnt'),
+       'ganzer Katalog: ohne Straße in der Nähe fehlt die Region (wird geschätzt), zu großer Radius abgelehnt, Lauf geht weiter');
+exec($fzCmd('falsch', "$tmp/fz-falsch.json"), $ausZ2, $rcZ2);
+pruefe($rcZ2 === 1 && !is_file("$tmp/fz-falsch.json") && str_contains(implode(' ', $ausZ2), 'HTTP 403'), 'falscher Schlüssel: Exit 1, nichts geschrieben');
+exec($fzCmd('', "$tmp/fz-leer.json"), $ausZ3, $rcZ3);
+pruefe($rcZ3 === 2 && str_contains(implode(' ', $ausZ3), 'ORS_API_KEY fehlt'), 'ohne Schlüssel: Exit 2 mit Hinweis');
+proc_terminate($ors);
+
+$fzL = fahrzeiten_laden("$tmp/action");
+$adriaReg = array_values(array_filter($regionen, fn($r) => $r['id'] === 'adria-nord'))[0];
+$f = fahrzeit($adriaReg, [48.07, 11.15], 380.0, $fzL, 0.95);
+pruefe(!$f['geschaetzt'] && $f['min'] === $fzJ['ziele']['adria-nord']['min'], 'ab Inning: genaue Fahrzeit aus der Datei');
+$f = fahrzeit($adriaReg, [47.5, 9.7], 300.0, $fzL, 0.9);
+pruefe($f['geschaetzt'] && $f['min'] === 280, 'anderer Standort: geschätzt, 10 min + 0,9 x 300 km');
+$tsee = array_values(array_filter($regionen, fn($r) => $r['id'] === 'testsee-druck'))[0];
+pruefe(fahrzeit($tsee, [47.5, 9.7], 100.0, $fzL, 0.9)['min'] === null, 'ohne Route ab dem Startort: auch geschätzt kein Landweg');
+pruefe(fahrzeit($adriaReg, [47.5, 9.7], 300.0, null, FAHRT_FAKTOR_STANDARD)['geschaetzt'], 'ohne Datei: geschätzt');
+pruefe(fahrzeit_text(['min' => 104, 'geschaetzt' => false]) === '1:45 h' && fahrzeit_text(['min' => 209, 'geschaetzt' => true]) === '≈ 3:30 h'
+       && fahrzeit_text(['min' => 2, 'geschaetzt' => false]) === '5 min' && fahrzeit_text(['min' => null]) === 'kein Landweg',
+       'Fahrzeit als Text: 1:45 h, ≈ 3:30 h, 5 min, kein Landweg');
+$faktorReg = [];
+foreach ([100, 200, 300] as $i => $km) {
+    $faktorReg[] = ['id' => "f$i", 'punkt' => [48.07 + $km / 111.2, 11.15]];
+}
+$fzF = ['start' => ['punkt' => [48.07, 11.15]], 'ziele' => ['f0' => ['min' => 100], 'f1' => ['min' => 190], 'f2' => ['min' => 340]]];
+pruefe(abs(fahrt_faktor($fzF, $faktorReg) - 0.9) < 0.01, 'Faktor: Median aus den genauen Werten');
+$ber = new DateTimeZone('Europe/Berlin');
+$um = fn(string $z) => new DateTimeImmutable($z, $ber);
+$a = abfahrt('2026-11-08', 11, 16, $ber, 90, $ber, $um('2026-11-07 20:00'));
+pruefe($a['art'] === 'bis' && $a['zeit']->format('G:i') === '9:15', 'Fenster ab 11 Uhr, 90 min Fahrt: Abfahrt bis 9:15 (15 min Aufbau)');
+$a = abfahrt('2026-11-08', 10, 15, $ber, 400, $ber, $um('2026-11-07 20:00'));
+pruefe($a['art'] === 'vortag', 'vor 5 Uhr losfahren: Anreise am Vortag');
+$a = abfahrt('2026-11-08', 11, 17, $ber, 60, $ber, $um('2026-11-08 12:00'));
+pruefe($a['art'] === 'jetzt' && $a['zeit']->format('G:i') === '13:15', 'Abfahrt verpasst, jetzt los: ab 13:15 dort');
+$a = abfahrt('2026-11-08', 11, 16, $ber, 180, $ber, $um('2026-11-08 12:00'));
+pruefe($a['art'] === 'zu_spaet', 'zu spät für mindestens 2 Stunden: nicht mehr erreichbar');
+$a = abfahrt('2026-11-08', 10, 16, new DateTimeZone('Atlantic/Canary'), 60, $ber, $um('2026-11-07 20:00'));
+pruefe($a['zeit']->format('G:i') === '9:45', 'andere Zeitzone: Fenster 10 Uhr Kanaren = 11 Uhr Berlin, Abfahrt 9:45 Berlin');
+$sk = rangliste_sortieren([['km' => 100, 'fahrt' => ['min' => 200]], ['km' => 300, 'fahrt' => ['min' => 150]], ['km' => 50, 'fahrt' => ['min' => null]]], 'km');
+pruefe(array_column($sk, 'km') === [300, 100, 50], 'Sortierung Fahrzeit: kürzeste Fahrt zuerst, ohne Landweg zuletzt');
+
+// ---------------------------------------------------------------
 echo "Seite\n";
 $site = "$tmp/site";
 exec('cp -r ' . escapeshellarg("$ROOT/server/web") . ' ' . escapeshellarg($site));
@@ -461,6 +526,15 @@ pruefe(str_contains($html, 'id="landkarte"') && substr_count($html, 'class="punk
 pruefe(str_contains($html, 'Chance Morgen') && preg_match('/class="punkt go".*?<text class="zahl"[^>]*>100</s', $html), 'Landkarte mit gewähltem Tag: Adria 100 %');
 [, $html] = holen($sitePort, "index.php?region=ammersee&nach=$morgen");
 pruefe(!str_contains($html, 'id="landkarte"'), 'geteilte Vorhersage: keine Landkarte');
+[, $html] = holen($sitePort, 'index.php?km=1000');
+pruefe(preg_match('/fahrzeit"[^>]*>5 min</', $html) && str_contains($html, 'openrouteservice.org')
+       && (str_contains($html, 'Anreise am Vortag') || str_contains($html, 'Abfahrt bis')), 'Fahrzeiten ab Inning: genau, ohne Landweg markiert, Abfahrt, Quelle genannt');
+[, $html] = holen($sitePort, 'index.php?km=100&ort=46.6,30.0');
+pruefe(str_contains($html, '>kein Landweg<') && ohne_php_meldung($html), 'Region ohne Route ab dem Startort: kein Landweg');
+[, $html] = holen($sitePort, 'index.php?km=1000&ort=47.5,9.7');
+pruefe(str_contains($html, '>≈ ') && ohne_php_meldung($html), 'anderer Standort: Fahrzeit geschätzt (≈)');
+[, $html] = holen($sitePort, "index.php?region=adria-nord&nach=$morgen");
+pruefe(!str_contains($html, 'class="leise klein fahrzeit"') && !str_contains($html, 'class="abfahrt"'), 'geteilte Vorhersage: ohne Fahrzeit und Abfahrt');
 foreach (['impressum.html', 'datenschutz.html', 'karte.svg', 'stil.css', 'sw.js', 'offline.html', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon.svg', 'icon-maskable-512.png', 'favicon.svg', 'favicon.ico', 'schrift/barlow-condensed-600.woff', 'schrift/OFL.txt'] as $f) {
     [$code] = holen($sitePort, $f);
     pruefe($code === 200, "$f erreichbar");

@@ -7,6 +7,8 @@
  *           windlagen [{name, sektor [von, bis], charakter?}], spots [...],
  *           links? [{name, url}] (lokale Spezialprognose, nur verlinkt),
  *           thermik? true (Modellwind unterschaetzt den Wind vermutlich; auf der Seite markiert)
+ *           anfahrt? [lat, lon] (Ziel fuer die Fahrzeit, z. B. Parkplatz am Spot; sonst
+ *           punkt des ersten Spots, sonst der Vorhersagepunkt; seit 7.11.2026)
  *   Spot:   id, name, punkt?, windlagen? (ersetzt die der Region),
  *           ablandig? [[von, bis], ...], hinweis?
  * Sektoren in Grad, aus welcher Richtung der Wind kommt, von inklusive,
@@ -86,6 +88,9 @@ function regionen_pruefen(array $d): array
         }
         foreach (windlagen_pruefen($r['windlagen'] ?? null, $druckpunkte) as $m) {
             $f[] = "$wo: $m";
+        }
+        if (isset($r['anfahrt']) && !punkt_ok($r['anfahrt'])) {
+            $f[] = "$wo: anfahrt muss [Breite, Laenge] sein";
         }
         if (isset($r['thermik']) && !is_bool($r['thermik'])) {
             $f[] = "$wo: thermik muss true oder false sein";

@@ -866,13 +866,15 @@ function rangliste(array $regionen, array $stand, array $sport, array $heim, flo
  *                dann Tage nach Modellmittel, dann naeher zuerst
  *   'YYYY-MM-DD' nur dieser Tag: Chance, dann geht/laengeres Fenster/staerker
  *                nach Modellmittel, dann naeher zuerst; ohne Daten oder vorbei zuletzt
- *   'km'         naeher zuerst
+ *   'km'         naeher zuerst: nach $e['fahrt']['min'], wenn gesetzt (Fahrzeit), sonst Luftlinie
  * Ein Tag, der nicht in der Liste vorkommt, wird wie 'summe' behandelt.
  */
 function rangliste_sortieren(array $liste, string $nach): array
 {
     if ($nach === 'km') {
-        usort($liste, fn($a, $b) => $a['km'] <=> $b['km']);
+        // Seit 7.11.2026 nach Fahrzeit, wenn die Seite sie gesetzt hat; ohne Landweg zuletzt
+        $k = fn($e) => isset($e['fahrt']) ? [$e['fahrt']['min'] === null ? 1 : 0, $e['fahrt']['min'] ?? 0, $e['km']] : [0, $e['km'], 0];
+        usort($liste, fn($a, $b) => $k($a) <=> $k($b));
         return $liste;
     }
     $tagDa = $liste && preg_match('/^\d{4}-\d{2}-\d{2}$/', $nach) && isset($liste[0]['tage'][$nach]);
