@@ -166,7 +166,7 @@ $site = "$tmp/site";
 exec('cp -r ' . escapeshellarg("$ROOT/server/web") . ' ' . escapeshellarg($site));
 copy("$ROOT/daten/regionen.json", "$site/lib/regionen.json");
 $sitePort = $port + 1;
-$web = proc_open(['php', '-d', 'display_errors=1', '-d', 'error_reporting=-1', '-S', "127.0.0.1:$sitePort", '-t', $site],
+$web = proc_open(['php', '-d', 'display_errors=1', '-d', 'error_reporting=-1', '-d', 'opcache.enable=0', '-d', 'opcache.enable_cli=0', '-S', "127.0.0.1:$sitePort", '-t', $site],
                  [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $pipes);
 for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $sitePort); $i++) {
     usleep(100000);
@@ -200,9 +200,16 @@ pruefe(str_contains($html, 'value="45.7,13.1"'), 'Standort wird auf 0,1 Grad ger
 [, $html] = holen($sitePort, 'index.php?sport=<script>');
 pruefe(!str_contains($html, '<script>alert') && ohne_php_meldung($html), 'unbekannte Sportart: Standard, nichts ungefiltert ausgegeben');
 
-file_put_contents("$site/config.php", '<?php return ' . var_export(['data_dir' => "$tmp/leer"], true) . ';');
-[$code, $html] = holen($sitePort, 'index.php');
-pruefe($code === 200 && str_contains($html, 'Noch keine Vorhersagedaten') && ohne_php_meldung($html), 'ohne Daten: Hinweis statt Fehler');
+// Eigene Kopie im Unterordner statt config.php auszutauschen: unabhaengig von Zwischenspeichern
+exec('cp -r ' . escapeshellarg("$ROOT/server/web") . ' ' . escapeshellarg("$site/leer"));
+copy("$ROOT/daten/regionen.json", "$site/leer/lib/regionen.json");
+file_put_contents("$site/leer/config.php", '<?php return ' . var_export(['data_dir' => "$tmp/leer"], true) . ';');
+[$code, $html] = holen($sitePort, 'leer/index.php');
+$ok = $code === 200 && str_contains($html, 'Noch keine Vorhersagedaten') && ohne_php_meldung($html);
+pruefe($ok, 'ohne Daten: Hinweis statt Fehler');
+if (!$ok) {
+    echo "        HTTP $code, Anfang der Seite: ", substr(preg_replace('/\s+/', ' ', strip_tags($html)), 0, 400), "\n";
+}
 foreach (['impressum.html', 'datenschutz.html', 'stil.css'] as $f) {
     [$code] = holen($sitePort, $f);
     pruefe($code === 200, "$f erreichbar");
