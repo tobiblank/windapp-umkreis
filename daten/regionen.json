@@ -119,6 +119,72 @@
       "hinweis": "Entwurf (Claude), ungeprüft: ohne Windlagen (grob). Gezeiten fehlen ganz. Punkt im Pertuis d'Antioche nicht auf der Karte kontrolliert.",
       "windlagen": [],
       "spots": []
+    },
+    {
+      "id": "bretagne",
+      "name": "Bretagne (Baie de Douarnenez)",
+      "land": "FR",
+      "typ": "meer",
+      "punkt": [48.12, -4.45],
+      "zeitzone": "Europe/Paris",
+      "hinweis": "Entwurf (Claude), ungeprüft: Bretagne ist für eine Region zu groß, vorerst stellvertretend die Baie de Douarnenez (Finistère); später in Küstenabschnitte aufteilen. Ohne Windlagen (grob), ablandiger Wind wird nicht ausgeschlossen. Gezeiten fehlen. Punkt in der Bucht nicht auf der Karte kontrolliert.",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "normandie",
+      "name": "Normandie (Calvados)",
+      "land": "FR",
+      "typ": "meer",
+      "punkt": [49.4, -0.4],
+      "zeitzone": "Europe/Paris",
+      "hinweis": "Entwurf (Claude), ungeprüft: Normandie ist für eine Region zu groß, vorerst stellvertretend die Küste des Calvados (Baie de Seine); die Westküste des Cotentin wäre eine eigene Region. Ohne Windlagen (grob), ablandiger Wind wird nicht ausgeschlossen. Starker Tidenhub, Gezeiten fehlen. Punkt nicht auf der Karte kontrolliert.",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "pas-de-calais",
+      "name": "Pas de Calais (Côte d'Opale)",
+      "land": "FR",
+      "typ": "meer",
+      "punkt": [50.85, 1.5],
+      "zeitzone": "Europe/Paris",
+      "hinweis": "Entwurf (Claude), ungeprüft: Côte d'Opale zwischen Wissant und Boulogne, Punkt westlich von Cap Gris-Nez nicht auf der Karte kontrolliert. Ohne Windlagen (grob), ablandiger Wind wird nicht ausgeschlossen. Starker Tidenhub, Gezeiten fehlen.",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "deutsche-bucht",
+      "name": "Deutsche Bucht (Eiderstedt)",
+      "land": "DE",
+      "typ": "meer",
+      "punkt": [54.15, 8.2],
+      "zeitzone": "Europe/Berlin",
+      "hinweis": "Entwurf (Claude), ungeprüft: Deutsche Bucht ist groß, vorerst ein Punkt vor Eiderstedt (St. Peter-Ording); Sylt, Ostfriesland wären eigene Regionen. Punkt muss außerhalb des Watts liegen, nicht auf der Karte kontrolliert. Ohne Windlagen (grob), ablandiger Wind wird nicht ausgeschlossen. Gezeiten fehlen.",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "klitmoeller",
+      "name": "Klitmøller",
+      "land": "DK",
+      "typ": "meer",
+      "punkt": [57.06, 8.4],
+      "zeitzone": "Europe/Copenhagen",
+      "hinweis": "Entwurf (Claude), ungeprüft: Punkt vor der Westküste nicht auf der Karte kontrolliert. Ohne Windlagen (grob); die Küste liegt nach Nordwest offen, ablandiger Wind (aus Ost) wird aber noch nicht ausgeschlossen.",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "wladyslawowo",
+      "name": "Władysławowo / Puck-Bucht",
+      "land": "PL",
+      "typ": "meer",
+      "punkt": [54.72, 18.55],
+      "zeitzone": "Europe/Warsaw",
+      "hinweis": "Entwurf (Claude), ungeprüft: Punkt in der Puck-Bucht südlich der Halbinsel Hel (Flachwasser-Spots wie Chałupy), nicht auf der Karte kontrolliert; die offene Ostseeküste bei Władysławowo wäre ein eigener Punkt. Ohne Windlagen (grob).",
+      "windlagen": [],
+      "spots": []
     }
   ]
 }
