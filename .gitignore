@@ -1,0 +1,12 @@
+# Zugangsdaten und lokale Konfiguration
+config.php
+.env
+
+# Rohdaten gehoeren nicht ins Repo
+umkreisdaten/
+*.ndjson
+*.ndjson.gz
+
+# System
+.DS_Store
+Thumbs.db

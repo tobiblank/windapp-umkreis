@@ -1,0 +1,24 @@
+name: Prüfen
+
+# PHP-Syntax, Regionen-Katalog und Tests (tests/test.php: Sammler gegen einen
+# lokalen Open-Meteo-Ersatz, Rangliste). Ohne Netzzugriff auf Open-Meteo.
+# Hochladen zum Server kommt dazu, sobald feststeht, wo die App laeuft.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: curl, zlib
+      - name: PHP-Syntax
+        run: for f in $(git ls-files '*.php'); do php -l "$f" >/dev/null || exit 1; done
+      - name: Tests
+        run: php tests/test.php

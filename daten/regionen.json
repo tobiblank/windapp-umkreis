@@ -1,0 +1,61 @@
+{
+  "stand": "2026-11-07",
+  "regionen": [
+    {
+      "id": "ammersee",
+      "name": "Ammersee",
+      "land": "DE",
+      "typ": "see",
+      "punkt": [48.0, 11.135],
+      "zeitzone": "Europe/Berlin",
+      "hinweis": "Punkt in der Seemitte. Richtungen hängen hier am Spot, deshalb keine Windlagen auf Regionsebene.",
+      "windlagen": [],
+      "spots": [
+        {
+          "id": "stegen",
+          "name": "Stegen",
+          "punkt": [48.0489, 11.1614],
+          "windlagen": [
+            {"name": "Süd-Südwest", "sektor": [165, 240], "charakter": "konstant"},
+            {"name": "West", "sektor": [240, 275], "charakter": "brauchbar"},
+            {"name": "Westnordwest-Nord", "sektor": [275, 20], "charakter": "böig"},
+            {"name": "Ost", "sektor": [45, 135], "charakter": "gleichmäßig"}
+          ],
+          "ablandig": [],
+          "hinweis": "Sektoren aus stegen-wind (analysis/README.md, nach Tobias' Erfahrung). Prüfen: ist WNW-N an Stegen fahrbar oder ablandig?"
+        },
+        {
+          "id": "herrsching",
+          "name": "Herrsching",
+          "windlagen": [
+            {"name": "West", "sektor": [240, 300]}
+          ],
+          "ablandig": [],
+          "hinweis": "Reiner Westwind-Spot (Tobias). Sektorgrenzen geschätzt."
+        },
+        {
+          "id": "eching",
+          "name": "Eching",
+          "windlagen": [
+            {"name": "Ost", "sektor": [45, 135], "charakter": "gleichmäßig"}
+          ],
+          "ablandig": [],
+          "hinweis": "Bei Ostwind (Tobias). Sektor wie Ost in stegen-wind."
+        }
+      ]
+    },
+    {
+      "id": "adria-nord",
+      "name": "Nördliche Adria",
+      "typ": "meer",
+      "punkt": [45.5, 13.0],
+      "zeitzone": "Europe/Rome",
+      "hinweis": "Funktioniert bei Bora und Scirocco überall (Tobias). Sektorgrenzen geschätzt, bitte prüfen. Punkt auf dem Wasser zwischen der Lagune von Venedig und Istrien.",
+      "windlagen": [
+        {"name": "Bora", "sektor": [20, 80], "charakter": "böig"},
+        {"name": "Scirocco", "sektor": [135, 200]}
+      ],
+      "spots": []
+    }
+  ]
+}
