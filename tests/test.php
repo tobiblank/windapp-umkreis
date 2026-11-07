@@ -301,9 +301,17 @@ pruefe($ok, 'ohne Daten: Hinweis statt Fehler');
 if (!$ok) {
     echo "        HTTP $code, Anfang der Seite: ", substr(preg_replace('/\s+/', ' ', strip_tags($html)), 0, 400), "\n";
 }
-foreach (['impressum.html', 'datenschutz.html', 'stil.css'] as $f) {
+foreach (['impressum.html', 'datenschutz.html', 'stil.css', 'sw.js', 'offline.html', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon.svg'] as $f) {
     [$code] = holen($sitePort, $f);
     pruefe($code === 200, "$f erreichbar");
+}
+[$code, $man] = holen($sitePort, 'manifest.php');
+$m = json_decode($man, true);
+pruefe($code === 200 && ($m['name'] ?? '') === 'Wohinfahrma' && ($m['short_name'] ?? '') === 'Fahrma' && ($m['start_url'] ?? '') === './',
+       'Manifest: Wohinfahrma, Kurzname Fahrma, relative Start-Adresse');
+foreach ($m['icons'] ?? [] as $ic) {
+    $info = @getimagesize("$site/" . $ic['src']);
+    pruefe($info && $info[0] . 'x' . $info[1] === $ic['sizes'], "Symbol {$ic['src']} hat {$ic['sizes']}");
 }
 proc_terminate($web);
 

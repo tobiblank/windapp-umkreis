@@ -25,7 +25,8 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Seite Rangliste (`server/web/index.php`) | 7.11.2026: Sportart, Umkreis (Luftlinie), Standort (auf 0,1° gerundet), „Heute bis übermorgen“ und „Tag 3 bis 7“; ohne Anmeldung, nicht in Suchmaschinen (`noindex`) |
 | Impressum, Datenschutz (`server/web/*.html`) | 7.11.2026, aus stegen-wind abgeleitet – bitte prüfen |
 | Rangliste auf der Kommandozeile (`server/rangliste.php`) | zum Ausprobieren gegen Rohdaten |
-| Hosting | Hetzner Webhosting, Subdomain wohinfahrma.dablank.de (`public_html/wohinfahrma`), Deploy per GitHub Action |
+| Hosting | Hetzner Webhosting, Subdomain wohinfahrma.dablank.de (`public_html/wohinfahrma`), Deploy per GitHub Action. Domain wohinfahrma.de am 7.11.2026 bestellt; Umleitung von der Subdomain vorbereitet, aber auskommentiert (`server/web/.htaccess`) |
+| Web-App zum Installieren | 7.11.2026: `manifest.php` (Name Wohinfahrma, unter dem Symbol „Fahrma“), `sw.js` und `offline.html` nach stegen-wind (nur Offline-Seite, nichts zwischengespeichert), Symbol als Platzhalter (`icon.svg`, PNG 192/512/180). Erst nach dem Umzug auf wohinfahrma.de auf dem Handy installieren |
 | Quellen für Regionen | 7.11.2026 gesichtet, siehe „Quellen für Regionen und Spots“ |
 | Regel-Windlagen | 7.11.2026: Druckdifferenzen und Grundströmung statt Modellwind für Thermik- und Föhnlagen; Reschensee, Silvaplana, Gardasee Nord, Urnersee. Stärken, Tageszeiten und Saison geschätzt, siehe „Regel-Windlagen“ |
 | Zugang, Benachrichtigung | offen |
@@ -212,7 +213,7 @@ tests/                  Tests und Open-Meteo-Ersatz
 1. Offene Punkte zum Sammler oben prüfen
 2. Weitere Regionen eintragen; zuerst Silvaplana und Urnersee mit den neuen Feldern `grundstroemung`, `saison`, `links`
 3. Marco Schanda fragen, ob Wohinfahrma seine Walchensee-Prognose zeigen darf; erst danach einbauen
-4. Web-App zum Installieren (Manifest, Service Worker)
+4. wohinfahrma.de auf `public_html/wohinfahrma` zeigen lassen, SSL, dann Umleitung in `.htaccess` einschalten; Design und endgültiges Symbol
 5. Zugang aus stegen-wind übernehmen, Wohnort und Sportarten je Person
 6. Stegen: kalibrierte Chance aus ammerseewind.de über einen kleinen Endpoint übernehmen
 7. Mail-Benachrichtigung

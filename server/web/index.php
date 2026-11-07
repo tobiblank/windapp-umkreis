@@ -139,6 +139,12 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
 <meta name="robots" content="noindex">
 <title>Wohinfahrma</title>
 <link rel="stylesheet" href="stil.css">
+<link rel="manifest" href="manifest.php">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Fahrma">
+<meta name="theme-color" content="#eef3f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1e24" media="(prefers-color-scheme: dark)">
 </head>
 <body>
 <main class="seite">
@@ -274,6 +280,10 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
 </main>
 
 <script>
+// Installierbare Web-App: Service Worker nur fuer die Offline-Seite (sw.js)
+if ('serviceWorker' in navigator) {
+  addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
 (function () {
   var form = document.getElementById('wahl');
   var SCHLUESSEL = 'wohinfahrma_wahl';

@@ -1,0 +1,23 @@
+# Wohinfahrma – Webordner
+#
+# Startseite ist die Rangliste.
+DirectoryIndex index.php index.html
+
+# Passwortdateien nie ausliefern
+<FilesMatch "^\.ht">
+  Require all denied
+</FilesMatch>
+
+# Service Worker nicht aus dem HTTP-Cache, damit Aenderungen ankommen
+<IfModule mod_headers.c>
+  <Files "sw.js">
+    Header set Cache-Control "no-cache"
+  </Files>
+</IfModule>
+
+# Spaeter, wenn wohinfahrma.de laeuft und auf diesen Ordner zeigt:
+# alte Adresse und www dauerhaft umleiten (Pfad und Query bleiben), wie bei
+# ammerseewind.de. Erst einschalten, wenn https://wohinfahrma.de funktioniert.
+# RewriteEngine On
+# RewriteCond %{HTTP_HOST} ^(wohinfahrma\.dablank\.de|www\.wohinfahrma\.de)$ [NC]
+# RewriteRule ^(.*)$ https://wohinfahrma.de/$1 [R=301,L]
