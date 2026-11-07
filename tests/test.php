@@ -412,22 +412,29 @@ proc_terminate($ors);
 
 $fzL = fahrzeiten_laden("$tmp/action");
 $adriaReg = array_values(array_filter($regionen, fn($r) => $r['id'] === 'adria-nord'))[0];
-$f = fahrzeit($adriaReg, [48.07, 11.15], 380.0, $fzL, 0.95);
+$f = fahrzeit($adriaReg, [48.07, 11.15], 380.0, $fzL);
 pruefe(!$f['geschaetzt'] && $f['min'] === $fzJ['ziele']['adria-nord']['min'], 'ab Inning: genaue Fahrzeit aus der Datei');
-$f = fahrzeit($adriaReg, [47.5, 9.7], 300.0, $fzL, 0.9);
+$f = fahrzeit($adriaReg, [47.5, 9.7], 300.0, $fzL, [10.0, 0.9]);
 pruefe($f['geschaetzt'] && $f['min'] === 280, 'anderer Standort: geschätzt, 10 min + 0,9 x 300 km');
 $tsee = array_values(array_filter($regionen, fn($r) => $r['id'] === 'testsee-druck'))[0];
-pruefe(fahrzeit($tsee, [47.5, 9.7], 100.0, $fzL, 0.9)['min'] === null, 'ohne Route ab dem Startort: auch geschätzt kein Landweg');
-pruefe(fahrzeit($adriaReg, [47.5, 9.7], 300.0, null, FAHRT_FAKTOR_STANDARD)['geschaetzt'], 'ohne Datei: geschätzt');
+pruefe(fahrzeit($tsee, [47.5, 9.7], 100.0, $fzL)['min'] === null, 'ohne Route ab dem Startort: auch geschätzt kein Landweg');
+pruefe(fahrzeit($adriaReg, [47.5, 9.7], 300.0, null)['min'] === 240, 'ohne Datei: geschätzt mit 15 min + 0,75 x km');
 pruefe(fahrzeit_text(['min' => 104, 'geschaetzt' => false]) === '1:45 h' && fahrzeit_text(['min' => 209, 'geschaetzt' => true]) === '≈ 3:30 h'
        && fahrzeit_text(['min' => 2, 'geschaetzt' => false]) === '5 min' && fahrzeit_text(['min' => null]) === 'kein Landweg',
        'Fahrzeit als Text: 1:45 h, ≈ 3:30 h, 5 min, kein Landweg');
-$faktorReg = [];
-foreach ([100, 200, 300] as $i => $km) {
-    $faktorReg[] = ['id' => "f$i", 'punkt' => [48.07 + $km / 111.2, 11.15]];
+// Ausgleichsgerade: genaue Werte auf 20 min + 0,7 min/km
+$modellReg = [];
+$modellZiele = [];
+foreach ([30, 100, 200, 400, 800] as $i => $km) {
+    $modellReg[] = ['id' => "m$i", 'punkt' => [48.07 + $km / 111.195, 11.15]];
+    $modellZiele["m$i"] = ['min' => 20 + 0.7 * $km];
 }
-$fzF = ['start' => ['punkt' => [48.07, 11.15]], 'ziele' => ['f0' => ['min' => 100], 'f1' => ['min' => 190], 'f2' => ['min' => 340]]];
-pruefe(abs(fahrt_faktor($fzF, $faktorReg) - 0.9) < 0.01, 'Faktor: Median aus den genauen Werten');
+$fzM = ['start' => ['punkt' => [48.07, 11.15]], 'ziele' => $modellZiele];
+[$ma, $mb] = fahrt_modell($fzM, $modellReg);
+pruefe(abs($ma - 20) < 0.5 && abs($mb - 0.7) < 0.005, 'Schätzmodell: Sockel und Faktor aus den genauen Werten (20 min + 0,7 min/km)');
+pruefe(fahrt_modell(['start' => $fzM['start'], 'ziele' => array_slice($modellZiele, 0, 4)], $modellReg) === FAHRT_STANDARD, 'Schätzmodell: zu wenige Werte, Standard');
+$fzSchief = ['start' => $fzM['start'], 'ziele' => array_map(fn($z) => ['min' => $z['min'] * 3], $modellZiele)];
+pruefe(fahrt_modell($fzSchief, $modellReg)[1] === FAHRT_GRENZEN[1][1], 'Schätzmodell: unplausibler Faktor wird begrenzt');
 $ber = new DateTimeZone('Europe/Berlin');
 $um = fn(string $z) => new DateTimeImmutable($z, $ber);
 $a = abfahrt('2026-11-08', 11, 16, $ber, 90, $ber, $um('2026-11-07 20:00'));

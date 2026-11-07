@@ -4,16 +4,20 @@
  *
  * Genau: aus <data_dir>/fahrzeiten.json (server/fahrzeiten.php, openrouteservice),
  * wenn der Standort der Startort dieser Datei ist (Standard Inning).
- * Sonst geschaetzt aus der Luftlinie: FAHRT_SOCKEL_MIN + Faktor x km, der Faktor
- * als Median aus den genauen Werten (ab FAHRT_MIN_KM Luftlinie), ohne Datei
- * FAHRT_FAKTOR_STANDARD. Regionen, die vom Startort keine Route haben (Inseln),
- * bleiben auch geschaetzt ohne Fahrzeit.
+ * Sonst geschaetzt aus der Luftlinie: Sockel + Faktor x km. Beides als
+ * robuste Gerade (Theil-Sen) aus den genauen Werten bis FAHRT_MODELL_MAX_KM Luftlinie
+ * (mindestens FAHRT_MIN_PUNKTE, Ergebnis
+ * auf plausible Grenzen begrenzt), ohne Datei FAHRT_STANDARD. Ein einzelner Faktor
+ * (bis 7.11.2026, 0,95 min/km) schaetzte lange Autobahnstrecken um 2-3 h zu lang.
+ * Regionen, die vom Startort keine Route haben (Inseln), bleiben auch geschaetzt
+ * ohne Fahrzeit.
  * Ohne Verkehr, Pausen und Grenzwartezeiten.
  */
 
-const FAHRT_SOCKEL_MIN = 10;          // Anfahrt bis zur Autobahn, Parken
-const FAHRT_FAKTOR_STANDARD = 0.95;   // Minuten je km Luftlinie: Umweg ~1,3, im Mittel ~80 km/h
-const FAHRT_MIN_KM = 50;              // kuerzere Strecken taugen nicht fuer den Faktor
+const FAHRT_STANDARD = [15.0, 0.75];  // [Sockel min, min je km Luftlinie]: Umweg ~1,25, Autobahn ~100 km/h; geschaetzt
+const FAHRT_GRENZEN = [[0.0, 60.0], [0.5, 1.2]];   // erlaubte Spanne fuer Sockel und Faktor aus der Anpassung
+const FAHRT_MIN_PUNKTE = 5;            // so viele genaue Werte braucht die Anpassung
+const FAHRT_MODELL_MAX_KM = 1500;      // weitere Ziele (Faehren, Kanaren) nicht in die Anpassung
 const FAHRT_GLEICHER_START = 0.05;    // Grad: so nah gilt der Standort als Startort der Datei
 const ABFAHRT_AUFBAU_MIN = 15;        // Aufbauen vor dem Fenster
 const ABFAHRT_FRUEHESTENS = 5;        // frueher losfahren heisst: am Vortag anreisen
@@ -25,29 +29,53 @@ function fahrzeiten_laden(string $dataDir): ?array
     return is_array($j) && isset($j['start']['punkt'], $j['ziele']) && is_array($j['ziele']) ? $j : null;
 }
 
-/** Minuten je km Luftlinie aus den genauen Werten (Median), sonst Standard */
-function fahrt_faktor(?array $fz, array $regionen): float
+/**
+ * Schaetzmodell [Sockel, Faktor] aus den genauen Werten: robuste Gerade
+ * (Theil-Sen) Minuten ueber km Luftlinie vom Startort, auf FAHRT_GRENZEN begrenzt;
+ * zu wenige Werte oder keine Datei: FAHRT_STANDARD.
+ */
+function fahrt_modell(?array $fz, array $regionen): array
 {
     if (!$fz) {
-        return FAHRT_FAKTOR_STANDARD;
+        return FAHRT_STANDARD;
     }
-    $werte = [];
+    $xs = $ys = [];
     foreach ($regionen as $r) {
         $z = $fz['ziele'][$r['id']] ?? null;
-        if (!is_array($z)) {
-            continue;
-        }
         $km = entfernung_km($fz['start']['punkt'], $r['punkt']);
-        if ($km >= FAHRT_MIN_KM) {
-            $werte[] = ($z['min'] - FAHRT_SOCKEL_MIN) / $km;
+        if (is_array($z) && isset($z['min']) && $km <= FAHRT_MODELL_MAX_KM) {
+            $xs[] = $km;
+            $ys[] = (float)$z['min'];
         }
     }
-    if (count($werte) < 3) {
-        return FAHRT_FAKTOR_STANDARD;
+    $n = count($xs);
+    if ($n < FAHRT_MIN_PUNKTE) {
+        return FAHRT_STANDARD;
     }
-    sort($werte);
-    $n = count($werte);
-    return $n % 2 ? $werte[intdiv($n, 2)] : ($werte[$n / 2 - 1] + $werte[$n / 2]) / 2;
+    // Theil-Sen: Median der Steigungen aller Paare, Sockel als Median der Reste.
+    // Ein einzelner Faehr-Ausreisser verschiebt das kaum (anders als kleinste Quadrate).
+    $steigungen = [];
+    for ($i = 0; $i < $n; $i++) {
+        for ($j = $i + 1; $j < $n; $j++) {
+            if (abs($xs[$j] - $xs[$i]) > 1) {
+                $steigungen[] = ($ys[$j] - $ys[$i]) / ($xs[$j] - $xs[$i]);
+            }
+        }
+    }
+    if (!$steigungen) {
+        return FAHRT_STANDARD;
+    }
+    $median = function (array $w): float {
+        sort($w);
+        $m = count($w);
+        return $m % 2 ? $w[intdiv($m, 2)] : ($w[$m / 2 - 1] + $w[$m / 2]) / 2;
+    };
+    $b = $median($steigungen);
+    $a = $median(array_map(fn($x, $y) => $y - $b * $x, $xs, $ys));
+    [[$a0, $a1], [$b0, $b1]] = FAHRT_GRENZEN;
+    $b = min(max($b, $b0), $b1);
+    $a = min(max($a, $a0), $a1);
+    return [$a, $b];
 }
 
 /**
@@ -55,7 +83,7 @@ function fahrt_faktor(?array $fz, array $regionen): float
  * Rueckgabe ['min' => int, 'km' => ?float (Strasse), 'geschaetzt' => bool] oder
  * ['min' => null, 'kein_landweg' => true], wenn es vom Startort keine Route gibt.
  */
-function fahrzeit(array $region, array $heim, float $luftKm, ?array $fz, float $faktor): array
+function fahrzeit(array $region, array $heim, float $luftKm, ?array $fz, array $modell = FAHRT_STANDARD): array
 {
     $bekannt = $fz && array_key_exists($region['id'], $fz['ziele']);
     if ($bekannt && $fz['ziele'][$region['id']] === null) {
@@ -67,7 +95,7 @@ function fahrzeit(array $region, array $heim, float $luftKm, ?array $fz, float $
         $z = $fz['ziele'][$region['id']];
         return ['min' => (int)$z['min'], 'km' => (float)$z['km'], 'geschaetzt' => false, 'kein_landweg' => false];
     }
-    return ['min' => (int)round(FAHRT_SOCKEL_MIN + $faktor * $luftKm), 'km' => null, 'geschaetzt' => true, 'kein_landweg' => false];
+    return ['min' => (int)round($modell[0] + $modell[1] * $luftKm), 'km' => null, 'geschaetzt' => true, 'kein_landweg' => false];
 }
 
 /** "1:45 h", geschaetzt auf 15 Minuten gerundet: "≈ 3:30 h"; unter einer Stunde "40 min" */
