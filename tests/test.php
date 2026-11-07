@@ -252,6 +252,71 @@ pruefe($rcK === 1 && str_contains(implode("\n", $ausK), 'vorhersage: Abruf fehlg
 proc_terminate($server);
 
 // ---------------------------------------------------------------
+echo "Verlauf über die Abrufe\n";
+pruefe(verlauf_trend([], 0.5) === null && verlauf_trend([['ts' => 'x', 'chance' => 0.5]], null) === null, 'ohne frühere Werte oder ohne Chance: kein Verlauf');
+$art = fn(array $w) => verlauf_trend(array_map(fn($c) => ['ts' => 'x', 'chance' => $c], array_slice($w, 0, -1)), end($w))['art'];
+pruefe($art([0.7, 0.8, 0.75, 0.8]) === 'stabil', '70 → 80 → 75 → 80: stabil');
+pruefe($art([0.8, 0.4]) === 'faellt' && $art([0.2, 0.5, 0.6]) === 'steigt', '80 → 40: fällt, 20 → 50 → 60: steigt');
+pruefe($art([0.4, 0.9, 0.5]) === 'schwankt' && $art([0.6, 0.7]) === 'gleich', '40 → 90 → 50: schwankt, 60 → 70: kaum verändert');
+pruefe($art([0.5, 0.65]) === 'steigt' && $art([0.5, 0.6, 0.65]) === 'stabil', 'genau 15 Punkte: bei 2 Werten steigt, bei 3 stabil');
+
+// Frühere Läufe aus dem Action-Lauf bauen: vor 36 h alles flau, vor 24 h Kontrolllauf
+// und Member 1-25 flau (mit Druckdaten), vor 12 h derselbe Modelllauf wie jetzt
+$v = "$tmp/verlauf";
+exec('cp -r ' . escapeshellarg("$tmp/action") . ' ' . escapeshellarg($v));
+$jetztDatei = glob("$v/ensemble/*.ndjson.gz")[0];
+$jetztTs = json_decode(ndjson_zeilen($jetztDatei)[0], true)['ts'];
+$frueherSchreiben = function (string $q, string $quelle, int $stundenZurueck, callable $aendern) use ($v, $jetztTs) {
+    $t = strtotime($jetztTs) - $stundenZurueck * 3600;
+    $zeilen = [];
+    foreach (ndjson_zeilen($quelle) as $z) {
+        $z = json_decode($z, true);
+        $z['ts'] = gmdate('Y-m-d\TH:i:s\Z', $t);
+        foreach ($z['payload'] as $k => $p) {
+            $z['payload'][$k]['hourly'] = $aendern($p['hourly']);
+        }
+        $zeilen[] = json_encode($z);
+    }
+    file_put_contents("$v/$q/" . gmdate('Y-m-d_Hi', $t) . '.ndjson.gz', gzencode(implode("\n", $zeilen) . "\n"));
+};
+$flau = function (array $h, int $bis) {
+    foreach ($h as $k => $reihe) {
+        if (preg_match('/^wind_speed_10m(_member(\d+))?$/', $k, $m) && (int)($m[2] ?? 0) <= $bis) {
+            $h[$k] = array_map(fn($x) => $x === null ? null : 0.0, $reihe);
+        }
+    }
+    return $h;
+};
+$frueherSchreiben('ensemble', $jetztDatei, 36, fn($h) => $flau($h, 50));
+$frueherSchreiben('ensemble', $jetztDatei, 24, function ($h) use ($flau) {
+    $h = $flau($h, 25);
+    $h['wind_speed_10m'] = array_map(fn($x) => $x === null ? null : $x + 0.1, $h['wind_speed_10m']);   // Kontrolllauf leicht anders
+    return $h;
+});
+$frueherSchreiben('ensemble', $jetztDatei, 12, fn($h) => $h);
+$frueherSchreiben('druck_ensemble', glob("$v/druck_ensemble/*.ndjson.gz")[0], 24, fn($h) => $h);
+$standV = daten_laden($v);
+$tageV = [$morgen, $uebermorgen];
+$jetztV = new DateTimeImmutable('today 06:00', new DateTimeZone('Europe/Berlin'));
+$vl = verlauf_rechnen($regionen, $v, $standV, $kite, $tageV, $jetztV);
+$va = array_column($vl['adria-nord'][$morgen] ?? [], 'chance');
+pruefe(count($va) === 2 && abs($va[0]) < 1e-9 && abs($va[1] - 25 / 51) < 1e-9,
+       'Adria morgen: zwei frühere Abrufe (0 %, 25 von 51), der gleiche Modelllauf vor 12 h zählt nicht' . ' (ist ' . implode(', ', array_map(fn($c) => round($c, 3), $va)) . ')');
+$trA = verlauf_trend($vl['adria-nord'][$morgen], 1.0);
+pruefe($trA['art'] === 'steigt' && count($trA['werte']) === 3, 'Adria morgen: steigt (0 → 49 → 100 %)');
+$vd = $vl['testsee-druck'][$morgen] ?? [];
+pruefe(count($vd) === 1 && abs($vd[0]['chance'] - 1.0) < 1e-9, 'Druckregel: nur der frühere Abruf mit Druckdaten zählt, Stärke hängt nicht am Modellwind');
+pruefe(($vl['testsee-hoehe'][$morgen] ?? []) === [], 'Grundströmung ohne frühere Höhenwinddaten: kein Verlauf');
+pruefe(verlauf_rechnen($regionen, "$tmp/action", $standA, $kite, $tageV, $jetztV)['adria-nord'] === [], 'nur ein Abruf: kein Verlauf');
+$vc1 = verlauf_mit_cache($regionen, $v, "$tmp/cache", $standV, $kite, $tageV, $jetztV);
+$cacheDateien = glob("$tmp/cache/verlauf-*.json");
+$vc2 = verlauf_mit_cache($regionen, $v, "$tmp/cache", $standV, $kite, $tageV, $jetztV);
+pruefe($vc1 == $vl && $vc2 == $vl && count($cacheDateien) === 1, 'Zwischenspeicher: eine Datei, gleiches Ergebnis beim zweiten Aufruf');
+verlauf_mit_cache($regionen, $v, "$tmp/cache", $standV, SPORTARTEN['wingfoil'], $tageV, $jetztV);
+pruefe(count(glob("$tmp/cache/verlauf-*.json")) === 2, 'Zwischenspeicher: andere Sportart, eigene Datei');
+pruefe(verlauf_mit_cache($regionen, $v, null, $standV, $kite, $tageV, $jetztV) == $vl, 'ohne Zwischenspeicher: gleiches Ergebnis');
+
+// ---------------------------------------------------------------
 echo "Seite\n";
 $site = "$tmp/site";
 exec('cp -r ' . escapeshellarg("$ROOT/server/web") . ' ' . escapeshellarg($site));
@@ -319,6 +384,13 @@ pruefe($ok, 'ohne Daten: Hinweis statt Fehler');
 if (!$ok) {
     echo "        HTTP $code, Anfang der Seite: ", substr(preg_replace('/\s+/', ' ', strip_tags($html)), 0, 400), "\n";
 }
+exec('cp -r ' . escapeshellarg("$ROOT/server/web") . ' ' . escapeshellarg("$site/verlauf"));
+copy(__DIR__ . "/regionen_test.json", "$site/verlauf/lib/regionen.json");
+file_put_contents("$site/verlauf/config.php", '<?php return ' . var_export(['data_dir' => "$tmp/verlauf"], true) . ';');
+[$code, $html] = holen($sitePort, 'verlauf/index.php?km=1000');
+pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, '<span class="v steigt">↑ von 0</span>')
+       && str_contains($html, 'steigt (0 → 49 → 100 %)') && str_contains($html, 'Frühere Abrufe: '),
+       'Seite mit früheren Abrufen: Pfeil in der Kachel, Verlauf in der Detailzeile');
 foreach (['impressum.html', 'datenschutz.html', 'stil.css', 'sw.js', 'offline.html', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon.svg', 'icon-maskable-512.png', 'favicon.svg', 'favicon.ico', 'schrift/barlow-condensed-600.woff', 'schrift/OFL.txt'] as $f) {
     [$code] = holen($sitePort, $f);
     pruefe($code === 200, "$f erreichbar");

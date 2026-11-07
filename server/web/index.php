@@ -120,10 +120,16 @@ function tag_datum(string $tag, DateTimeZone $tz): string
 }
 
 // --- Rechnen ----------------------------------------------------------
-$stand = daten_laden(rtrim($cfg['data_dir'], '/'));
+$jetzt = new DateTimeImmutable('now');
+$dataDir = rtrim($cfg['data_dir'], '/');
+$stand = daten_laden($dataDir);
 $liste = $geteilt
-    ? rangliste([$geteilt], $stand, $sport, $heim, INF, $tage)
-    : rangliste($regionen, $stand, $sport, $heim, (float)$km, $tage);
+    ? rangliste([$geteilt], $stand, $sport, $heim, INF, $tage, $jetzt)
+    : rangliste($regionen, $stand, $sport, $heim, (float)$km, $tage, $jetzt);
+// Verlauf: dieselbe Chance aus frueheren Abrufen (mit Zwischenspeicher, Standard <data_dir>/cache)
+$cacheDir = array_key_exists('cache_dir', $cfg) ? ($cfg['cache_dir'] === null ? null : rtrim((string)$cfg['cache_dir'], '/')) : "$dataDir/cache";
+$verlauf = verlauf_mit_cache($geteilt ? [$geteilt] : $regionen, $dataDir, $cacheDir, $stand, $sport, $tage, $jetzt,
+                             $cfg['regionen_datei'] ?? __DIR__ . '/lib/regionen.json');
 // Sortierung: alle Tage (summe), ein angezeigter Tag oder Entfernung
 $nach = (string)($_GET['nach'] ?? 'summe');
 if ($nach !== 'km' && !in_array($nach, $tage, true)) {
@@ -195,6 +201,47 @@ function teilen_text(array $region, string $tag, array $d, array $sport, DateTim
         $teile[] = zahl(100 * $c) . ' % Chance';
     }
     return $region['name'] . ', ' . tag_datum($tag, $tz) . ': ' . implode(' · ', array_filter($teile)) . ' (' . $sport['name'] . ')';
+}
+
+/** Verlauf eines Tages oder null (seit 7.11.2026) */
+function trend_fuer(array $e, string $tag): ?array
+{
+    global $verlauf;
+    $d = $e['tage'][$tag];
+    if (!empty($d['vorbei'])) {
+        return null;
+    }
+    return verlauf_trend($verlauf[$e['region']['id']][$tag] ?? [], $d['ens']['chance'] ?? null);
+}
+
+function prozente(array $werte): string
+{
+    return implode(' → ', array_map(fn($w) => zahl(100 * $w), $werte)) . ' %';
+}
+
+/** Kurz fuer die Detailzeile: "stabil seit 4 Abrufen", "fällt (80 → 40 %)" */
+function trend_text(array $tr): string
+{
+    $n = count($tr['werte']);
+    return match ($tr['art']) {
+        'stabil'   => "stabil seit $n Abrufen",
+        'steigt'   => 'steigt (' . prozente($tr['werte']) . ')',
+        'faellt'   => 'fällt (' . prozente($tr['werte']) . ')',
+        'schwankt' => 'schwankt (' . prozente($tr['werte']) . ')',
+        default    => 'kaum verändert (' . prozente($tr['werte']) . ')',
+    };
+}
+
+/** Fuer den Tooltip: frueherer Abruf mit Uhrzeit, dann jetzt */
+function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): string
+{
+    $teile = [];
+    foreach ($tr['ts'] as $i => $ts) {
+        $t = (new DateTimeImmutable($ts))->setTimezone($tz);
+        $tagText = $t->format('Y-m-d') === $heute->format('Y-m-d') ? 'heute' : WOCHENTAGE[(int)$t->format('w')];
+        $teile[] = $tagText . ' ' . $t->format('G:i') . ': ' . zahl(100 * $tr['werte'][$i]) . ' %';
+    }
+    return 'Frühere Abrufe: ' . implode(', ', $teile);
 }
 ?>
 <!doctype html>
@@ -286,6 +333,7 @@ function teilen_text(array $region, string $tag, array $d, array $sport, DateTim
 <p class="leise klein erklaerung">
   <?= h($sport['name']) ?>, <?= h($wind) ?>, mindestens <?= MIN_STUNDEN ?> Stunden am Stück zwischen 9 Uhr und Sonnenuntergang<?= $ansicht === 'bald' ? ', heute erst ab einer halben Stunde nach jetzt' : '' ?>.
   Prozent = Anteil der 51 Läufe des ECMWF-Ensembles, an denen das klappt.
+  „↑ von 40“ = vor bis zu drei Abrufen (zweimal am Tag) stand dort 40 %.
 </p>
 
 <?php if (!$zeiten): ?>
@@ -309,6 +357,8 @@ function teilen_text(array $region, string $tag, array $d, array $sport, DateTim
       <?php foreach ($tage as $t):
           $d = $e['tage'][$t];
           $c = $d['ens']['chance'] ?? null;
+          $tr = trend_fuer($e, $t);
+          $pfeil = $tr && in_array($tr['art'], ['steigt', 'faellt'], true);
       ?>
         <?php if (!empty($d['vorbei'])): ?>
         <div class="tag leer" title="Für heute bleibt nicht mehr genug Zeit bis Sonnenuntergang">
@@ -317,9 +367,11 @@ function teilen_text(array $region, string $tag, array $d, array $sport, DateTim
         </div>
         <?php else: ?>
         <div class="tag <?= stufe($c) ?><?= $nach === $t ? ' gewaehlt' : '' ?>" title="<?= h(($c === null ? 'keine Ensemble-Daten' : zahl(100 * $c) . ' % der Läufe')
-                                                     . (!empty($d['rest']) ? ', nur noch ' . $d['fenster'][0] . '–' . $d['fenster'][1] . ' Uhr' : '')) ?>">
+                                                     . (!empty($d['rest']) ? ', nur noch ' . $d['fenster'][0] . '–' . $d['fenster'][1] . ' Uhr' : '')
+                                                     . ($tr ? '. ' . trend_titel($tr, $tzSeite, $heute) : '')) ?>">
           <span class="t"><?= h(tag_kurz($t, $heute)) ?><?= !empty($d['rest']) && $d['fenster'][0] > FENSTER_AB ? ' ab ' . $d['fenster'][0] : '' ?></span>
           <span class="w"><?= $c === null ? ($d['det']['geht'] ? 'ja' : '–') : zahl(100 * $c) . '<small>%</small>' ?></span>
+          <?php if ($pfeil): ?><span class="v <?= $tr['art'] ?>"><?= $tr['art'] === 'steigt' ? '↑' : '↓' ?> von <?= zahl(100 * $tr['werte'][0]) ?></span><?php endif ?>
         </div>
         <?php endif ?>
       <?php endforeach ?>
@@ -328,6 +380,7 @@ function teilen_text(array $region, string $tag, array $d, array $sport, DateTim
       <ul class="details klein">
         <?php foreach ($guteTage as $t => $d):
             $det = $d['det'];
+            $tr = trend_fuer($e, $t);
         ?>
           <li>
             <b><?= h(tag_kurz($t, $heute)) ?>:</b>
@@ -343,12 +396,14 @@ function teilen_text(array $region, string $tag, array $d, array $sport, DateTim
               <?php if ($det['charakter']): ?><span class="leise">(<?= h($det['charakter']) ?>)</span><?php endif ?>
               <?php if ($det['grob']): ?><span class="marker">grob</span><?php endif ?>
               <?php if (!empty($det['regel'])): ?><span class="marker regel" title="Aus Druckdifferenz und/oder Grundströmung abgeleitet, nicht aus dem Modellwind am See. Die Stärke ist ein geschätzter typischer Wert.">Regel</span><?php endif ?>
+              <?php if ($tr): ?><span class="verlauf <?= $tr['art'] ?>" title="<?= h(trend_titel($tr, $tzSeite, $heute)) ?>">· <?= h(trend_text($tr)) ?></span><?php endif ?>
               <?php if (teilenswert($d)): ?><button type="button" class="teilen" hidden
                 data-titel="<?= h('Wohinfahrma: ' . $r['name'] . ', ' . tag_datum($t, $tzSeite)) ?>"
                 data-text="<?= h(teilen_text($r, $t, $d, $sport, $tzSeite)) ?>"
                 data-url="<?= h(teilen_link($r, $t)) ?>"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>Teilen</button><?php endif ?>
             <?php else: ?>
               <span class="leise">Modellmittel: <?= h($det['grund']) ?>, nur ein Teil der Ensemble-Läufe sieht ein Fenster</span>
+              <?php if ($tr): ?><span class="verlauf <?= $tr['art'] ?>" title="<?= h(trend_titel($tr, $tzSeite, $heute)) ?>">· <?= h(trend_text($tr)) ?></span><?php endif ?>
             <?php endif ?>
           </li>
         <?php endforeach ?>

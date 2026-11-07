@@ -15,6 +15,11 @@ return [
     // dorthin laedt die Action "Deploy" daten/regionen.json.
     // 'regionen_datei' => '/usr/home/DEINUSER/umkreis/regionen.json',
 
+    // Optional: Zwischenspeicher fuer den Verlauf ueber die Abrufe, ausserhalb
+    // des Web-Roots und vom Webserver beschreibbar. Standard: <data_dir>/cache.
+    // null = ohne Zwischenspeicher (rechnet bei jedem Aufruf neu, langsamer).
+    // 'cache_dir' => '/usr/home/DEINUSER/umkreisdaten/cache',
+
     // Nur fuer den Sammler als Cronjob (server/sammler.php ohne --action):
     // 'modelle' => 'icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd',
     // 'openmeteo_limit' => 10000,

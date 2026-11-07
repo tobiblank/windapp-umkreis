@@ -29,6 +29,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Web-App zum Installieren | 7.11.2026: `manifest.php` (Name Wohinfahrma, unter dem Symbol „Fahrma“), `sw.js` und `offline.html` nach stegen-wind (nur Offline-Seite, nichts zwischengespeichert), Symbol als Platzhalter (`icon.svg`, PNG 192/512/180). Erst nach dem Umzug auf wohinfahrma.de auf dem Handy installieren. Hinweis „Als App installieren“ beim ersten Besuch (Chrome/Edge/Android mit Knopf, iPhone als Text), nach „Nicht jetzt“ 30 Tage Ruhe |
 | Quellen für Regionen | 7.11.2026 gesichtet, siehe „Quellen für Regionen und Spots“ |
 | Regel-Windlagen | 7.11.2026: Druckdifferenzen und Grundströmung statt Modellwind für Thermik- und Föhnlagen; Reschensee, Silvaplana, Gardasee Nord, Urnersee. Stärken, Tageszeiten und Saison geschätzt, siehe „Regel-Windlagen“ |
+| Verlauf über die Abrufe | 7.11.2026: dieselbe Chance aus bis zu drei früheren Abrufen, Pfeil in der Kachel und „stabil / steigt / fällt / schwankt“ in der Detailzeile, mit Zwischenspeicher; siehe „Verlauf über die Abrufe“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -79,6 +80,18 @@ Seit 7.11.2026. Der Knopf „Teilen“ steht in der Detailzeile eines Tages, wen
 
 - **Text:** Stand beim Teilen, mit Datum statt „Morgen“: „Nördliche Adria, So 8.11.: Bora · 10–15 Uhr · Ø 22 kn, Böen bis 32 kn · 100 % Chance (Kite Twintip)“.
 - **Link:** `?sport=…&region=<id>&nach=<YYYY-MM-DD>`. Zeigt nur diese Region mit dem Tag markiert, mit der **dann aktuellen** Vorhersage; Zeitraum folgt aus dem Tag (Tag 3–6 → „Tag 3 bis 7“). Kein Umkreis, kein Standort im Link, keine Entfernung, keine Auswahl; die Ansicht überschreibt die gemerkte Wahl des Empfängers nicht. Ist der Tag vorbei, steht ein Hinweis dabei.
+
+## Verlauf über die Abrufe
+
+Seit 7.11.2026. Vor einer langen Fahrt zählt nicht nur die Chance, sondern ob sie hält. Für jeden angezeigten Tag rechnet `verlauf_rechnen()` dieselbe Chance aus bis zu drei früheren Ensemble-Abrufen (`VERLAUF_FRUEHER`), höchstens drei UTC-Tage zurück, mit **demselben Fenster wie jetzt** (heute also mit dem Restfenster), damit sich nur die Vorhersage ändert, nicht die Frage.
+
+- **Gleiche Modellläufe zählen einmal:** Liefert Open-Meteo bei zwei Abrufen denselben ECMWF-Lauf, ist der Kontrolllauf gleich (Fingerabdruck); der ältere Abruf wird übersprungen. Ein Abruf heißt also nicht zwingend ein neuer Modelllauf, aber zwei gezählte Werte stammen aus verschiedenen.
+- **Regel-Windlagen:** Druck und Höhenwind kommen aus dem Abruf, der zeitlich am nächsten liegt (höchstens 90 Minuten). Fehlen sie, zählt der frühere Abruf für diese Region nicht.
+- **Einordnung** (`verlauf_trend()`, Schwelle 15 Prozentpunkte): *stabil* (mindestens 3 Werte, Spanne ≤ 15), *steigt* / *fällt* (jetzt mindestens 15 über bzw. unter dem ältesten Wert), *schwankt* (größere Spanne ohne klare Richtung), *kaum verändert* (nur 2 Werte).
+- **Anzeige:** In der Kachel „↑ von 40“ bzw. „↓ von 80“, nur bei steigt/fällt; in der Detailzeile z. B. „stabil seit 4 Abrufen“ oder „fällt (80 → 55 → 40 %)“; im Tooltip die Uhrzeiten der Abrufe.
+- **Zwischenspeicher:** Frühere Abrufe ändern sich nicht. Das Ergebnis liegt je Sportart, Zeitraum und Stunde in `<data_dir>/cache/verlauf-*.json` (Einstellung `cache_dir` in `config.php`, `null` = aus); Dateien älter als ein Tag werden gelöscht. Gemessen mit 40 Regionen und Testdaten: erster Aufruf 0,9 s, danach 0,23 s.
+
+**Rechenzeit** (gleicher Tag): Die Umrechnung der Zeitreihe in Ortszeit lief bis dahin für jeden der 51 Ensemble-Läufe einzeln (`ortszeiten()` macht das jetzt einmal je Abruf); die Rangliste für 40 Regionen brauchte dadurch 2,4 s, jetzt 0,16 s. `daten_laden()` entpackt ältere Zeilen nur noch, wenn ihnen noch Regionen fehlen. Speicher bleibt bei gut 130 MB für 40 Regionen im Umkreis 2500 km (fast alles der aktuelle Stand); das `memory_limit` bei Hetzner ist ungeprüft.
 
 **Alle Zahlen sind Rohwerte, nicht kalibriert.** An Thermik-Spots unterschätzen die Modelle den Wind vermutlich. Sportart-Voreinstellungen wie in stegen-wind (14 / 14 / 11 / 16 / 17 / 12 / 5–18 kn); dort ist nur 14 kn Directional kalibriert, der Rest sind Faustwerte.
 
@@ -202,7 +215,7 @@ Ausprobieren auf der Kommandozeile: `php server/rangliste.php wingfoil 800 48.07
 php tests/test.php
 ```
 
-Ohne Netz: Einzelfunktionen, Katalog, Tagesfenster, der Sammler in beiden Betriebsarten gegen `tests/fake_openmeteo.php` (eingebauter PHP-Server), die Rangliste aus den geschriebenen Daten und ein Rauchtest der Seite (HTTP-Status, keine PHP-Meldungen, Rundung des Standorts, geteilte Vorhersage und Teilen-Knopf, ohne Daten, ohne config.php). Läuft vor jedem Deploy (`deploy.yml`) und auf anderen Branches (`pruefen.yml`).
+Ohne Netz: Einzelfunktionen, Katalog, Tagesfenster, der Sammler in beiden Betriebsarten gegen `tests/fake_openmeteo.php` (eingebauter PHP-Server), die Rangliste aus den geschriebenen Daten, der Verlauf über frühere Abrufe und ein Rauchtest der Seite (HTTP-Status, keine PHP-Meldungen, Rundung des Standorts, geteilte Vorhersage und Teilen-Knopf, ohne Daten, ohne config.php). Läuft vor jedem Deploy (`deploy.yml`) und auf anderen Branches (`pruefen.yml`).
 
 ## Ordner
 
@@ -226,3 +239,18 @@ tests/                  Tests und Open-Meteo-Ersatz
 7. Mail-Benachrichtigung
 8. Regel-Windlagen nach dem ersten echten Lauf prüfen (Druckniveaus im Ensemble, plausible Tage); Stärken aus eigener Erfahrung eintragen
 9. Später: weitere Regeln (Achensee, Walchensee, Mistral), Spot-Meldungen, Korrektur je Spot aus Sessions
+
+### Ideen, in dieser Reihenfolge (7.11.2026)
+
+1. ~~Verlauf über die Abrufe~~ (erledigt, siehe oben)
+2. Karte: Regionen als Punkte, eingefärbt nach der Chance am gewählten Tag
+3. Fahrzeit statt Luftlinie, mit Abfahrtsempfehlung (OpenRouteService oder OSRM; Kontingent und Bedingungen prüfen)
+4. Fahr- und Flugziele trennen (Kanaren, Tarifa)
+5. Roadtrip-Modus: mehrere gute Tage hintereinander oder zwei nahe Regionen im Wechsel
+6. Matrix Regionen × Tage als Übersicht
+7. Stundenansicht je Region mit Streuung der Modelle, Vergleich zweier Regionen
+8. Wassertemperatur und Neoprenempfehlung (ob die Marine API das liefert, ungeprüft)
+9. Gezeiten für Atlantik-Spots (ungeprüft, ob Open-Meteo das brauchbar liefert)
+10. Spot-Infos (Niveau, Zonen, Sperrzeiten, Saison) auf der Seite
+11. Kalendereintrag (.ics) für ein gutes Fenster
+12. Rückblick mit Messwerten (Pioupiou offen; Holfuy, Windguru-Stationen: Lizenz klären)

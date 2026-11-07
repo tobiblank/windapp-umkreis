@@ -132,6 +132,30 @@ function modell_reihen(array $hourly, string $var): array
     return $out;
 }
 
+/**
+ * Ortstag und -stunde je Zeitindex einer Open-Meteo-Zeitreihe (UTC).
+ * Einmal je Abruf statt je Ensemble-Lauf: sonst entstehen 51 x 192 Datumsobjekte
+ * je Region, das war der groesste Teil der Rechenzeit (seit 7.11.2026).
+ * Rueckgabe [i => ['YYYY-MM-DD', stunde]]
+ */
+function ortszeiten(array $zeiten, DateTimeZone $tz): array
+{
+    static $merk = [];
+    $key = $tz->getName() . '|' . ($zeiten[0] ?? '') . '|' . count($zeiten);
+    if (isset($merk[$key])) {
+        return $merk[$key];
+    }
+    if (count($merk) > 50) {
+        $merk = [];
+    }
+    $out = [];
+    foreach ($zeiten as $i => $t) {
+        $lok = (new DateTimeImmutable($t . ':00Z'))->setTimezone($tz);
+        $out[$i] = [$lok->format('Y-m-d'), (int)$lok->format('G')];
+    }
+    return $merk[$key] = $out;
+}
+
 /** Mittlere Richtung (Vektormittel der Einheitsvektoren) */
 function richtung_mittel(array $grad): ?float
 {
@@ -163,9 +187,10 @@ function vorhersage_stunden(array $eintrag, DateTimeZone $tz): array
     $wc  = modell_reihen($h, 'weather_code');
     $tmp = modell_reihen($h, 'temperature_2m');
     $wol = modell_reihen($h, 'cloud_cover');
+    $orte = ortszeiten($h['time'], $tz);
     $out = [];
-    foreach ($h['time'] as $i => $t) {
-        $lok = (new DateTimeImmutable($t . ':00Z'))->setTimezone($tz);
+    foreach ($h['time'] as $i => $_) {
+        [$tag, $stunde] = $orte[$i];
         $v = $d = $b = $te = $wo = [];
         $gew = $codes = 0;
         foreach ($kn as $m => $reihe) {
@@ -195,7 +220,7 @@ function vorhersage_stunden(array $eintrag, DateTimeZone $tz): array
         if (!$v) {
             continue;
         }
-        $out[$lok->format('Y-m-d')][(int)$lok->format('G')] = [
+        $out[$tag][$stunde] = [
             'kn'       => array_sum($v) / count($v),
             'richtung' => richtung_mittel($d),
             'boe'      => $b ? array_sum($b) / count($b) : null,
@@ -216,13 +241,14 @@ function welle_stunden(?array $eintrag, DateTimeZone $tz): array
         return [];
     }
     $h = $eintrag['hourly'];
+    $orte = ortszeiten($h['time'], $tz);
     $out = [];
-    foreach ($h['time'] as $i => $t) {
+    foreach ($h['time'] as $i => $_) {
         if (!isset($h['wave_height'][$i])) {
             continue;
         }
-        $lok = (new DateTimeImmutable($t . ':00Z'))->setTimezone($tz);
-        $out[$lok->format('Y-m-d')][(int)$lok->format('G')] = (float)$h['wave_height'][$i];
+        [$tag, $stunde] = $orte[$i];
+        $out[$tag][$stunde] = (float)$h['wave_height'][$i];
     }
     return $out;
 }
@@ -240,6 +266,7 @@ function ensemble_stunden(?array $eintrag, DateTimeZone $tz): array
         return [];
     }
     $h = $eintrag['hourly'];
+    $orte = ortszeiten($h['time'], $tz);
     $laeufe = [];
     foreach ($h as $k => $reihe) {
         if (!preg_match('/^wind_speed_10m(_member\d+)?$/', $k, $m)) {
@@ -248,12 +275,12 @@ function ensemble_stunden(?array $eintrag, DateTimeZone $tz): array
         $suffix = $m[1] ?? '';
         $richtung = $h['wind_direction_10m' . $suffix] ?? [];
         $wolken = $h['cloud_cover' . $suffix] ?? [];
-        foreach ($h['time'] as $i => $t) {
+        foreach ($h['time'] as $i => $_) {
             if (!isset($reihe[$i])) {
                 continue;
             }
-            $lok = (new DateTimeImmutable($t . ':00Z'))->setTimezone($tz);
-            $laeufe[$suffix][$lok->format('Y-m-d')][(int)$lok->format('G')] = [
+            [$tag, $stunde] = $orte[$i];
+            $laeufe[$suffix][$tag][$stunde] = [
                 'kn'       => (float)$reihe[$i],
                 'richtung' => isset($richtung[$i]) ? (float)$richtung[$i] : null,
                 'wolken'   => isset($wolken[$i]) ? (float)$wolken[$i] : null,
@@ -274,8 +301,9 @@ function mittel_stunden(?array $eintrag, string $var, DateTimeZone $tz, bool $ri
     }
     $h = $eintrag['hourly'];
     $reihen = modell_reihen($h, $var);
+    $orte = ortszeiten($h['time'], $tz);
     $out = [];
-    foreach ($h['time'] as $i => $t) {
+    foreach ($h['time'] as $i => $_) {
         $v = [];
         foreach ($reihen as $reihe) {
             if (isset($reihe[$i])) {
@@ -285,8 +313,8 @@ function mittel_stunden(?array $eintrag, string $var, DateTimeZone $tz, bool $ri
         if (!$v) {
             continue;
         }
-        $lok = (new DateTimeImmutable($t . ':00Z'))->setTimezone($tz);
-        $out[$lok->format('Y-m-d')][(int)$lok->format('G')] = $richtung ? richtung_mittel($v) : array_sum($v) / count($v);
+        [$tag, $stunde] = $orte[$i];
+        $out[$tag][$stunde] = $richtung ? richtung_mittel($v) : array_sum($v) / count($v);
     }
     return $out;
 }
@@ -298,17 +326,18 @@ function ensemble_reihe(?array $eintrag, string $var, DateTimeZone $tz): array
         return [];
     }
     $h = $eintrag['hourly'];
+    $orte = ortszeiten($h['time'], $tz);
     $out = [];
     foreach ($h as $k => $reihe) {
         if (!preg_match('/^' . preg_quote($var, '/') . '(_member\d+)?$/', $k, $m)) {
             continue;
         }
-        foreach ($h['time'] as $i => $t) {
+        foreach ($h['time'] as $i => $_) {
             if (!isset($reihe[$i])) {
                 continue;
             }
-            $lok = (new DateTimeImmutable($t . ':00Z'))->setTimezone($tz);
-            $out[$m[1] ?? ''][$lok->format('Y-m-d')][(int)$lok->format('G')] = (float)$reihe[$i];
+            [$tag, $stunde] = $orte[$i];
+            $out[$m[1] ?? ''][$tag][$stunde] = (float)$reihe[$i];
         }
     }
     return $out;
@@ -889,6 +918,11 @@ function daten_laden(string $dataDir, array $quellen = ['vorhersage', 'ensemble'
             }
             $zeilen = array_values(array_filter(array_map('trim', explode("\n", $txt))));
             for ($i = count($zeilen) - 1; $i >= 0; $i--) {
+                // Aeltere Zeilen nur entpacken, wenn sie noch fehlende Regionen haben
+                $kopf = zeile_kopf($zeilen[$i]);
+                if ($kopf !== null && (!$kopf['ok'] || !array_filter($kopf['regionen'], fn($id) => !isset($out[$q][$id])))) {
+                    continue;
+                }
                 $z = json_decode($zeilen[$i], true);
                 if (!is_array($z) || empty($z['ok']) || !isset($z['payload'], $z['regionen'])) {
                     continue;
@@ -903,4 +937,280 @@ function daten_laden(string $dataDir, array $quellen = ['vorhersage', 'ensemble'
         }
     }
     return $out;
+}
+
+// ===================================================================
+// VERLAUF UEBER DIE LAEUFE (seit 7.11.2026)
+// ===================================================================
+//
+// Dieselbe Chance fuer denselben Tag aus frueheren Abrufen des Ensembles:
+// "stabil seit 4 Laeufen" oder "faellt (80 -> 40 %)". Gerechnet wird mit
+// demselben Fenster wie jetzt (auch dem Restfenster von heute), damit sich nur
+// die Vorhersage aendert, nicht die Frage.
+//
+// Speicher: Ein Ensemble-Eintrag ist entpackt gut 1 MB je Region. Fruehere
+// Laeufe werden deshalb Zeile fuer Zeile gelesen, sofort bewertet und wieder
+// verworfen; behalten wird nur die Chance je Tag.
+
+const VERLAUF_FRUEHER = 3;        // fruehere Laeufe je Region (mit dem aktuellen also bis zu 4 Werte)
+const VERLAUF_SUCHTAGE = 3;       // so viele UTC-Tage zurueck suchen
+const VERLAUF_SCHWELLE = 0.15;    // ab 15 Prozentpunkten gilt es als Aenderung
+const VERLAUF_BEGLEIT_MIN = 90;   // Druck/Hoehenwind gehoert zum Ensemble-Abruf, wenn hoechstens so weit entfernt
+
+/** Dateien einer Quelle der letzten $tage UTC-Tage, neueste zuerst (beide Formen des Sammlers, auch alte gezippte) */
+function ndjson_dateien(string $dataDir, string $q, int $tage, ?int $jetzt = null): array
+{
+    $jetzt ??= time();
+    $dateien = [];
+    for ($i = 0; $i < $tage; $i++) {
+        $d = gmdate('Y-m-d', $jetzt - $i * 86400);
+        $dateien = array_merge($dateien, glob("$dataDir/$q/$d.ndjson") ?: [], glob("$dataDir/$q/$d.ndjson.gz") ?: [],
+                               glob("$dataDir/$q/{$d}_*.ndjson.gz") ?: []);
+    }
+    $dateien = array_values(array_unique($dateien));
+    rsort($dateien);
+    return $dateien;
+}
+
+/** Zeilen einer Datei, aelteste zuerst */
+function ndjson_zeilen(string $f): array
+{
+    $txt = (string)@file_get_contents($f);
+    if (str_ends_with($f, '.gz')) {
+        $txt = (string)@gzdecode($txt);
+    }
+    return array_values(array_filter(array_map('trim', explode("\n", $txt))));
+}
+
+/**
+ * Kopf einer Zeile (ts, ok, regionen), ohne die ganze Zeile zu entpacken.
+ * Der Sammler schreibt ts, source, ok, http, ms, regionen vor payload.
+ * Faellt sonst auf json_decode zurueck. null = unbrauchbar.
+ */
+function zeile_kopf(string $zeile): ?array
+{
+    $anfang = substr($zeile, 0, 4000);
+    if (preg_match('/^\{"ts":"([^"]+)".*?"ok":(true|false).*?"regionen":(\[[^\]]*\])/s', $anfang, $m)) {
+        $reg = json_decode($m[3], true);
+        if (is_array($reg)) {
+            return ['ts' => $m[1], 'ok' => $m[2] === 'true', 'regionen' => $reg];
+        }
+    }
+    $z = json_decode($zeile, true);
+    if (!is_array($z) || !isset($z['ts'], $z['regionen'])) {
+        return null;
+    }
+    return ['ts' => $z['ts'], 'ok' => !empty($z['ok']), 'regionen' => $z['regionen']];
+}
+
+/** Fingerabdruck eines Ensemble-Eintrags: der Kontrolllauf reicht, um gleiche Modelllaeufe zu erkennen */
+function ensemble_fingerabdruck(array $e): string
+{
+    $h = $e['hourly'] ?? [];
+    return md5(json_encode([$h['time'][0] ?? null, $h['wind_speed_10m'] ?? null, $h['wind_direction_10m'] ?? null]));
+}
+
+/**
+ * Begleitdaten (druck_ensemble, hoehe_ensemble) zu einem frueheren Ensemble-Abruf:
+ * je Druckpunkt bzw. Region der Eintrag mit dem naechsten ts, hoechstens
+ * VERLAUF_BEGLEIT_MIN entfernt. Rueckgabe [id => eintrag].
+ * $merk haelt den Kopf-Index und die zuletzt entpackte Zeile je Quelle.
+ */
+function begleitdaten(string $dataDir, string $q, string $ts, array &$merk, int $jetzt): array
+{
+    if (!isset($merk[$q]['index'])) {
+        $merk[$q]['index'] = [];
+        foreach (ndjson_dateien($dataDir, $q, VERLAUF_SUCHTAGE, $jetzt) as $f) {
+            foreach (ndjson_zeilen($f) as $nr => $z) {
+                $k = zeile_kopf($z);
+                if ($k && $k['ok']) {
+                    $merk[$q]['index'][] = ['ts' => $k['ts'], 'datei' => $f, 'nr' => $nr, 'regionen' => $k['regionen']];
+                }
+            }
+        }
+    }
+    $t = strtotime($ts);
+    $wahl = [];
+    $abstand = [];
+    foreach ($merk[$q]['index'] as $i => $k) {
+        $d = abs(strtotime($k['ts']) - $t);
+        if ($d > VERLAUF_BEGLEIT_MIN * 60) {
+            continue;
+        }
+        foreach ($k['regionen'] as $id) {
+            if (!isset($abstand[$id]) || $d < $abstand[$id]) {
+                $abstand[$id] = $d;
+                $wahl[$id] = $i;
+            }
+        }
+    }
+    $ergebnis = [];
+    foreach ($wahl as $id => $i) {
+        $k = $merk[$q]['index'][$i];
+        $schluessel = $k['datei'] . '#' . $k['nr'];
+        if (($merk[$q]['zeile'] ?? null) !== $schluessel) {
+            $merk[$q]['daten'] = null;   // erst freigeben, dann die naechste Zeile entpacken
+            $zeilen = ndjson_zeilen($k['datei']);
+            $merk[$q]['zeile'] = $schluessel;
+            $merk[$q]['daten'] = json_decode($zeilen[$k['nr']] ?? 'null', true);
+        }
+        $pos = array_search($id, $k['regionen'], true);
+        if ($pos !== false && isset($merk[$q]['daten']['payload'][$pos]['hourly'])) {
+            $ergebnis[$id] = $merk[$q]['daten']['payload'][$pos];
+        }
+    }
+    return $ergebnis;
+}
+
+/**
+ * Chancen aus frueheren Ensemble-Abrufen fuer die angezeigten Tage.
+ * Nur Abrufe aelter als der aktuelle Stand der Region, gleiche Modelllaeufe
+ * einmal (Fingerabdruck). Fehlen einer Region mit Regel-Windlagen die Druck-
+ * oder Hoehendaten des frueheren Abrufs, zaehlt der Abruf fuer sie nicht.
+ * Rueckgabe [region_id => [tag => [['ts' =>, 'chance' =>], ...]]], aelteste zuerst.
+ */
+function verlauf_rechnen(array $regionen, string $dataDir, array $stand, array $sport, array $tage, ?DateTimeImmutable $jetzt = null): array
+{
+    $jetzt ??= new DateTimeImmutable('now');
+    $offen = [];   // id => region, solange noch fruehere Laeufe fehlen
+    $gesehen = [];
+    $zahl = [];
+    $out = [];
+    foreach ($regionen as $r) {
+        $akt = $stand['ensemble'][$r['id']] ?? null;
+        if ($akt === null) {
+            continue;
+        }
+        $offen[$r['id']] = $r;
+        $gesehen[$r['id']] = [ensemble_fingerabdruck($akt) => true];
+        $zahl[$r['id']] = 0;
+        $out[$r['id']] = [];
+    }
+    $merk = [];
+    foreach (ndjson_dateien($dataDir, 'ensemble', VERLAUF_SUCHTAGE, $jetzt->getTimestamp()) as $f) {
+        if (!$offen) {
+            break;
+        }
+        $zeilen = ndjson_zeilen($f);
+        for ($i = count($zeilen) - 1; $i >= 0 && $offen; $i--) {
+            $kopf = zeile_kopf($zeilen[$i]);
+            if (!$kopf || !$kopf['ok']) {
+                continue;
+            }
+            $brauchen = array_filter($kopf['regionen'], fn($id) => isset($offen[$id])
+                && $kopf['ts'] < ($stand['_ts']['ensemble'][$id] ?? ''));
+            if (!$brauchen) {
+                continue;
+            }
+            $z = json_decode($zeilen[$i], true);
+            foreach ($brauchen as $k => $id) {
+                $e = $z['payload'][$k] ?? null;
+                if (!isset($e['hourly']) || !isset($offen[$id])) {
+                    continue;
+                }
+                $fp = ensemble_fingerabdruck($e);
+                if (isset($gesehen[$id][$fp])) {
+                    continue;
+                }
+                $gesehen[$id][$fp] = true;
+                $region = $offen[$id];
+                [$achsen, $hoehen] = region_bedarf($region);
+                $daten = ['vorhersage' => null, 'ensemble' => $e, 'welle' => null, 'druck' => [], 'hoehe' => null,
+                          'druck_ensemble' => [], 'hoehe_ensemble' => null];
+                $fehlt = false;
+                if ($achsen) {
+                    $daten['druck_ensemble'] = begleitdaten($dataDir, 'druck_ensemble', $kopf['ts'], $merk, $jetzt->getTimestamp());
+                    foreach ($achsen as [$plus, $minus]) {
+                        $fehlt = $fehlt || !isset($daten['druck_ensemble'][$plus], $daten['druck_ensemble'][$minus]);
+                    }
+                }
+                if (array_diff($hoehen, ['10m'])) {
+                    $daten['hoehe_ensemble'] = begleitdaten($dataDir, 'hoehe_ensemble', $kopf['ts'], $merk, $jetzt->getTimestamp())[$id] ?? null;
+                    $fehlt = $fehlt || $daten['hoehe_ensemble'] === null;
+                }
+                if ($fehlt) {
+                    continue;
+                }
+                foreach (region_bewerten($region, $daten, $sport, $tage, $jetzt) as $tag => $t) {
+                    if ($t['ens'] !== null) {
+                        $out[$id][$tag] ??= [];
+                        array_unshift($out[$id][$tag], ['ts' => $kopf['ts'], 'chance' => $t['ens']['chance']]);
+                    }
+                }
+                if (++$zahl[$id] >= VERLAUF_FRUEHER) {
+                    unset($offen[$id]);
+                }
+            }
+            unset($z);
+        }
+    }
+    return $out;
+}
+
+/**
+ * verlauf_rechnen mit Zwischenspeicher. Fruehere Abrufe aendern sich nicht;
+ * der Schluessel haengt an Sportart, Tagen, Stunde (Restfenster von heute),
+ * Katalog und den vorhandenen Dateien. Gerechnet wird fuer alle Regionen, damit
+ * Umkreis und Standort den Speicher nicht teilen. $cacheDir null oder nicht
+ * beschreibbar: ohne Zwischenspeicher. Dateien aelter als ein Tag werden geloescht.
+ */
+function verlauf_mit_cache(array $regionen, string $dataDir, ?string $cacheDir, array $stand, array $sport, array $tage, ?DateTimeImmutable $jetzt = null, string $katalogDatei = ''): array
+{
+    $jetzt ??= new DateTimeImmutable('now');
+    $dateien = [];
+    foreach (['ensemble', 'druck_ensemble', 'hoehe_ensemble'] as $q) {
+        foreach (ndjson_dateien($dataDir, $q, VERLAUF_SUCHTAGE, $jetzt->getTimestamp()) as $f) {
+            $dateien[] = basename($f) . ':' . @filesize($f);
+        }
+    }
+    $key = md5(json_encode([$sport, $tage, $jetzt->format('Y-m-d H'), $dateien, $stand['_ts']['ensemble'] ?? [],
+                            $katalogDatei !== '' ? @filemtime($katalogDatei) : null, VERLAUF_FRUEHER]));
+    $datei = $cacheDir !== null ? "$cacheDir/verlauf-$key.json" : null;
+    if ($datei !== null && is_file($datei)) {
+        $v = json_decode((string)@file_get_contents($datei), true);
+        if (is_array($v)) {
+            return $v;
+        }
+    }
+    $v = verlauf_rechnen($regionen, $dataDir, $stand, $sport, $tage, $jetzt);
+    if ($datei !== null && (is_dir($cacheDir) || @mkdir($cacheDir, 0700, true)) && is_writable($cacheDir)) {
+        $tmp = "$datei." . getmypid() . '.tmp';
+        if (@file_put_contents($tmp, json_encode($v)) !== false) {
+            @rename($tmp, $datei);
+        }
+        foreach (glob("$cacheDir/verlauf-*.json") ?: [] as $alt) {
+            if (@filemtime($alt) < time() - 86400) {
+                @unlink($alt);
+            }
+        }
+    }
+    return $v;
+}
+
+/**
+ * Einordnung des Verlaufs. $frueher aelteste zuerst, $jetzt die aktuelle Chance.
+ *   stabil    mindestens 3 Werte, Spanne hoechstens VERLAUF_SCHWELLE
+ *   steigt    jetzt mindestens VERLAUF_SCHWELLE ueber dem aeltesten Wert
+ *   faellt    jetzt mindestens VERLAUF_SCHWELLE darunter
+ *   schwankt  groessere Spanne, aber kein klarer Weg
+ *   gleich    nur 2 Werte, kaum Unterschied
+ * Rueckgabe ['art', 'werte' (aelteste zuerst, inkl. aktuell), 'ts' (der frueheren)] oder null.
+ */
+function verlauf_trend(array $frueher, ?float $jetzt): ?array
+{
+    if ($jetzt === null || !$frueher) {
+        return null;
+    }
+    $werte = array_merge(array_column($frueher, 'chance'), [$jetzt]);
+    $spanne = max($werte) - min($werte);
+    $weg = $jetzt - $werte[0];
+    $eps = 1e-9;
+    $art = match (true) {
+        count($werte) >= 3 && $spanne <= VERLAUF_SCHWELLE + $eps => 'stabil',
+        $weg >= VERLAUF_SCHWELLE - $eps => 'steigt',
+        $weg <= -VERLAUF_SCHWELLE + $eps => 'faellt',
+        $spanne > VERLAUF_SCHWELLE + $eps => 'schwankt',
+        default => 'gleich',
+    };
+    return ['art' => $art, 'werte' => $werte, 'ts' => array_column($frueher, 'ts')];
 }
