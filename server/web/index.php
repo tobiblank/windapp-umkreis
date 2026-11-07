@@ -190,7 +190,35 @@ foreach ($liste as $i => $e) {
         : fahrzeit($e['region'], $heim, (float)$e['km'], $fahrzeiten, $fahrtModell);
 }
 $liste = rangliste_sortieren($liste, $nach);
-$trips = $roadtrip && !$geteilt ? roadtrip_vorschlaege($liste, $tage) : [];
+$jetztSeite = $jetzt->setTimezone($tzSeite);
+$trips = $roadtrip && !$geteilt && !$flug
+    ? roadtrip_vorschlaege($liste, $tage, $fahrtModell, (int)$jetztSeite->format('G') + (int)$jetztSeite->format('i') / 60)
+    : [];
+
+/**
+ * Hinfahrt: Fahrt am selben Tag zum Wind: "los bis 7:40" (Fensterbeginn minus
+ * Fahrt und 15 min Aufbau, nicht vor der fruehesten Abfahrt); sonst Abfahrt und
+ * Ankunft, bei langen Strecken mit Uebernachtung.
+ */
+function trip_hin_text(array $trip, array $liste, array $tage, callable $tagName): string
+{
+    [$aT, $aH] = $trip['hin']['ankunft'];
+    $erster = $trip['tage'][$aT] ?? null;
+    if ($aT === $trip['start'] && $erster && $erster['art'] === 'wind') {
+        $d = $liste[$erster['i']]['tage'][$tage[$aT]];
+        $von = !empty($d['det']['geht']) ? (float)$d['det']['von'] : (float)($d['fenster'][0] ?? FENSTER_AB);
+        $spaet = $von - $trip['hin']['min'] / 60 - ABFAHRT_AUFBAU_MIN / 60;
+        return $spaet > $trip['hin']['los'] ? 'los bis ' . uhr(floor($spaet * 12) / 12) : 'los ' . uhr($trip['hin']['los']) . ', ab ca. ' . uhr($aH) . ' dort';
+    }
+    return 'los ' . uhr($trip['hin']['los']) . ($aT > $trip['start'] ? ', mit Übernachtung, Ankunft ' . $tagName($aT) . ' ca. ' : ', Ankunft ca. ') . uhr($aH);
+}
+
+/** Stunden als Uhrzeit, auf 5 Minuten: 11.25 -> "11:15", ueber Mitternacht weiter gezaehlt */
+function uhr(float $stunden): string
+{
+    $m = (int)(round($stunden * 12) * 5);
+    return intdiv($m, 60) % 24 . ':' . sprintf('%02d', $m % 60);
+}
 
 $zeiten = [];
 foreach ($stand['_ts'] as $proRegion) {
@@ -461,7 +489,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <?= h($sport['name']) ?>, <?= h($wind) ?>, mindestens <?= MIN_STUNDEN ?> Stunden am Stück zwischen 9 Uhr und Sonnenuntergang<?= $ansicht === 'bald' ? ', heute erst ab einer halben Stunde nach jetzt' : '' ?>.
   Prozent = Anteil der 51 Läufe des ECMWF-Ensembles, an denen das klappt.
   <?php if ($roadtrip): ?>
-  Roadtrip: mindestens <?= ROADTRIP_MIN_TAGE ?> Tage hintereinander mit mindestens <?= zahl(100 * ROADTRIP_MIN_CHANCE) ?> % Chance, jeden Tag an derselben oder einer Region bis <?= ROADTRIP_NAH_KM ?> km entfernt.
+  Roadtrip: vom Standort hin und zurück, mindestens <?= ROADTRIP_MIN_WINDTAGE ?> Windtage mit mindestens <?= zahl(100 * ROADTRIP_MIN_CHANCE) ?> % Chance; Etappen bis <?= intdiv(ROADTRIP_ETAPPE_MAX_MIN, 60) ?> h abends nach dem Fenster, Anreise ab <?= ROADTRIP_LOS_UHR ?> Uhr, höchstens <?= intdiv(ROADTRIP_FAHRT_PRO_TAG_MIN, 60) ?> h am Tag. Die App sucht die Länge, bei der Wind und Fahrt sich am meisten lohnen.
   <?php else: ?>
   „↑ von 40“ = vor bis zu drei Abrufen (zweimal am Tag) stand dort 40 %.
   <?php endif ?>
@@ -527,39 +555,54 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <?php endif ?>
 <?php endif ?>
 
-<?php if ($roadtrip && $liste && !$trips): ?>
-  <p class="karte">Kein Roadtrip in Sicht: an keinen <?= ROADTRIP_MIN_TAGE ?> Tagen hintereinander mindestens <?= zahl(100 * ROADTRIP_MIN_CHANCE) ?> % in nahen Regionen. <?= $flug ? '' : '<a href="' . h(link_mit(['km' => UMKREISE[count(UMKREISE) - 1]])) . '">Umkreis vergrößern</a>' ?></p>
+<?php if ($roadtrip && $flug): ?>
+  <p class="karte">Roadtrips gibt es nur mit Anreise Auto. <a href="<?= h(link_mit(['anreise' => null])) ?>">Mit dem Auto ansehen</a></p>
+<?php elseif ($roadtrip && $liste && !$trips): ?>
+  <p class="karte">Kein Roadtrip lohnt sich gerade: nirgends <?= ROADTRIP_MIN_WINDTAGE ?> Windtage mit mindestens <?= zahl(100 * ROADTRIP_MIN_CHANCE) ?> % Chance, die die Fahrt aufwiegen. <a href="<?= h(link_mit(['km' => UMKREISE[count(UMKREISE) - 1]])) ?>">Umkreis vergrößern</a></p>
 <?php endif ?>
 <?php foreach ($trips as $trip):
-    $ersterE = $liste[$trip['tage'][0]['i']];
-    $letzter = $trip['tage'][count($trip['tage']) - 1]['tag'];
+    $orte = [];
+    foreach ($trip['tage'] as $x) {
+        $orte[$x['i']] = $liste[$x['i']]['region']['name'];
+    }
+    $heimTag = $trip['rueck']['heim_tag'];
+    $tageGesamt = $heimTag - $trip['start'] + 1;
+    $tagName = fn(int $ti) => tag_kurz($heute->modify("+$ti day")->format('Y-m-d'), $heute);
 ?>
   <article class="karte trip">
     <div class="region-kopf">
-      <h2><?= count($trip['tage']) ?> Tage · <?= h(tag_kurz($trip['tage'][0]['tag'], $heute)) ?> – <?= h(tag_kurz($letzter, $heute)) ?></h2>
-      <span class="leise klein fahrzeit">Ø <?= zahl(100 * $trip['mittel']) ?> %<span class="km"><?= h(isset($ersterE['fahrt']['flug']) ? fahrzeit_mit_wort($ersterE['fahrt']) : 'Anreise ' . fahrzeit_mit_wort($ersterE['fahrt'])) ?></span></span>
+      <h2><?= h(implode(' → ', array_values(array_unique($orte)))) ?></h2>
+      <span class="leise klein fahrzeit"><?= $trip['windtage'] ?> Windtage<span class="km"><?= h(fahrzeit_text(['min' => $trip['fahrt_min'], 'geschaetzt' => true])) ?> Fahrt</span></span>
     </div>
+    <p class="leise klein trip-zeitraum"><?= $tageGesamt ?> <?= $tageGesamt === 1 ? 'Tag' : 'Tage' ?> · <?= h($tagName($trip['start'])) ?> – <?= h($tagName($heimTag)) ?></p>
     <ol class="trip-tage klein">
-      <?php foreach ($trip['tage'] as $k => $tt):
-          $te = $liste[$tt['i']];
-          $d = $te['tage'][$tt['tag']];
+      <li class="wechsel leise">↳ <?= h($tagName($trip['start'])) ?> Hinfahrt<?= $eigenerOrt ? '' : ' ab Inning' ?>, <?= h(fahrzeit_text($liste[$trip['hin']['i']]['fahrt'])) ?>, <?= h(trip_hin_text($trip, $liste, $tage, $tagName)) ?></li>
+      <?php foreach ($trip['tage'] as $ti => $x):
+          $te = $liste[$x['i']];
+          $t = $tage[$ti];
+          $d = $te['tage'][$t];
           $det = $d['det'];
           $c = $d['ens']['chance'] ?? null;
-          $vorher = $k > 0 ? $liste[$trip['tage'][$k - 1]['i']] : null;
       ?>
-        <?php if ($vorher && $vorher['region']['id'] !== $te['region']['id']):
-            $wkm = entfernung_km($vorher['region']['punkt'], $te['region']['punkt']);
-        ?>
-          <li class="wechsel leise">↳ weiter nach <?= h($te['region']['name']) ?>, <?= h(fahrzeit_text(['min' => (int)round($fahrtModell[0] + $fahrtModell[1] * $wkm), 'geschaetzt' => true])) ?> (<?= zahl($wkm) ?> km Luftlinie)</li>
+        <?php if (isset($trip['etappen'][$ti])): $et = $trip['etappen'][$ti]; ?>
+          <li class="wechsel leise">↳ abends weiter nach <?= h($te['region']['name']) ?>, <?= h(fahrzeit_text(['min' => $et['min'], 'geschaetzt' => true])) ?></li>
         <?php endif ?>
+        <?php if ($x['art'] === 'wind'): ?>
         <li>
           <span class="trip-wert <?= $c === null ? 'go' : stufe($c) ?>"><?= $c === null ? 'ja' : zahl(100 * $c) ?></span>
-          <span><b><?= h(tag_kurz($tt['tag'], $heute)) ?></b> <a href="<?= h(link_mit(['ansicht' => array_search($tt['tag'], $tage, true) <= 2 ? 'bald' : 'reise', 'nach' => $tt['tag']])) ?>#r-<?= h($te['region']['id']) ?>" class="trip-region"><?= h($te['region']['name']) ?></a><?php if ($det['geht']): ?> ·
+          <span><b><?= h(tag_kurz($t, $heute)) ?></b> <a href="<?= h(link_mit(['ansicht' => $ti <= 2 ? 'bald' : 'reise', 'nach' => $t])) ?>#r-<?= h($te['region']['id']) ?>" class="trip-region"><?= h($te['region']['name']) ?></a><?php if ($det['geht']): ?> ·
             <?= h($det['windlage'] ?? 'jede Richtung') ?> · <?= $det['von'] ?>–<?= $det['bis'] ?> Uhr ·
             <?= !empty($det['regel']) ? 'typisch ' . zahl((float)$det['staerke'][0]) . '–' . zahl((float)$det['staerke'][1]) . ' kn' : 'Ø ' . zahl($det['mittel_kn']) . ' kn' ?>
             <?php else: ?> · <span class="leise">nur ein Teil der Ensemble-Läufe sieht ein Fenster</span><?php endif ?></span>
         </li>
+        <?php else: ?>
+        <li class="leise">
+          <span class="trip-wert"><?= $x['art'] === 'fahrt' ? '–' : '·' ?></span>
+          <span><b><?= h(tag_kurz($t, $heute)) ?></b> <?= $x['art'] === 'fahrt' ? 'Fahrtag' : 'Pause in ' . h($te['region']['name']) . ', kein Wind' ?></span>
+        </li>
+        <?php endif ?>
       <?php endforeach ?>
+      <li class="wechsel leise">↳ <?= h($trip['rueck']['abends'] ? 'abends' : $tagName($trip['rueck']['tag'])) ?> Rückfahrt, <?= h(fahrzeit_text($liste[$trip['rueck']['i']]['fahrt'])) ?><?= h($heimTag > $trip['rueck']['tag'] ? ', mit Übernachtung' : '') ?>, zu Hause <?= h(($heimTag > array_key_last($trip['tage']) ? $tagName($heimTag) . ' ' : '') . 'ca. ' . uhr($trip['rueck']['ankunft'])) ?></li>
     </ol>
   </article>
 <?php endforeach ?>
