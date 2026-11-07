@@ -1,6 +1,15 @@
 /* Wohinfahrma - Optik
- * Hell und dunkel nach Systemeinstellung. Systemschriften, keine Downloads.
+ * Hell und dunkel nach Systemeinstellung. Systemschrift fuer Text; fuer Logo und
+ * Zahlen Barlow Condensed 600, selbst ausgeliefert (keine Anfrage an Google),
+ * auf Latein + Latin-1 verkleinert. Lizenz: schrift/OFL.txt (SIL OFL 1.1).
  */
+@font-face {
+  font-family: "Barlow Condensed";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("schrift/barlow-condensed-600.woff") format("woff");
+}
 :root {
   --grund: #eef3f4; --karte: #ffffff; --kachel: #e4ecee; --linie: #d3dee1;
   --text: #13242a; --leise: #5a6f77;

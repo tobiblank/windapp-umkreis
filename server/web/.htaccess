@@ -8,6 +8,16 @@ DirectoryIndex index.php index.html
   Require all denied
 </FilesMatch>
 
+# Schrift mit passendem Typ und lange im Cache (Dateiname wechselt bei Aenderung)
+<IfModule mod_mime.c>
+  AddType font/woff .woff
+</IfModule>
+<IfModule mod_headers.c>
+  <FilesMatch "\.woff$">
+    Header set Cache-Control "public, max-age=31536000"
+  </FilesMatch>
+</IfModule>
+
 # Service Worker nicht aus dem HTTP-Cache, damit Aenderungen ankommen
 <IfModule mod_headers.c>
   <Files "sw.js">
