@@ -23,6 +23,10 @@
   --akzent: #0f7fa8;
   /* Landkarte */
   --meer: #d6e7ee; --land: #f4f6f2; --grenze: #b9c6c9;
+  /* Einstellungen und Ansichten (seit 7.11.2026): Wasserblau, damit sie sich von
+     den Ergebnissen abheben; Gruen/Gelb/Rot bleiben fuer die Bewertung */
+  --steuer: #dbeaf1; --steuer-feld: #ffffff; --steuer-linie: #bcd5e1; --steuer-text: #0d4a63;
+  --akzent-auf: #ffffff;
   --zahlen: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
   color-scheme: light;
 }
@@ -36,6 +40,8 @@
     --go-bg: #173d35; --maybe-bg: #3d3420; --no-bg: #3e2826; --nix-bg: #1a2e35;
     --akzent: #5cc8f0;
     --meer: #0c1a20; --land: #1f3640; --grenze: #33525d;
+    --steuer: #123543; --steuer-feld: #0e2833; --steuer-linie: #1f4a5c; --steuer-text: #a9dcef;
+    --akzent-auf: #08202a;
     color-scheme: dark;
   }
 }
@@ -216,3 +222,21 @@ a { color: var(--akzent); }
 .marker.info-gefahr { background: var(--maybe-bg); color: var(--maybe-text); }
 .marker.info-zone, .marker.info-niveau { background: var(--kachel); color: var(--text); }
 .marker.info-saison, .marker.info-tipp { background: var(--go-bg); color: var(--go-text); }
+
+/* Farbliche Gliederung (seit 7.11.2026) */
+.steuer { background: var(--steuer); }
+.steuer label { color: var(--steuer-text); }
+.steuer select { background: var(--steuer-feld); border-color: var(--steuer-linie); }
+.steuer .ort { color: var(--steuer-text); }
+.reiter { background: var(--steuer); }
+.reiter a { color: var(--steuer-text); }
+.reiter a[aria-current] { background: var(--akzent); color: var(--akzent-auf); }
+.zeitraum a { border-color: var(--steuer-linie); color: var(--steuer-text); }
+.zeitraum a[aria-current] { background: var(--steuer); border-color: var(--akzent); color: var(--text); font-weight: 600; }
+/* Balken links an Regionen und Trips: Stufe des besten Tages */
+.region, .trip { box-shadow: inset 5px 0 0 var(--balken, transparent); padding-left: 20px; }
+.beste-go { --balken: var(--go); }
+.beste-maybe { --balken: var(--maybe); }
+.beste-no { --balken: var(--no); }
+.beste-nix, .beste-leer { --balken: var(--linie); }
+.region:target { box-shadow: inset 5px 0 0 var(--balken, transparent), 0 0 0 2px var(--akzent); }

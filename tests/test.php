@@ -660,7 +660,7 @@ pruefe(!str_contains($html, 'name="km"><') && !str_contains($html, 'class="umkre
 [, $html] = holen($sitePort, 'index.php?km=100&ort=46.6,30.0');
 pruefe(str_contains($html, 'id="r-testsee-druck"') && !str_contains($html, 'Testflughafen'), 'Anreise Auto: Region mit Auto und Flug bleibt mit Fahrzeit');
 [$code, $html] = holen($sitePort, 'index.php?km=1000&ansicht=roadtrip');
-pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'class="karte trip"') && str_contains($html, '>Nördliche Adria</a>')
+pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'class="karte trip beste-go"') && str_contains($html, '>Nördliche Adria</a>')
        && !str_contains($html, 'id="landkarte"') && !str_contains($html, 'aria-label="Sortierung"') && str_contains($html, '>Roadtrip</a>'),
        'Roadtrip: Vorschlag Adria morgen und übermorgen, ohne Karte und Sortierung');
 pruefe(str_contains($html, 'Hinfahrt ab Inning') && str_contains($html, 'Rückfahrt'), 'Roadtrip mit Hin- und Rückfahrt');
@@ -702,6 +702,9 @@ pruefe(str_contains($html, '<select name="nach">') && str_contains($html, '<opti
        'Bedienung: Sortierung im Formular, drei Ansichten, Zeitraum nur in der Liste, Erklärung eingeklappt');
 [, $html] = holen($sitePort, 'index.php?km=1000&ansicht=woche');
 pruefe(!str_contains($html, '<select name="nach">') && !str_contains($html, 'class="zeitraum klein"'), 'Woche: ohne Sortierfeld und Zeitraum');
+[, $html] = holen($sitePort, 'index.php?km=1000');
+pruefe(str_contains($html, 'class="karte region beste-go" id="r-adria-nord"') && str_contains($html, 'class="wahl karte steuer"'),
+       'Farbe: Balken nach dem besten Tag, Einstellungen eigens getönt');
 foreach (['impressum.html', 'datenschutz.html', 'karte.svg', 'stil.css', 'sw.js', 'offline.html', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon.svg', 'icon-maskable-512.png', 'favicon.svg', 'favicon.ico', 'schrift/barlow-condensed-600.woff', 'schrift/OFL.txt'] as $f) {
     [$code] = holen($sitePort, $f);
     pruefe($code === 200, "$f erreichbar");
