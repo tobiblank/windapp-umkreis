@@ -100,7 +100,7 @@ pruefe(karte_wert($e, null)['tag'] === 't2' && abs(karte_wert($e, 't1')['chance'
 echo "Roadtrip\n";
 $rtT = ['d0', 'd1', 'd2', 'd3', 'd4'];
 $rtTag = fn($c) => ['det' => ['geht' => $c !== null && $c >= 0.5, 'von' => 10, 'bis' => 17], 'ens' => $c === null ? null : ['chance' => $c], 'fenster' => [9, 17]];
-$rtE = fn($id, $p, $min, $cs) => ['region' => ['id' => $id, 'name' => $id, 'punkt' => $p], 'fahrt' => ['min' => $min],
+$rtE = fn($id, $p, $min, $cs) => ['region' => ['id' => $id, 'name' => $id, 'punkt' => $p], 'fahrt' => ['min' => $min], 'km' => 50,
                                   'tage' => array_combine($rtT, array_map($rtTag, $cs))];
 $rtM = [15.0, 0.75];
 $rtL = [$rtE('A', [47.6, 11.2], 60, [0.0, 0.9, 0.9, 0.0, 0.0]),     // nah, zwei Tage
@@ -122,6 +122,13 @@ $rtP = [$rtE('A', [47.6, 11.2], 60, [0.0, 0.9, 0.0, 0.9, 0.0])];
 $rtPV = roadtrip_vorschlaege($rtP, $rtT, $rtM, 7.0);
 pruefe(($rtPV[0]['tage'][2]['art'] ?? null) === 'pause' && count($rtPV) === 1, 'flauer Tag dazwischen: Pause, der Trip geht weiter');
 pruefe(roadtrip_fahrt(0, 6.0, 720) === [1, 8.0] && roadtrip_fahrt(2, 6.0, 90) === [2, 7.5], 'Fahrt: 12 h mit Übernachtung (10 h am Tag), 1:30 h am selben Morgen');
+pruefe(roadtrip_fahrt(0, 6.0, 605) === [0, 6.0 + 605 / 60], 'Fahrt: 10:05 h ohne Übernachtung (bis eine Stunde über dem Tageslimit)');
+$rtW = [$rtE('A', [47.6, 11.2], 60, [0.0, 0.9, 0.0, 0.9, 0.0]), $rtE('B', [47.6, 11.6], 65, [0.0, 0.0, 0.9, 0.0, 0.0])];
+$rtWV = roadtrip_vorschlaege($rtW, $rtT, $rtM, 7.0);
+$rtWK = array_map(fn($v) => implode(' ', array_map(fn($x) => $rtW[$x['i']]['region']['id'], $v['tage'])), $rtWV);
+pruefe($rtWV && !array_filter($rtWK, fn($k) => preg_match('/A.*B.*A|B.*A.*B/', $k)), 'keine Region zweimal: kein A → B → A (' . implode(' | ', $rtWK) . ')');
+$rtAB = entfernung_km([47.6, 11.2], [47.6, 12.0]) * ROADTRIP_UMWEG;
+pruefe(abs($rtV[0]['km'] - (50 * ROADTRIP_UMWEG + $rtAB + 50 * ROADTRIP_UMWEG)) < 0.01, 'Kilometer: Hin, Etappe, Rück (geschätzt Luftlinie x 1,25)');
 pruefe(roadtrip_wert(['vorbei' => true, 'det' => ['geht' => true], 'ens' => ['chance' => 1.0]]) === null
        && roadtrip_wert(['det' => ['geht' => true], 'ens' => null]) === ROADTRIP_OHNE_ENSEMBLE
        && roadtrip_wert(['det' => ['geht' => false], 'ens' => ['chance' => 0.49]]) === null, 'guter Tag: nicht vorbei, ab 50 %, ohne Ensemble mit Fenster');

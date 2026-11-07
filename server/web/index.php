@@ -572,7 +572,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <article class="karte trip">
     <div class="region-kopf">
       <h2><?= h(implode(' → ', array_values(array_unique($orte)))) ?></h2>
-      <span class="leise klein fahrzeit"><?= $trip['windtage'] ?> Windtage<span class="km"><?= h(fahrzeit_text(['min' => $trip['fahrt_min'], 'geschaetzt' => true])) ?> Fahrt</span></span>
+      <span class="leise klein fahrzeit"><?= $trip['windtage'] ?> Windtage<span class="km"><?= h(fahrzeit_text(['min' => $trip['fahrt_min'], 'geschaetzt' => true])) ?> Fahrt · <?= zahl(round($trip['km'] / 10) * 10) ?> km</span></span>
     </div>
     <p class="leise klein trip-zeitraum"><?= $tageGesamt ?> <?= $tageGesamt === 1 ? 'Tag' : 'Tage' ?> · <?= h($tagName($trip['start'])) ?> – <?= h($tagName($heimTag)) ?></p>
     <ol class="trip-tage klein">

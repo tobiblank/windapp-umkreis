@@ -6,12 +6,12 @@
  * Modell (in Stunden Ortszeit; Zeitzonen zwischen den Regionen werden ignoriert,
  * in Europa hoechstens eine Stunde):
  * - Hinfahrt am Morgen ab ROADTRIP_LOS_UHR (heute fruehestens jetzt), hoechstens
- *   ROADTRIP_FAHRT_PRO_TAG_MIN am Tag, bis ROADTRIP_ABENDS_BIS; laengere Strecken
- *   mit Uebernachtung unterwegs. Reicht es am Ankunftstag noch fuer
+ *   ROADTRIP_FAHRT_PRO_TAG_MIN am Tag (bis ROADTRIP_DURCHFAHREN_MIN mehr, wenn man
+ *   dann ankommt), bis ROADTRIP_ABENDS_BIS; laengere Strecken mit Uebernachtung. Reicht es am Ankunftstag noch fuer
  *   MIN_STUNDEN im Fenster, ist der Tag ein Windtag, sonst ein Fahrtag.
  * - Jeden weiteren Tag: bleiben (Windtag, wenn der Tag gut ist, sonst Pause)
  *   oder abends nach dem Fenster weiterfahren, Etappe hoechstens
- *   ROADTRIP_ETAPPE_MAX_MIN, Ankunft bis ROADTRIP_ABENDS_BIS.
+ *   ROADTRIP_ETAPPE_MAX_MIN, Ankunft bis ROADTRIP_ABENDS_BIS. Keine Region zweimal.
  * - Rueckfahrt nach dem letzten Windtag: abends, wenn man bis
  *   ROADTRIP_ABENDS_BIS zu Hause ist, sonst ab dem naechsten Morgen.
  * Guter Tag: nicht vorbei, Chance mindestens ROADTRIP_MIN_CHANCE (ohne
@@ -36,7 +36,9 @@ const ROADTRIP_ETAPPE_MAX_MIN = 300;      // 5 h zwischen zwei Regionen, abends
 const ROADTRIP_FAHRT_PRO_TAG_MIN = 600;   // mehr am Tag nicht, sonst Uebernachtung unterwegs
 const ROADTRIP_LOS_UHR = 6;
 const ROADTRIP_ABENDS_BIS = 23;
-const ROADTRIP_KOSTEN_STUNDE = 0.05;
+const ROADTRIP_KOSTEN_STUNDE = 0.08;   // 0,05 bis 7.11.2026 abends: 2 maessige Tage fuer 16 h Fahrt kamen nach vorn
+const ROADTRIP_DURCHFAHREN_MIN = 60;    // so viel ueber dem Tageslimit faehrt man noch durch, statt zu uebernachten
+const ROADTRIP_UMWEG = 1.25;            // Strasse / Luftlinie, fuer geschaetzte Kilometer
 const ROADTRIP_KOSTEN_TAG = 0.3;
 
 /** Wert eines Tages fuer den Roadtrip oder null (kein guter Tag) */
@@ -62,7 +64,8 @@ function roadtrip_fahrt(int $tag, float $ab, int $minuten): array
     $h = $ab;
     while (true) {
         $heute = (int)min(ROADTRIP_FAHRT_PRO_TAG_MIN, max(0, (ROADTRIP_ABENDS_BIS - $h) * 60));
-        if ($rest <= $heute) {
+        $bisAbends = (int)max(0, (ROADTRIP_ABENDS_BIS - $h) * 60);
+        if ($rest <= $heute || ($rest <= $heute + ROADTRIP_DURCHFAHREN_MIN && $rest <= $bisAbends)) {
             return [$tag, (float)($h + $rest / 60)];
         }
         $rest -= $heute;
@@ -80,7 +83,7 @@ function roadtrip_fahrt(int $tag, float $ab, int $minuten): array
  *    'tage' => [tagIndex => ['i', 'wert' (null = kein Wind), 'art' => wind|pause|fahrt]],
  *    'etappen' => [tagIndex => ['von' => i, 'nach' => i, 'min']],   // abends vor diesem Tag
  *    'rueck' => ['i', 'min', 'tag', 'ankunft' (Stunde), 'abends' (bool)],
- *    'windtage', 'fahrt_min', 'bilanz']
+ *    'windtage', 'fahrt_min', 'km' (Strasse; geschaetzt Luftlinie x ROADTRIP_UMWEG, wo nicht bekannt), 'bilanz']
  */
 function roadtrip_vorschlaege(array $liste, array $tage, array $modell, float $jetztStunde, int $anzahl = ROADTRIP_ANZAHL): array
 {
@@ -96,19 +99,24 @@ function roadtrip_vorschlaege(array $liste, array $tage, array $modell, float $j
         }
     }
     $heim = [];
+    $heimKm = [];
     foreach ($liste as $i => $e) {
         $m = $e['fahrt']['min'] ?? null;
         $heim[$i] = $m !== null && !isset($e['fahrt']['flug']) ? (int)$m : null;
+        $heimKm[$i] = isset($e['fahrt']['km']) ? (float)$e['fahrt']['km'] : (float)($e['km'] ?? 0) * ROADTRIP_UMWEG;
     }
     $etappe = [];
+    $etappeKm = [];
     for ($i = 0; $i < $n; $i++) {
         for ($j = 0; $j < $n; $j++) {
             if ($i === $j) {
                 continue;
             }
-            $m = (int)round($modell[0] + $modell[1] * entfernung_km($liste[$i]['region']['punkt'], $liste[$j]['region']['punkt']));
+            $luft = entfernung_km($liste[$i]['region']['punkt'], $liste[$j]['region']['punkt']);
+            $m = (int)round($modell[0] + $modell[1] * $luft);
             if ($m <= ROADTRIP_ETAPPE_MAX_MIN) {
                 $etappe[$i][$j] = $m;
+                $etappeKm[$i][$j] = $luft * ROADTRIP_UMWEG;
             }
         }
     }
@@ -127,7 +135,7 @@ function roadtrip_vorschlaege(array $liste, array $tage, array $modell, float $j
                 continue;
             }
             $trip = ['start' => $s, 'hin' => ['i' => $i, 'min' => $heim[$i], 'los' => $los, 'ankunft' => [$a, $hA]],
-                     'tage' => [], 'etappen' => [], 'windtage' => 0, 'fahrt_min' => $heim[$i],
+                     'tage' => [], 'etappen' => [], 'windtage' => 0, 'fahrt_min' => $heim[$i], 'km' => $heimKm[$i],
                      'bilanz' => -ROADTRIP_KOSTEN_STUNDE * $heim[$i] / 60];
             for ($d = $s; $d < $a; $d++) {
                 $trip['tage'][$d] = ['i' => $i, 'wert' => null, 'art' => 'fahrt'];
@@ -150,16 +158,20 @@ function roadtrip_vorschlaege(array $liste, array $tage, array $modell, float $j
                     $letzter = $trip['tage'][$d];
                     // Ende hier, wenn heute Wind war
                     if ($letzter['art'] === 'wind' && $trip['windtage'] >= ROADTRIP_MIN_WINDTAGE) {
-                        $kandidaten[] = roadtrip_abschluss($trip, $d, $i, $heim[$i], $ende[$d][$i]);
+                        $kandidaten[] = roadtrip_abschluss($trip, $d, $i, $heim[$i], $heimKm[$i], $ende[$d][$i]);
                     }
                     if ($d + 1 >= $T) {
                         continue;
                     }
                     // Bleiben oder abends weiter
                     $ziele = [$i => 0] + ($etappe[$i] ?? []);
+                    $besucht = array_flip(array_column($trip['tage'], 'i'));
                     foreach ($ziele as $j => $min) {
                         if ($heim[$j] === null) {
                             continue;   // Region ohne Landweg
+                        }
+                        if ($j !== $i && isset($besucht[$j])) {
+                            continue;   // keine Region zweimal (sonst A -> B -> A, im Titel nicht zu sehen)
                         }
                         if ($min > 0 && $ende[$d][$i] + $min / 60 > ROADTRIP_ABENDS_BIS) {
                             continue;
@@ -168,6 +180,7 @@ function roadtrip_vorschlaege(array $liste, array $tage, array $modell, float $j
                         if ($min > 0) {
                             $neu['etappen'][$d + 1] = ['von' => $i, 'nach' => $j, 'min' => $min];
                             $neu['fahrt_min'] += $min;
+                            $neu['km'] += $etappeKm[$i][$j];
                             $neu['bilanz'] -= ROADTRIP_KOSTEN_STUNDE * $min / 60;
                         }
                         $w = $wert[$d + 1][$j];
@@ -219,7 +232,7 @@ function roadtrip_vorschlaege(array $liste, array $tage, array $modell, float $j
 }
 
 /** Rueckfahrt nach dem Windtag $d an Region $i anhaengen */
-function roadtrip_abschluss(array $trip, int $d, int $i, int $heimMin, float $fensterEnde): array
+function roadtrip_abschluss(array $trip, int $d, int $i, int $heimMin, float $heimKm, float $fensterEnde): array
 {
     if ($fensterEnde + $heimMin / 60 <= ROADTRIP_ABENDS_BIS) {
         $trip['rueck'] = ['i' => $i, 'min' => $heimMin, 'tag' => $d, 'ankunft' => $fensterEnde + $heimMin / 60, 'abends' => true, 'heim_tag' => $d];
@@ -229,6 +242,7 @@ function roadtrip_abschluss(array $trip, int $d, int $i, int $heimMin, float $fe
         $trip['bilanz'] -= ROADTRIP_KOSTEN_TAG * ($a - $d);
     }
     $trip['fahrt_min'] += $heimMin;
+    $trip['km'] += $heimKm;
     $trip['bilanz'] -= ROADTRIP_KOSTEN_STUNDE * $heimMin / 60;
     // Pausen am Ende gibt es nicht: der letzte Tag ist ein Windtag
     $trip['tage'] = array_filter($trip['tage'], fn($ti) => $ti <= $d, ARRAY_FILTER_USE_KEY);
