@@ -62,6 +62,9 @@
       "punkt": [45.2, 12.36],
       "anfahrt": [45.2, 12.305],
       "zeitzone": "Europe/Rome",
+      "infos": [
+        {"art": "tipp", "text": "Bora mit 1–2,5 m Welle, Scirocco mit den besten Wellen, reiner Nordwind flach", "quelle": "kite-and-windsurfing-guide.com"}
+      ],
       "hinweis": "Aus adria-nord geteilt (Tobias). Bora und Scirocco wie bisher (Tobias: funktionieren bei beiden; Bora ist der Hauptwind). Bora bewusst nach Modellwind, nicht als Regel: großräumig, von den Modellen gut erfasst, und die Stärke (oft zu viel) zählt. kitewetter.at (Adria) zeigt dazu die Druckdifferenz Maribor/Trieste, Bora wahrscheinlich unter −4 hPa. kite-and-windsurfing-guide.com: Bora mit 1–2,5 m Welle, Scirocco mit den besten Wellen, meist um 20 kn; reiner Nordwind flach; Sommerthermik aus Ost bis etwa 15 kn. Strand nach Osten offen (Kartenkenntnis), Ablandig-Sektor geschätzt. Punkt vor Sottomarina nicht auf der Karte kontrolliert. Anfahrt (Strand Sottomarina) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "Bora", "sektor": [20, 80], "charakter": "Hauptwind, böig"},
@@ -81,6 +84,11 @@
       "punkt": [45.64, 13.38],
       "anfahrt": [45.675, 13.39],
       "zeitzone": "Europe/Rome",
+      "infos": [
+        {"art": "saison", "text": "Kiten nur außerhalb der Hochsaison", "quelle": "kite-and-windsurfing-guide.com"},
+        {"art": "gefahr", "text": "Gezeiten 60–80 cm, bei Niedrigwasser zu flach", "quelle": "kite-and-windsurfing-guide.com"},
+        {"art": "tipp", "text": "Startplätze Sacca dei Moreri und Punta Barbacale", "quelle": "spiagge.it"}
+      ],
       "hinweis": "Aus adria-nord geteilt (Tobias). Bora und Scirocco wie bisher (Tobias: funktionieren bei beiden; Bora ist der Hauptwind). Bora bewusst nach Modellwind, nicht als Regel: großräumig, von den Modellen gut erfasst, und die Stärke (oft zu viel) zählt. kitewetter.at (Adria) zeigt dazu die Druckdifferenz Maribor/Trieste, Bora wahrscheinlich unter −4 hPa. kite-and-windsurfing-guide.com (Grado Pineta): Bora eher zum Springen, starker Süd selten; großes Stehrevier, Gezeiten 60–80 cm entscheidend, bei Niedrigwasser zu flach; Kiten nur außerhalb der Hochsaison. spiagge.it: Startplätze Sacca dei Moreri und Punta Barbacale. Ablandig-Sektor geschätzt, Punkt im Golf von Triest nicht auf der Karte kontrolliert. Anfahrt (Strand Grado) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "Bora", "sektor": [20, 80], "charakter": "Hauptwind, böig"},
@@ -365,6 +373,10 @@
       "typ": "see",
       "punkt": [46.455, 9.79],
       "zeitzone": "Europe/Zurich",
+      "infos": [
+        {"art": "saison", "text": "Mitte Februar bis Ende Oktober, früh im Jahr oft noch Eis", "quelle": "unhooked.ch"},
+        {"art": "tipp", "text": "Kiten nur bei Süd bis Südwest", "quelle": "kitesailing.ch"}
+      ],
       "thermik": true,
       "hinweis": "Regel nach kitesailing.ch und unhooked: Kiten nur bei S bis SW; Malojawind bei gutem Wetter und SW-Grundströmung (unhooked: 4–10 kn, kräftige W–SW-Strömung stärkt laut kitesailing.ch, deshalb ohne Obergrenze); Nordströmung verhindert ihn; Druckdifferenz Lugano − Zürich ab −4 hPa schwächer, unter −6 selten. Geschätzt (Claude): Höhe der Grundströmung 700 hPa (unhooked nennt keine), Stärke, Tageszeit 12–18 Uhr, Saison Mai–Oktober (unhooked: Mitte Februar bis Ende Oktober, früh im Jahr oft noch Eis). Punkt (Seemitte) geschätzt.",
       "windlagen": [
@@ -397,6 +409,11 @@
       "typ": "see",
       "punkt": [46.108, 12.339],
       "zeitzone": "Europe/Rome",
+      "infos": [
+        {"art": "zone", "text": "Kiten in Farra d'Alpago am Nordufer; am Poetto (Baywatch-Bar) offiziell Kiteverbot", "quelle": "surf-magazin.de (2021)"},
+        {"art": "tipp", "text": "Am Wochenende voll", "quelle": "surf-magazin.de (2021)"},
+        {"art": "saison", "text": "Thermik März/April und September bis November am stärksten, Ende Juli/August oft schwach, im Winter kaum", "quelle": "surf-magazin.de, venetoaroundme"}
+      ],
       "thermik": true,
       "anfahrt": [46.117, 12.35],
       "hinweis": "Nach surf-magazin.de (2021), venetoaroundme (Region Venetien) und kite-and-windsurfing-guide.com: Thermik aus Süd bei Hochdruck und schönem Wetter, meist ab 11–13 Uhr bis Sonnenuntergang, etwa 10–20 kn (Frühjahr bis 7 Bft); März/April und September–November am stärksten, Ende Juli/August oft schwach, im Winter kaum. Der Nordwind am Morgen ist am See nur 1–2 Bft (er weht am Lago Morto, 9 km südlich). Kiten in Farra d'Alpago am Nordufer (auflandig, Flachwasser, am Wochenende voll); am Poetto (Baywatch-Bar) laut surf-magazin.de offiziell Kiteverbot. Eine Vorhersageregel nennt keine Quelle (venetoaroundme: keine echten Vorhersagen), deshalb noch ohne Regel-Windlage: das 10-m-Modellmittel unterschätzt die Thermik vermutlich. Geschätzt (Claude): Sektor 140–220°, ablandig in Farra 300–60°. kitewetter.at (Spotseite Santa Croce) zeigt AROME, ICON-D2, INCA, MOS für Farra, die Station MeteoKite Santa Croce und ein Bora-Diagramm (Druckdifferenz Maribor/Trieste, Bora wahrscheinlich unter −4 hPa); welche Wirkung die Bora am See hat und in welcher Richtung die Differenz gerechnet ist, sagt die Seite nicht, deshalb nicht eingebaut. Punkt (Seemitte) nach peakvisor; Anfahrt Ortsmitte Farra d'Alpago, ungefähr.",
@@ -430,6 +447,10 @@
       "typ": "see",
       "punkt": [46.93, 8.6],
       "zeitzone": "Europe/Zurich",
+      "infos": [
+        {"art": "sperre", "text": "Kiten im November und Dezember verboten", "monate": [11, 12], "sportarten": ["kite"], "quelle": "unhooked.ch, nicht aktuell geprüft"},
+        {"art": "zone", "text": "Kiten nur in ausgewiesenen Zonen", "quelle": "unhooked.ch, nicht aktuell geprüft"}
+      ],
       "thermik": true,
       "hinweis": "Regel nach unhooked: Thermiktag, wenn um 14 Uhr 4–8 kn aus NW bis NO vorhergesagt sind (dort auf Windfinder bezogen, hier 10-m-Modellwind am Vorhersagepunkt). Südföhn eher für Windsurfer, noch nicht eingetragen. Kiten im November und Dezember verboten, nur in ausgewiesenen Zonen (unhooked, nicht aktuell geprüft). Geschätzt (Claude): Stärke, Tageszeit 12–18 Uhr, Saison Mai–September. Punkt (Seemitte) geschätzt.",
       "windlagen": [
@@ -505,6 +526,10 @@
       "punkt": [36.0, -5.68],
       "anfahrt": [36.068, -5.69],
       "zeitzone": "Europe/Madrid",
+      "infos": [
+        {"art": "zone", "text": "Vom 15.6. bis 15.9. nur in Kitezonen", "quelle": "kitefuntarifa.com, kitemana.com"},
+        {"art": "niveau", "text": "Levante (Ost) ist böig und side-offshore, nur für Fortgeschrittene; dann ist Valdevaqueros die sicherere Wahl", "quelle": "kitefuntarifa.com, kitemana.com"}
+      ],
       "anreise": ["auto", "flug"],
       "flughafen": {"name": "Málaga (AGP)", "transfer_min": 105},
       "hinweis": "kitefuntarifa.com, kitemana.com: Poniente side-onshore, Levante side-offshore und böig, im Süden von Los Lances offshore; Levante nur für Fortgeschrittene, Valdevaqueros dann die sicherere Wahl. Sommer 15.6.–15.9. Zonen. Ablandig-Sektor geschätzt (Strand Richtung SW); Levante ist absichtlich nicht ablandig gesetzt. Anfahrt (Valdevaqueros) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer (Minuten zum Spot) von Claude am 7.11.2026 geschätzt.",
@@ -525,6 +550,9 @@
       "punkt": [40.0, 8.3],
       "anfahrt": [40.035, 8.4],
       "zeitzone": "Europe/Rome",
+      "infos": [
+        {"art": "tipp", "text": "Kitestart in Putzu Idu; Mini Capo bei Maestrale abgedeckt und schwächer", "quelle": "kite-and-windsurfing-guide.com, waterwind.it"}
+      ],
       "anreise": ["auto", "flug"],
       "flughafen": {"name": "Cagliari (CAG)", "transfer_min": 90},
       "hinweis": "kite-and-windsurfing-guide.com, waterwind.it: Maestrale (NW) bringt am Capo Mannu Wellen mit Wind von rechts; Kitestart in Putzu Idu, dort side. Mini Capo laut waterwind.it bei Maestrale abgedeckt und schwächer; surf-forecast.com: Nord dort offshore. Andere Richtungen ungeklärt. Ablandig geschätzt. Anfahrt (Putzu Idu) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer (Minuten zum Spot) von Claude am 7.11.2026 geschätzt.",
@@ -544,6 +572,10 @@
       "punkt": [35.88, 27.72],
       "anfahrt": [35.88, 27.765],
       "zeitzone": "Europe/Athens",
+      "infos": [
+        {"art": "tipp", "text": "Westseite mit Welle, Ostseite Flachwasser mit 1–2 Bft mehr Wind", "quelle": "sportif.travel, kite-and-windsurfing-guide.com"},
+        {"art": "saison", "text": "Meltemi Mai bis Oktober", "quelle": "sportif.travel"}
+      ],
       "anreise": ["flug"],
       "flughafen": {"name": "Rhodos (RHO)", "transfer_min": 90},
       "hinweis": "sportif.travel, kite-and-windsurfing-guide.com: West onshore mit Welle, Ost cross-offshore und flach, Wind dort düsenverstärkt und 1–2 Bft stärker als an der Westküste; Meltemi Mai–Okt. Ablandig-Sektoren geschätzt; Ostseite so gesetzt, dass Meltemi (cross-off) zählt. Anfahrt (Prasonisi) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer (Minuten zum Spot) von Claude am 7.11.2026 geschätzt.",
@@ -592,6 +624,10 @@
       "punkt": [52.38, 4.48],
       "anfahrt": [52.375, 4.525],
       "zeitzone": "Europe/Amsterdam",
+      "infos": [
+        {"art": "zone", "text": "Mehrere Kitezonen, im Sommer an Badetagen teils gesperrt", "quelle": "zandvoort-holland.com"},
+        {"art": "gefahr", "text": "Starke Strömung längs der Küste", "quelle": "kiteforum"}
+      ],
       "hinweis": "zandvoort-holland.com: Kiten bei 210–020°, mehrere Kitezonen, im Sommer an Badetagen teils gesperrt; kiteforum: starke Strömung längs der Küste. Ablandig aus Uferausrichtung (W) geschätzt. Anfahrt (Zandvoort Strand) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "SSW bis NNO", "sektor": [210, 20]}
@@ -607,6 +643,10 @@
       "typ": "meer",
       "punkt": [29.14, -13.6],
       "zeitzone": "Atlantic/Canary",
+      "infos": [
+        {"art": "gefahr", "text": "Bei Hochwasser kein Strand im Kitebereich", "quelle": "unplug-kitesurf.com, hellocanaryislands.com"},
+        {"art": "saison", "text": "Passat April bis Oktober fast täglich", "quelle": "unplug-kitesurf.com, thekitespot.com"}
+      ],
       "anreise": ["flug"],
       "flughafen": {"name": "Lanzarote (ACE)", "transfer_min": 25},
       "hinweis": "unplug-kitesurf.com, hellocanaryislands.com, thekitespot.com: N bis NE side bis side-onshore, Passat Apr–Okt fast täglich; Kitebereich bei Hochwasser ohne Strand. Liegt südlich von ICON-EU (ab 29,5° N): voraussichtlich nur ECMWF und GFS. Ablandig geschätzt. Flughafen und Transfer (Minuten zum Spot) von Claude am 7.11.2026 geschätzt.",
@@ -624,6 +664,10 @@
       "typ": "meer",
       "punkt": [28.78, -13.93],
       "zeitzone": "Atlantic/Canary",
+      "infos": [
+        {"art": "tipp", "text": "Flag Beach: Wind meist erst ab etwa 14 Uhr", "quelle": "fuerteventuraplayas.com, kiteforum"},
+        {"art": "gefahr", "text": "Cotillo Lagos: Flachwasser nur bei mittlerem bis hohem Wasser, Felsen", "quelle": "sportif.travel"}
+      ],
       "anreise": ["flug"],
       "flughafen": {"name": "Fuerteventura (FUE)", "transfer_min": 35},
       "hinweis": "fuerteventuraplayas.com, kiteforum, sportif.travel: Flag Beach N/NW, side von links, Wind ab etwa 14 Uhr; Cotillo Lagos N/NE, Flachwasser bei mittlerem bis hohem Wasser, Felsen. Punkt nördlich der Insel, damit beide Küsten passen. Außerhalb ICON-EU. Ablandig geschätzt. Flughafen und Transfer (Minuten zum Spot) von Claude am 7.11.2026 geschätzt.",
@@ -643,6 +687,9 @@
       "punkt": [28.02, -16.51],
       "anfahrt": [28.045, -16.535],
       "zeitzone": "Atlantic/Canary",
+      "infos": [
+        {"art": "gefahr", "text": "Die Bebauung macht den Wind ufernah böig", "quelle": "surfergalaxy.com, howtowindsurf101.com"}
+      ],
       "anreise": ["flug"],
       "flughafen": {"name": "Teneriffa Süd (TFS)", "transfer_min": 10},
       "hinweis": "surfergalaxy.com, howtowindsurf101.com, webtenerife: Passat NE, side-onshore von links; selten SW. Bebauung macht den Wind ufernah böig. Außerhalb ICON-EU. Ablandig geschätzt. Anfahrt (El Médano) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer (Minuten zum Spot) von Claude am 7.11.2026 geschätzt.",
@@ -661,6 +708,9 @@
       "punkt": [42.19, 3.17],
       "anfahrt": [42.195, 3.115],
       "zeitzone": "Europe/Madrid",
+      "infos": [
+        {"art": "tipp", "text": "Tramuntana böig, 1–2 Bft schwächer als in Leucate; im Sommer Seewind aus SO", "quelle": "sportif.travel, thekitemag.com"}
+      ],
       "hinweis": "sportif.travel, thekitemag.com, unplug-kitesurf.com: Tramuntana side von links, böig, 1–2 Bft schwächer als in Leucate; im Sommer SE-Seewind side von rechts. Rund 130 km von Barcelona. Ob das Modellmittel den Seewind trifft, ungeprüft. Ablandig geschätzt. Anfahrt (Sant Pere Pescador) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "Tramuntana", "sektor": [330, 30], "charakter": "böig"},
@@ -695,6 +745,10 @@
       "punkt": [41.92, 16.22],
       "anfahrt": [41.9, 16.13],
       "zeitzone": "Europe/Rome",
+      "infos": [
+        {"art": "saison", "text": "Saison Mai, Juni, September", "quelle": "visitvieste.com"},
+        {"art": "tipp", "text": "Bei Nordwind an die Nordküste (Scialmarino, San Lorenzo), bei Scirocco an die Südküste (Scialara, Castello)", "quelle": "visitvieste.com"}
+      ],
       "hinweis": "Tobias: am Gargano hängt es vom Spot ab, meist von Vieste aus. kite-and-windsurfing-guide.com (Spiaggia Lunga): Sommer NW-Thermik, Frühling/Herbst Tramontana mit Welle, Scirocco selten. visitvieste.com: Nordküste (Scialmarino, San Lorenzo) bei Nordwind exponiert und bei Scirocco geschützt, Südküste (Scialara, Castello) umgekehrt; Saison Mai, Juni, September. Ob die NW-Thermik im Modellmittel ankommt, ungeprüft. Ablandig geschätzt. Rodi Garganico und Lesina (Nordküste, ca. 40 km) bei Bedarf als eigene Region. Anfahrt (Vieste, Scialmarino) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "Maestrale", "sektor": [290, 340], "charakter": "im Sommer thermisch"},
@@ -729,6 +783,9 @@
       "punkt": [47.22, -2.22],
       "anfahrt": [47.23, -2.17],
       "zeitzone": "Europe/Paris",
+      "infos": [
+        {"art": "tipp", "text": "Plage de l'Ermitage: Wellenspot mit Kiteschule", "quelle": "vvanat.fr"}
+      ],
       "hinweis": "Plage de l'Ermitage in Saint-Brevin-les-Pins (von Tobias bestätigt); vvanat.fr: dort Wellenspot, Kiteschule. Sektoren nur aus Uferausrichtung geschätzt. Anfahrt (Saint-Brevin, Plage de l'Ermitage) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [],
       "spots": [

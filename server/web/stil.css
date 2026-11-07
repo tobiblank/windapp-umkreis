@@ -197,3 +197,14 @@ a { color: var(--akzent); }
 .stunden-bild .s-swell { fill: none; stroke: var(--akzent); stroke-width: 2; stroke-linejoin: round; }
 .welle-titel { margin: 12px 0 0; }
 .sortierung a[aria-current] .leise { color: inherit; opacity: .8; }
+
+/* Spot-Infos (seit 7.11.2026) */
+.spotinfo { margin-top: 10px; }
+.spotinfo summary { cursor: pointer; color: var(--leise); font-weight: 600; }
+.spotinfo ul { list-style: none; margin: 8px 0 4px; padding: 0; display: grid; gap: 6px; }
+.spotinfo li { line-height: 1.45; }
+.spotinfo p { margin: 4px 0 0; font-size: 12px; }
+.marker.sperre, .marker.info-sperre { background: var(--no-bg); color: var(--no); }
+.marker.info-gefahr { background: var(--maybe-bg); color: var(--maybe-text); }
+.marker.info-zone, .marker.info-niveau { background: var(--kachel); color: var(--text); }
+.marker.info-saison, .marker.info-tipp { background: var(--go-bg); color: var(--go-text); }

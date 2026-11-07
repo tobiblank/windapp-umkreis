@@ -46,17 +46,17 @@ const REST_VORLAUF_MIN = 30;   // heute: erst ab jetzt + 30 min (Anfahrt, Aufbau
 
 /** Voreinstellungen wie in stegen-wind (sport.php): nur 14 kn Directional ist dort kalibriert */
 const SPORTARTEN = [
-    'kite_directional' => ['name' => 'Kite Directional', 'min' => 14],
-    'kite_twintip'     => ['name' => 'Kite Twintip', 'min' => 14],
-    'kitefoil'         => ['name' => 'Kitefoil', 'min' => 11],
-    'wingfoil'         => ['name' => 'Wingfoil', 'min' => 16],
-    'windsurf'         => ['name' => 'Windsurf', 'min' => 17],
-    'windsurf_foil'    => ['name' => 'Windsurf Foil', 'min' => 12],
+    'kite_directional' => ['name' => 'Kite Directional', 'gruppe' => 'kite', 'min' => 14],
+    'kite_twintip'     => ['name' => 'Kite Twintip', 'gruppe' => 'kite', 'min' => 14],
+    'kitefoil'         => ['name' => 'Kitefoil', 'gruppe' => 'kite', 'min' => 11],
+    'wingfoil'         => ['name' => 'Wingfoil', 'gruppe' => 'wing', 'min' => 16],
+    'windsurf'         => ['name' => 'Windsurf', 'gruppe' => 'windsurf', 'min' => 17],
+    'windsurf_foil'    => ['name' => 'Windsurf Foil', 'gruppe' => 'windsurf', 'min' => 12],
     // Seit 7.11.2026: Wave-Varianten mit Mindestwelle, Wellenreiten ohne Mindestwind (Faustwerte, nicht kalibriert)
-    'kite_wave'        => ['name' => 'Kite Wave', 'min' => 14, 'welle_min' => 1.0],
-    'windsurf_wave'    => ['name' => 'Windsurf Wave', 'min' => 17, 'welle_min' => 1.0],
-    'wellenreiten'     => ['name' => 'Wellenreiten', 'min' => 0, 'surf' => true, 'welle_min' => 0.8, 'periode_min' => 8, 'wind_max' => 12],
-    'segeln'           => ['name' => 'Segeln', 'min' => 5, 'max' => 18],
+    'kite_wave'        => ['name' => 'Kite Wave', 'gruppe' => 'kite', 'min' => 14, 'welle_min' => 1.0],
+    'windsurf_wave'    => ['name' => 'Windsurf Wave', 'gruppe' => 'windsurf', 'min' => 17, 'welle_min' => 1.0],
+    'wellenreiten'     => ['name' => 'Wellenreiten', 'gruppe' => 'surf', 'min' => 0, 'surf' => true, 'welle_min' => 0.8, 'periode_min' => 8, 'wind_max' => 12],
+    'segeln'           => ['name' => 'Segeln', 'gruppe' => 'segeln', 'min' => 5, 'max' => 18],
 ];
 
 // ===================================================================
@@ -302,6 +302,27 @@ function tag_welle(array $proStunde, array $fenster): ?array
     };
     return ['hoehe' => $m('hoehe'), 'periode' => $m('periode'), 'richtung' => $r('richtung'),
             'swell' => $m('swell'), 'swell_periode' => $m('swell_periode'), 'swell_richtung' => $r('swell_richtung')];
+}
+
+/**
+ * Sperre aus den Spot-Infos (seit 7.11.2026): eine info mit art "sperre",
+ * monate [von, bis] und sportarten (Gruppen wie "kite"), die den Monat und die
+ * Gruppe der Sportart trifft. Rueckgabe der Text der Sperre oder null.
+ */
+function region_sperre(array $region, array $sport, int $monat): ?string
+{
+    foreach ($region['infos'] ?? [] as $info) {
+        if (($info['art'] ?? '') !== 'sperre' || empty($info['monate'])) {
+            continue;
+        }
+        if (isset($info['sportarten']) && !in_array($sport['gruppe'] ?? '', $info['sportarten'], true)) {
+            continue;
+        }
+        if (in_monaten($monat, $info['monate'])) {
+            return 'Sperre: ' . $info['text'];
+        }
+    }
+    return null;
 }
 
 /**
@@ -868,6 +889,7 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
     $out = [];
     foreach ($tage as $tag) {
         [$fenster, $rest, $vorbei] = restfenster(tagesfenster($tag, $tz, (float)$lat, (float)$lon), $tag, $tz, $jetzt);
+        $sperre = region_sperre($region, $sport, (int)substr($tag, 5, 2));
         if ($vorbei) {
             $leer = ['geht' => false, 'stunden' => 0, 'grund' => 'Tag vorbei'];
             $out[$tag] = ['spot' => null, 'spot_name' => null, 'det' => $leer, 'ens' => null,
@@ -890,6 +912,13 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
                 'det'       => tag_bewerten($stunden, $fenster, $sport, $wl, $spot, (int)substr($tag, 5, 2)),
                 'ens'       => empty($sport['surf']) ? ensemble_chance($ens, $tag, $fenster, $sport, $wl, $spot) : null,
             ];
+        }
+        if ($sperre !== null) {
+            // Sperre aus den Spot-Infos: Tag geht nicht, auch nicht im Ensemble
+            foreach ($alle as $k => $x) {
+                $alle[$k]['det'] = ['geht' => false, 'stunden' => 0, 'grund' => $sperre];
+                $alle[$k]['ens'] = $x['ens'] !== null ? ['chance' => 0.0, 'laeufe' => $x['ens']['laeufe']] : null;
+            }
         }
         usort($alle, 'spot_vergleich');
         $det = $alle[0]['det'];
