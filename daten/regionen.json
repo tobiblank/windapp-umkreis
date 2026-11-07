@@ -118,7 +118,14 @@
       "zeitzone": "Europe/Berlin",
       "hinweis": "Entwurf (Claude), ungeprüft: ohne Windlagen (grob), weil rund um die Insel fast jede Richtung irgendwo geht. Punkt im Fehmarnbelt nördlich der Insel nicht auf der Karte kontrolliert.",
       "windlagen": [],
-      "spots": []
+      "spots": [
+        {
+          "id": "gruener-brink",
+          "name": "Grüner Brink",
+          "ablandig": [[120, 240]],
+          "hinweis": "Nordküste, Ablandig-Sektor aus Uferausrichtung geschätzt."
+        }
+      ]
     },
     {
       "id": "ile-de-re",
@@ -132,15 +139,64 @@
       "spots": []
     },
     {
-      "id": "bretagne",
-      "name": "Bretagne (Baie de Douarnenez)",
+      "id": "nord-finistere",
+      "name": "Nord-Finistère",
       "land": "FR",
       "typ": "meer",
-      "punkt": [48.12, -4.45],
+      "punkt": [48.72, -4.06],
       "zeitzone": "Europe/Paris",
-      "hinweis": "Entwurf (Claude), ungeprüft: Bretagne ist für eine Region zu groß, vorerst stellvertretend die Baie de Douarnenez (Finistère); später in Küstenabschnitte aufteilen. Ohne Windlagen (grob), ablandiger Wind wird nicht ausgeschlossen. Gezeiten fehlen. Punkt in der Bucht nicht auf der Karte kontrolliert.",
+      "hinweis": "Nur aus der Uferausrichtung geschätzt, keine Quelle zu den Windrichtungen gefunden. Laut vvanat.fr im Frühjahr NO-Thermik in Nord-Finistère. Gemeint ist der Kitespot in Santec (windy.app: 48,696 N, 4,065 W), nicht der gleichnamige Ort bei Saint-Jean-du-Doigt.",
       "windlagen": [],
-      "spots": []
+      "spots": [
+        {
+          "id": "dossen",
+          "name": "Le Dossen (Santec)",
+          "windlagen": [
+            {"name": "SW bis NO", "sektor": [230, 70]}
+          ],
+          "ablandig": [[120, 210]]
+        }
+      ]
+    },
+    {
+      "id": "sud-finistere",
+      "name": "Süd-Finistère",
+      "land": "FR",
+      "typ": "meer",
+      "punkt": [47.83, -4.4],
+      "zeitzone": "Europe/Paris",
+      "hinweis": "vvanat.fr: Strand nach Westen offen, vor allem NW und SW; bei Süd eher Kersiguénou oder Kerloc'h. Pors Carn (südlich der Spitze) nicht eingetragen. Ablandig geschätzt.",
+      "windlagen": [],
+      "spots": [
+        {
+          "id": "la-torche",
+          "name": "La Torche",
+          "windlagen": [
+            {"name": "SW bis NW", "sektor": [200, 340]}
+          ],
+          "ablandig": [[45, 135]]
+        }
+      ]
+    },
+    {
+      "id": "morbihan",
+      "name": "Morbihan / Quiberon",
+      "land": "FR",
+      "typ": "meer",
+      "punkt": [47.62, -3.2],
+      "zeitzone": "Europe/Paris",
+      "hinweis": "vvanat.fr: Kerhillio ideal bei NW (side, Steuerbord) und W (side-on), Sommerthermik günstig. Ablandig geschätzt.",
+      "windlagen": [],
+      "spots": [
+        {
+          "id": "kerhillio",
+          "name": "Kerhillio (Erdeven)",
+          "windlagen": [
+            {"name": "SW bis NW", "sektor": [190, 340]}
+          ],
+          "ablandig": [[30, 120]]
+        }
+      ]
     },
     {
       "id": "normandie",
@@ -388,6 +444,228 @@
       "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Großer flacher Steppensee, Punkt in der Seemitte; Podersdorf und andere Ufer später als Spots. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
       "windlagen": [],
       "spots": []
+    },
+    {
+      "id": "tarifa",
+      "name": "Tarifa",
+      "land": "ES",
+      "typ": "meer",
+      "punkt": [36.0, -5.68],
+      "zeitzone": "Europe/Madrid",
+      "hinweis": "kitefuntarifa.com, kitemana.com: Poniente side-onshore, Levante side-offshore und böig, im Süden von Los Lances offshore; Levante nur für Fortgeschrittene, Valdevaqueros dann die sicherere Wahl. Sommer 15.6.–15.9. Zonen. Ablandig-Sektor geschätzt (Strand Richtung SW); Levante ist absichtlich nicht ablandig gesetzt.",
+      "windlagen": [
+        {"name": "Levante", "sektor": [60, 120], "charakter": "böig, side-offshore"},
+        {"name": "Poniente", "sektor": [240, 300]}
+      ],
+      "spots": [
+        {"id": "los-lances", "name": "Los Lances", "ablandig": [[0, 60]]},
+        {"id": "valdevaqueros", "name": "Valdevaqueros", "ablandig": [[0, 60]]}
+      ]
+    },
+    {
+      "id": "oristano-sinis",
+      "name": "Sinis / Capo Mannu",
+      "land": "IT",
+      "typ": "meer",
+      "punkt": [40.0, 8.3],
+      "zeitzone": "Europe/Rome",
+      "hinweis": "kite-and-windsurfing-guide.com, waterwind.it: Maestrale (NW) bringt am Capo Mannu Wellen mit Wind von rechts; Kitestart in Putzu Idu, dort side. Mini Capo laut waterwind.it bei Maestrale abgedeckt und schwächer; surf-forecast.com: Nord dort offshore. Andere Richtungen ungeklärt. Ablandig geschätzt.",
+      "windlagen": [
+        {"name": "Maestrale", "sektor": [280, 350]}
+      ],
+      "spots": [
+        {"id": "putzu-idu", "name": "Putzu Idu", "ablandig": [[20, 120]]},
+        {"id": "mini-capo", "name": "Mini Capo", "ablandig": [[350, 90]]}
+      ]
+    },
+    {
+      "id": "prasonisi",
+      "name": "Prasonisi (Rhodos)",
+      "land": "GR",
+      "typ": "meer",
+      "punkt": [35.88, 27.72],
+      "zeitzone": "Europe/Athens",
+      "hinweis": "sportif.travel, kite-and-windsurfing-guide.com: West onshore mit Welle, Ost cross-offshore und flach, Wind dort düsenverstärkt und 1–2 Bft stärker als an der Westküste; Meltemi Mai–Okt. Ablandig-Sektoren geschätzt; Ostseite so gesetzt, dass Meltemi (cross-off) zählt.",
+      "windlagen": [
+        {"name": "Meltemi", "sektor": [300, 30], "charakter": "Sommer, nachmittags stärker"}
+      ],
+      "spots": [
+        {"id": "prasonisi-west", "name": "Westseite (Welle)", "ablandig": [[60, 150]]},
+        {"id": "prasonisi-ost", "name": "Ostseite (Flachwasser)", "ablandig": [[230, 290]]}
+      ]
+    },
+    {
+      "id": "kartibubbo",
+      "name": "Kartibubbo / Mazara (Sizilien)",
+      "land": "IT",
+      "typ": "meer",
+      "punkt": [37.53, 12.67],
+      "zeitzone": "Europe/Rome",
+      "hinweis": "windresort.it, surftribe.it, lets-kite.com: Puzziteddu am besten W/NW, SW side-on mit großer Welle, Tramontana offshore; bei Scirocco/Levante nach Kartibubbo, dort side bis side-off. Ablandig geschätzt.",
+      "windlagen": [
+        {"name": "Maestrale", "sektor": [280, 340]},
+        {"name": "Libeccio", "sektor": [200, 250]},
+        {"name": "Scirocco", "sektor": [90, 160]}
+      ],
+      "spots": [
+        {"id": "kartibubbo", "name": "Kartibubbo", "ablandig": [[20, 80]]},
+        {
+          "id": "puzziteddu",
+          "name": "Puzziteddu",
+          "windlagen": [
+            {"name": "Maestrale", "sektor": [270, 340]},
+            {"name": "Libeccio", "sektor": [200, 270]}
+          ],
+          "ablandig": [[340, 90]]
+        }
+      ]
+    },
+    {
+      "id": "zandvoort",
+      "name": "Zandvoort",
+      "land": "NL",
+      "typ": "meer",
+      "punkt": [52.38, 4.48],
+      "zeitzone": "Europe/Amsterdam",
+      "hinweis": "zandvoort-holland.com: Kiten bei 210–020°, mehrere Kitezonen, im Sommer an Badetagen teils gesperrt; kiteforum: starke Strömung längs der Küste. Ablandig aus Uferausrichtung (W) geschätzt.",
+      "windlagen": [
+        {"name": "SSW bis NNO", "sektor": [210, 20]}
+      ],
+      "spots": [
+        {"id": "zandvoort", "name": "Zandvoort", "ablandig": [[45, 165]]}
+      ]
+    },
+    {
+      "id": "lanzarote-famara",
+      "name": "Famara (Lanzarote)",
+      "land": "ES",
+      "typ": "meer",
+      "punkt": [29.14, -13.6],
+      "zeitzone": "Atlantic/Canary",
+      "hinweis": "unplug-kitesurf.com, hellocanaryislands.com, thekitespot.com: N bis NE side bis side-onshore, Passat Apr–Okt fast täglich; Kitebereich bei Hochwasser ohne Strand. Liegt südlich von ICON-EU (ab 29,5° N): voraussichtlich nur ECMWF und GFS. Ablandig geschätzt.",
+      "windlagen": [
+        {"name": "Passat", "sektor": [350, 80]}
+      ],
+      "spots": [
+        {"id": "famara", "name": "Famara", "ablandig": [[110, 200]]}
+      ]
+    },
+    {
+      "id": "fuerteventura-nord",
+      "name": "Fuerteventura Nord",
+      "land": "ES",
+      "typ": "meer",
+      "punkt": [28.78, -13.93],
+      "zeitzone": "Atlantic/Canary",
+      "hinweis": "fuerteventuraplayas.com, kiteforum, sportif.travel: Flag Beach N/NW, side von links, Wind ab etwa 14 Uhr; Cotillo Lagos N/NE, Flachwasser bei mittlerem bis hohem Wasser, Felsen. Punkt nördlich der Insel, damit beide Küsten passen. Außerhalb ICON-EU. Ablandig geschätzt.",
+      "windlagen": [
+        {"name": "Passat", "sektor": [330, 60]}
+      ],
+      "spots": [
+        {"id": "flag-beach", "name": "Corralejo / Flag Beach", "ablandig": [[200, 300]]},
+        {"id": "cotillo", "name": "El Cotillo", "ablandig": [[70, 160]]}
+      ]
+    },
+    {
+      "id": "el-medano",
+      "name": "El Médano (Teneriffa)",
+      "land": "ES",
+      "typ": "meer",
+      "punkt": [28.02, -16.51],
+      "zeitzone": "Atlantic/Canary",
+      "hinweis": "surfergalaxy.com, howtowindsurf101.com, webtenerife: Passat NE, side-onshore von links; selten SW. Bebauung macht den Wind ufernah böig. Außerhalb ICON-EU. Ablandig geschätzt.",
+      "windlagen": [
+        {"name": "Passat", "sektor": [20, 100]}
+      ],
+      "spots": [
+        {"id": "el-medano", "name": "El Médano", "ablandig": [[230, 330]]}
+      ]
+    },
+    {
+      "id": "golf-de-roses",
+      "name": "Golf de Roses (Costa Brava)",
+      "land": "ES",
+      "typ": "meer",
+      "punkt": [42.19, 3.17],
+      "zeitzone": "Europe/Madrid",
+      "hinweis": "sportif.travel, thekitemag.com, unplug-kitesurf.com: Tramuntana side von links, böig, 1–2 Bft schwächer als in Leucate; im Sommer SE-Seewind side von rechts. Rund 130 km von Barcelona. Ob das Modellmittel den Seewind trifft, ungeprüft. Ablandig geschätzt.",
+      "windlagen": [
+        {"name": "Tramuntana", "sektor": [330, 30], "charakter": "böig"},
+        {"name": "Seewind", "sektor": [100, 180], "charakter": "Sommer, thermisch"}
+      ],
+      "spots": [
+        {"id": "sant-pere-pescador", "name": "Sant Pere Pescador", "ablandig": [[200, 300]]}
+      ]
+    },
+    {
+      "id": "santander",
+      "name": "Santander (Kantabrien)",
+      "land": "ES",
+      "typ": "meer",
+      "punkt": [43.5, -3.78],
+      "zeitzone": "Europe/Madrid",
+      "hinweis": "unplug-kitesurf.com (Somo River NE und NW), picuco.com (Somo NE side-on), kite-and-windsurfing-guide.com (Winter SW bis NW). Surfspots: S offshore. Sektoren und ablandig geschätzt.",
+      "windlagen": [
+        {"name": "Nordeste", "sektor": [20, 80]},
+        {"name": "West bis Nordwest", "sektor": [260, 340], "charakter": "Tiefdruck, eher Winter"}
+      ],
+      "spots": [
+        {"id": "somo", "name": "Somo / Loredo", "ablandig": [[120, 240]]},
+        {"id": "liencres", "name": "Liencres", "ablandig": [[100, 220]]}
+      ]
+    },
+    {
+      "id": "gargano-vieste",
+      "name": "Gargano / Vieste",
+      "land": "IT",
+      "typ": "meer",
+      "punkt": [41.92, 16.22],
+      "zeitzone": "Europe/Rome",
+      "hinweis": "Tobias: am Gargano hängt es vom Spot ab, meist von Vieste aus. kite-and-windsurfing-guide.com (Spiaggia Lunga): Sommer NW-Thermik, Frühling/Herbst Tramontana mit Welle, Scirocco selten. visitvieste.com: Nordküste (Scialmarino, San Lorenzo) bei Nordwind exponiert und bei Scirocco geschützt, Südküste (Scialara, Castello) umgekehrt; Saison Mai, Juni, September. Ob die NW-Thermik im Modellmittel ankommt, ungeprüft. Ablandig geschätzt. Rodi Garganico und Lesina (Nordküste, ca. 40 km) bei Bedarf als eigene Region.",
+      "windlagen": [
+        {"name": "Maestrale", "sektor": [290, 340], "charakter": "im Sommer thermisch"},
+        {"name": "Tramontana", "sektor": [340, 30], "charakter": "Frühling/Herbst, Welle"},
+        {"name": "Scirocco", "sektor": [100, 170], "charakter": "selten"}
+      ],
+      "spots": [
+        {
+          "id": "scialmarino",
+          "name": "Scialmarino / Spiaggia Lunga",
+          "windlagen": [
+            {"name": "Maestrale", "sektor": [290, 340], "charakter": "im Sommer thermisch"},
+            {"name": "Tramontana", "sektor": [340, 30], "charakter": "Frühling/Herbst, Welle"}
+          ],
+          "ablandig": [[120, 230]]
+        },
+        {
+          "id": "pizzomunno",
+          "name": "Pizzomunno / Castello",
+          "windlagen": [
+            {"name": "Scirocco", "sektor": [100, 170], "charakter": "selten"}
+          ],
+          "ablandig": [[230, 20]]
+        }
+      ]
+    },
+    {
+      "id": "loire-atlantique",
+      "name": "Saint-Brevin (Loire-Mündung)",
+      "land": "FR",
+      "typ": "meer",
+      "punkt": [47.22, -2.22],
+      "zeitzone": "Europe/Paris",
+      "hinweis": "Plage de l'Ermitage in Saint-Brevin-les-Pins (von Tobias bestätigt); vvanat.fr: dort Wellenspot, Kiteschule. Sektoren nur aus Uferausrichtung geschätzt.",
+      "windlagen": [],
+      "spots": [
+        {
+          "id": "ermitage",
+          "name": "Plage de l'Ermitage",
+          "windlagen": [
+            {"name": "SW bis NW", "sektor": [200, 330]}
+          ],
+          "ablandig": [[30, 130]]
+        }
+      ]
     }
   ]
 }
