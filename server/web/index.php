@@ -207,7 +207,7 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
 ?>
   <article class="karte region<?= $guteTage ? '' : ' still' ?>">
     <div class="region-kopf">
-      <h2><?= h($r['name']) ?></h2>
+      <h2><?= h($r['name']) ?><?php if (!empty($r['thermik'])): ?> <span class="marker thermik" title="Thermik bilden die Modelle schlecht ab: die Zahl ist hier vermutlich zu niedrig">Thermik</span><?php endif ?></h2>
       <span class="leise klein"><?= zahl($e['km']) ?> km</span>
     </div>
     <div class="tage" style="--n: <?= count($tage) ?>">
@@ -261,7 +261,7 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
 <?php endforeach ?>
 
 <footer class="fuss klein leise">
-  <p><b>Rohwerte, nicht kalibriert.</b> Modelle unterschätzen lokale Thermik oft; Böen und Gewitter prüft nur das Modellmittel. Entfernung als Luftlinie zum Vorhersagepunkt der Region.</p>
+  <p><b>Rohwerte, nicht kalibriert.</b> Modelle unterschätzen lokale Thermik oft (Seen mit „Thermik“ markiert, dort lieber die verlinkte lokale Vorhersage ansehen); Böen und Gewitter prüft nur das Modellmittel. Entfernung als Luftlinie zum Vorhersagepunkt der Region.</p>
   <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0) · Für Stegen genauer: <a href="https://ammerseewind.de">ammerseewind.de</a></p>
   <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
 </footer>

@@ -44,6 +44,9 @@ pruefe(count(regionen_pruefen($kaputt)) === 5, 'kaputter Katalog: 5 Fehler gefun
 $mitLink = ['regionen' => [['id' => 'x', 'name' => 'X', 'typ' => 'see', 'punkt' => [1, 1], 'zeitzone' => 'UTC', 'windlagen' => [],
     'links' => [['name' => 'gut', 'url' => 'https://example.org/a'], ['name' => 'schlecht', 'url' => 'javascript:alert(1)']]]]];
 pruefe(count(regionen_pruefen($mitLink)) === 1, 'links: nur https-Adressen erlaubt');
+$mitLink['regionen'][0]['links'] = [];
+$mitLink['regionen'][0]['thermik'] = 'ja';
+pruefe(count(regionen_pruefen($mitLink)) === 1, 'thermik: nur true oder false');
 
 echo "Tagesfenster\n";
 [$ab, $bis] = tagesfenster('2026-11-07', new DateTimeZone('Europe/Berlin'), 48.0, 11.13);

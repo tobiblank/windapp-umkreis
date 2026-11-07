@@ -69,7 +69,8 @@
       "spots": [],
       "links": [
         {"name": "Walchensee-Vorhersage von Marco Schanda", "url": "https://walchenseewindpredictor.onrender.com/"}
-      ]
+      ],
+      "thermik": true
     },
     {
       "id": "leucate",
@@ -183,6 +184,193 @@
       "punkt": [54.72, 18.55],
       "zeitzone": "Europe/Warsaw",
       "hinweis": "Entwurf (Claude), ungeprüft: Punkt in der Puck-Bucht südlich der Halbinsel Hel (Flachwasser-Spots wie Chałupy), nicht auf der Karte kontrolliert; die offene Ostseeküste bei Władysławowo wäre ein eigener Punkt. Ohne Windlagen (grob).",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "starnberger-see",
+      "name": "Starnberger See",
+      "land": "DE",
+      "typ": "see",
+      "punkt": [47.91, 11.31],
+      "zeitzone": "Europe/Berlin",
+      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "kochelsee",
+      "name": "Kochelsee",
+      "land": "DE",
+      "typ": "see",
+      "punkt": [47.645, 11.345],
+      "zeitzone": "Europe/Berlin",
+      "thermik": true,
+      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Kleiner See: die Gitterzelle liegt womöglich an Land. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "chiemsee",
+      "name": "Chiemsee",
+      "land": "DE",
+      "typ": "see",
+      "punkt": [47.88, 12.48],
+      "zeitzone": "Europe/Berlin",
+      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Punkt östlich der Inseln. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "bodensee",
+      "name": "Bodensee",
+      "land": "DE",
+      "typ": "see",
+      "punkt": [47.6, 9.45],
+      "zeitzone": "Europe/Berlin",
+      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Großer See, Punkt im Obersee zwischen Friedrichshafen und Romanshorn; einzelne Ufer später als Spots. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "achensee",
+      "name": "Achensee",
+      "land": "AT",
+      "typ": "see",
+      "punkt": [47.45, 11.71],
+      "zeitzone": "Europe/Vienna",
+      "thermik": true,
+      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "reschensee",
+      "name": "Reschensee",
+      "land": "IT",
+      "typ": "see",
+      "punkt": [46.82, 10.525],
+      "zeitzone": "Europe/Rome",
+      "thermik": true,
+      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "silvaplana",
+      "name": "Silvaplana",
+      "land": "CH",
+      "typ": "see",
+      "punkt": [46.455, 9.79],
+      "zeitzone": "Europe/Zurich",
+      "thermik": true,
+      "hinweis": "Kiten nur bei S bis SW (kitesailing.ch), Sektorgrenzen geschätzt. Malojawind ab kurz vor Mittag bis später Nachmittag; Saison laut unhooked Mitte Februar bis Ende Oktober (noch nicht ausgewertet). Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "windlagen": [
+        {"name": "Malojawind", "sektor": [170, 240], "charakter": "Thermik"}
+      ],
+      "spots": [],
+      "links": [
+        {"name": "kitesailing.ch", "url": "https://kitesailing.ch/en/spot/weather-kitesurfing"}
+      ]
+    },
+    {
+      "id": "gardasee-nord",
+      "name": "Gardasee Nord",
+      "land": "IT",
+      "typ": "see",
+      "punkt": [45.85, 10.86],
+      "zeitzone": "Europe/Rome",
+      "thermik": true,
+      "hinweis": "Entwurf (Claude), ungeprüft: Pelèr (N, morgens) und Ora (S, nachmittags) aus allgemeinem Wissen, Sektorgrenzen geschätzt. Gardasee Süd wäre eine eigene Region. Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "windlagen": [
+        {"name": "Pelèr", "sektor": [330, 30], "charakter": "morgens"},
+        {"name": "Ora", "sektor": [150, 210], "charakter": "nachmittags"}
+      ],
+      "spots": []
+    },
+    {
+      "id": "comer-see-nord",
+      "name": "Comer See Nord",
+      "land": "IT",
+      "typ": "see",
+      "punkt": [46.11, 9.33],
+      "zeitzone": "Europe/Rome",
+      "thermik": true,
+      "hinweis": "Entwurf (Claude), ungeprüft: Tivano (N, morgens) und Breva (S, nachmittags) aus allgemeinem Wissen, Sektorgrenzen geschätzt. Punkt im Nordteil bei Dervio/Colico. Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "windlagen": [
+        {"name": "Tivano", "sektor": [330, 30], "charakter": "morgens"},
+        {"name": "Breva", "sektor": [150, 210], "charakter": "nachmittags"}
+      ],
+      "spots": []
+    },
+    {
+      "id": "urnersee",
+      "name": "Urnersee",
+      "land": "CH",
+      "typ": "see",
+      "punkt": [46.93, 8.6],
+      "zeitzone": "Europe/Zurich",
+      "thermik": true,
+      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Laut unhooked Thermiktag bei 4–8 kn aus NW bis NO um 14 Uhr (gilt für die Grundströmung, nicht als Sektor am See); Südföhn eher für Windsurfer. Kiten im November und Dezember verboten, nur in ausgewiesenen Zonen (unhooked, nicht aktuell geprüft). Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "neuenburgersee",
+      "name": "Neuenburgersee (Estavayer)",
+      "land": "CH",
+      "typ": "see",
+      "punkt": [46.87, 6.8],
+      "zeitzone": "Europe/Zurich",
+      "hinweis": "Bise (NO) und Westwind laut unhooked, Sektorgrenzen geschätzt. Punkt gegenüber Estavayer. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "windlagen": [
+        {"name": "Bise", "sektor": [20, 80]},
+        {"name": "Westwind", "sektor": [240, 300]}
+      ],
+      "spots": []
+    },
+    {
+      "id": "attersee",
+      "name": "Attersee",
+      "land": "AT",
+      "typ": "see",
+      "punkt": [47.88, 13.55],
+      "zeitzone": "Europe/Vienna",
+      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "traunsee",
+      "name": "Traunsee",
+      "land": "AT",
+      "typ": "see",
+      "punkt": [47.87, 13.795],
+      "zeitzone": "Europe/Vienna",
+      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "zeller-see",
+      "name": "Zeller See",
+      "land": "AT",
+      "typ": "see",
+      "punkt": [47.31, 12.8],
+      "zeitzone": "Europe/Vienna",
+      "thermik": true,
+      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Kleiner See: die Gitterzelle liegt womöglich an Land. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "windlagen": [],
+      "spots": []
+    },
+    {
+      "id": "neusiedler-see",
+      "name": "Neusiedler See",
+      "land": "AT",
+      "typ": "see",
+      "punkt": [47.83, 16.75],
+      "zeitzone": "Europe/Vienna",
+      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Großer flacher Steppensee, Punkt in der Seemitte; Podersdorf und andere Ufer später als Spots. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
       "windlagen": [],
       "spots": []
     }

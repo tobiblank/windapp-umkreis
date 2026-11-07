@@ -19,7 +19,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 
 | Baustein | Status |
 |---|---|
-| Regionen-Katalog (`daten/regionen.json`) | 7.11.2026: Ammersee (Stegen, Herrsching, Eching), Nördliche Adria (Bora, Scirocco), Walchensee (grob, mit Link zu Marcos Vorhersage); als Entwurf, ungeprüft: Leucate/Gruissan, Hyères/Almanarre, Fehmarn, Île de Ré. Sektorgrenzen teils geschätzt, siehe `hinweis` je Eintrag. Die Tests nutzen einen eigenen festen Katalog (`tests/regionen_test.json`) |
+| Regionen-Katalog (`daten/regionen.json`) | 7.11.2026: Ammersee (Stegen, Herrsching, Eching), Nördliche Adria (Bora, Scirocco), Walchensee (grob, mit Link zu Marcos Vorhersage); als Entwurf, ungeprüft: Leucate/Gruissan, Hyères/Almanarre, Fehmarn, Île de Ré, Bretagne, Normandie, Pas de Calais, Deutsche Bucht, Klitmøller, Władysławowo; dazu 15 Seen (Starnberger See, Kochelsee, Chiemsee, Bodensee, Achensee, Reschensee, Silvaplana, Gardasee Nord, Comer See Nord, Urnersee, Neuenburgersee, Attersee, Traunsee, Zeller See, Neusiedler See). 28 Regionen. Sektorgrenzen teils geschätzt, siehe `hinweis` je Eintrag. Die Tests nutzen einen eigenen festen Katalog (`tests/regionen_test.json`) |
 | Sammler (`server/sammler.php`) | 7.11.2026, läuft als GitHub Action zweimal am Tag (`sammeln.yml`); gegen einen Open-Meteo-Ersatz getestet, **noch nie gegen das echte Open-Meteo gelaufen** |
 | Bewertung (`server/web/lib/bewertung.php`) | 7.11.2026: Stunde fahrbar, bester Block ≥ 2 h, Ensemble-Chance, Rangliste nach Luftlinie |
 | Seite Rangliste (`server/web/index.php`) | 7.11.2026: Sportart, Umkreis (Luftlinie), Standort (auf 0,1° gerundet), „Heute bis übermorgen“ und „Tag 3 bis 7“; ohne Anmeldung, nicht in Suchmaschinen (`noindex`) |
@@ -55,6 +55,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | `charakter` | frei, z. B. „böig“; wird angezeigt |
 | `hinweis` | Herkunft und offene Fragen (nicht auf der Seite) |
 | `links` | optional, `[{name, url}]`: lokale Spezialprognose, auf der Seite als „Genauer: …“ verlinkt; nur `https://` |
+| `thermik` | optional, `true`: Thermik-See. Die Seite zeigt den Hinweis „Thermik“, weil das Modellmittel den Wind dort vermutlich unterschätzt |
 
 Sektoren in Grad, **woher** der Wind kommt, im Uhrzeigersinn, `von` inklusive, `bis` exklusive. `[275, 20]` geht über Norden. Eine Region sollte nicht über eine Wetterscheide reichen (Gardasee Nord und Süd verhalten sich verschieden).
 
@@ -87,7 +88,7 @@ Eine Stunde ist fahrbar, wenn sie im Tagesfenster liegt (9 Uhr Ortszeit oder Son
 
 Außerhalb ihres Gebiets liefert Open-Meteo für ein Modell null; das Mittel nimmt dann die übrigen.
 
-**Gitterzelle:** Open-Meteo wählt die Zelle standardmäßig bevorzugt an Land (`cell_selection=land`). Am 7.11.2026 lieferte das ECMWF-Ensemble für die Adria (angefragt 45,5° N) deshalb 45,75° N mit 0 m Höhe an der friaulischen Küste: alle 51 Läufe 6–11 kn, die feineren Modelle 17 kn. Meer-Regionen werden seitdem getrennt mit `cell_selection=sea` abgerufen. Seen bleiben beim Standard, weil ungeprüft ist, wie `sea` im Binnenland wirkt. Welche Zelle geliefert wurde, steht in `latitude`/`longitude`/`elevation` jedes Eintrags.
+**Gitterzelle:** Open-Meteo wählt die Zelle standardmäßig bevorzugt an Land (`cell_selection=land`). Am 7.11.2026 lieferte das ECMWF-Ensemble für die Adria (angefragt 45,5° N) deshalb 45,75° N mit 0 m Höhe an der friaulischen Küste: alle 51 Läufe 6–11 kn, die feineren Modelle 17 kn. Meer-Regionen werden seitdem getrennt mit `cell_selection=sea` abgerufen. Seen bleiben beim Standard, weil ungeprüft ist, wie `sea` im Binnenland wirkt. Bei kleinen Seen (Kochelsee, Zeller See) liegt die Zelle deshalb womöglich an Land; prüfen über `latitude`/`longitude`/`elevation` im ersten echten Lauf. Welche Zelle geliefert wurde, steht in `latitude`/`longitude`/`elevation` jedes Eintrags.
 
 Format wie stegen-wind (als Cronjob eine Datei pro Quelle und Tag, ab vorgestern gezippt; als Action eine gezippte je Lauf). `daten_laden()` liest beides:
 
