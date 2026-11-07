@@ -262,6 +262,27 @@ if ($zeiten) {
                . ' ' . $neu->format('H:i') . ' Uhr';
 }
 
+/**
+ * Farbe der Regionskarte (seit 7.11.2026): Stufe des besten angezeigten Tages,
+ * ohne Ensemble "go", wenn das Modellmittel ein Fenster sieht. Fuer den Balken links.
+ */
+function beste_stufe(array $e): string
+{
+    $best = null;
+    $geht = false;
+    foreach ($e['tage'] as $d) {
+        if (!empty($d['vorbei'])) {
+            continue;
+        }
+        $c = $d['ens']['chance'] ?? null;
+        if ($c !== null) {
+            $best = max($best ?? 0.0, $c);
+        }
+        $geht = $geht || !empty($d['det']['geht']);
+    }
+    return $best === null ? ($geht ? 'go' : 'nix') : stufe($best);
+}
+
 function stufe(?float $chance): string
 {
     if ($chance === null) {
@@ -492,7 +513,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <a href="./">Zur Rangliste</a>
 </p>
 <?php else: ?>
-<form class="wahl karte" method="get" id="wahl">
+<form class="wahl karte steuer" method="get" id="wahl">
   <label>Sportart
     <select name="sport">
       <?php foreach (SPORTARTEN as $id => $s): ?>
@@ -644,7 +665,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     $tageGesamt = $heimTag - $trip['start'] + 1;
     $tagName = fn(int $ti) => tag_kurz($heute->modify("+$ti day")->format('Y-m-d'), $heute);
 ?>
-  <article class="karte trip">
+  <article class="karte trip beste-<?= stufe($trip['tage'] ? max(array_map(fn($x) => $x['wert'] ?? 0, $trip['tage'])) : null) ?>">
     <div class="region-kopf">
       <h2><?= h(implode(' → ', array_values(array_unique($orte)))) ?></h2>
       <span class="leise klein fahrzeit"><?= $trip['windtage'] ?> Windtage<span class="km"><?= h(fahrzeit_text(['min' => $trip['fahrt_min'], 'geschaetzt' => true])) ?> Fahrt · <?= zahl(round($trip['km'] / 10) * 10) ?> km</span></span>
@@ -722,7 +743,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     $r = $e['region'];
     $guteTage = array_filter($e['tage'], fn($t) => $t['det']['geht'] || (($t['ens']['chance'] ?? 0) >= 0.15));
 ?>
-  <article class="karte region<?= $guteTage ? '' : ' still' ?>" id="r-<?= h($r['id']) ?>">
+  <article class="karte region beste-<?= beste_stufe($e) ?><?= $guteTage ? '' : ' still' ?>" id="r-<?= h($r['id']) ?>">
     <div class="region-kopf">
       <h2><?= h($r['name']) ?><?php if (!empty($r['thermik'])): ?> <span class="marker thermik" title="Thermik bilden die Modelle schlecht ab: die Zahl ist hier vermutlich zu niedrig">Thermik</span><?php endif ?></h2>
       <?php if (!$geteilt): ?><span class="leise klein fahrzeit" title="<?= h(fahrzeit_titel($e)) ?>"><?= h(fahrzeit_mit_wort($e['fahrt'])) ?><span class="km"><?= h(km_text($e)) ?></span></span><?php endif ?>
