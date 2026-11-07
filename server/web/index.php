@@ -647,7 +647,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
                      : ($c === null ? ($geht ? 'Fenster nach Modellmittel' : 'kein Fenster') : zahl(100 * $c) . ' %')
                      . ($geht ? ', ' . $d['det']['von'] . '–' . $d['det']['bis'] . ' Uhr' . (!empty($d['det']['regel']) ? ', Regel' : ', Ø ' . zahl($d['det']['mittel_kn']) . ' kn') : ''));
           ?>
-            <td class="<?= $klasse ?>" title="<?= h($titel) ?>"><a href="<?= h(link_mit(['ansicht' => $ti <= 2 ? 'bald' : 'reise', 'nach' => $t])) ?>#r-<?= h($r['id']) ?>"><?= h($text) ?></a></td>
+            <td class="<?= $klasse ?>" title="<?= h($titel) ?>"><a href="stunden.php?<?= h(http_build_query(['region' => $r['id'], 'sport' => $sportId, 'tag' => $t])) ?>"><?= h($text) ?></a></td>
           <?php endforeach ?>
         </tr>
       <?php endforeach ?>
@@ -710,6 +710,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
               <?php if (!empty($det['regel'])): ?><span class="marker regel" title="Aus Druckdifferenz und/oder Grundströmung abgeleitet, nicht aus dem Modellwind am See. Die Stärke ist ein geschätzter typischer Wert.">Regel</span><?php endif ?>
               <?php if ($tr): ?><span class="verlauf <?= $tr['art'] ?>" title="<?= h(trend_titel($tr, $tzSeite, $heute)) ?>">· <?= h(trend_text($tr)) ?></span><?php endif ?>
               <?php if (!$geteilt && ($ab = abfahrt_text($e, $t, $d))): ?><span class="abfahrt">· <?= h($ab) ?></span><?php endif ?>
+              <a class="stunden-link" href="stunden.php?<?= h(http_build_query(['region' => $r['id'], 'sport' => $sportId, 'tag' => $t])) ?>">· Stunden ›</a>
               <?php if (teilenswert($d)): ?><button type="button" class="teilen" hidden
                 data-titel="<?= h('Wohinfahrma: ' . $r['name'] . ', ' . tag_datum($t, $tzSeite)) ?>"
                 data-text="<?= h(teilen_text($r, $t, $d, $sport, $tzSeite)) ?>"
