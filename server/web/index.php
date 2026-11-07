@@ -276,6 +276,12 @@ function trend_text(array $tr): string
     };
 }
 
+/** "≈ 5:15 h Fahrt", "kein Landweg" */
+function fahrzeit_mit_wort(array $f): string
+{
+    return fahrzeit_text($f) . ($f['min'] !== null ? ' Fahrt' : '');
+}
+
 function fahrzeit_titel(array $e): string
 {
     global $fahrzeiten;
@@ -444,7 +450,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
         $zahl = $c !== null && $c >= 0.15;
         $titel = $r['name'] . ': ' . ($c === null ? ($p['wert']['geht'] ? 'Fenster nach Modellmittel' : 'keine Ensemble-Daten')
                : zahl(100 * $c) . ' %') . ($p['wert']['tag'] && !$kartenTag ? ' (' . tag_kurz($p['wert']['tag'], $heute) . ')' : '')
-               . ' · ' . fahrzeit_text($p['e']['fahrt']);
+               . ' · ' . fahrzeit_mit_wort($p['e']['fahrt']);
     ?>
     <a href="#r-<?= h($r['id']) ?>" class="punkt <?= $klasse ?>">
       <title><?= h($titel) ?></title>
@@ -473,7 +479,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <article class="karte region<?= $guteTage ? '' : ' still' ?>" id="r-<?= h($r['id']) ?>">
     <div class="region-kopf">
       <h2><?= h($r['name']) ?><?php if (!empty($r['thermik'])): ?> <span class="marker thermik" title="Thermik bilden die Modelle schlecht ab: die Zahl ist hier vermutlich zu niedrig">Thermik</span><?php endif ?></h2>
-      <?php if (!$geteilt): ?><span class="leise klein fahrzeit" title="<?= h(fahrzeit_titel($e)) ?>"><?= h(fahrzeit_text($e['fahrt'])) ?></span><?php endif ?>
+      <?php if (!$geteilt): ?><span class="leise klein fahrzeit" title="<?= h(fahrzeit_titel($e)) ?>"><?= h(fahrzeit_mit_wort($e['fahrt'])) ?></span><?php endif ?>
     </div>
     <div class="tage" style="--n: <?= count($tage) ?>">
       <?php foreach ($tage as $t):

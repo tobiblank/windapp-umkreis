@@ -527,7 +527,7 @@ pruefe(str_contains($html, 'Chance Morgen') && preg_match('/class="punkt go".*?<
 [, $html] = holen($sitePort, "index.php?region=ammersee&nach=$morgen");
 pruefe(!str_contains($html, 'id="landkarte"'), 'geteilte Vorhersage: keine Landkarte');
 [, $html] = holen($sitePort, 'index.php?km=1000');
-pruefe(preg_match('/fahrzeit"[^>]*>5 min</', $html) && str_contains($html, 'openrouteservice.org')
+pruefe(preg_match('/fahrzeit"[^>]*>5 min Fahrt</', $html) && str_contains($html, 'openrouteservice.org')
        && (str_contains($html, 'Anreise am Vortag') || str_contains($html, 'Abfahrt bis')), 'Fahrzeiten ab Inning: genau, ohne Landweg markiert, Abfahrt, Quelle genannt');
 [, $html] = holen($sitePort, 'index.php?km=100&ort=46.6,30.0');
 pruefe(str_contains($html, '>kein Landweg<') && ohne_php_meldung($html), 'Region ohne Route ab dem Startort: kein Landweg');
