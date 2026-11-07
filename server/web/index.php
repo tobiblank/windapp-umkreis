@@ -15,6 +15,7 @@ date_default_timezone_set('UTC');
 require __DIR__ . '/lib/regionen.php';
 require __DIR__ . '/lib/bewertung.php';
 require __DIR__ . '/lib/karte.php';
+require __DIR__ . '/lib/fahrzeit.php';
 
 const TZ_SEITE = 'Europe/Berlin';
 const HEIM_STANDARD = [48.07, 11.15];      // Inning am Ammersee
@@ -172,6 +173,12 @@ $nach = (string)($_GET['nach'] ?? 'summe');
 if ($nach !== 'km' && !in_array($nach, $tage, true)) {
     $nach = 'summe';
 }
+// Fahrzeit (seit 7.11.2026): genau fuer den Startort von fahrzeiten.json, sonst aus der Luftlinie geschaetzt
+$fahrzeiten = fahrzeiten_laden($dataDir);
+$fahrtFaktor = fahrt_faktor($fahrzeiten, $regionen);
+foreach ($liste as $i => $e) {
+    $liste[$i]['fahrt'] = fahrzeit($e['region'], $heim, (float)$e['km'], $fahrzeiten, $fahrtFaktor);
+}
 $liste = rangliste_sortieren($liste, $nach);
 
 $zeiten = [];
@@ -269,6 +276,38 @@ function trend_text(array $tr): string
     };
 }
 
+function fahrzeit_titel(array $e): string
+{
+    global $fahrzeiten;
+    $f = $e['fahrt'];
+    $luft = 'Luftlinie ' . zahl((float)$e['km']) . ' km';
+    if ($f['min'] === null) {
+        return 'Vom Startort aus keine Route auf der Straße (Insel?). ' . $luft;
+    }
+    if ($f['geschaetzt']) {
+        return 'Fahrzeit geschätzt aus der ' . $luft . ($fahrzeiten ? ' (genau nur ab ' . ($fahrzeiten['start']['name'] ?? 'Startort') . ')' : '');
+    }
+    return 'Fahrzeit mit dem Auto laut openrouteservice, ' . zahl((float)$f['km']) . ' km Straße, ohne Verkehr. ' . $luft;
+}
+
+/** "Abfahrt bis 7:15", "Anreise am Vortag", "jetzt los: ab 15:10 dort" oder null */
+function abfahrt_text(array $e, string $tag, array $d): ?string
+{
+    global $tzSeite, $jetzt;
+    $det = $d['det'];
+    if (!$det['geht'] || $e['fahrt']['min'] === null) {
+        return null;
+    }
+    $a = abfahrt($tag, (int)$det['von'], (int)$det['bis'], new DateTimeZone($e['region']['zeitzone']), $e['fahrt']['min'], $tzSeite, $jetzt);
+    $ca = $e['fahrt']['geschaetzt'] ? 'ca. ' : '';
+    return match ($a['art']) {
+        'bis'      => 'Abfahrt bis ' . $ca . $a['zeit']->format('G:i'),
+        'vortag'   => 'Anreise am Vortag',
+        'jetzt'    => 'jetzt los: ab ' . $ca . $a['zeit']->format('G:i') . ' dort',
+        default    => 'heute nicht mehr erreichbar',
+    };
+}
+
 /** Fuer den Tooltip: frueherer Abruf mit Uhrzeit, dann jetzt */
 function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): string
 {
@@ -363,7 +402,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <?php foreach ($tage as $t): ?>
     <a href="<?= h(link_mit(['nach' => $t])) ?>"<?= $nach === $t ? ' aria-current="true"' : '' ?>><?= h(tag_kurz($t, $heute)) ?></a>
   <?php endforeach ?>
-  <a href="<?= h(link_mit(['nach' => 'km'])) ?>"<?= $nach === 'km' ? ' aria-current="true"' : '' ?>>Entfernung</a>
+  <a href="<?= h(link_mit(['nach' => 'km'])) ?>"<?= $nach === 'km' ? ' aria-current="true"' : '' ?>>Fahrzeit</a>
 </nav>
 <?php endif ?>
 
@@ -404,7 +443,8 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
         $klasse = $c === null ? ($p['wert']['geht'] ? 'go' : 'leer') : stufe($c);
         $zahl = $c !== null && $c >= 0.15;
         $titel = $r['name'] . ': ' . ($c === null ? ($p['wert']['geht'] ? 'Fenster nach Modellmittel' : 'keine Ensemble-Daten')
-               : zahl(100 * $c) . ' %') . ($p['wert']['tag'] && !$kartenTag ? ' (' . tag_kurz($p['wert']['tag'], $heute) . ')' : '');
+               : zahl(100 * $c) . ' %') . ($p['wert']['tag'] && !$kartenTag ? ' (' . tag_kurz($p['wert']['tag'], $heute) . ')' : '')
+               . ' · ' . fahrzeit_text($p['e']['fahrt']);
     ?>
     <a href="#r-<?= h($r['id']) ?>" class="punkt <?= $klasse ?>">
       <title><?= h($titel) ?></title>
@@ -433,7 +473,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <article class="karte region<?= $guteTage ? '' : ' still' ?>" id="r-<?= h($r['id']) ?>">
     <div class="region-kopf">
       <h2><?= h($r['name']) ?><?php if (!empty($r['thermik'])): ?> <span class="marker thermik" title="Thermik bilden die Modelle schlecht ab: die Zahl ist hier vermutlich zu niedrig">Thermik</span><?php endif ?></h2>
-      <?php if (!$geteilt): ?><span class="leise klein"><?= zahl($e['km']) ?> km</span><?php endif ?>
+      <?php if (!$geteilt): ?><span class="leise klein fahrzeit" title="<?= h(fahrzeit_titel($e)) ?>"><?= h(fahrzeit_text($e['fahrt'])) ?></span><?php endif ?>
     </div>
     <div class="tage" style="--n: <?= count($tage) ?>">
       <?php foreach ($tage as $t):
@@ -479,6 +519,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
               <?php if ($det['grob']): ?><span class="marker">grob</span><?php endif ?>
               <?php if (!empty($det['regel'])): ?><span class="marker regel" title="Aus Druckdifferenz und/oder Grundströmung abgeleitet, nicht aus dem Modellwind am See. Die Stärke ist ein geschätzter typischer Wert.">Regel</span><?php endif ?>
               <?php if ($tr): ?><span class="verlauf <?= $tr['art'] ?>" title="<?= h(trend_titel($tr, $tzSeite, $heute)) ?>">· <?= h(trend_text($tr)) ?></span><?php endif ?>
+              <?php if (!$geteilt && ($ab = abfahrt_text($e, $t, $d))): ?><span class="abfahrt">· <?= h($ab) ?></span><?php endif ?>
               <?php if (teilenswert($d)): ?><button type="button" class="teilen" hidden
                 data-titel="<?= h('Wohinfahrma: ' . $r['name'] . ', ' . tag_datum($t, $tzSeite)) ?>"
                 data-text="<?= h(teilen_text($r, $t, $d, $sport, $tzSeite)) ?>"
@@ -503,7 +544,8 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
 
 <footer class="fuss klein leise">
   <p><b>Regel</b> heißt: Die Windlage ist aus Druckdifferenzen und Grundströmung abgeleitet (nach lokalen Vorhersageseiten wie kitewetter.at), die Stärke ist ein geschätzter typischer Wert.</p>
-  <p><b>Rohwerte, nicht kalibriert.</b> Modelle unterschätzen lokale Thermik oft (Seen mit „Thermik“ markiert, dort lieber die verlinkte lokale Vorhersage ansehen); Böen und Gewitter prüft nur das Modellmittel. Entfernung als Luftlinie zum Vorhersagepunkt der Region.</p>
+  <p><b>Rohwerte, nicht kalibriert.</b> Modelle unterschätzen lokale Thermik oft (Seen mit „Thermik“ markiert, dort lieber die verlinkte lokale Vorhersage ansehen); Böen und Gewitter prüft nur das Modellmittel. Umkreis als Luftlinie zum Vorhersagepunkt der Region; Fahrzeit mit dem Auto ohne Verkehr und Pausen, „≈“ heißt aus der Luftlinie geschätzt.</p>
+  <?php if ($fahrzeiten): ?><p>Fahrzeiten ab <?= h($fahrzeiten['start']['name'] ?? 'Startort') ?>: © <a href="https://openrouteservice.org/">openrouteservice.org</a> by HeiGIT, Kartendaten © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende.</p><?php endif ?>
   <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0) · Für Stegen genauer: <a href="https://ammerseewind.de">ammerseewind.de</a></p>
   <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
 </footer>

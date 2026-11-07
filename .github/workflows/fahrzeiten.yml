@@ -1,0 +1,75 @@
+name: Fahrzeiten
+
+# Fahrzeit mit dem Auto von Inning am Ammersee zu jeder Region, bei
+# openrouteservice (ORS). Laeuft, wenn sich der Katalog auf main aendert,
+# einmal im Monat und von Hand. Ergebnis per FTPS nach
+#   <HOME_DIR>/umkreisdaten/fahrzeiten.json
+#
+# Benoetigt unter Settings > Secrets and variables > Actions:
+#   Secret:    ORS_API_KEY (kostenloser Schluessel, openrouteservice.org, Plan "Standard")
+#   Secrets:   FTP_HOST, FTP_USER, FTP_PASSWORD (wie bei "Sammeln")
+#   Variables: HOME_DIR (optional, wie bei "Sammeln")
+#
+# Ohne ORS_API_KEY endet der Lauf mit einem Hinweis; die Seite schaetzt die
+# Fahrzeit dann aus der Luftlinie.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "daten/regionen.json"
+      - "server/fahrzeiten.php"
+  schedule:
+    - cron: "10 4 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fahrzeiten
+  cancel-in-progress: false
+
+jobs:
+  fahrzeiten:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+
+      - name: Abrufen
+        id: abruf
+        env:
+          ORS_API_KEY: ${{ secrets.ORS_API_KEY }}
+        run: |
+          if [ -z "${ORS_API_KEY}" ]; then
+            echo "::notice::Secret ORS_API_KEY fehlt, keine Fahrzeiten abgerufen."
+            echo "ok=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          php server/fahrzeiten.php daten/regionen.json ausgabe/fahrzeiten.json --debug
+          echo "ok=1" >> "$GITHUB_OUTPUT"
+
+      - name: Hochladen
+        if: steps.abruf.outputs.ok == '1'
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          HOME_DIR: ${{ vars.HOME_DIR }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FTP_HOST}" ] || [ -z "${FTP_USER}" ] || [ -z "${FTP_PASSWORD}" ]; then
+            echo "::error::Secrets FTP_HOST, FTP_USER oder FTP_PASSWORD fehlen."
+            exit 1
+          fi
+          home="${HOME_DIR%/}"; [ -n "$home" ] && home="$home/"
+          curl --fail --silent --show-error --ssl-reqd --ftp-create-dirs \
+               --user "${FTP_USER}:${FTP_PASSWORD}" \
+               -T ausgabe/fahrzeiten.json "ftp://${FTP_HOST}/${home}umkreisdaten/fahrzeiten.json"
+          echo "fahrzeiten.json hochgeladen."
