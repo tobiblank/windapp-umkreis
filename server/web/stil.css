@@ -193,4 +193,7 @@ a { color: var(--akzent); }
 .stunden-bild .s-anteil { font-size: 9px; font-weight: 600; fill: var(--nix); }
 .stunden-bild .s-anteil.go { fill: var(--go-text); } .stunden-bild .s-anteil.maybe { fill: var(--maybe-text); } .stunden-bild .s-anteil.no { fill: var(--no); }
 .stunden-link { white-space: nowrap; }
+.stunden-bild .s-welle { fill: var(--akzent); opacity: .35; }
+.stunden-bild .s-swell { fill: none; stroke: var(--akzent); stroke-width: 2; stroke-linejoin: round; }
+.welle-titel { margin: 12px 0 0; }
 .sortierung a[aria-current] .leise { color: inherit; opacity: .8; }

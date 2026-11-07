@@ -16,6 +16,13 @@
  *   - der Wind nicht ablandig ist,
  *   - kein Gewitter gerechnet wird (mindestens die Haelfte der Modelle WMO 95-99),
  *   - die Welle passt (nur wenn die Sportart welle_min/welle_max hat).
+ *
+ * WELLENREITEN (Sportart mit 'surf', seit 7.11.2026) prueft statt des Windes
+ * die Duenung: Hoehe ab welle_min, Periode ab periode_min, Richtung nicht aus
+ * einem ablandigen Sektor des Spots (vom Land kommt keine Welle), Wind hoechstens
+ * wind_max oder ablandig (dann gut), kein Gewitter. Duenung = Swell-Werte der
+ * Marine API, ohne Swell die gesamte Welle. Keine Ensemble-Chance (das Ensemble
+ * hat keine Welle).
  * Ein Tag geht, wenn mindestens MIN_STUNDEN fahrbare Stunden am Stueck kommen
  * (wie das beste 2-h-Fenster in stegen-wind).
  *
@@ -28,8 +35,9 @@
  * Im Ensemble wird jeder Lauf mit seinen eigenen Druck- und Hoehenwerten geprueft.
  *
  * Die Chance ist der Anteil der Laeufe des ECMWF-Ensembles, an denen der Tag
- * nach denselben Regeln geht - ohne Boeen, Gewitter und Welle, weil das
- * Ensemble nur Wind und Richtung liefert. ROHWERTE, NICHT KALIBRIERT.
+ * nach denselben Regeln geht - ohne Boeen und Gewitter, weil das Ensemble nur
+ * Wind und Richtung liefert; die Welle (Wave-Sportarten) kommt fuer alle Laeufe
+ * aus der Marine-Vorhersage. ROHWERTE, NICHT KALIBRIERT.
  */
 
 const MIN_STUNDEN = 2;
@@ -44,6 +52,10 @@ const SPORTARTEN = [
     'wingfoil'         => ['name' => 'Wingfoil', 'min' => 16],
     'windsurf'         => ['name' => 'Windsurf', 'min' => 17],
     'windsurf_foil'    => ['name' => 'Windsurf Foil', 'min' => 12],
+    // Seit 7.11.2026: Wave-Varianten mit Mindestwelle, Wellenreiten ohne Mindestwind (Faustwerte, nicht kalibriert)
+    'kite_wave'        => ['name' => 'Kite Wave', 'min' => 14, 'welle_min' => 1.0],
+    'windsurf_wave'    => ['name' => 'Windsurf Wave', 'min' => 17, 'welle_min' => 1.0],
+    'wellenreiten'     => ['name' => 'Wellenreiten', 'min' => 0, 'surf' => true, 'welle_min' => 0.8, 'periode_min' => 8, 'wind_max' => 12],
     'segeln'           => ['name' => 'Segeln', 'min' => 5, 'max' => 18],
 ];
 
@@ -232,6 +244,121 @@ function vorhersage_stunden(array $eintrag, DateTimeZone $tz): array
         ];
     }
     return $out;
+}
+
+/**
+ * Wellen je Ortstag und Stunde mit allen Werten (seit 7.11.2026):
+ * ['hoehe', 'periode', 'richtung', 'swell', 'swell_periode', 'swell_richtung'] (null, wo fehlt)
+ */
+function welle_details(?array $eintrag, DateTimeZone $tz): array
+{
+    if (!$eintrag) {
+        return [];
+    }
+    $h = $eintrag['hourly'];
+    $orte = ortszeiten($h['time'], $tz);
+    $f = fn(string $k, int $i) => isset($h[$k][$i]) ? (float)$h[$k][$i] : null;
+    $out = [];
+    foreach ($h['time'] as $i => $_) {
+        if (!isset($h['wave_height'][$i]) && !isset($h['swell_wave_height'][$i])) {
+            continue;
+        }
+        [$tag, $stunde] = $orte[$i];
+        $out[$tag][$stunde] = ['hoehe' => $f('wave_height', $i), 'periode' => $f('wave_period', $i), 'richtung' => $f('wave_direction', $i),
+                               'swell' => $f('swell_wave_height', $i), 'swell_periode' => $f('swell_wave_period', $i),
+                               'swell_richtung' => $f('swell_wave_direction', $i)];
+    }
+    return $out;
+}
+
+/** Duenung einer Stunde: Swell, ohne Swell die gesamte Welle. [hoehe, periode, richtung] */
+function duenung(array $wi): array
+{
+    if ($wi['swell'] !== null) {
+        return [$wi['swell'], $wi['swell_periode'] ?? $wi['periode'], $wi['swell_richtung'] ?? $wi['richtung']];
+    }
+    return [$wi['hoehe'], $wi['periode'], $wi['richtung']];
+}
+
+/** Mittel der Wellen ueber ein Fenster [ab, bis) eines Tages; null ohne Daten */
+function tag_welle(array $proStunde, array $fenster): ?array
+{
+    $w = [];
+    for ($s = $fenster[0]; $s < $fenster[1]; $s++) {
+        if (isset($proStunde[$s])) {
+            $w[] = $proStunde[$s];
+        }
+    }
+    if (!$w) {
+        return null;
+    }
+    $m = function (string $k) use ($w): ?float {
+        $v = array_values(array_filter(array_column($w, $k), fn($x) => $x !== null));
+        return $v ? array_sum($v) / count($v) : null;
+    };
+    $r = function (string $k) use ($w): ?float {
+        $v = array_values(array_filter(array_column($w, $k), fn($x) => $x !== null));
+        return $v ? richtung_mittel($v) : null;
+    };
+    return ['hoehe' => $m('hoehe'), 'periode' => $m('periode'), 'richtung' => $r('richtung'),
+            'swell' => $m('swell'), 'swell_periode' => $m('swell_periode'), 'swell_richtung' => $r('swell_richtung')];
+}
+
+/**
+ * Wave-Sportarten (welle_min/welle_max): Das Ensemble hat keine Welle. Damit die
+ * Chance nicht Tage mit zu kleiner Welle zaehlt, bekommt jeder Lauf die
+ * Wellenhoehe der Marine-Vorhersage (fuer alle Laeufe gleich, seit 7.11.2026).
+ * Andere Sportarten: unveraendert (ohne Schluessel 'welle' prueft rest_grund nicht).
+ */
+function ensemble_welle_einmischen(array $ens, array $ws, array $sport): array
+{
+    if (!isset($sport['welle_min']) && !isset($sport['welle_max'])) {
+        return $ens;
+    }
+    foreach ($ens as $lid => $proTag) {
+        foreach ($proTag as $t => $proStunde) {
+            foreach ($proStunde as $s => $_) {
+                $ens[$lid][$t][$s]['welle'] = $ws[$t][$s] ?? null;
+            }
+        }
+    }
+    return $ens;
+}
+
+/**
+ * Stunde fuers Wellenreiten (Sportart mit 'surf'). Rueckgabe wie stunde_fahrbar:
+ * [ok, grund, lage ['name' => 'Dünung aus W', 'charakter'], Hoehe der Duenung].
+ */
+function stunde_surfbar(array $w, array $sport, ?array $spot): array
+{
+    if (!array_key_exists('welle_info', $w)) {
+        return [false, 'ohne Wellendaten', null, null];   // Ensemble
+    }
+    if ($w['welle_info'] === null) {
+        return [false, 'keine Wellendaten', null, null];
+    }
+    [$hoehe, $periode, $richtung] = duenung($w['welle_info']);
+    if ($hoehe === null || $hoehe < $sport['welle_min']) {
+        return [false, 'zu wenig Welle', null, null];
+    }
+    if (isset($sport['welle_max']) && $hoehe > $sport['welle_max']) {
+        return [false, 'zu viel Welle', null, null];
+    }
+    if ($periode !== null && isset($sport['periode_min']) && $periode < $sport['periode_min']) {
+        return [false, 'Periode zu kurz', null, null];
+    }
+    if ($richtung !== null && ist_ablandig($richtung, $spot)) {
+        return [false, 'Dünung kommt vom Land', null, null];
+    }
+    if (!empty($w['gewitter'])) {
+        return [false, 'Gewitter', null, null];
+    }
+    $ablandig = ist_ablandig($w['richtung'] ?? null, $spot);
+    if (!$ablandig && isset($sport['wind_max']) && $w['kn'] > $sport['wind_max']) {
+        return [false, 'zu viel Wind', null, null];
+    }
+    $name = 'Dünung' . ($richtung !== null ? ' aus ' . himmelsrichtung($richtung) : '');
+    return [true, null, ['name' => $name, 'charakter' => $ablandig ? 'Wind ablandig' : null, 'grob' => !$spot || empty($spot['ablandig'])], $hoehe];
 }
 
 /** Wellenhoehe je Ortstag und Stunde aus einem Marine-Eintrag */
@@ -527,6 +654,9 @@ function restfenster(array $fenster, string $tag, DateTimeZone $tz, DateTimeImmu
  */
 function stunde_fahrbar(array $w, array $sport, array $windlagen, ?array $spot): array
 {
+    if (!empty($sport['surf'])) {
+        return stunde_surfbar($w, $sport, $spot);
+    }
     $normal = array_values(array_filter($windlagen, fn($l) => !ist_regel($l)));
     $regeln = array_values(array_filter($windlagen, 'ist_regel'));
 
@@ -725,9 +855,11 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
     [$lat, $lon] = $region['punkt'];
     $vh = $daten['vorhersage'] ? vorhersage_stunden($daten['vorhersage'], $tz) : [];
     $ws = welle_stunden($daten['welle'] ?? null, $tz);
+    $wd = welle_details($daten['welle'] ?? null, $tz);
     $wt = wasser_stunden($daten['wasser'] ?? null, $tz);
     $ens = ensemble_stunden($daten['ensemble'] ?? null, $tz);
     [$vh, $ens] = regel_daten_einmischen($region, $daten, $tz, $vh, $ens);
+    $ens = ensemble_welle_einmischen($ens, $ws, $sport);
     $spots = $region['spots'] ?? [];
     if (!$spots) {
         $spots = [null];   // Region selbst, mit ihren Windlagen
@@ -747,6 +879,7 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
         // "keine Wellendaten" bekommen, statt ungeprueft durchzugehen
         foreach ($stunden as $s => $w) {
             $stunden[$s]['welle'] = $ws[$tag][$s] ?? null;
+            $stunden[$s]['welle_info'] = $wd[$tag][$s] ?? null;
         }
         $alle = [];
         foreach ($spots as $spot) {
@@ -755,13 +888,14 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
                 'spot'      => $spot['id'] ?? null,
                 'spot_name' => $spot['name'] ?? null,
                 'det'       => tag_bewerten($stunden, $fenster, $sport, $wl, $spot, (int)substr($tag, 5, 2)),
-                'ens'       => ensemble_chance($ens, $tag, $fenster, $sport, $wl, $spot),
+                'ens'       => empty($sport['surf']) ? ensemble_chance($ens, $tag, $fenster, $sport, $wl, $spot) : null,
             ];
         }
         usort($alle, 'spot_vergleich');
         $det = $alle[0]['det'];
         $temp = tag_temperaturen($vh[$tag] ?? [], $wt[$tag] ?? [], $det['geht'] ? [$det['von'], $det['bis']] : $fenster);
-        $out[$tag] = $alle[0] + ['fenster' => $fenster, 'rest' => $rest, 'vorbei' => false, 'alle' => $alle, 'temp' => $temp];
+        $out[$tag] = $alle[0] + ['fenster' => $fenster, 'rest' => $rest, 'vorbei' => false, 'alle' => $alle, 'temp' => $temp,
+                                 'welle' => tag_welle($wd[$tag] ?? [], $det['geht'] ? [$det['von'], $det['bis']] : $fenster)];
     }
     return $out;
 }

@@ -44,8 +44,10 @@ function region_stunden(array $region, array $daten, array $sport, string $tag, 
 
     $vh = vorhersage_stunden($daten['vorhersage'], $tz);
     $ws = welle_stunden($daten['welle'] ?? null, $tz);
+    $wd = welle_details($daten['welle'] ?? null, $tz);
     $ens = ensemble_stunden($daten['ensemble'] ?? null, $tz);
     [$vh, $ens] = regel_daten_einmischen($region, $daten, $tz, $vh, $ens);
+    $ens = ensemble_welle_einmischen($ens, $ws, $sport);
 
     // Wind je Modell
     $h = $daten['vorhersage']['hourly'];
@@ -81,9 +83,10 @@ function region_stunden(array $region, array $daten, array $sport, string $tag, 
         $w = $vh[$tag][$s] ?? null;
         $zeile = ['kn' => null, 'boe' => null, 'richtung' => null, 'modelle' => $proModell[$s] ?? [],
                   'ens_p10' => null, 'ens_p50' => null, 'ens_p90' => null, 'ens_anteil' => null,
-                  'fahrbar' => false, 'grund' => null, 'regel' => false];
+                  'fahrbar' => false, 'grund' => null, 'regel' => false, 'welle' => $wd[$tag][$s] ?? null];
         if ($w !== null) {
             $w['welle'] = $ws[$tag][$s] ?? null;
+            $w['welle_info'] = $wd[$tag][$s] ?? null;
             [$ok, $grund, $lage] = stunde_fahrbar($w + ['_h' => $s, '_monat' => $monat], $sport, $wl, $spot);
             $zeile = array_merge($zeile, ['kn' => $w['kn'], 'boe' => $w['boe'], 'richtung' => $w['richtung'],
                                           'fahrbar' => $ok && $s >= $fenster[0] && $s < $fenster[1], 'grund' => $ok ? null : $grund,
@@ -91,7 +94,7 @@ function region_stunden(array $region, array $daten, array $sport, string $tag, 
         }
         $kn = [];
         $ja = 0;
-        foreach ($ens as $lauf) {
+        foreach (empty($sport['surf']) ? $ens : [] as $lauf) {   // Wellenreiten: Ensemble ohne Welle
             $e = $lauf[$tag][$s] ?? null;
             if ($e === null) {
                 continue;
@@ -109,6 +112,6 @@ function region_stunden(array $region, array $daten, array $sport, string $tag, 
         }
         $stunden[$s] = $zeile;
     }
-    return ['tag' => $tag, 'fenster' => $fenster, 'von' => $von, 'bis' => $bis, 'spot' => $bew['spot'],
+    return ['tag' => $tag, 'fenster' => $fenster, 'hat_welle' => (bool)array_filter(array_column($stunden, 'welle')), 'von' => $von, 'bis' => $bis, 'spot' => $bew['spot'],
             'spot_name' => $bew['spot_name'], 'bewertung' => $bew, 'modelle' => $modelle, 'stunden' => $stunden];
 }
