@@ -104,3 +104,8 @@ a { color: var(--akzent); }
   .wahl { grid-template-columns: 1fr; }
   .tag .w { font-size: 24px; }
 }
+
+.geteilt { font-size: 14px; }
+.teilen { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; font: inherit; font-size: 13px; font-weight: 600; color: var(--akzent); background: none; border: 1px solid var(--linie); border-radius: 999px; padding: 1px 10px 1px 8px; cursor: pointer; vertical-align: middle; }
+.teilen[hidden] { display: none; }
+.teilen svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }

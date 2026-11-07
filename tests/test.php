@@ -288,6 +288,22 @@ pruefe(str_contains($html, 'Nördliche Adria') && str_contains($html, 'Ammersee'
 pruefe(!str_contains($html, 'Nördliche Adria') && str_contains($html, 'Ammersee'), 'Umkreis 100 km: nur Ammersee');
 [, $html] = holen($sitePort, 'index.php?ort=45.6789,13.1234');
 pruefe(str_contains($html, 'value="45.7,13.1"'), 'Standort wird auf 0,1 Grad gerundet');
+$morgen = (new DateTimeImmutable('tomorrow', new DateTimeZone('Europe/Berlin')))->format('Y-m-d');
+[$code, $html] = holen($sitePort, "index.php?region=ammersee&nach=$morgen&km=100");
+pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'Geteilte Vorhersage') && str_contains($html, 'Ammersee')
+       && !str_contains($html, 'Nördliche Adria') && !str_contains($html, 'id="wahl"') && str_contains($html, ' gewaehlt"'),
+       'geteilte Vorhersage: nur die Region, ohne Auswahl, Tag markiert');
+[, $html] = holen($sitePort, 'index.php?region=adria-nord&nach=' . (new DateTimeImmutable('+4 day', new DateTimeZone('Europe/Berlin')))->format('Y-m-d'));
+pruefe(str_contains($html, 'Nördliche Adria') && !str_contains($html, '<span class="t">Heute') && str_contains($html, ' gewaehlt"') && ohne_php_meldung($html), 'geteilter Tag 4: Zeitraum Tag 3 bis 7, Tag markiert');
+[, $html] = holen($sitePort, 'index.php?region=ammersee&nach=2020-01-01');
+pruefe(str_contains($html, 'ist vorbei') && ohne_php_meldung($html), 'geteilter Tag in der Vergangenheit: Hinweis');
+[, $html] = holen($sitePort, 'index.php?region=gibtsnicht&km=100');
+pruefe(!str_contains($html, 'Geteilte Vorhersage') && str_contains($html, 'id="wahl"') && ohne_php_meldung($html), 'unbekannte Region: normale Rangliste');
+[, $html] = holen($sitePort, 'index.php?km=1000');
+preg_match_all('/<button type="button" class="teilen" hidden\s+data-titel="([^"]*)"\s+data-text="([^"]*)"\s+data-url="([^"]*)"/', $html, $tk, PREG_SET_ORDER);
+pruefe($tk !== [] && str_starts_with(html_entity_decode($tk[0][3]), '?sport=') && str_contains(html_entity_decode($tk[0][3]), '&region=')
+       && preg_match('/^.+, (So|Mo|Di|Mi|Do|Fr|Sa) \d{1,2}\.\d{1,2}\.: /u', html_entity_decode($tk[0][2])),
+       'Teilen-Knopf an guten Tagen, Text mit Datum, Link mit Region und Tag');
 [, $html] = holen($sitePort, 'index.php?sport=<script>');
 pruefe(!str_contains($html, '<script>alert') && ohne_php_meldung($html), 'unbekannte Sportart: Standard, nichts ungefiltert ausgegeben');
 

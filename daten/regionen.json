@@ -49,6 +49,9 @@
           "ablandig": [],
           "hinweis": "Bei Ostwind (Tobias). Sektor wie Ost in stegen-wind."
         }
+      ],
+      "links": [
+        {"name": "ammerseewind.de (kalibriert für Stegen)", "url": "https://ammerseewind.de"}
       ]
     },
     {

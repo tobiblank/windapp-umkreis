@@ -68,6 +68,33 @@ if (isset($_GET['ort']) && preg_match('/^(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d
 
 $tzSeite = new DateTimeZone(TZ_SEITE);
 $heute = new DateTimeImmutable('today', $tzSeite);
+
+// Geteilte Vorhersage (Knopf "Teilen"): ?sport=..&region=<id>&nach=<YYYY-MM-DD>
+// zeigt nur diese Region, ohne Umkreis und Standort; der Zeitraum folgt aus dem Tag.
+$geteilt = null;
+$geteiltTag = null;      // geteilter Tag, noch im Vorhersagezeitraum
+$geteiltVorbei = null;   // geteilter Tag, der schon vorbei ist
+if (is_string($_GET['region'] ?? null)) {
+    foreach ($regionen as $r) {
+        if ($r['id'] === $_GET['region']) {
+            $geteilt = $r;
+            break;
+        }
+    }
+}
+if ($geteilt && is_string($_GET['nach'] ?? null) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['nach'])) {
+    $d = DateTimeImmutable::createFromFormat('!Y-m-d', $_GET['nach'], $tzSeite);
+    if ($d && $d->format('Y-m-d') === $_GET['nach']) {
+        $diff = (int)$heute->diff($d)->format('%r%a');
+        if ($diff >= 0 && $diff <= 6) {
+            $ansicht = $diff <= 2 ? 'bald' : 'reise';
+            $geteiltTag = $_GET['nach'];
+        } elseif ($diff < 0) {
+            $geteiltVorbei = $_GET['nach'];
+        }
+    }
+}
+
 [$von, $bis] = $ansicht === 'reise' ? [3, 6] : [0, 2];
 $tage = [];
 for ($i = $von; $i <= $bis; $i++) {
@@ -85,9 +112,18 @@ function tag_kurz(string $tag, DateTimeImmutable $heute): string
     };
 }
 
+/** Tag mit Datum, fuer geteilte Texte (dort waere "Morgen" beim Empfaenger falsch) */
+function tag_datum(string $tag, DateTimeZone $tz): string
+{
+    $d = new DateTimeImmutable($tag, $tz);
+    return WOCHENTAGE[(int)$d->format('w')] . ' ' . $d->format('j.n.');
+}
+
 // --- Rechnen ----------------------------------------------------------
 $stand = daten_laden(rtrim($cfg['data_dir'], '/'));
-$liste = rangliste($regionen, $stand, $sport, $heim, (float)$km, $tage);
+$liste = $geteilt
+    ? rangliste([$geteilt], $stand, $sport, $heim, INF, $tage)
+    : rangliste($regionen, $stand, $sport, $heim, (float)$km, $tage);
 // Sortierung: alle Tage (summe), ein angezeigter Tag oder Entfernung
 $nach = (string)($_GET['nach'] ?? 'summe');
 if ($nach !== 'km' && !in_array($nach, $tage, true)) {
@@ -130,6 +166,36 @@ function link_mit(array $aenderung): string
 }
 
 $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . ' kn';
+
+/** Teilen nur, wenn die Vorhersage gut ist: Fenster im Modellmittel und Chance ab 40 % (oder kein Ensemble) */
+function teilenswert(array $d): bool
+{
+    $c = $d['ens']['chance'] ?? null;
+    return $d['det']['geht'] && empty($d['vorbei']) && ($c === null || $c >= 0.4);
+}
+
+function teilen_link(array $region, string $tag): string
+{
+    global $sportId;
+    return '?' . http_build_query(['sport' => $sportId, 'region' => $region['id'], 'nach' => $tag]);
+}
+
+/** Stand zum Zeitpunkt des Teilens; der Link zeigt beim Empfaenger die dann aktuelle Vorhersage */
+function teilen_text(array $region, string $tag, array $d, array $sport, DateTimeZone $tz): string
+{
+    $det = $d['det'];
+    $teile = [$d['spot_name'] ?? null, $det['windlage'] ?? null, $det['von'] . '–' . $det['bis'] . ' Uhr'];
+    if (!empty($det['regel'])) {
+        $teile[] = 'typisch ' . zahl((float)$det['staerke'][0]) . '–' . zahl((float)$det['staerke'][1]) . ' kn';
+    } else {
+        $teile[] = 'Ø ' . zahl($det['mittel_kn']) . ' kn' . ($det['boe_max'] !== null ? ', Böen bis ' . zahl($det['boe_max']) . ' kn' : '');
+    }
+    $c = $d['ens']['chance'] ?? null;
+    if ($c !== null) {
+        $teile[] = zahl(100 * $c) . ' % Chance';
+    }
+    return $region['name'] . ', ' . tag_datum($tag, $tz) . ': ' . implode(' · ', array_filter($teile)) . ' (' . $sport['name'] . ')';
+}
 ?>
 <!doctype html>
 <html lang="de">
@@ -161,6 +227,13 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
   <?php if ($standText): ?><p class="leise klein rechts">Stand<br><?= h($standText) ?></p><?php endif ?>
 </header>
 
+<?php if ($geteilt): ?>
+<p class="karte geteilt">
+  Geteilte Vorhersage<?= $geteiltTag ? ' für ' . h(tag_datum($geteiltTag, $tzSeite)) : '' ?>, <?= h($sport['name']) ?>, aktueller Stand.
+  <?php if ($geteiltVorbei): ?>Der geteilte Tag (<?= h(tag_datum($geteiltVorbei, $tzSeite)) ?>) ist vorbei.<?php endif ?>
+  <a href="./">Zur Rangliste</a>
+</p>
+<?php else: ?>
 <form class="wahl karte" method="get" id="wahl">
   <label>Sportart
     <select name="sport">
@@ -199,6 +272,7 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
   <?php endforeach ?>
   <a href="<?= h(link_mit(['nach' => 'km'])) ?>"<?= $nach === 'km' ? ' aria-current="true"' : '' ?>>Entfernung</a>
 </nav>
+<?php endif ?>
 
 <p class="leise klein erklaerung">
   <?= h($sport['name']) ?>, <?= h($wind) ?>, mindestens <?= MIN_STUNDEN ?> Stunden am Stück zwischen 9 Uhr und Sonnenuntergang<?= $ansicht === 'bald' ? ', heute erst ab einer halben Stunde nach jetzt' : '' ?>.
@@ -207,6 +281,8 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
 
 <?php if (!$zeiten): ?>
   <p class="karte">Noch keine Vorhersagedaten. Der Sammler läuft zweimal am Tag, gegen 6:30 und 18:30 Uhr.</p>
+<?php elseif (!$liste && $geteilt): ?>
+  <p class="karte">Für <?= h($geteilt['name']) ?> gibt es gerade keine Vorhersagedaten. <a href="./">Zur Rangliste</a></p>
 <?php elseif (!$liste): ?>
   <p class="karte">Keine Region im Umkreis von <?= zahl($km) ?> km. <a href="<?= h(link_mit(['km' => UMKREISE[count(UMKREISE) - 1]])) ?>">Umkreis vergrößern</a></p>
 <?php endif ?>
@@ -218,7 +294,7 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
   <article class="karte region<?= $guteTage ? '' : ' still' ?>">
     <div class="region-kopf">
       <h2><?= h($r['name']) ?><?php if (!empty($r['thermik'])): ?> <span class="marker thermik" title="Thermik bilden die Modelle schlecht ab: die Zahl ist hier vermutlich zu niedrig">Thermik</span><?php endif ?></h2>
-      <span class="leise klein"><?= zahl($e['km']) ?> km</span>
+      <?php if (!$geteilt): ?><span class="leise klein"><?= zahl($e['km']) ?> km</span><?php endif ?>
     </div>
     <div class="tage" style="--n: <?= count($tage) ?>">
       <?php foreach ($tage as $t):
@@ -258,6 +334,10 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
               <?php if ($det['charakter']): ?><span class="leise">(<?= h($det['charakter']) ?>)</span><?php endif ?>
               <?php if ($det['grob']): ?><span class="marker">grob</span><?php endif ?>
               <?php if (!empty($det['regel'])): ?><span class="marker regel" title="Aus Druckdifferenz und/oder Grundströmung abgeleitet, nicht aus dem Modellwind am See. Die Stärke ist ein geschätzter typischer Wert.">Regel</span><?php endif ?>
+              <?php if (teilenswert($d)): ?><button type="button" class="teilen" hidden
+                data-titel="<?= h('Wohinfahrma: ' . $r['name'] . ', ' . tag_datum($t, $tzSeite)) ?>"
+                data-text="<?= h(teilen_text($r, $t, $d, $sport, $tzSeite)) ?>"
+                data-url="<?= h(teilen_link($r, $t)) ?>"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>Teilen</button><?php endif ?>
             <?php else: ?>
               <span class="leise">Modellmittel: <?= h($det['grund']) ?>, nur ein Teil der Ensemble-Läufe sieht ein Fenster</span>
             <?php endif ?>
@@ -288,8 +368,34 @@ $wind = $sport['min'] . (isset($sport['max']) ? '–' . $sport['max'] : '+') . '
 if ('serviceWorker' in navigator) {
   addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
 }
+// Teilen: Web Share (Handy) oder in die Zwischenablage; ohne beides bleibt der Knopf verborgen
+(function () {
+  var kannKopieren = !!(navigator.clipboard && window.isSecureContext);
+  if (!navigator.share && !kannKopieren) { return; }
+  document.querySelectorAll('.teilen').forEach(function (k) {
+    k.hidden = false;
+    k.addEventListener('click', function () {
+      var url = new URL(k.dataset.url, location.href).href;
+      function kopieren() {
+        navigator.clipboard.writeText(k.dataset.text + '\n' + url).then(function () {
+          var alt = k.lastChild.textContent;
+          k.lastChild.textContent = 'Kopiert';
+          setTimeout(function () { k.lastChild.textContent = alt; }, 2000);
+        }, function () {});
+      }
+      if (navigator.share) {
+        navigator.share({ title: k.dataset.titel, text: k.dataset.text, url: url }).catch(function (e) {
+          if (e && e.name !== 'AbortError' && kannKopieren) { kopieren(); }
+        });
+      } else {
+        kopieren();
+      }
+    });
+  });
+})();
 (function () {
   var form = document.getElementById('wahl');
+  if (!form) { return; }   // geteilte Vorhersage: keine Auswahl, nichts merken
   var SCHLUESSEL = 'wohinfahrma_wahl';
   function lesen() { try { return JSON.parse(localStorage.getItem(SCHLUESSEL) || 'null'); } catch (e) { return null; } }
   function merken(p) { try { localStorage.setItem(SCHLUESSEL, JSON.stringify(p)); } catch (e) {} }
