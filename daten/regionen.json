@@ -62,15 +62,16 @@
       "punkt": [45.2, 12.36],
       "anfahrt": [45.2, 12.305],
       "zeitzone": "Europe/Rome",
-      "hinweis": "Aus adria-nord geteilt (Tobias). Bora und Scirocco wie bisher (Tobias: funktionieren bei beiden). kite-and-windsurfing-guide.com: Bora mit 1–2,5 m Welle, Scirocco mit den besten Wellen, meist um 20 kn; reiner Nordwind flach; Sommerthermik aus Ost bis etwa 15 kn. Strand nach Osten offen (Kartenkenntnis), Ablandig-Sektor geschätzt. Punkt vor Sottomarina nicht auf der Karte kontrolliert. Anfahrt (Strand Sottomarina) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
+      "hinweis": "Aus adria-nord geteilt (Tobias). Bora und Scirocco wie bisher (Tobias: funktionieren bei beiden; Bora ist der Hauptwind). Bora bewusst nach Modellwind, nicht als Regel: großräumig, von den Modellen gut erfasst, und die Stärke (oft zu viel) zählt. kitewetter.at (Adria) zeigt dazu die Druckdifferenz Maribor/Trieste, Bora wahrscheinlich unter −4 hPa. kite-and-windsurfing-guide.com: Bora mit 1–2,5 m Welle, Scirocco mit den besten Wellen, meist um 20 kn; reiner Nordwind flach; Sommerthermik aus Ost bis etwa 15 kn. Strand nach Osten offen (Kartenkenntnis), Ablandig-Sektor geschätzt. Punkt vor Sottomarina nicht auf der Karte kontrolliert. Anfahrt (Strand Sottomarina) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
-        {"name": "Bora", "sektor": [20, 80], "charakter": "böig"},
+        {"name": "Bora", "sektor": [20, 80], "charakter": "Hauptwind, böig"},
         {"name": "Thermik", "sektor": [80, 120], "charakter": "Sommer, bis etwa 15 kn"},
         {"name": "Scirocco", "sektor": [135, 200]}
       ],
       "spots": [
         {"id": "sottomarina", "name": "Sottomarina", "ablandig": [[225, 330]]}
-      ]
+      ],
+      "links": [{"name": "kitewetter.at (Adria)", "url": "https://www.kitewetter.at/?page_id=5499"}]
     },
     {
       "id": "adria-nordost",
@@ -80,14 +81,15 @@
       "punkt": [45.64, 13.38],
       "anfahrt": [45.675, 13.39],
       "zeitzone": "Europe/Rome",
-      "hinweis": "Aus adria-nord geteilt (Tobias). Bora und Scirocco wie bisher (Tobias: funktionieren bei beiden). kite-and-windsurfing-guide.com (Grado Pineta): Bora eher zum Springen, starker Süd selten; großes Stehrevier, Gezeiten 60–80 cm entscheidend, bei Niedrigwasser zu flach; Kiten nur außerhalb der Hochsaison. spiagge.it: Startplätze Sacca dei Moreri und Punta Barbacale. Ablandig-Sektor geschätzt, Punkt im Golf von Triest nicht auf der Karte kontrolliert. Anfahrt (Strand Grado) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
+      "hinweis": "Aus adria-nord geteilt (Tobias). Bora und Scirocco wie bisher (Tobias: funktionieren bei beiden; Bora ist der Hauptwind). Bora bewusst nach Modellwind, nicht als Regel: großräumig, von den Modellen gut erfasst, und die Stärke (oft zu viel) zählt. kitewetter.at (Adria) zeigt dazu die Druckdifferenz Maribor/Trieste, Bora wahrscheinlich unter −4 hPa. kite-and-windsurfing-guide.com (Grado Pineta): Bora eher zum Springen, starker Süd selten; großes Stehrevier, Gezeiten 60–80 cm entscheidend, bei Niedrigwasser zu flach; Kiten nur außerhalb der Hochsaison. spiagge.it: Startplätze Sacca dei Moreri und Punta Barbacale. Ablandig-Sektor geschätzt, Punkt im Golf von Triest nicht auf der Karte kontrolliert. Anfahrt (Strand Grado) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
-        {"name": "Bora", "sektor": [20, 80], "charakter": "böig"},
+        {"name": "Bora", "sektor": [20, 80], "charakter": "Hauptwind, böig"},
         {"name": "Scirocco", "sektor": [135, 200]}
       ],
       "spots": [
         {"id": "grado-pineta", "name": "Grado Pineta", "ablandig": [[300, 20]]}
-      ]
+      ],
+      "links": [{"name": "kitewetter.at (Adria)", "url": "https://www.kitewetter.at/?page_id=5499"}]
     },
     {
       "id": "walchensee",
