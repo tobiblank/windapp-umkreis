@@ -32,6 +32,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Verlauf über die Abrufe | 7.11.2026: dieselbe Chance aus bis zu drei früheren Abrufen, Pfeil in der Kachel und „stabil / steigt / fällt / schwankt“ in der Detailzeile, mit Zwischenspeicher; siehe „Verlauf über die Abrufe“ |
 | Landkarte | 7.11.2026: Regionen als Punkte über der Rangliste, eingefärbt nach der Chance am gewählten Tag, mit Umkreis; eigene SVG-Grundlage aus Natural Earth, keine fremden Server; siehe „Landkarte“ |
 | Fahrzeit und Abfahrt | 7.11.2026: Fahrzeit ab Inning laut openrouteservice (GitHub Action `fahrzeiten.yml`, braucht Secret `ORS_API_KEY`), sonst aus der Luftlinie geschätzt; „Abfahrt bis …“ an guten Tagen; Sortierung „Fahrzeit“. **Noch nie gegen das echte ORS gelaufen**; siehe „Fahrzeit und Abfahrt“ |
+| Flugziele | 7.11.2026: Auswahl „Anreise: Auto / Flug“; Flug zeigt alle Flugziele ohne Umkreis, mit Flughafen und geschätztem Transfer; siehe „Flugziele“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -61,6 +62,8 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | `hinweis` | Herkunft und offene Fragen (nicht auf der Seite) |
 | `links` | optional, `[{name, url}]`: lokale Spezialprognose, auf der Seite als „Genauer: …“ verlinkt; nur `https://` |
 | `thermik` | optional, `true`: Thermik-See. Die Seite zeigt den Hinweis „Thermik“, weil das Modellmittel den Wind dort vermutlich unterschätzt |
+| `anreise` | optional, `["auto"]` (Standard), `["flug"]` oder `["auto", "flug"]`: in welcher Ansicht die Region erscheint. Reine Flugziele bekommen keine Fahrzeit |
+| `flughafen` | optional, `{name, transfer_min}`: Flughafen für die Ansicht „Flug“, Transfer zum Spot in Minuten (geschätzt) |
 | `anfahrt` | optional, `[Breite, Länge]`: Ziel für die Fahrzeit (Parkplatz am Spot). Ohne: `punkt` des ersten Spots, sonst der Vorhersagepunkt (der auf dem Wasser liegt und erst auf die nächste Straße einrasten muss) |
 
 Sektoren in Grad, **woher** der Wind kommt, im Uhrzeigersinn, `von` inklusive, `bis` exklusive. `[275, 20]` geht über Norden. Eine Region sollte nicht über eine Wetterscheide reichen (Gardasee Nord und Süd verhalten sich verschieden).
@@ -124,6 +127,15 @@ Seit 7.11.2026. Der Umkreis bleibt Luftlinie; angezeigt und sortiert wird nach F
 - **Quellenangabe** im Fuß, wenn die Datei da ist: openrouteservice/HeiGIT und OpenStreetMap (ODbL).
 
 **Ungeprüft** (nur gegen `tests/fake_ors.php`): die Pfade `/v2/snap/driving-car` und `/v2/matrix/driving-car` beim gehosteten ORS, der größte erlaubte Snapping-Radius, die Einheit von `snapped_distance` (angenommen Meter), ob die Matrix bei fehlender Route `null` oder `0` liefert (beides gilt als keine Route) und wie ORS Fähren einrechnet (Sardinien, Sizilien). Beim ersten Lauf die Ausgabe von `--debug` in der Action ansehen.
+
+## Flugziele
+
+Seit 7.11.2026. Im Formular „Anreise: Auto / Flug“ (Parameter `anreise=flug`, wird wie die übrige Wahl gemerkt).
+
+- **Auto:** wie bisher, Umkreis um den Standort; Regionen ohne `auto` in `anreise` fehlen.
+- **Flug:** alle Regionen mit `flug` in `anreise`, ohne Umkreis und ohne Standort. Im Kopf „Flug: Lanzarote (ACE)“ und „≈ 25 min Transfer“; „Sortiert nach Transfer“ statt Fahrzeit; keine Abfahrtszeit; Karte ohne Standort und Umkreis. Flugzeiten, Verbindungen und Preise sind nicht berücksichtigt.
+- **Eingetragen** (von Claude, Flughafen und Transfer geschätzt, im `hinweis` vermerkt): nur Flug: Famara (ACE, 25 min), Fuerteventura Nord (FUE, 35), El Médano (TFS, 10), Prasonisi (RHO, 90). Auto und Flug: Sinis (CAG, 90), Kartibubbo (TPS, 40), Tarifa (AGP, 105). Sardinien und Sizilien gehen mit Fähre auch mit dem Auto, Tarifa ist rund 20 Stunden entfernt.
+- Der Fahrzeiten-Abruf überspringt reine Flugziele.
 
 **Alle Zahlen sind Rohwerte, nicht kalibriert.** An Thermik-Spots unterschätzen die Modelle den Wind vermutlich. Sportart-Voreinstellungen wie in stegen-wind (14 / 14 / 11 / 16 / 17 / 12 / 5–18 kn); dort ist nur 14 kn Directional kalibriert, der Rest sind Faustwerte.
 
@@ -282,7 +294,7 @@ tools/karte_bauen.py    erzeugt server/web/karte.svg aus Natural Earth
 1. ~~Verlauf über die Abrufe~~ (erledigt, siehe oben)
 2. ~~Karte~~ (erledigt, siehe „Landkarte“)
 3. ~~Fahrzeit statt Luftlinie, mit Abfahrtsempfehlung~~ (erledigt, siehe „Fahrzeit und Abfahrt“; später: Umkreis in Stunden, genaue Zeiten auch für andere Startorte)
-4. Fahr- und Flugziele trennen (Kanaren, Tarifa)
+4. ~~Fahr- und Flugziele trennen~~ (erledigt, siehe „Flugziele“)
 5. Roadtrip-Modus: mehrere gute Tage hintereinander oder zwei nahe Regionen im Wechsel
 6. Matrix Regionen × Tage als Übersicht
 7. Stundenansicht je Region mit Streuung der Modelle, Vergleich zweier Regionen

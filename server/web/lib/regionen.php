@@ -9,6 +9,10 @@
  *           thermik? true (Modellwind unterschaetzt den Wind vermutlich; auf der Seite markiert)
  *           anfahrt? [lat, lon] (Ziel fuer die Fahrzeit, z. B. Parkplatz am Spot; sonst
  *           punkt des ersten Spots, sonst der Vorhersagepunkt; seit 7.11.2026)
+ *           anreise? ["auto"] (Standard) | ["flug"] | ["auto", "flug"]: in welcher
+ *           Ansicht die Region erscheint (seit 7.11.2026)
+ *           flughafen? {name, transfer_min?}: naechster sinnvoller Flughafen, Transfer
+ *           zum Spot in Minuten; fuer Flugziele
  *   Spot:   id, name, punkt?, windlagen? (ersetzt die der Region),
  *           ablandig? [[von, bis], ...], hinweis?
  * Sektoren in Grad, aus welcher Richtung der Wind kommt, von inklusive,
@@ -25,6 +29,13 @@
  */
 
 const HOEHEN = ['10m', '850hPa', '700hPa'];
+const ANREISEN = ['auto', 'flug'];
+
+/** Anreisearten einer Region, Standard nur Auto */
+function region_anreise(array $r): array
+{
+    return $r['anreise'] ?? ['auto'];
+}
 
 /** Ganzer Katalog (Regionen und Druckpunkte), geprueft */
 function katalog_laden(string $datei): array
@@ -88,6 +99,14 @@ function regionen_pruefen(array $d): array
         }
         foreach (windlagen_pruefen($r['windlagen'] ?? null, $druckpunkte) as $m) {
             $f[] = "$wo: $m";
+        }
+        if (isset($r['anreise']) && (!is_array($r['anreise']) || !$r['anreise']
+            || array_diff($r['anreise'], ANREISEN) || count(array_unique($r['anreise'])) !== count($r['anreise']))) {
+            $f[] = "$wo: anreise muss eine Liste aus " . implode(', ', ANREISEN) . ' sein';
+        }
+        if (isset($r['flughafen']) && (!is_array($r['flughafen']) || !is_string($r['flughafen']['name'] ?? null) || $r['flughafen']['name'] === ''
+            || (isset($r['flughafen']['transfer_min']) && (!is_int($r['flughafen']['transfer_min']) || $r['flughafen']['transfer_min'] < 0)))) {
+            $f[] = "$wo: flughafen braucht name und optional transfer_min (ganze Minuten)";
         }
         if (isset($r['anfahrt']) && !punkt_ok($r['anfahrt'])) {
             $f[] = "$wo: anfahrt muss [Breite, Laenge] sein";

@@ -103,6 +103,9 @@ try {
 // Ziele [id => [lat, lon]]
 $ziele = [];
 foreach ($regionen as $r) {
+    if (!in_array('auto', region_anreise($r), true)) {
+        continue;   // reine Flugziele (Kanaren, Rhodos) brauchen keine Fahrzeit
+    }
     $p = $r['anfahrt'] ?? null;
     foreach ($r['spots'] ?? [] as $s) {
         $p ??= $s['punkt'] ?? null;
