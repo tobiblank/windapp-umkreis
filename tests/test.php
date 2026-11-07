@@ -14,6 +14,7 @@ require "$ROOT/server/web/lib/bewertung.php";
 require "$ROOT/server/web/lib/karte.php";
 require "$ROOT/server/web/lib/fahrzeit.php";
 require "$ROOT/server/web/lib/roadtrip.php";
+require "$ROOT/server/web/lib/stunden.php";
 
 $fehler = 0;
 function pruefe(bool $ok, string $was): void
@@ -331,6 +332,19 @@ pruefe($rcK === 1 && str_contains(implode("\n", $ausK), 'vorhersage: Abruf fehlg
 proc_terminate($server);
 
 // ---------------------------------------------------------------
+echo "Stundenwerte\n";
+$adriaR = array_values(array_filter($regionen, fn($r) => $r['id'] === 'adria-nord'))[0];
+$datA = ['vorhersage' => $standA['vorhersage']['adria-nord'], 'ensemble' => $standA['ensemble']['adria-nord'], 'welle' => $standA['welle']['adria-nord'] ?? null];
+$stA = region_stunden($adriaR, $datA, $kite, $morgen);
+$fahrbar = array_keys(array_filter($stA['stunden'], fn($z) => $z['fahrbar']));
+$detA = $stA['bewertung']['det'];
+pruefe($fahrbar && min($fahrbar) === $detA['von'] && max($fahrbar) + 1 === $detA['bis'], 'fahrbare Stunden = Fenster der Bewertung (' . implode(',', $fahrbar) . ')');
+pruefe(count($stA['modelle']) >= 2 && abs($stA['stunden'][$detA['von']]['ens_anteil'] - 1.0) < 1e-9
+       && $stA['stunden'][$detA['von']]['ens_p10'] <= $stA['stunden'][$detA['von']]['ens_p90'], 'je Stunde Modelle, Anteil der Läufe, Spanne p10 bis p90');
+pruefe($stA['von'] === $stA['fenster'][0] - STUNDEN_RAND && perzentil([1, 2, 3, 4], 0.5) === 2.5, 'gezeigt: Fenster mit Rand; Perzentil interpoliert');
+pruefe(region_stunden($adriaR, ['vorhersage' => null], $kite, $morgen) === null, 'ohne Vorhersage: keine Stundenwerte');
+
+// ---------------------------------------------------------------
 echo "Verlauf über die Abrufe\n";
 pruefe(verlauf_trend([], 0.5) === null && verlauf_trend([['ts' => 'x', 'chance' => 0.5]], null) === null, 'ohne frühere Werte oder ohne Chance: kein Verlauf');
 $art = fn(array $w) => verlauf_trend(array_map(fn($c) => ['ts' => 'x', 'chance' => $c], array_slice($w, 0, -1)), end($w))['art'];
@@ -612,6 +626,16 @@ pruefe(preg_match('/id="r-adria-nord"|#r-adria-nord">Nördliche Adria/', $html) 
        && str_contains($html, '>Woche</a>'), 'Woche: Adria morgen 100 %, verlinkt');
 [, $html] = holen($sitePort, "index.php?km=1000&ansicht=woche&nach=$morgen");
 pruefe(str_contains($html, 'class="m-aktiv"') && ohne_php_meldung($html), 'Woche nach einem Tag sortiert: Spalte markiert');
+[$code, $html] = holen($sitePort, "stunden.php?region=adria-nord&tag=$morgen&vergleich=ammersee");
+pruefe($code === 200 && ohne_php_meldung($html) && substr_count($html, 'class="stunden-bild"') === 2 && substr_count($html, 'class="s-mittel"') === 2
+       && substr_count($html, 'class="s-fahrbar ja"') === 10 && str_contains($html, 'Nördliche Adria') && str_contains($html, 'Ammersee'),
+       'Stundenseite: zwei Diagramme im Vergleich, Adria und Ammersee morgen je 5 fahrbare Stunden');
+[$code, $html] = holen($sitePort, 'stunden.php?region=adria-nord');
+pruefe($code === 200 && preg_match('/aria-current="true">(Morgen|Mo|Di|Mi|Do|Fr|Sa|So)/', $html) && ohne_php_meldung($html), 'Stundenseite ohne Tag: bester Tag gewählt');
+[$code] = holen($sitePort, 'stunden.php?region=gibtsnicht');
+pruefe($code === 404, 'Stundenseite: unbekannte Region 404');
+[, $html] = holen($sitePort, 'index.php?km=1000');
+pruefe(str_contains($html, 'class="stunden-link" href="stunden.php?region=adria-nord'), 'Rangliste verlinkt die Stundenseite');
 foreach (['impressum.html', 'datenschutz.html', 'karte.svg', 'stil.css', 'sw.js', 'offline.html', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'icon.svg', 'icon-maskable-512.png', 'favicon.svg', 'favicon.ico', 'schrift/barlow-condensed-600.woff', 'schrift/OFL.txt'] as $f) {
     [$code] = holen($sitePort, $f);
     pruefe($code === 200, "$f erreichbar");

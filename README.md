@@ -35,6 +35,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Flugziele | 7.11.2026: Auswahl „Anreise: Auto / Flug“; Flug zeigt alle Flugziele ohne Umkreis, mit Flughafen und geschätztem Transfer; siehe „Flugziele“ |
 | Roadtrip | 7.11.2026: dritter Reiter, Reise vom Standort und zurück über bis zu 7 Tage, Hin-, Rückfahrt und Etappen bis 5 h; die App sucht die beste Länge; siehe „Roadtrip“ |
 | Woche | 7.11.2026: Reiter „Woche“, Matrix Regionen × 7 Tage; siehe „Woche“ |
+| Stunden | 7.11.2026: `stunden.php`, Diagramm je Stunde mit allen Modellen, Ensemble-Spanne, Böen, Richtung, fahrbaren Stunden; Vergleich zweier Regionen; siehe „Stunden“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -155,6 +156,15 @@ Seit 7.11.2026, am selben Abend neu gedacht: Die erste Fassung (Ketten guter Tag
 ## Woche
 
 Seit 7.11.2026. Reiter „Woche“ (`ansicht=woche`) zwischen „Tag 3 bis 7“ und „Roadtrip“: eine Tabelle mit einer Zeile je Region im Umkreis (bzw. je Flugziel) und den 7 Tagen als Spalten. Zelle = Chance in der Farbe der Kacheln; leer = 0 %, „ja“ = Fenster nach Modellmittel ohne Ensemble, heute nach dem Fenster leer. Unter dem Namen die Fahrzeit (bzw. der Flughafen). Tooltip mit Fenster und Wind. Zeile und Zelle verlinken in die passende Ansicht der Region. Sortieren: „alle Tage“, „Fahrzeit“ oder Spaltenkopf antippen (ein zweites Antippen hebt es auf). Karte wie sonst darüber; kein Verlauf in dieser Ansicht.
+
+## Stunden
+
+Seit 7.11.2026. Eigene Seite `server/web/stunden.php?region=<id>&sport=…&tag=YYYY-MM-DD&vergleich=<id>`, verlinkt aus jeder Detailzeile („Stunden ›“) und aus jeder Zelle der Woche. Rechnung in `lib/stunden.php` (`region_stunden()`), für den besten Spot des Tages wie in der Rangliste.
+
+- **Tage** als Knöpfe mit Chance; ohne `tag` der beste Tag.
+- **Diagramm** (SVG ohne Fremdbibliothek, Farben aus `stil.css`): Tagesfenster hinterlegt, Wind je Modell dünn, Modellmittel dick, Böen gestrichelt, Band = 10. bis 90. Perzentil der 51 Ensemble-Läufe, Windfenster der Sportart als waagrechte Linien, darüber Pfeile (wohin der Wind weht), darunter je Stunde: fahrbar im Modellmittel (grün; Tooltip mit Grund) und Anteil der Ensemble-Läufe, die die Stunde fahrbar sehen. Zeigt das Tagesfenster ±2 Stunden, Ortszeit der Region.
+- **Vergleich:** zweite Region im selben Maßstab darunter (Auswahl am Ende der Seite).
+- Bei Regel-Windlagen rechnet die Bewertung mit der typischen Stärke, die Linien zeigen trotzdem den Modellwind.
 
 **Alle Zahlen sind Rohwerte, nicht kalibriert.** An Thermik-Spots unterschätzen die Modelle den Wind vermutlich. Sportart-Voreinstellungen wie in stegen-wind (14 / 14 / 11 / 16 / 17 / 12 / 5–18 kn); dort ist nur 14 kn Directional kalibriert, der Rest sind Faustwerte.
 
@@ -292,6 +302,7 @@ server/rangliste.php    Rangliste auf der Kommandozeile
 server/fahrzeiten.php   Fahrzeiten bei openrouteservice (GitHub Action)
 server/web/             Webordner der App
 server/web/lib/         Katalog und Bewertung (per .htaccess gesperrt)
+server/web/stunden.php  Stundenansicht einer Region
 tests/                  Tests und Open-Meteo-Ersatz
 tools/karte_bauen.py    erzeugt server/web/karte.svg aus Natural Earth
 ```
@@ -316,7 +327,7 @@ tools/karte_bauen.py    erzeugt server/web/karte.svg aus Natural Earth
 4. ~~Fahr- und Flugziele trennen~~ (erledigt, siehe „Flugziele“)
 5. ~~Roadtrip-Modus~~ (erledigt, siehe „Roadtrip“)
 6. ~~Matrix Regionen × Tage~~ (erledigt, siehe „Woche“)
-7. Stundenansicht je Region mit Streuung der Modelle, Vergleich zweier Regionen
+7. ~~Stundenansicht je Region, Vergleich zweier Regionen~~ (erledigt, siehe „Stunden“)
 8. Wassertemperatur und Neoprenempfehlung (ob die Marine API das liefert, ungeprüft)
 9. Gezeiten für Atlantik-Spots (ungeprüft, ob Open-Meteo das brauchbar liefert)
 10. Spot-Infos (Niveau, Zonen, Sperrzeiten, Saison) auf der Seite
