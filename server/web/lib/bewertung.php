@@ -253,6 +253,49 @@ function welle_stunden(?array $eintrag, DateTimeZone $tz): array
     return $out;
 }
 
+/** Meerestemperatur je Ortstag und Stunde (Marine API, seit 7.11.2026) */
+function wasser_stunden(?array $eintrag, DateTimeZone $tz): array
+{
+    if (!$eintrag || empty($eintrag['hourly']['sea_surface_temperature'])) {
+        return [];
+    }
+    $h = $eintrag['hourly'];
+    $orte = ortszeiten($h['time'], $tz);
+    $out = [];
+    foreach ($h['time'] as $i => $_) {
+        if (isset($h['sea_surface_temperature'][$i])) {
+            [$tag, $stunde] = $orte[$i];
+            $out[$tag][$stunde] = (float)$h['sea_surface_temperature'][$i];
+        }
+    }
+    return $out;
+}
+
+/**
+ * Luft, Wasser und Wind im Fenster eines Tages (seit 7.11.2026, fuer die
+ * Neopren-Faustregel): Mittel ueber das Fenster des Tages (das gefundene
+ * Fenster, wenn es eins gibt, sonst das Tagesfenster).
+ * Rueckgabe ['luft' => ?float, 'wasser' => ?float, 'kn' => ?float]
+ */
+function tag_temperaturen(array $stunden, array $wasser, array $fenster): array
+{
+    [$ab, $bis] = $fenster;
+    $l = $w = $k = [];
+    for ($s = $ab; $s < $bis; $s++) {
+        if (isset($stunden[$s]['temp'])) {
+            $l[] = $stunden[$s]['temp'];
+        }
+        if (isset($stunden[$s]['kn'])) {
+            $k[] = $stunden[$s]['kn'];
+        }
+        if (isset($wasser[$s])) {
+            $w[] = $wasser[$s];
+        }
+    }
+    $m = fn(array $a) => $a ? array_sum($a) / count($a) : null;
+    return ['luft' => $m($l), 'wasser' => $m($w), 'kn' => $m($k)];
+}
+
 /**
  * Ensemble: je Lauf (Kontrolllauf + Member) Wind, Richtung und Bewoelkung je Ortstag/Stunde.
  * Schluessel des Laufs ist das Suffix der Open-Meteo-Variablen: '' (Kontrolllauf)
@@ -682,6 +725,7 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
     [$lat, $lon] = $region['punkt'];
     $vh = $daten['vorhersage'] ? vorhersage_stunden($daten['vorhersage'], $tz) : [];
     $ws = welle_stunden($daten['welle'] ?? null, $tz);
+    $wt = wasser_stunden($daten['wasser'] ?? null, $tz);
     $ens = ensemble_stunden($daten['ensemble'] ?? null, $tz);
     [$vh, $ens] = regel_daten_einmischen($region, $daten, $tz, $vh, $ens);
     $spots = $region['spots'] ?? [];
@@ -715,7 +759,9 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
             ];
         }
         usort($alle, 'spot_vergleich');
-        $out[$tag] = $alle[0] + ['fenster' => $fenster, 'rest' => $rest, 'vorbei' => false, 'alle' => $alle];
+        $det = $alle[0]['det'];
+        $temp = tag_temperaturen($vh[$tag] ?? [], $wt[$tag] ?? [], $det['geht'] ? [$det['von'], $det['bis']] : $fenster);
+        $out[$tag] = $alle[0] + ['fenster' => $fenster, 'rest' => $rest, 'vorbei' => false, 'alle' => $alle, 'temp' => $temp];
     }
     return $out;
 }
@@ -837,6 +883,7 @@ function rangliste(array $regionen, array $stand, array $sport, array $heim, flo
             'vorhersage' => $stand['vorhersage'][$r['id']] ?? null,
             'ensemble'   => $stand['ensemble'][$r['id']] ?? null,
             'welle'      => $stand['welle'][$r['id']] ?? null,
+            'wasser'     => $stand['wasser'][$r['id']] ?? null,
             'druck'          => $stand['druck'] ?? [],
             'druck_ensemble' => $stand['druck_ensemble'] ?? [],
             'hoehe'          => $stand['hoehe'][$r['id']] ?? null,
@@ -902,7 +949,7 @@ function rangliste_sortieren(array $liste, string $nach): array
  * und eine gezippte je Lauf (GitHub Action, 2026-11-07_0525.ndjson.gz).
  * Rueckgabe [quelle => [region_id => eintrag]], dazu ['_ts'][quelle][region_id].
  */
-function daten_laden(string $dataDir, array $quellen = ['vorhersage', 'ensemble', 'welle', 'druck', 'druck_ensemble', 'hoehe', 'hoehe_ensemble'], ?array $nur = null): array
+function daten_laden(string $dataDir, array $quellen = ['vorhersage', 'ensemble', 'welle', 'wasser', 'druck', 'druck_ensemble', 'hoehe', 'hoehe_ensemble'], ?array $nur = null): array
 {
     // $nur: Regionen, deren Eintraege behalten werden (Umkreis); null = alle.
     // Stand (_ts) und Fingerabdruck des Ensembles (_fp) gibt es fuer alle Regionen,

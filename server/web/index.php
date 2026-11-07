@@ -17,6 +17,7 @@ require __DIR__ . '/lib/bewertung.php';
 require __DIR__ . '/lib/karte.php';
 require __DIR__ . '/lib/fahrzeit.php';
 require __DIR__ . '/lib/roadtrip.php';
+require __DIR__ . '/lib/neopren.php';
 
 const TZ_SEITE = 'Europe/Berlin';
 const HEIM_STANDARD = [48.07, 11.15];      // Inning am Ammersee
@@ -220,6 +221,24 @@ function matrix_kopf(string $tag, DateTimeImmutable $heute): string
     $d = new DateTimeImmutable($tag, $heute->getTimezone());
     $wt = $d->format('Y-m-d') === $heute->format('Y-m-d') ? 'heute' : WOCHENTAGE[(int)$d->format('w')];
     return '<span>' . h($wt) . '</span><span>' . $d->format('j.') . '</span>';
+}
+
+/**
+ * Temperatur fuer die Detailzeile (seit 7.11.2026): Meer "Wasser 14 °C, 4/3 mm",
+ * See "Luft 12 °C, gefühlt 6 °C". Rueckgabe [text, tooltip] oder null.
+ */
+function temp_text(array $d): ?array
+{
+    if (empty($d['temp'])) {
+        return null;
+    }
+    $n = neopren($d['temp']);
+    $luft = $n['luft'] !== null ? 'Luft ' . zahl($n['luft']) . ' °C' . ($n['gefuehlt'] !== null && $n['gefuehlt'] <= $n['luft'] - 2 ? ', gefühlt ' . zahl($n['gefuehlt']) . ' °C' : '') : null;
+    if ($n['text'] !== null) {
+        return ['Wasser ' . zahl($n['wasser']) . ' °C, ' . $n['text'],
+                'Neopren-Faustregel nach der Wassertemperatur' . ($n['waermer'] ? ', eine Stufe wärmer wegen kalter Luft bei Wind' : '') . ($luft ? '. ' . $luft : '')];
+    }
+    return $luft ? [$luft, 'Wassertemperatur für Seen nicht bekannt, deshalb keine Neopren-Empfehlung. Gefühlt: Windchill bei Wind im Fenster.'] : null;
 }
 
 /** Stunden als Uhrzeit, auf 5 Minuten: 11.25 -> "11:15", ueber Mitternacht weiter gezaehlt */
@@ -706,6 +725,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
                 Ø <?= zahl($det['mittel_kn']) ?> kn<?php if ($det['boe_max'] !== null): ?>, Böen bis <?= zahl($det['boe_max']) ?> kn<?php endif ?>
               <?php endif ?>
               <?php if ($det['charakter']): ?><span class="leise">(<?= h($det['charakter']) ?>)</span><?php endif ?>
+              <?php if ($tt = temp_text($d)): ?><span class="temp" title="<?= h($tt[1]) ?>">· <?= h($tt[0]) ?></span><?php endif ?>
               <?php if ($det['grob']): ?><span class="marker">grob</span><?php endif ?>
               <?php if (!empty($det['regel'])): ?><span class="marker regel" title="Aus Druckdifferenz und/oder Grundströmung abgeleitet, nicht aus dem Modellwind am See. Die Stärke ist ein geschätzter typischer Wert.">Regel</span><?php endif ?>
               <?php if ($tr): ?><span class="verlauf <?= $tr['art'] ?>" title="<?= h(trend_titel($tr, $tzSeite, $heute)) ?>">· <?= h(trend_text($tr)) ?></span><?php endif ?>

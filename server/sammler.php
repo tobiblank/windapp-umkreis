@@ -105,6 +105,9 @@ try {
  * welle:      nur Regionen mit typ "meer", alle 3 h.
  *             Variablennamen der Marine API hier NICHT live geprueft -
  *             beim ersten Lauf mit --debug kontrollieren.
+ * wasser:     Meerestemperatur (sea_surface_temperature, Marine API), nur "meer",
+ *             alle 6 h (seit 7.11.2026). Eigene Quelle, damit ein Fehler dort die
+ *             Wellendaten nicht mitreisst; Variablenname ungeprueft.
  */
 function quellen(array $katalog, string $modelle): array
 {
@@ -179,6 +182,12 @@ function quellen(array $katalog, string $modelle): array
             'query'    => 'hourly=wave_height,wave_direction,wave_period,'
                         . 'swell_wave_height,swell_wave_direction,swell_wave_period'
                         . '&forecast_days=7&timezone=UTC',
+        ],
+        'wasser' => [
+            'every'    => 360,
+            'regionen' => $meer,
+            'basis'    => 'https://marine-api.open-meteo.com/v1/marine',
+            'query'    => 'hourly=sea_surface_temperature&forecast_days=7&timezone=UTC',
         ],
     ];
 }

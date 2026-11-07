@@ -18,6 +18,7 @@ date_default_timezone_set('UTC');
 require __DIR__ . '/lib/regionen.php';
 require __DIR__ . '/lib/bewertung.php';
 require __DIR__ . '/lib/stunden.php';
+require __DIR__ . '/lib/neopren.php';
 
 const TZ_SEITE = 'Europe/Berlin';
 const WOCHENTAGE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
@@ -102,7 +103,7 @@ function daten_fuer(array $r, array $stand): array
         $druckEns[$p] = $stand['druck_ensemble'][$p] ?? null;
     }
     return ['vorhersage' => $stand['vorhersage'][$r['id']] ?? null, 'ensemble' => $stand['ensemble'][$r['id']] ?? null,
-            'welle' => $stand['welle'][$r['id']] ?? null, 'druck' => array_filter($druck), 'hoehe' => $stand['hoehe'][$r['id']] ?? null,
+            'welle' => $stand['welle'][$r['id']] ?? null, 'wasser' => $stand['wasser'][$r['id']] ?? null, 'druck' => array_filter($druck), 'hoehe' => $stand['hoehe'][$r['id']] ?? null,
             'druck_ensemble' => array_filter($druckEns), 'hoehe_ensemble' => $stand['hoehe_ensemble'][$r['id']] ?? null];
 }
 
@@ -257,6 +258,18 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
     $det = $b['det'];
     $o .= '<p class="klein">' . h(tag_kurz($tag, $heute)) . ': ' . (!empty($b['vorbei']) ? 'vorbei'
         : ($det['geht'] ? h($det['windlage'] ?? 'jede Richtung') . ' · ' . $det['von'] . '–' . $det['bis'] . ' Uhr' : '<span class="leise">' . h($det['grund']) . '</span>')) . '</p>';
+    if (!empty($b['temp'])) {
+        $n = neopren($b['temp']);
+        $teile = [];
+        if ($n['wasser'] !== null) {
+            $teile[] = 'Wasser ' . zahl($n['wasser']) . ' °C';
+        }
+        if ($n['luft'] !== null) {
+            $teile[] = 'Luft ' . zahl($n['luft']) . ' °C' . ($n['gefuehlt'] !== null && $n['gefuehlt'] <= $n['luft'] - 2 ? ', gefühlt ' . zahl($n['gefuehlt']) . ' °C' : '');
+        }
+        $teile[] = $n['text'] !== null ? 'Neopren: ' . $n['text'] . ($n['waermer'] ? ' (eine Stufe wärmer wegen Wind)' : '') : 'Wassertemperatur unbekannt';
+        $o .= '<p class="klein leise">' . h(implode(' · ', $teile)) . '</p>';
+    }
     return $o . stunden_svg($st, $sport, $ymax) . '</section>';
 }
 ?><!doctype html>

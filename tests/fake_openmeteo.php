@@ -60,6 +60,7 @@ function wert(int $ort, string $var, int $i, float $faktor): ?float
         'wave_direction', 'swell_wave_direction' => 60,
         'wave_period', 'swell_wave_period'       => 5.0,
         'swell_wave_height'  => 0.3,
+        'sea_surface_temperature' => 14.0,
         default              => null,
     };
 }

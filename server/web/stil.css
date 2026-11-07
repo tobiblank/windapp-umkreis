@@ -97,6 +97,7 @@ a { color: var(--akzent); }
 .tag .v.faellt { color: var(--no); }
 .verlauf { color: var(--leise); white-space: nowrap; }
 .abfahrt { white-space: nowrap; }
+.temp { white-space: nowrap; }
 .fahrzeit { white-space: nowrap; text-align: right; }
 .fahrzeit .km { display: block; font-size: 12px; }
 .verlauf.faellt { color: var(--no); }
