@@ -60,8 +60,9 @@
       "land": "IT",
       "typ": "meer",
       "punkt": [45.2, 12.36],
+      "anfahrt": [45.2, 12.305],
       "zeitzone": "Europe/Rome",
-      "hinweis": "Aus adria-nord geteilt (Tobias). Bora und Scirocco wie bisher (Tobias: funktionieren bei beiden). kite-and-windsurfing-guide.com: Bora mit 1–2,5 m Welle, Scirocco mit den besten Wellen, meist um 20 kn; reiner Nordwind flach; Sommerthermik aus Ost bis etwa 15 kn. Strand nach Osten offen (Kartenkenntnis), Ablandig-Sektor geschätzt. Punkt vor Sottomarina nicht auf der Karte kontrolliert.",
+      "hinweis": "Aus adria-nord geteilt (Tobias). Bora und Scirocco wie bisher (Tobias: funktionieren bei beiden). kite-and-windsurfing-guide.com: Bora mit 1–2,5 m Welle, Scirocco mit den besten Wellen, meist um 20 kn; reiner Nordwind flach; Sommerthermik aus Ost bis etwa 15 kn. Strand nach Osten offen (Kartenkenntnis), Ablandig-Sektor geschätzt. Punkt vor Sottomarina nicht auf der Karte kontrolliert. Anfahrt (Strand Sottomarina) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "Bora", "sektor": [20, 80], "charakter": "böig"},
         {"name": "Thermik", "sektor": [80, 120], "charakter": "Sommer, bis etwa 15 kn"},
@@ -77,8 +78,9 @@
       "land": "IT",
       "typ": "meer",
       "punkt": [45.64, 13.38],
+      "anfahrt": [45.675, 13.39],
       "zeitzone": "Europe/Rome",
-      "hinweis": "Aus adria-nord geteilt (Tobias). Bora und Scirocco wie bisher (Tobias: funktionieren bei beiden). kite-and-windsurfing-guide.com (Grado Pineta): Bora eher zum Springen, starker Süd selten; großes Stehrevier, Gezeiten 60–80 cm entscheidend, bei Niedrigwasser zu flach; Kiten nur außerhalb der Hochsaison. spiagge.it: Startplätze Sacca dei Moreri und Punta Barbacale. Ablandig-Sektor geschätzt, Punkt im Golf von Triest nicht auf der Karte kontrolliert.",
+      "hinweis": "Aus adria-nord geteilt (Tobias). Bora und Scirocco wie bisher (Tobias: funktionieren bei beiden). kite-and-windsurfing-guide.com (Grado Pineta): Bora eher zum Springen, starker Süd selten; großes Stehrevier, Gezeiten 60–80 cm entscheidend, bei Niedrigwasser zu flach; Kiten nur außerhalb der Hochsaison. spiagge.it: Startplätze Sacca dei Moreri und Punta Barbacale. Ablandig-Sektor geschätzt, Punkt im Golf von Triest nicht auf der Karte kontrolliert. Anfahrt (Strand Grado) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "Bora", "sektor": [20, 80], "charakter": "böig"},
         {"name": "Scirocco", "sektor": [135, 200]}
@@ -108,8 +110,9 @@
       "land": "FR",
       "typ": "meer",
       "punkt": [42.9, 3.15],
+      "anfahrt": [42.935, 3.035],
       "zeitzone": "Europe/Paris",
-      "hinweis": "Entwurf (Claude), ungeprüft: Windlagen aus allgemeinem Wissen, Sektorgrenzen geschätzt, Punkt vor der Küste nicht auf der Karte kontrolliert.",
+      "hinweis": "Entwurf (Claude), ungeprüft: Windlagen aus allgemeinem Wissen, Sektorgrenzen geschätzt, Punkt vor der Küste nicht auf der Karte kontrolliert. Anfahrt (Les Coussoules, La Franqui) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "Tramontane", "sektor": [280, 340]},
         {"name": "Marin", "sektor": [100, 160]}
@@ -122,8 +125,9 @@
       "land": "FR",
       "typ": "meer",
       "punkt": [43.04, 6.05],
+      "anfahrt": [43.065, 6.13],
       "zeitzone": "Europe/Paris",
-      "hinweis": "Entwurf (Claude), ungeprüft: Mistral aus allgemeinem Wissen, Ostwind-Lagen fehlen, Sektorgrenzen geschätzt, Punkt vor Giens nicht auf der Karte kontrolliert.",
+      "hinweis": "Entwurf (Claude), ungeprüft: Mistral aus allgemeinem Wissen, Ostwind-Lagen fehlen, Sektorgrenzen geschätzt, Punkt vor Giens nicht auf der Karte kontrolliert. Anfahrt (Almanarre) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "Mistral", "sektor": [260, 320]}
       ],
@@ -135,8 +139,9 @@
       "land": "DE",
       "typ": "meer",
       "punkt": [54.55, 11.2],
+      "anfahrt": [54.525, 11.15],
       "zeitzone": "Europe/Berlin",
-      "hinweis": "Entwurf (Claude), ungeprüft: ohne Windlagen (grob), weil rund um die Insel fast jede Richtung irgendwo geht. Punkt im Fehmarnbelt nördlich der Insel nicht auf der Karte kontrolliert.",
+      "hinweis": "Entwurf (Claude), ungeprüft: ohne Windlagen (grob), weil rund um die Insel fast jede Richtung irgendwo geht. Punkt im Fehmarnbelt nördlich der Insel nicht auf der Karte kontrolliert. Anfahrt (Grüner Brink) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [],
       "spots": [
         {
@@ -153,8 +158,9 @@
       "land": "FR",
       "typ": "meer",
       "punkt": [46.15, -1.55],
+      "anfahrt": [46.18, -1.385],
       "zeitzone": "Europe/Paris",
-      "hinweis": "Entwurf (Claude), ungeprüft: ohne Windlagen (grob). Gezeiten fehlen ganz. Punkt im Pertuis d'Antioche nicht auf der Karte kontrolliert.",
+      "hinweis": "Entwurf (Claude), ungeprüft: ohne Windlagen (grob). Gezeiten fehlen ganz. Punkt im Pertuis d'Antioche nicht auf der Karte kontrolliert. Anfahrt (Le Bois-Plage) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [],
       "spots": []
     },
@@ -224,8 +230,9 @@
       "land": "FR",
       "typ": "meer",
       "punkt": [49.4, -0.4],
+      "anfahrt": [49.29, -0.255],
       "zeitzone": "Europe/Paris",
-      "hinweis": "Entwurf (Claude), ungeprüft: Normandie ist für eine Region zu groß, vorerst stellvertretend die Küste des Calvados (Baie de Seine); die Westküste des Cotentin wäre eine eigene Region. Ohne Windlagen (grob), ablandiger Wind wird nicht ausgeschlossen. Starker Tidenhub, Gezeiten fehlen. Punkt nicht auf der Karte kontrolliert.",
+      "hinweis": "Entwurf (Claude), ungeprüft: Normandie ist für eine Region zu groß, vorerst stellvertretend die Küste des Calvados (Baie de Seine); die Westküste des Cotentin wäre eine eigene Region. Ohne Windlagen (grob), ablandiger Wind wird nicht ausgeschlossen. Starker Tidenhub, Gezeiten fehlen. Punkt nicht auf der Karte kontrolliert. Anfahrt (Ouistreham, Riva Bella) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [],
       "spots": []
     },
@@ -235,8 +242,9 @@
       "land": "FR",
       "typ": "meer",
       "punkt": [50.85, 1.5],
+      "anfahrt": [50.886, 1.66],
       "zeitzone": "Europe/Paris",
-      "hinweis": "Entwurf (Claude), ungeprüft: Côte d'Opale zwischen Wissant und Boulogne, Punkt westlich von Cap Gris-Nez nicht auf der Karte kontrolliert. Ohne Windlagen (grob), ablandiger Wind wird nicht ausgeschlossen. Starker Tidenhub, Gezeiten fehlen.",
+      "hinweis": "Entwurf (Claude), ungeprüft: Côte d'Opale zwischen Wissant und Boulogne, Punkt westlich von Cap Gris-Nez nicht auf der Karte kontrolliert. Ohne Windlagen (grob), ablandiger Wind wird nicht ausgeschlossen. Starker Tidenhub, Gezeiten fehlen. Anfahrt (Wissant) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [],
       "spots": []
     },
@@ -246,8 +254,9 @@
       "land": "DE",
       "typ": "meer",
       "punkt": [54.15, 8.2],
+      "anfahrt": [54.305, 8.62],
       "zeitzone": "Europe/Berlin",
-      "hinweis": "Entwurf (Claude), ungeprüft: Deutsche Bucht ist groß, vorerst ein Punkt vor Eiderstedt (St. Peter-Ording); Sylt, Ostfriesland wären eigene Regionen. Punkt muss außerhalb des Watts liegen, nicht auf der Karte kontrolliert. Ohne Windlagen (grob), ablandiger Wind wird nicht ausgeschlossen. Gezeiten fehlen.",
+      "hinweis": "Entwurf (Claude), ungeprüft: Deutsche Bucht ist groß, vorerst ein Punkt vor Eiderstedt (St. Peter-Ording); Sylt, Ostfriesland wären eigene Regionen. Punkt muss außerhalb des Watts liegen, nicht auf der Karte kontrolliert. Ohne Windlagen (grob), ablandiger Wind wird nicht ausgeschlossen. Gezeiten fehlen. Anfahrt (St. Peter-Ording) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [],
       "spots": []
     },
@@ -257,8 +266,9 @@
       "land": "DK",
       "typ": "meer",
       "punkt": [57.06, 8.4],
+      "anfahrt": [57.04, 8.49],
       "zeitzone": "Europe/Copenhagen",
-      "hinweis": "Entwurf (Claude), ungeprüft: Punkt vor der Westküste nicht auf der Karte kontrolliert. Ohne Windlagen (grob); die Küste liegt nach Nordwest offen, ablandiger Wind (aus Ost) wird aber noch nicht ausgeschlossen.",
+      "hinweis": "Entwurf (Claude), ungeprüft: Punkt vor der Westküste nicht auf der Karte kontrolliert. Ohne Windlagen (grob); die Küste liegt nach Nordwest offen, ablandiger Wind (aus Ost) wird aber noch nicht ausgeschlossen. Anfahrt (Klitmøller) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [],
       "spots": []
     },
@@ -302,8 +312,9 @@
       "land": "DE",
       "typ": "see",
       "punkt": [47.88, 12.48],
+      "anfahrt": [47.89, 12.53],
       "zeitzone": "Europe/Berlin",
-      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Punkt östlich der Inseln. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Punkt östlich der Inseln. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert. Anfahrt (Chieming) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [],
       "spots": []
     },
@@ -460,8 +471,9 @@
       "land": "AT",
       "typ": "see",
       "punkt": [47.83, 16.75],
+      "anfahrt": [47.856, 16.832],
       "zeitzone": "Europe/Vienna",
-      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Großer flacher Steppensee, Punkt in der Seemitte; Podersdorf und andere Ufer später als Spots. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Großer flacher Steppensee, Punkt in der Seemitte; Podersdorf und andere Ufer später als Spots. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert. Anfahrt (Podersdorf) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [],
       "spots": []
     },
@@ -471,8 +483,9 @@
       "land": "ES",
       "typ": "meer",
       "punkt": [36.0, -5.68],
+      "anfahrt": [36.068, -5.69],
       "zeitzone": "Europe/Madrid",
-      "hinweis": "kitefuntarifa.com, kitemana.com: Poniente side-onshore, Levante side-offshore und böig, im Süden von Los Lances offshore; Levante nur für Fortgeschrittene, Valdevaqueros dann die sicherere Wahl. Sommer 15.6.–15.9. Zonen. Ablandig-Sektor geschätzt (Strand Richtung SW); Levante ist absichtlich nicht ablandig gesetzt.",
+      "hinweis": "kitefuntarifa.com, kitemana.com: Poniente side-onshore, Levante side-offshore und böig, im Süden von Los Lances offshore; Levante nur für Fortgeschrittene, Valdevaqueros dann die sicherere Wahl. Sommer 15.6.–15.9. Zonen. Ablandig-Sektor geschätzt (Strand Richtung SW); Levante ist absichtlich nicht ablandig gesetzt. Anfahrt (Valdevaqueros) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "Levante", "sektor": [60, 120], "charakter": "böig, side-offshore"},
         {"name": "Poniente", "sektor": [240, 300]}
@@ -488,8 +501,9 @@
       "land": "IT",
       "typ": "meer",
       "punkt": [40.0, 8.3],
+      "anfahrt": [40.035, 8.4],
       "zeitzone": "Europe/Rome",
-      "hinweis": "kite-and-windsurfing-guide.com, waterwind.it: Maestrale (NW) bringt am Capo Mannu Wellen mit Wind von rechts; Kitestart in Putzu Idu, dort side. Mini Capo laut waterwind.it bei Maestrale abgedeckt und schwächer; surf-forecast.com: Nord dort offshore. Andere Richtungen ungeklärt. Ablandig geschätzt.",
+      "hinweis": "kite-and-windsurfing-guide.com, waterwind.it: Maestrale (NW) bringt am Capo Mannu Wellen mit Wind von rechts; Kitestart in Putzu Idu, dort side. Mini Capo laut waterwind.it bei Maestrale abgedeckt und schwächer; surf-forecast.com: Nord dort offshore. Andere Richtungen ungeklärt. Ablandig geschätzt. Anfahrt (Putzu Idu) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "Maestrale", "sektor": [280, 350]}
       ],
@@ -504,8 +518,9 @@
       "land": "GR",
       "typ": "meer",
       "punkt": [35.88, 27.72],
+      "anfahrt": [35.88, 27.765],
       "zeitzone": "Europe/Athens",
-      "hinweis": "sportif.travel, kite-and-windsurfing-guide.com: West onshore mit Welle, Ost cross-offshore und flach, Wind dort düsenverstärkt und 1–2 Bft stärker als an der Westküste; Meltemi Mai–Okt. Ablandig-Sektoren geschätzt; Ostseite so gesetzt, dass Meltemi (cross-off) zählt.",
+      "hinweis": "sportif.travel, kite-and-windsurfing-guide.com: West onshore mit Welle, Ost cross-offshore und flach, Wind dort düsenverstärkt und 1–2 Bft stärker als an der Westküste; Meltemi Mai–Okt. Ablandig-Sektoren geschätzt; Ostseite so gesetzt, dass Meltemi (cross-off) zählt. Anfahrt (Prasonisi) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "Meltemi", "sektor": [300, 30], "charakter": "Sommer, nachmittags stärker"}
       ],
@@ -520,8 +535,9 @@
       "land": "IT",
       "typ": "meer",
       "punkt": [37.53, 12.67],
+      "anfahrt": [37.585, 12.69],
       "zeitzone": "Europe/Rome",
-      "hinweis": "windresort.it, surftribe.it, lets-kite.com: Puzziteddu am besten W/NW, SW side-on mit großer Welle, Tramontana offshore; bei Scirocco/Levante nach Kartibubbo, dort side bis side-off. Ablandig geschätzt.",
+      "hinweis": "windresort.it, surftribe.it, lets-kite.com: Puzziteddu am besten W/NW, SW side-on mit großer Welle, Tramontana offshore; bei Scirocco/Levante nach Kartibubbo, dort side bis side-off. Ablandig geschätzt. Anfahrt (Kartibubbo) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "Maestrale", "sektor": [280, 340]},
         {"name": "Libeccio", "sektor": [200, 250]},
@@ -546,8 +562,9 @@
       "land": "NL",
       "typ": "meer",
       "punkt": [52.38, 4.48],
+      "anfahrt": [52.375, 4.525],
       "zeitzone": "Europe/Amsterdam",
-      "hinweis": "zandvoort-holland.com: Kiten bei 210–020°, mehrere Kitezonen, im Sommer an Badetagen teils gesperrt; kiteforum: starke Strömung längs der Küste. Ablandig aus Uferausrichtung (W) geschätzt.",
+      "hinweis": "zandvoort-holland.com: Kiten bei 210–020°, mehrere Kitezonen, im Sommer an Badetagen teils gesperrt; kiteforum: starke Strömung längs der Küste. Ablandig aus Uferausrichtung (W) geschätzt. Anfahrt (Zandvoort Strand) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "SSW bis NNO", "sektor": [210, 20]}
       ],
@@ -592,8 +609,9 @@
       "land": "ES",
       "typ": "meer",
       "punkt": [28.02, -16.51],
+      "anfahrt": [28.045, -16.535],
       "zeitzone": "Atlantic/Canary",
-      "hinweis": "surfergalaxy.com, howtowindsurf101.com, webtenerife: Passat NE, side-onshore von links; selten SW. Bebauung macht den Wind ufernah böig. Außerhalb ICON-EU. Ablandig geschätzt.",
+      "hinweis": "surfergalaxy.com, howtowindsurf101.com, webtenerife: Passat NE, side-onshore von links; selten SW. Bebauung macht den Wind ufernah böig. Außerhalb ICON-EU. Ablandig geschätzt. Anfahrt (El Médano) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "Passat", "sektor": [20, 100]}
       ],
@@ -607,8 +625,9 @@
       "land": "ES",
       "typ": "meer",
       "punkt": [42.19, 3.17],
+      "anfahrt": [42.195, 3.115],
       "zeitzone": "Europe/Madrid",
-      "hinweis": "sportif.travel, thekitemag.com, unplug-kitesurf.com: Tramuntana side von links, böig, 1–2 Bft schwächer als in Leucate; im Sommer SE-Seewind side von rechts. Rund 130 km von Barcelona. Ob das Modellmittel den Seewind trifft, ungeprüft. Ablandig geschätzt.",
+      "hinweis": "sportif.travel, thekitemag.com, unplug-kitesurf.com: Tramuntana side von links, böig, 1–2 Bft schwächer als in Leucate; im Sommer SE-Seewind side von rechts. Rund 130 km von Barcelona. Ob das Modellmittel den Seewind trifft, ungeprüft. Ablandig geschätzt. Anfahrt (Sant Pere Pescador) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "Tramuntana", "sektor": [330, 30], "charakter": "böig"},
         {"name": "Seewind", "sektor": [100, 180], "charakter": "Sommer, thermisch"}
@@ -640,8 +659,9 @@
       "land": "IT",
       "typ": "meer",
       "punkt": [41.92, 16.22],
+      "anfahrt": [41.9, 16.13],
       "zeitzone": "Europe/Rome",
-      "hinweis": "Tobias: am Gargano hängt es vom Spot ab, meist von Vieste aus. kite-and-windsurfing-guide.com (Spiaggia Lunga): Sommer NW-Thermik, Frühling/Herbst Tramontana mit Welle, Scirocco selten. visitvieste.com: Nordküste (Scialmarino, San Lorenzo) bei Nordwind exponiert und bei Scirocco geschützt, Südküste (Scialara, Castello) umgekehrt; Saison Mai, Juni, September. Ob die NW-Thermik im Modellmittel ankommt, ungeprüft. Ablandig geschätzt. Rodi Garganico und Lesina (Nordküste, ca. 40 km) bei Bedarf als eigene Region.",
+      "hinweis": "Tobias: am Gargano hängt es vom Spot ab, meist von Vieste aus. kite-and-windsurfing-guide.com (Spiaggia Lunga): Sommer NW-Thermik, Frühling/Herbst Tramontana mit Welle, Scirocco selten. visitvieste.com: Nordküste (Scialmarino, San Lorenzo) bei Nordwind exponiert und bei Scirocco geschützt, Südküste (Scialara, Castello) umgekehrt; Saison Mai, Juni, September. Ob die NW-Thermik im Modellmittel ankommt, ungeprüft. Ablandig geschätzt. Rodi Garganico und Lesina (Nordküste, ca. 40 km) bei Bedarf als eigene Region. Anfahrt (Vieste, Scialmarino) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [
         {"name": "Maestrale", "sektor": [290, 340], "charakter": "im Sommer thermisch"},
         {"name": "Tramontana", "sektor": [340, 30], "charakter": "Frühling/Herbst, Welle"},
@@ -673,8 +693,9 @@
       "land": "FR",
       "typ": "meer",
       "punkt": [47.22, -2.22],
+      "anfahrt": [47.23, -2.17],
       "zeitzone": "Europe/Paris",
-      "hinweis": "Plage de l'Ermitage in Saint-Brevin-les-Pins (von Tobias bestätigt); vvanat.fr: dort Wellenspot, Kiteschule. Sektoren nur aus Uferausrichtung geschätzt.",
+      "hinweis": "Plage de l'Ermitage in Saint-Brevin-les-Pins (von Tobias bestätigt); vvanat.fr: dort Wellenspot, Kiteschule. Sektoren nur aus Uferausrichtung geschätzt. Anfahrt (Saint-Brevin, Plage de l'Ermitage) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [],
       "spots": [
         {

@@ -4,8 +4,9 @@
  *
  * Genau: aus <data_dir>/fahrzeiten.json (server/fahrzeiten.php, openrouteservice),
  * wenn der Standort der Startort dieser Datei ist (Standard Inning).
- * Sonst geschaetzt aus der Luftlinie: Sockel + Faktor x km. Beides per
- * Ausgleichsgerade aus den genauen Werten (mindestens FAHRT_MIN_PUNKTE, Ergebnis
+ * Sonst geschaetzt aus der Luftlinie: Sockel + Faktor x km. Beides als
+ * robuste Gerade (Theil-Sen) aus den genauen Werten bis FAHRT_MODELL_MAX_KM Luftlinie
+ * (mindestens FAHRT_MIN_PUNKTE, Ergebnis
  * auf plausible Grenzen begrenzt), ohne Datei FAHRT_STANDARD. Ein einzelner Faktor
  * (bis 7.11.2026, 0,95 min/km) schaetzte lange Autobahnstrecken um 2-3 h zu lang.
  * Regionen, die vom Startort keine Route haben (Inseln), bleiben auch geschaetzt
@@ -16,6 +17,7 @@
 const FAHRT_STANDARD = [15.0, 0.75];  // [Sockel min, min je km Luftlinie]: Umweg ~1,25, Autobahn ~100 km/h; geschaetzt
 const FAHRT_GRENZEN = [[0.0, 60.0], [0.5, 1.2]];   // erlaubte Spanne fuer Sockel und Faktor aus der Anpassung
 const FAHRT_MIN_PUNKTE = 5;            // so viele genaue Werte braucht die Anpassung
+const FAHRT_MODELL_MAX_KM = 1500;      // weitere Ziele (Faehren, Kanaren) nicht in die Anpassung
 const FAHRT_GLEICHER_START = 0.05;    // Grad: so nah gilt der Standort als Startort der Datei
 const ABFAHRT_AUFBAU_MIN = 15;        // Aufbauen vor dem Fenster
 const ABFAHRT_FRUEHESTENS = 5;        // frueher losfahren heisst: am Vortag anreisen
@@ -28,8 +30,8 @@ function fahrzeiten_laden(string $dataDir): ?array
 }
 
 /**
- * Schaetzmodell [Sockel, Faktor] aus den genauen Werten: Ausgleichsgerade
- * Minuten ueber km Luftlinie vom Startort, auf FAHRT_GRENZEN begrenzt;
+ * Schaetzmodell [Sockel, Faktor] aus den genauen Werten: robuste Gerade
+ * (Theil-Sen) Minuten ueber km Luftlinie vom Startort, auf FAHRT_GRENZEN begrenzt;
  * zu wenige Werte oder keine Datei: FAHRT_STANDARD.
  */
 function fahrt_modell(?array $fz, array $regionen): array
@@ -40,8 +42,9 @@ function fahrt_modell(?array $fz, array $regionen): array
     $xs = $ys = [];
     foreach ($regionen as $r) {
         $z = $fz['ziele'][$r['id']] ?? null;
-        if (is_array($z) && isset($z['min'])) {
-            $xs[] = entfernung_km($fz['start']['punkt'], $r['punkt']);
+        $km = entfernung_km($fz['start']['punkt'], $r['punkt']);
+        if (is_array($z) && isset($z['min']) && $km <= FAHRT_MODELL_MAX_KM) {
+            $xs[] = $km;
             $ys[] = (float)$z['min'];
         }
     }
@@ -49,19 +52,29 @@ function fahrt_modell(?array $fz, array $regionen): array
     if ($n < FAHRT_MIN_PUNKTE) {
         return FAHRT_STANDARD;
     }
-    $mx = array_sum($xs) / $n;
-    $my = array_sum($ys) / $n;
-    $sxx = $sxy = 0.0;
-    foreach ($xs as $i => $x) {
-        $sxx += ($x - $mx) ** 2;
-        $sxy += ($x - $mx) * ($ys[$i] - $my);
+    // Theil-Sen: Median der Steigungen aller Paare, Sockel als Median der Reste.
+    // Ein einzelner Faehr-Ausreisser verschiebt das kaum (anders als kleinste Quadrate).
+    $steigungen = [];
+    for ($i = 0; $i < $n; $i++) {
+        for ($j = $i + 1; $j < $n; $j++) {
+            if (abs($xs[$j] - $xs[$i]) > 1) {
+                $steigungen[] = ($ys[$j] - $ys[$i]) / ($xs[$j] - $xs[$i]);
+            }
+        }
     }
-    if ($sxx <= 0) {
+    if (!$steigungen) {
         return FAHRT_STANDARD;
     }
+    $median = function (array $w): float {
+        sort($w);
+        $m = count($w);
+        return $m % 2 ? $w[intdiv($m, 2)] : ($w[$m / 2 - 1] + $w[$m / 2]) / 2;
+    };
+    $b = $median($steigungen);
+    $a = $median(array_map(fn($x, $y) => $y - $b * $x, $xs, $ys));
     [[$a0, $a1], [$b0, $b1]] = FAHRT_GRENZEN;
-    $b = min(max($sxy / $sxx, $b0), $b1);
-    $a = min(max($my - $b * $mx, $a0), $a1);
+    $b = min(max($b, $b0), $b1);
+    $a = min(max($a, $a0), $a1);
     return [$a, $b];
 }
 
