@@ -666,11 +666,19 @@ pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, '<span cl
        && str_contains($html, 'steigt (0 → 49 → 100 %)') && str_contains($html, 'Frühere Abrufe: '),
        'Seite mit früheren Abrufen: Pfeil in der Kachel, Verlauf in der Detailzeile');
 [, $html] = holen($sitePort, 'index.php?km=1000');
-pruefe(str_contains($html, 'id="landkarte"') && substr_count($html, 'class="punkt ') === 2 && str_contains($html, 'href="#r-adria-nord"')
+pruefe(str_contains($html, 'id="landkarte"') && substr_count($html, 'class="punkt ') === 2
+       && preg_match('/<a href="stunden\.php\?region=adria-nord&amp;sport=[a-z_]+&amp;tag=\d{4}-\d\d-\d\d" class="punkt /', $html)
        && str_contains($html, 'id="r-adria-nord"') && str_contains($html, 'karte.svg#land'),
-       'Landkarte: ein Punkt je Region, verlinkt auf die Region');
+       'Landkarte: ein Punkt je Region, verlinkt auf die Stundenseite am besten Tag');
+pruefe(preg_match('/id="r-adria-nord" data-ziel="stunden\.php\?region=adria-nord&amp;sport=[a-z_]+"/', $html)
+       && preg_match('/<h2><a class="region-link" href="stunden\.php\?region=adria-nord/', $html)
+       && preg_match('/<a class="tag [a-z]+[^"]*" href="stunden\.php\?region=adria-nord&amp;sport=[a-z_]+&amp;tag=' . $morgen . '"/', $html)
+       && !str_contains($html, '<div class="tag go') && str_contains($html, ".region[data-ziel]"),
+       'Regionskarte: Karte, Name und Tageskacheln führen zur Stundenseite');
 [, $html] = holen($sitePort, 'index.php?km=1000&nach=' . $morgen);
 pruefe(str_contains($html, 'Chance Morgen') && preg_match('/class="punkt go".*?<text class="zahl"[^>]*>100</s', $html), 'Landkarte mit gewähltem Tag: Adria 100 %');
+pruefe(str_contains($html, 'stunden.php?region=adria-nord&amp;sport=') && preg_match('/data-ziel="stunden\.php\?region=adria-nord&amp;sport=[a-z_]+&amp;tag=' . $morgen . '"/', $html),
+       'mit gewähltem Tag: Karte und Punkt öffnen diesen Tag');
 [, $html] = holen($sitePort, "index.php?region=ammersee&nach=$morgen");
 pruefe(!str_contains($html, 'id="landkarte"'), 'geteilte Vorhersage: keine Landkarte');
 [, $html] = holen($sitePort, 'index.php?km=1000');

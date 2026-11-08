@@ -122,7 +122,7 @@ Seit 7.11.2026. Vor einer langen Fahrt zählt nicht nur die Chance, sondern ob s
 
 Seit 7.11.2026. Über der Rangliste, einklappbar (der Browser merkt sich den Zustand), nicht in der geteilten Ansicht.
 
-- **Punkte:** je Region am Vorhersagepunkt. Farbe und Zahl wie in den Kacheln: die Chance am Tag, der unter „Sortiert nach“ gewählt ist; bei „alle Tage“ oder „Entfernung“ die beste Chance im Zeitraum (Tooltip nennt den Tag). Zahl erst ab 15 %. Gute Punkte liegen oben. Antippen springt zur Karte der Region (`#r-<id>`).
+- **Punkte:** je Region am Vorhersagepunkt. Farbe und Zahl wie in den Kacheln: die Chance am Tag, der unter „Sortiert nach“ gewählt ist; bei „alle Tage“ oder „Entfernung“ die beste Chance im Zeitraum (Tooltip nennt den Tag). Zahl erst ab 15 %. Gute Punkte liegen oben. Antippen öffnet die Stundenseite der Region für den gewählten Tag, ohne gewählten Tag für ihren besten Tag (seit 8.11.2026; vorher Sprung zur Regionskarte `#r-<id>`).
 - **Namen:** die besten zuerst, rechts oder links vom Punkt, nur wo sie nichts verdecken; im großen Umkreis bekommen deshalb nicht alle einen.
 - **Ausschnitt:** alle Regionen im Umkreis und der Standort, etwas höher als breit; gestrichelt der Umkreis als Luftlinie (Kreis um den Standort, in Mercator nur ungefähr). Weil der Umkreis die Straße zählt, fehlen am Rand manche Regionen innerhalb des Kreises; das steht unter der Karte.
 - **Grundlage:** `server/web/karte.svg` (108 KB, gezippt rund 30 KB), Länder mit großen Seen aus Natural Earth 1:50 Mio. (gemeinfrei), 20° W bis 36° O, 22° bis 64° N, Mercator. Kleine Seen wie der Ammersee fehlen in diesem Maßstab. Neu erzeugen mit `python3 tools/karte_bauen.py <ne_50m_admin_0_countries_lakes.geojson> server/web/karte.svg` (nur Standardbibliothek); die Projektion steht zusätzlich in `lib/karte.php`, der Test vergleicht beide. Regionen außerhalb des Ausschnitts meldet der Test.
@@ -170,7 +170,7 @@ Seit 7.11.2026. Reiter „Woche“ (`ansicht=woche`) zwischen „Tag 3 bis 7“ 
 
 ## Stunden
 
-Seit 7.11.2026. Eigene Seite `server/web/stunden.php?region=<id>&sport=…&tag=YYYY-MM-DD&vergleich=<id>`, verlinkt aus jeder Detailzeile („Stunden ›“) und aus jeder Zelle der Woche. Rechnung in `lib/stunden.php` (`region_stunden()`), für den besten Spot des Tages wie in der Rangliste.
+Seit 7.11.2026. Eigene Seite `server/web/stunden.php?region=<id>&sport=…&tag=YYYY-MM-DD&vergleich=<id>`, verlinkt aus jeder Detailzeile („Stunden ›“), aus jeder Zelle der Woche und seit 8.11.2026 aus der Regionskarte: Tageskachel = dieser Tag, Name oder übrige Fläche der Karte = gewählter Tag bzw. bester Tag (`stunden_link()`; ein kleines Skript macht die ganze Karte antippbar, Links, Knöpfe, „Spot-Infos“ und markierter Text bleiben ausgenommen), dazu aus den Punkten der Landkarte. Rechnung in `lib/stunden.php` (`region_stunden()`), für den besten Spot des Tages wie in der Rangliste.
 
 - **Tage** als Knöpfe mit Chance; ohne `tag` der beste Tag.
 - **Diagramm** (SVG ohne Fremdbibliothek, Farben aus `stil.css`): Tagesfenster hinterlegt, Wind je Modell dünn, Modellmittel dick, Böen gestrichelt, Band = 10. bis 90. Perzentil der 51 Ensemble-Läufe, Windfenster der Sportart als waagrechte Linien, darüber Pfeile (wohin der Wind weht), darunter je Stunde: fahrbar im Modellmittel (grün; Tooltip mit Grund) und Anteil der Ensemble-Läufe, die die Stunde fahrbar sehen. Zeigt das Tagesfenster ±2 Stunden, Ortszeit der Region.
