@@ -6,7 +6,7 @@ Zweiter Modus in Wohinfahrma für Skitourengeher und Freerider, nur Alpen: Wo li
 
 ## Grundsatz Lawine
 
-Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnstufe geht **nicht** in Prozent, Sortierung oder Farbe der Bewertung ein. Sie steht als eigenes Abzeichen in den offiziellen EAWS-Farben daneben, mit Link zum Bericht und Ausgabezeit, nur für Tage mit gültigem Bericht (meist heute und morgen). Keine eigene Hochrechnung. Die Bewertung nutzt deshalb eine **Blau-Skala** statt Grün/Gelb/Rot. Fester Hinweis oben auf der Seite, je Region, im Teilen-Text, auf der Stundenseite und im Impressum: „Die Lawinenlage stammt vom Warndienst. Sie ersetzt keine Beurteilung vor Ort. Wohinfahrma bewertet nur Schnee und Wetter.“
+Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnstufe geht **nicht** in Prozent, Sortierung oder Farbe der Bewertung ein. Sie steht als eigenes Abzeichen in den offiziellen EAWS-Farben daneben (Kachel „LWS 3“, im Lawinenblock und auf der Stundenseite „Gefahrenstufe 3“ wie im Bericht), mit Link zum Bericht und Ausgabezeit, nur für Tage mit gültigem Bericht (meist heute und morgen). Keine eigene Hochrechnung. Die Bewertung nutzt deshalb eine **Blau-Skala** statt Grün/Gelb/Rot. Fester Hinweis oben auf der Seite, je Region, im Teilen-Text, auf der Stundenseite und im Impressum: „Die Lawinenlage stammt vom Warndienst. Sie ersetzt keine Beurteilung vor Ort. Wohinfahrma bewertet nur Schnee und Wetter.“
 
 ## Stand
 
