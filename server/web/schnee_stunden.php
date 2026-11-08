@@ -283,7 +283,7 @@ sort($neuEns);
   <?php elseif (!$lage): ?>
     <p class="klein">Kein Lagebericht für diesen Tag. Das heißt nicht „keine Gefahr“. <a href="<?= h($dienst['url_bericht']) ?>" rel="noopener"><?= h($dienst['kurz']) ?> ↗</a></p>
   <?php else: ?>
-    <p class="klein"><span class="lw lw<?= $lage['stufe'] ?>"><?= $lage['stufe'] ?: '–' ?></span> <?= h(lawine_stufen_text($lage['teile'])) ?></p>
+    <p class="klein"><span class="lw lw<?= $lage['stufe'] ?>">Stufe <?= $lage['stufe'] ?: '–' ?></span> <?= h(lawine_stufen_text($lage['teile'], true)) ?></p>
     <?php foreach ($lage['probleme'] as $p): ?>
       <p class="klein"><?= $p['aspekte'] && count($p['aspekte']) < 8 ? lawine_rose($p['aspekte'], 22) . ' ' : '' ?><?= h(lawine_problem_text($p)) ?></p>
     <?php endforeach ?>

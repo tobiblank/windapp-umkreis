@@ -300,13 +300,13 @@ function ausgabe_text(string $iso, DateTimeZone $tz, DateTimeImmutable $heute): 
 }
 
 /** Lawinen-Abzeichen fuer eine Kachel oder null */
-function lawine_abzeichen(?array $lage): string
+function lawine_abzeichen(?array $lage, string $wort = 'Lawine'): string
 {
     if (!$lage) {
         return '';
     }
     $s = $lage['stufe'];
-    return '<span class="lw lw' . $s . '" title="' . h('Lawinengefahr: ' . lawine_stufen_text($lage['teile'])) . '">' . ($s ?: '–') . '</span>';
+    return '<span class="lw lw' . $s . '" title="' . h('Lawinengefahr: ' . lawine_stufen_text($lage['teile'])) . '">' . h($wort) . ' ' . ($s ?: '–') . '</span>';
 }
 
 /** Block mit der Lawinenlage fuer heute und morgen (soweit angezeigt) */
@@ -334,7 +334,7 @@ function lawine_html(array $region, array $lagenTage, array $dienste, array $tag
             continue;
         }
         $probleme = array_map(fn($p) => h(lawine_problem_text($p)) . ($p['aspekte'] && count($p['aspekte']) < 8 ? ' ' . lawine_rose($p['aspekte']) : ''), $l['probleme']);
-        $o .= '<p><b>' . h(tag_kurz($t, $heute)) . ':</b> ' . lawine_abzeichen($l) . ' ' . h(lawine_stufen_text($l['teile']))
+        $o .= '<p><b>' . h(tag_kurz($t, $heute)) . ':</b> ' . lawine_abzeichen($l, 'Stufe') . ' ' . h(lawine_stufen_text($l['teile'], true))
             . ($probleme ? ' · ' . implode(' · ', $probleme) : '')
             . ' · ' . $link . ' <span class="leise">ausgegeben ' . h(ausgabe_text($l['veroeffentlicht'], $tzSeite, $heute)) . '</span>'
             . ($l['ueber_namen'] ? ' <span class="leise" title="' . h('Mikroregionen über den Namen zugeordnet: ' . implode(', ', array_map(fn($r) => $r[1], $l['regionen']))) . '">(Zuordnung über den Namen)</span>' : '')
