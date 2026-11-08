@@ -15,10 +15,18 @@ return [
     // dorthin laedt die Action "Deploy" daten/regionen.json.
     // 'regionen_datei' => '/usr/home/DEINUSER/umkreis/regionen.json',
 
-    // Optional: Zwischenspeicher fuer den Verlauf ueber die Abrufe, ausserhalb
+    // Optional: Zwischenspeicher fuer den Verlauf ueber die Abrufe und (seit 8.11.2026)
+    // die vorgerechnete Bewertung, ausserhalb
     // des Web-Roots und vom Webserver beschreibbar. Standard: <data_dir>/cache.
     // null = ohne Zwischenspeicher (rechnet bei jedem Aufruf neu, langsamer).
     // 'cache_dir' => '/usr/home/DEINUSER/umkreisdaten/cache',
+
+    // Optional (seit 8.11.2026): Schluessel fuer vorrechnen.php, mindestens 20 Zeichen,
+    // derselbe Wert als Secret VORRECHNEN_SCHLUESSEL im Repo. Dann rechnet die Action
+    // "Sammeln" nach jedem Lauf die Bewertung je Sportart vor. Ohne: vorrechnen.php
+    // antwortet 404, die Seite rechnet beim ersten Aufruf selbst und merkt es sich.
+    // Erzeugen z. B. mit: php -r 'echo bin2hex(random_bytes(20)), "\n";'
+    // 'vorrechnen_schluessel' => '...',
 
     // Optional: Startseite (ohne Parameter) fuer Suchmaschinen freigeben.
     // Standard false = ueberall noindex. Erst einschalten, wenn Impressum

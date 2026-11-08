@@ -43,6 +43,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Farbe | 7.11.2026: Einstellungen und Ansichten in Wasserblau (`--steuer`, `--akzent`), damit sie sich von den Ergebnissen abheben; Grün/Gelb/Rot bleiben der Bewertung vorbehalten. Regionen und Roadtrips mit Farbbalken links nach dem besten Tag (`beste_stufe()`) |
 | Hell / Dunkel | 7.11.2026: wie das Gerät, im Fuß festlegbar auf „Hell“ oder „Dunkel“ (nur im Browser gespeichert); siehe „Hell und Dunkel“ |
 | Schnee-Modus | 8.11.2026: `schnee.php` (Freeride, Skitour; Liste, Woche, Karte), `schnee_stunden.php`, Schalter Wind · Schnee im Kopf beider Seiten, Katalog `daten/schneeregionen.json` (9 Regionen), Lawinenlage aus CAAML v6 (SLF und Südtirol/Trentino freigegeben, Bayern und Tirol nur Link). **Noch nie gegen echte Quellen gelaufen.** Siehe `SCHNEE.md` |
+| Vorrechnen | 8.11.2026: Bewertung je Sportart, Tag und Region im Zwischenspeicher, unabhängig von Standort und Umkreis; nach jedem Sammler-Lauf und Deploy von `vorrechnen.php` gefüllt (braucht Schlüssel in `config.php` und Secret `VORRECHNEN_SCHLUESSEL`). Mit Testdaten in Originalgröße: Rangliste 2500 km 0,36 s / 104 MB vorher, aus dem Zwischenspeicher unter 0,01 s / 2 MB. Siehe „Vorrechnen“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -223,6 +224,17 @@ Seit 7.11.2026. Katalogfeld `infos` je Region (siehe Tabelle oben), angezeigt al
 
 Seit 7.11.2026. Standard wie das Gerät (`prefers-color-scheme`, z. B. Android „Dunkles Design“ mit Zeitplan). Im Fuß der Rangliste und der Stundenseite: **Wie Gerät · Hell · Dunkel**. Die Wahl steht nur im Browser (`localStorage`, `wohinfahrma_design`) und setzt `data-theme="light|dark"` auf `<html>`; ein kleines Skript im Kopf setzt sie vor dem ersten Zeichnen, damit nichts aufblitzt, und passt die Farbe der Browserleiste an (`lib/design.php`). In `stil.css` stehen die dunklen Farben zweimal (für das Gerät und für die Wahl); der Test prüft, dass beide gleich sind. Ohne JavaScript ist der Schalter unsichtbar, dann gilt das Gerät. Impressum und Datenschutz folgen weiter nur dem Gerät.
 
+## Vorrechnen
+
+Seit 8.11.2026, Code in `lib/vorrechnen.php`. Vorher rechnete jeder Aufruf der Rangliste alle Regionen im Umkreis neu (Rohdaten entpacken rund 100 MB, bis etwa 1 s), bei 2 PHP-Prozessen im Tarif S geteilt mit ammerseewind.de. Ein größerer Tarif hilft dabei wenig: Hetzner nennt je Tarif keine CPU, M bringt 5 statt 2 Prozesse und 256 statt 192 MB, aber keinen schnelleren Aufruf.
+
+- **Grundgedanke:** Die Bewertung einer Region (`region_bewerten()`) hängt nicht vom Standort ab, nur von Sportart, Tag, Rohdaten und Katalog-Eintrag; heute zusätzlich von der Uhrzeit (Restfenster). Umkreis, Entfernung, Fahrzeit und Sortierung rechnet die Seite danach, das geht schnell.
+- **Ablage:** `<cache_dir>/bewertung-<sport>-<tag>-<schlüssel>.ser`, ein Eintrag je Region mit Hash des Katalog-Eintrags und, wenn der Tag dort heute ist, der UTC-Stunde. Dazu `stand-<schlüssel>.ser` (`_ts`, `_fp` aller Regionen für Stand-Anzeige und Verlauf). Der Schlüssel hängt an den Rohdaten-Dateien (Name, Größe, Änderungszeit) und an der Änderungszeit von `bewertung.php` und `vorrechnen.php`, also neu nach jedem Lauf und jedem Deploy. `serialize` statt JSON, damit `1.0` eine Kommazahl bleibt. Dateien älter als zwei Tage werden beim Schreiben gelöscht. Rund 50 KB je Sportart und Tag bei 52 Regionen, also gut 3 MB für alle Sportarten.
+- **Was fehlt, rechnet die Seite selbst**, in Stapeln von 12 Regionen (`BEWERTUNG_STAPEL`, Speicher), und schreibt es unter Sperre dazu. Heute wird zu jeder vollen Stunde neu gerechnet, Tag 2 bis 7 erst nach dem nächsten Lauf. Ohne beschreibbares `cache_dir` rechnet sie wie vorher.
+- **Vorab:** `vorrechnen.php` (nur POST, `schluessel` und `sport`) rechnet alle Regionen für heute bis Tag 7 und den Verlauf für beide Zeiträume; Antwort sind Kennzahlen als JSON (Zeit, Speicher, gerechnete Regionen). Ohne `vorrechnen_schluessel` (mindestens 20 Zeichen) in `config.php` oder mit falschem Schlüssel antwortet es 404. `tools/vorrechnen.sh` ruft es nach „Sammeln“ (nicht im Lawinen-Lauf um 7:40 UTC) und nach „Deploy“ für jede Sportart auf; ein Fehler dort macht die Action nicht rot.
+- **Gemessen** mit dem echten Katalog (52 Regionen) und Testdaten in Originalgröße (Ensemble rund 6 MB je Lauf), ein Lauf: Rangliste 2500 km bisher 0,36 s und 104 MB, neu ohne Zwischenspeicher 0,47 s und 62 MB, aus dem Zwischenspeicher unter 0,01 s und 2 MB. Vorrechnen einer Sportart 0,7 s, 62 MB. Auf dem Server ungeprüft.
+- **Grenzen:** Der Verlauf über die Abrufe hat weiter seinen eigenen Zwischenspeicher je Stunde (`verlauf-*.json`); der erste Aufruf jeder Stunde rechnet ihn neu (rund 0,9 s mit 40 Regionen, gemessen am 7.11.2026). Die Stundenseite rechnet weiter bei jedem Aufruf.
+
 ## Suchmaschinen
 
 Seit 8.11.2026 vorbereitet. In den Index soll nur die **Startseite ohne Parameter**; sie zeigt die Rangliste ab Inning im Standard-Umkreis. Alles andere bleibt draußen.
@@ -348,6 +360,7 @@ Bis das eingebaut ist, Thermik-Regionen als „grob“ markieren.
    - Variable `WEB_DIR`: Webordner relativ zum FTP-Startordner, z. B. `public_html/wohinfahrma`
    - Variable `HOME_DIR` (optional): Ordner, in dem `umkreisdaten/` angelegt wird, relativ zum FTP-Startordner; leer = Startordner
    - Secret `ORS_API_KEY` (optional, für genaue Fahrzeiten): kostenloser Schlüssel bei openrouteservice.org; ohne Schlüssel schätzt die Seite aus der Luftlinie
+   - Secret `VORRECHNEN_SCHLUESSEL` (optional, seit 8.11.2026): derselbe Wert wie `vorrechnen_schluessel` in `config.php`, z. B. aus `php -r 'echo bin2hex(random_bytes(20)), "\n";'`; Variable `SEITE_URL` nur, wenn die Seite nicht unter https://wohinfahrma.de liegt
 2. Auf dem Server `config.php` in den Webordner legen (Vorlage `server/web/config.example.php`, nie ins Repo), mit `data_dir` = absoluter Pfad zu `<HOME_DIR>/umkreisdaten`.
 3. SSL für die Subdomain in der konsoleH (SSL Manager) einschalten.
 4. Unter *Actions* einmal „Deploy zu Hetzner“, „Sammeln“ und „Fahrzeiten“ von Hand starten (*Run workflow*).
@@ -376,6 +389,8 @@ server/web/lib/         Katalog und Bewertung (per .htaccess gesperrt)
 server/web/stunden.php  Stundenansicht einer Region
 tests/                  Tests und Open-Meteo-Ersatz
 tools/karte_bauen.py    erzeugt server/web/karte.svg aus Natural Earth
+tools/vorrechnen.sh     ruft vorrechnen.php je Sportart auf (Actions)
+server/web/vorrechnen.php  Bewertung vorab rechnen (nur mit Schlüssel)
 ```
 
 ## Nächste Schritte
