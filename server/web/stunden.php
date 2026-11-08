@@ -352,7 +352,7 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
         $o .= '<p class="klein leise">' . h(implode(' · ', $teile)) . '</p>';
     }
     // Legende direkt ueber dem Diagramm wie bei den Wellen (seit 8.11.2026; vorher nur unten auf der Seite)
-    $o .= '<p class="klein leise welle-titel">Wind: dicke Linie = Modellmittel, dünne = einzelne Modelle, gestrichelt = Böen, Band = 80 % der Ensemble-Läufe, grün gestrichelt = Windfenster, Pfeile = wohin der Wind weht. Grüne Balken = Stunde fahrbar, % = Anteil der Ensemble-Läufe, die sie fahrbar sehen</p>';
+    $o .= '<p class="klein leise welle-titel">Wind: dicke Linie = Modellmittel, dünne = einzelne Modelle, orange gestrichelt = Böen (Modellmittel), Band = 80 % der Ensemble-Läufe, grün gestrichelt = Windfenster, Pfeile = wohin der Wind weht. Grüne Balken = Stunde fahrbar, % = Anteil der Ensemble-Läufe, die sie fahrbar sehen</p>';
     $o .= stunden_svg($st, $sport, $ymax);
     if (!empty($st['hat_welle'])) {
         $o .= '<p class="klein leise welle-titel">Wellen: Balken = gesamte Welle, Linie = Dünung, Pfeile = wohin die Dünung läuft, Zahlen = Periode in Sekunden</p>' . welle_svg($st, $sport, $mmax);
