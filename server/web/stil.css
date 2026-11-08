@@ -159,6 +159,9 @@ a.tag:active { filter: brightness(.94); }
 .landkarte .blick { fill: none; stroke: var(--akzent); stroke-width: 1.5px; stroke-dasharray: 2 3; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
 .landkarte .windstriche line { stroke: var(--text); stroke-width: 1.5px; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
 .landkarte .ankunft { pointer-events: none; }
+.landkarte .juchhu { pointer-events: none; }
+.landkarte .juchhu path { fill: var(--karte); stroke: var(--leise); stroke-width: 1px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.landkarte .juchhu text { fill: var(--text); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-weight: 600; text-anchor: middle; }
 .landkarte .palme .stamm { fill: none; stroke: #8a5a2b; stroke-width: 0.45; stroke-linecap: round; }
 .landkarte .palme .wedel { fill: none; stroke: #4f8a2a; stroke-width: 0.42; stroke-linecap: round; }
 .landkarte .windsack .mast { stroke: var(--leise); stroke-width: 0.28; stroke-linecap: round; }
