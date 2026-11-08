@@ -784,6 +784,10 @@ pruefe(str_contains($html, 'class="m-aktiv"') && ohne_php_meldung($html), 'Woche
 pruefe($code === 200 && ohne_php_meldung($html) && substr_count($html, 'class="stunden-bild"') === 2 && substr_count($html, 'class="s-mittel"') === 2
        && substr_count($html, 'class="s-fahrbar ja"') === 10 && str_contains($html, 'Nördliche Adria') && str_contains($html, 'Ammersee'),
        'Stundenseite: zwei Diagramme im Vergleich, Adria und Ammersee morgen je 5 fahrbare Stunden');
+// Pfeil zeigt, wohin der Wind weht: Pfad zeigt ungedreht nach Sueden, gedreht wird um die Herkunft
+pruefe(preg_match_all('/<g class="s-pfeil" transform="translate\([\d. ]+\) rotate\((\d+)\)"><title>aus (\d+)°/', $html, $pf) > 0
+       && $pf[1] === array_map(fn($g) => (string)((int)$g % 360), $pf[2]),
+       'Stundenseite: Windpfeile zeigen, wohin der Wind weht (wie die Landkarte)');
 [$code, $html] = holen($sitePort, 'stunden.php?region=adria-nord');
 pruefe($code === 200 && preg_match('/aria-current="true">(Morgen|Mo|Di|Mi|Do|Fr|Sa|So)/', $html) && ohne_php_meldung($html), 'Stundenseite ohne Tag: bester Tag gewählt');
 [$code] = holen($sitePort, 'stunden.php?region=gibtsnicht');

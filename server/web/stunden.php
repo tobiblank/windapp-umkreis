@@ -225,13 +225,16 @@ function stunden_svg(array $st, array $sport, float $ymax): string
     }
     $o[] = $linie(fn($z) => $z['boe'], 's-boe', 'Böen (Modellmittel)');
     $o[] = $linie(fn($z) => $z['kn'], 's-mittel', 'Wind (Modellmittel)');
-    // Richtungspfeile: zeigen, wohin der Wind weht
+    // Richtungspfeile: zeigen, wohin der Wind weht. Der Pfad zeigt ungedreht nach
+    // Sueden (wie Wind aus Norden), also um die Herkunft drehen, nicht um +180.
+    // Bis 8.11.2026 stand hier +180: Die Pfeile zeigten, woher der Wind kommt,
+    // entgegen der Landkarte.
     foreach ($st['stunden'] as $s => $z) {
         if ($z['richtung'] === null) {
             continue;
         }
         $cx = $r($xm($s));
-        $grad = round(fmod($z['richtung'] + 180, 360));
+        $grad = round(fmod($z['richtung'], 360));
         $o[] = '<g class="s-pfeil" transform="translate(' . $cx . ' ' . ($oben - 12) . ') rotate(' . $grad . ')"><title>aus ' . round($z['richtung']) . '° (' . himmelsrichtung($z['richtung']) . ')</title>'
              . '<path d="M0 -6 L0 6 M-3.5 2.5 L0 6 L3.5 2.5"/></g>';
     }
@@ -297,7 +300,7 @@ function welle_svg(array $st, array $sport, float $mmax): string
             $p[] = $r($xm($s)) . ',' . $r($y($w['swell']));
         }
         if ($dr !== null) {
-            $o[] = '<g class="s-pfeil" transform="translate(' . $r($xm($s)) . ' ' . ($oben - 12) . ') rotate(' . round(fmod($dr + 180, 360)) . ')"><title>Dünung aus ' . round($dr) . '° (' . himmelsrichtung($dr) . ')</title>'
+            $o[] = '<g class="s-pfeil" transform="translate(' . $r($xm($s)) . ' ' . ($oben - 12) . ') rotate(' . round(fmod($dr, 360)) . ')"><title>Dünung aus ' . round($dr) . '° (' . himmelsrichtung($dr) . ')</title>'
                  . '<path d="M0 -6 L0 6 M-3.5 2.5 L0 6 L3.5 2.5"/></g>';
         }
         if ($dp !== null) {
