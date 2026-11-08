@@ -325,6 +325,13 @@ function teilenswert(array $d): bool
     return $d['det']['geht'] && empty($d['vorbei']) && ($c === null || $c >= 0.4);
 }
 
+/** Stundenseite einer Region (seit 8.11.2026 Ziel von Karte, Kachel und Kartenpunkt); ohne Tag waehlt sie den besten */
+function stunden_link(array $region, ?string $tag = null): string
+{
+    global $sportId;
+    return 'stunden.php?' . http_build_query(array_filter(['region' => $region['id'], 'sport' => $sportId, 'tag' => $tag]));
+}
+
 function teilen_link(array $region, string $tag): string
 {
     global $sportId;
@@ -603,7 +610,8 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
 
 <?php if ($liste && !$geteilt && !$roadtrip):
     // Landkarte (seit 7.11.2026): Punkte nach der Chance am gewaehlten Tag,
-    // ohne gewaehlten Tag die beste Chance im Zeitraum. Tippen springt zur Region.
+    // ohne gewaehlten Tag die beste Chance im Zeitraum. Tippen oeffnet die Stundenseite
+    // fuer diesen Tag (seit 8.11.2026; vorher Sprung zur Regionskarte).
     $kartenTag = in_array($nach, $tage, true) ? $nach : null;
     $heimXY = karte_punkt($heim[0], $heim[1]);
     $punkte = [];
@@ -637,7 +645,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
                : zahl(100 * $c) . ' %') . ($p['wert']['tag'] && !$kartenTag ? ' (' . tag_kurz($p['wert']['tag'], $heute) . ')' : '')
                . ' · ' . fahrzeit_mit_wort($p['e']['fahrt']);
     ?>
-    <a href="#r-<?= h($r['id']) ?>" class="punkt <?= $klasse ?>">
+    <a href="<?= h(stunden_link($r, $p['wert']['tag'])) ?>" class="punkt <?= $klasse ?>">
       <title><?= h($titel) ?></title>
       <circle cx="<?= round($p['xy'][0], 1) ?>" cy="<?= round($p['xy'][1], 1) ?>" r="<?= round($zahl ? $rp : $rp * 0.55, 2) ?>"/>
       <?php if ($zahl): ?><text class="zahl" x="<?= round($p['xy'][0], 1) ?>" y="<?= round($p['xy'][1] + $rp * 0.36, 2) ?>" font-size="<?= round($rp * 1.05, 2) ?>"><?= zahl(100 * $c) ?></text><?php endif ?>
@@ -645,7 +653,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     </a>
     <?php endforeach ?>
   </svg>
-  <p class="leise klein landkarte-fuss">Punkt antippen: zur Region.<?= $flug ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße, darum fehlen manche Ziele innerhalb des Kreises.' ?> Karte: Natural Earth.</p>
+  <p class="leise klein landkarte-fuss">Punkt antippen: Stunden der Region<?= $kartenTag ? '' : ' am besten Tag' ?>.<?= $flug ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße, darum fehlen manche Ziele innerhalb des Kreises.' ?> Karte: Natural Earth.</p>
 </details>
 <?php endif ?>
 
@@ -754,9 +762,10 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     $r = $e['region'];
     $guteTage = array_filter($e['tage'], fn($t) => $t['det']['geht'] || (($t['ens']['chance'] ?? 0) >= 0.15));
 ?>
-  <article class="karte region beste-<?= beste_stufe($e) ?><?= $guteTage ? '' : ' still' ?>" id="r-<?= h($r['id']) ?>">
+  <?php $kartenZiel = stunden_link($r, in_array($nach, $tage, true) ? $nach : null); ?>
+  <article class="karte region beste-<?= beste_stufe($e) ?><?= $guteTage ? '' : ' still' ?>" id="r-<?= h($r['id']) ?>" data-ziel="<?= h($kartenZiel) ?>">
     <div class="region-kopf">
-      <h2><?= h($r['name']) ?><?php if (!empty($r['thermik'])): ?> <span class="marker thermik" title="Thermik bilden die Modelle schlecht ab: die Zahl ist hier vermutlich zu niedrig">Thermik</span><?php endif ?></h2>
+      <h2><a class="region-link" href="<?= h($kartenZiel) ?>"><?= h($r['name']) ?></a><?php if (!empty($r['thermik'])): ?> <span class="marker thermik" title="Thermik bilden die Modelle schlecht ab: die Zahl ist hier vermutlich zu niedrig">Thermik</span><?php endif ?></h2>
       <?php if (!$geteilt): ?><span class="leise klein fahrzeit" title="<?= h(fahrzeit_titel($e)) ?>"><?= h(fahrzeit_mit_wort($e['fahrt'])) ?><span class="km"><?= h(km_text($e)) ?></span></span><?php endif ?>
     </div>
     <div class="tage" style="--n: <?= count($tage) ?>">
@@ -772,18 +781,18 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
           <span class="w vorbei">vorbei</span>
         </div>
         <?php elseif (!empty($d['offen'])): ?>
-        <div class="tag leer<?= $nach === $t ? ' gewaehlt' : '' ?>" title="<?= h(ucfirst($d['det']['grund']) . ' für diesen Tag') ?>">
+        <a class="tag leer<?= $nach === $t ? ' gewaehlt' : '' ?>" href="<?= h(stunden_link($r, $t)) ?>" title="<?= h(ucfirst($d['det']['grund']) . ' für diesen Tag') ?>">
           <span class="t"><?= h(tag_kurz($t, $heute)) ?></span>
           <span class="w vorbei">?</span>
-        </div>
+        </a>
         <?php else: ?>
-        <div class="tag <?= stufe($c) ?><?= $nach === $t ? ' gewaehlt' : '' ?>" title="<?= h(($c === null ? 'keine Ensemble-Daten' : zahl(100 * $c) . ' % der Läufe')
+        <a class="tag <?= stufe($c) ?><?= $nach === $t ? ' gewaehlt' : '' ?>" href="<?= h(stunden_link($r, $t)) ?>" title="<?= h(($c === null ? 'keine Ensemble-Daten' : zahl(100 * $c) . ' % der Läufe')
                                                      . (!empty($d['rest']) ? ', nur noch ' . $d['fenster'][0] . '–' . $d['fenster'][1] . ' Uhr' : '')
                                                      . ($tr ? '. ' . trend_titel($tr, $tzSeite, $heute) : '')) ?>">
           <span class="t"><?= h(tag_kurz($t, $heute)) ?><?= !empty($d['rest']) && $d['fenster'][0] > FENSTER_AB ? ' ab ' . $d['fenster'][0] : '' ?></span>
           <span class="w"><?= $c === null ? ($d['det']['geht'] ? 'ja' : '–') : zahl(100 * $c) . '<small>%</small>' ?></span>
           <?php if ($pfeil): ?><span class="v <?= $tr['art'] ?>"><?= $tr['art'] === 'steigt' ? '↑' : '↓' ?> von <?= zahl(100 * $tr['werte'][0]) ?></span><?php endif ?>
-        </div>
+        </a>
         <?php endif ?>
       <?php endforeach ?>
     </div>
@@ -920,6 +929,16 @@ if ('serviceWorker' in navigator) {
     });
   });
 })();
+// Regionskarte antippen: Stundenseite (seit 8.11.2026). Links, Knoepfe und
+// aufklappbare Bloecke in der Karte behalten ihre eigene Wirkung; markierter Text auch.
+document.addEventListener('click', function (e) {
+  var karte = e.target.closest && e.target.closest('.region[data-ziel]');
+  if (!karte || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) { return; }
+  if (e.target.closest('a, button, summary, details, input, select, label')) { return; }
+  var sel = window.getSelection && getSelection();
+  if (sel && String(sel).length > 0) { return; }
+  location.href = karte.dataset.ziel;
+});
 // Landkarte auf- oder zugeklappt merken
 (function () {
   var k = document.getElementById('landkarte');
