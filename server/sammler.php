@@ -218,6 +218,13 @@ function teile(array $regionen, int $groesse): array
 // ABRUF
 // ===================================================================
 
+/** Wartezeit in Sekunden; Tests setzen die Umgebungsvariable auf 0 */
+function umkreis_wartezeit(string $variable, int $standard): int
+{
+    $wert = getenv($variable);
+    return $wert !== false && is_numeric($wert) ? max(0, (int)$wert) : $standard;
+}
+
 function fetch(string $url, int $timeout): array
 {
     $t0 = microtime(true);
@@ -414,13 +421,25 @@ foreach (quellen($KATALOG, $MODELLE) as $name => $q) {
         if ($ersatz) {
             $url = preg_replace('#^https://[a-z-]+\.open-meteo\.com#', $ersatz, $url);
         }
-        $r = fetch($url, $TIMEOUT);
         // Open-Meteo zaehlt je Minute (ein Ort und ein Ensemble-Abruf wiegen mehrfach).
-        // Am 7.11.2026 lief der Lauf mit 43 Regionen beim Ensemble in HTTP 429
-        // "Minutely API request limit exceeded": eine Minute warten, einmal wiederholen.
-        if ($r['http'] === 429) {
-            $bericht[] = "$name/$teilNr: HTTP 429, warte 65 s";
-            sleep((int)(getenv('UMKREIS_WARTE_429') !== false ? getenv('UMKREIS_WARTE_429') : 65));
+        // Am 8.11.2026 (52 Regionen) gingen ensemble/0 und /1 durch, /2 bekam HTTP 429.
+        // Deshalb vor jedem weiteren Ensemble-Teil eine Minute Pause.
+        if ($teilNr > 0 && str_ends_with($name, 'ensemble')) {
+            $pause = umkreis_wartezeit('UMKREIS_PAUSE_ENSEMBLE', 61);
+            $bericht[] = "$name/$teilNr: Pause $pause s (Minutenlimit)";
+            sleep($pause);
+        }
+        $r = fetch($url, $TIMEOUT);
+        // Bei 429 eine Minute warten; bei Zeitueberschreitung (http 0) oder 5xx kurz.
+        // Am 8.11.2026 brach die Wiederholung nach 429 mit "SSL connection timeout" ab,
+        // deshalb bis zu zwei Wiederholungen fuer beide Faelle.
+        for ($versuch = 1; $versuch <= 2 && ($r['http'] === 429 || $r['http'] === 0 || $r['http'] >= 500); $versuch++) {
+            $warte = $r['http'] === 429
+                ? umkreis_wartezeit('UMKREIS_WARTE_429', 65)
+                : umkreis_wartezeit('UMKREIS_WARTE_FEHLER', 15);
+            $grund = $r['http'] === 0 ? 'keine Antwort' : "HTTP {$r['http']}";
+            $bericht[] = "$name/$teilNr: $grund, warte $warte s ($versuch. Wiederholung)";
+            sleep($warte);
             $r = fetch($url, $TIMEOUT);
         }
 

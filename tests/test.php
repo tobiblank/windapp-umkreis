@@ -9,6 +9,10 @@
 
 date_default_timezone_set('UTC');
 $ROOT = dirname(__DIR__);
+// Sammler im Test ohne Wartezeiten (Pause vor Ensemble-Teilen, Wiederholungen)
+putenv('UMKREIS_WARTE_429=0');
+putenv('UMKREIS_WARTE_FEHLER=0');
+putenv('UMKREIS_PAUSE_ENSEMBLE=0');
 require "$ROOT/server/web/lib/regionen.php";
 require "$ROOT/server/web/lib/bewertung.php";
 require "$ROOT/server/web/lib/karte.php";
@@ -337,6 +341,8 @@ $cmd = 'UMKREIS_TEST_URL=http://127.0.0.1:1 php ' . escapeshellarg("$ROOT/server
      . ' --action ' . escapeshellarg(__DIR__ . "/regionen_test.json") . ' ' . escapeshellarg("$tmp/kaputt") . ' 2>&1';
 exec($cmd, $ausK, $rcK);
 pruefe($rcK === 1 && str_contains(implode("\n", $ausK), 'vorhersage: Abruf fehlgeschlagen'), 'Action bei Fehler: Meldung und Exit 1');
+exec($cmd . ' --debug', $ausW);
+pruefe(str_contains(implode("\n", $ausW), 'keine Antwort, warte 0 s (2. Wiederholung)'), 'Action bei Fehler: zwei Wiederholungen je Teil');
 proc_terminate($server);
 
 // ---------------------------------------------------------------
