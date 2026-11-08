@@ -961,6 +961,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <?php if ($fahrzeiten): ?><p>Fahrzeiten ab <?= h($fahrzeiten['start']['name'] ?? 'Startort') ?>: © <a href="https://openrouteservice.org/">openrouteservice.org</a> by HeiGIT, Kartendaten © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende.</p><?php endif ?>
   <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0) · Wassertemperatur der Seen: <a href="https://www.alplakes.eawag.ch/">Alplakes, Eawag</a> (CC BY 4.0) · Für Stegen genauer: <a href="https://ammerseewind.de">ammerseewind.de</a></p>
   <?= design_schalter() ?>
+  <div class="design" id="ton" role="group" aria-label="Ton" hidden><span>Ton beim Antippen des Männchens</span><button type="button" data-ton="an" aria-pressed="false">An</button><button type="button" data-ton="aus" aria-pressed="false">Aus</button></div>
   <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
 </footer>
 </main>
@@ -1085,7 +1086,11 @@ document.addEventListener('click', function (e) {
 // den Punkt (Laenge und Tempo nach der Staerke), und ihr Windpfeil wackelt kurz.
 // Startet, sobald die Karte sichtbar ist; Scrollen, Antippen der Karte oder eine Taste beenden
 // sofort in der Endpose. Bei "Bewegung reduzieren" gleich die Endpose. Antippen des Maennchens
-// spielt alles neu ab. Zeiten in ms, Laengen in Einheiten des Maennchens.
+// spielt alles neu ab, dann mit Ton: Doppelhupe beim Einsteigen, Motor waehrend der Fahrt
+// (Web Audio, ohne Datei; seit 8.11.2026). Beim Laden bleibt es stumm, weil Browser Ton erst
+// nach einem Antippen erlauben und eine Wetterseite nicht von selbst brummen soll. Schalter
+// "Ton" im Fuss, gemerkt in wohinfahrma_ton (Standard an). Zeiten in ms, Laengen in Einheiten
+// des Maennchens.
 (function () {
   var heim = document.getElementById('heim');
   if (!heim || !window.requestAnimationFrame) { return; }
@@ -1255,6 +1260,76 @@ document.addEventListener('click', function (e) {
     }
     wind(t);
   }
+  // Ton: nur nach Antippen und nur, wenn der Bus faehrt
+  var TON = 'wohinfahrma_ton', tonAn = true, ctx = null, master = null, knoten = [];
+  try { tonAn = localStorage.getItem(TON) !== 'aus'; } catch (e) {}
+  var tonBox = el('ton');
+  function tonZeigen() {
+    [].forEach.call(tonBox.querySelectorAll('button'), function (b) {
+      b.setAttribute('aria-pressed', (b.dataset.ton === 'an') === tonAn ? 'true' : 'false');
+    });
+  }
+  if (tonBox && fahrt) {
+    tonBox.hidden = false;
+    tonZeigen();
+    tonBox.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b) { return; }
+      tonAn = b.dataset.ton === 'an';
+      try { localStorage.setItem(TON, tonAn ? 'an' : 'aus'); } catch (e2) {}
+      if (!tonAn) { tonStopp(); }
+      tonZeigen();
+    });
+  }
+  function hupe(t0) {   // Zweiklang, zweimal kurz
+    [[0, 0.16], [0.24, 0.2]].forEach(function (z) {
+      var g = ctx.createGain(), f = ctx.createBiquadFilter(), a = t0 + z[0], d = z[1];
+      f.type = 'lowpass'; f.frequency.value = 1800; f.connect(g); g.connect(master);
+      g.gain.setValueAtTime(0, a); g.gain.linearRampToValueAtTime(0.35, a + 0.015);
+      g.gain.setValueAtTime(0.35, a + d - 0.03); g.gain.linearRampToValueAtTime(0, a + d);
+      [392, 494].forEach(function (fr) {
+        var o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = fr; o.connect(f);
+        o.start(a); o.stop(a + d + 0.02); knoten.push(o);
+      });
+    });
+  }
+  function motor(t0, dauer) {   // tiefes Brummen mit Tuckern, schwillt an und rollt aus
+    var o = ctx.createOscillator(), o2 = ctx.createOscillator(), lfo = ctx.createOscillator();
+    var f = ctx.createBiquadFilter(), g = ctx.createGain(), tuck = ctx.createGain(), lfoG = ctx.createGain();
+    o.type = 'sawtooth'; o2.type = 'square'; lfo.type = 'sine'; f.type = 'lowpass'; f.Q.value = 3;
+    o.connect(f); o2.connect(f); f.connect(tuck); tuck.connect(g); g.connect(master);
+    lfo.connect(lfoG); lfoG.gain.value = 0.45; lfoG.connect(tuck.gain); tuck.gain.value = 0.6;
+    function rampe(p, v0, v1, v2) {
+      p.setValueAtTime(v0, t0); p.linearRampToValueAtTime(v1, t0 + 0.7);
+      p.setValueAtTime(v1, t0 + dauer - 0.7); p.linearRampToValueAtTime(v2, t0 + dauer);
+    }
+    rampe(o.frequency, 38, 62, 34); rampe(o2.frequency, 19, 31, 17);
+    rampe(lfo.frequency, 9, 15, 7); rampe(f.frequency, 260, 500, 200);
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(0.5, t0 + 0.25);
+    g.gain.setValueAtTime(0.5, t0 + dauer - 0.6); g.gain.linearRampToValueAtTime(0, t0 + dauer + 0.15);
+    [o, o2, lfo].forEach(function (n) { n.start(t0); n.stop(t0 + dauer + 0.25); knoten.push(n); });
+  }
+  function tonStart() {   // im Antippen aufrufen, sonst erlaubt der Browser keinen Ton
+    if (!tonAn || !fahrt) { return; }
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) { return; }
+    try {
+      if (!ctx) { ctx = new AC(); }
+      if (ctx.state === 'suspended') { ctx.resume(); }
+      master = ctx.createGain(); master.gain.value = 0.2; master.connect(ctx.destination);
+      var t0 = ctx.currentTime;
+      hupe(t0 + 4.45);          // beim Einsteigen
+      motor(t0 + 4.85, 2.25);   // Fahrt 4900 bis 7000 ms
+    } catch (e) { master = null; }
+  }
+  function tonStopp() {
+    if (!master) { return; }
+    try {
+      master.gain.setTargetAtTime(0, ctx.currentTime, 0.02);
+      knoten.forEach(function (n) { try { n.stop(ctx.currentTime + 0.1); } catch (e) {} });
+    } catch (e) {}
+    knoten = []; master = null;
+  }
   var t0 = null, raf = null, laeuft = false, gestoppt = 0, gestartet = 0;
   function bild(ts) {
     if (t0 === null) { t0 = ts; }
@@ -1267,12 +1342,15 @@ document.addEventListener('click', function (e) {
     cancelAnimationFrame(raf);
     laeuft = false;
     gestoppt = Date.now();
+    tonStopp();
     zeichne(ENDE);
   }
   var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function start() {
+  function start(mitTon) {
     cancelAnimationFrame(raf);
+    tonStopp();
     if (still) { zeichne(ENDE); return; }
+    if (mitTon) { tonStart(); }
     t0 = null;
     laeuft = true;
     gestartet = Date.now();
@@ -1285,7 +1363,7 @@ document.addEventListener('click', function (e) {
   heim.classList.add('tippbar');
   heim.addEventListener('click', function (e) {
     e.preventDefault();
-    if (!laeuft && Date.now() - gestoppt > 400) { start(); }
+    if (!laeuft && Date.now() - gestoppt > 400) { start(true); }
   });
   // Einmal je Seitenaufruf, sobald die Karte zu gut der Haelfte sichtbar ist (auch nach dem Aufklappen)
   if (!('IntersectionObserver' in window)) { start(); return; }

@@ -764,8 +764,9 @@ pruefe(preg_match('/<path class="windpfeil" data-weht="[\d.]+,[\d.]+,40,[\d.]+" 
 pruefe(preg_match('/<g class="heim" id="heim" transform="translate\\([\\d. ]+\\) scale\\([\\d.]+\\)"[^>]* data-wohin="[\\d.]+,[\\d.]+">\\s*<title>Inning am Ammersee/', $html)
        && strrpos($html, 'class="heim"') > strrpos($html, 'class="punkt ') && str_contains($html, 'id="heimBus"')
        && str_contains($html, 'id="heimZeig"') && str_contains($html, "getElementById('heim')")
-       && str_contains($html, 'id="heimFahrer"') && str_contains($html, 'data-art="palme"'),
-       'Landkarte: Standort als Männchen über den Punkten, mit Ziel (Adria), Bus mit Fahrer und Palme (Adria südlich von 46°)');
+       && str_contains($html, 'id="heimFahrer"') && str_contains($html, 'data-art="palme"')
+       && str_contains($html, '<div class="design" id="ton" role="group" aria-label="Ton" hidden>') && str_contains($html, 'function tonStart()'),
+       'Landkarte: Standort als Männchen über den Punkten, mit Ziel (Adria), Bus mit Fahrer und Palme (Adria südlich von 46°), Ton-Schalter');
 pruefe(str_contains($html, 'stunden.php?region=adria-nord&amp;sport=') && preg_match('/data-ziel="stunden\.php\?region=adria-nord&amp;sport=[a-z_]+&amp;tag=' . $morgen . '"/', $html),
        'mit gewähltem Tag: Karte und Punkt öffnen diesen Tag');
 [, $html] = holen($sitePort, "index.php?region=ammersee&nach=$morgen");
