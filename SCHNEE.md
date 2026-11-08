@@ -12,8 +12,8 @@ Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnst
 
 | Baustein | Status |
 |---|---|
-| Seite `server/web/schnee.php` | Sportart (Freeride, Skitour), Umkreis 100–800 km Straße, Standort, Sortierung (alle Tage, ein Tag, Fahrzeit), Ansichten Liste (Heute – Übermorgen, Tag 3 – 7) und Woche, Karte mit blauen Punkten und Männchen (ohne Animation), Kacheln mit Chance, Neuschnee und Lawinen-Abzeichen, Detailzeile, Abfahrt, Teilen, geteilte Ansicht `?region=…&nach=…`. `noindex` |
-| Stundenseite `server/web/schnee_stunden.php` | Neuschnee je Stunde (72 h bis 8 Uhr und der Tag), Schneefallgrenze und Nullgradgrenze gegen Tour- und Talhöhe, Wetter im Fenster, Streuung des Ensembles, Lawinenlage mit Expositionsrose |
+| Seite `server/web/schnee.php` | Sportart (Freeride, Skitour), Umkreis 100–800 km Straße, Standort, Sortierung (alle Tage, ein Tag, Fahrzeit), Ansichten Liste (Heute – Übermorgen, Tag 3 – 7) und Woche, Karte mit blauen Punkten und Männchen (ohne Animation), Kacheln mit Chance, Neuschnee, Wettersymbol und Lawinen-Abzeichen; Detailzeile für jeden Tag mit Vorhersage (Schneehöhe, Neuschnee, Wetter, Wind am Kamm, Nullgrad; an Tagen, die nicht passen, mit Grund), Abfahrt, Teilen, geteilte Ansicht `?region=…&nach=…`. `noindex` |
+| Stundenseite `server/web/schnee_stunden.php` | Neuschnee je Stunde (72 h bis 8 Uhr und der Tag), Schneefallgrenze und Nullgradgrenze gegen Tour- und Talhöhe vor einer Bergsilhouette (feste Form, kein echtes Gelände), Wetter im Fenster, Streuung des Ensembles, Lawinenlage mit Expositionsrose |
 | Schalter Wind · Schnee | im Kopf beider Seiten; es sind zwei Seiten, nicht ein Formular. Die Wind-Seite merkt sich ihre Wahl wie bisher, die Schnee-Seite merkt sich nichts im Browser |
 | Katalog `daten/schneeregionen.json` | 9 Regionen ab Inning: Werdenfels, Allgäu/Oberstdorf, Kühtai/Sellrain, Stubai, Zillertal/Tux, Arlberg, Ötztal/Obergurgl, Ahrntal, Oberengadin. Punkte, Tour- und Talhöhen geschätzt. Prüfung `schneeregionen_pruefen()` |
 | Bewertung `server/web/lib/schnee.php` | siehe „Bewertung“ |

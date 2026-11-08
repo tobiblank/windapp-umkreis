@@ -222,6 +222,12 @@ function cm(?float $c): string
     return $c === null ? '?' : zahl(round($c)) . ' cm';
 }
 
+/** ☀ / ⛅ / ☁ nach der Bewoelkung im Fenster, null ohne Wert */
+function himmel_symbol(?float $wolken): ?string
+{
+    return match (schnee_himmel($wolken)) { 'sonnig' => '☀', 'teils sonnig' => '⛅', 'bewölkt' => '☁', default => null };
+}
+
 /** Kennwerte eines Tages fuer die Detailzeile */
 function schnee_text(array $d, array $sport): array
 {
@@ -242,6 +248,10 @@ function schnee_text(array $d, array $sport): array
     }
     if ($k['hs'] !== null) {
         $t[] = 'Schneehöhe ≈ ' . cm($k['hs']) . ' (Modell)';
+    }
+    // Schneehoehe zuerst: sie gilt jeden Tag, Neuschnee nur, wenn welcher faellt
+    if ($k['hs'] !== null) {
+        array_unshift($t, array_pop($t));
     }
     return $t;
 }
@@ -536,6 +546,8 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
 <?php foreach ($woche ? [] : $liste as $e):
     $r = $e['region'];
     $guteTage = array_filter($e['tage'], fn($t) => $t['det']['geht'] || (($t['ens']['chance'] ?? 0) >= 0.15));
+    // Seit 8.11.2026 abends: jeder Tag mit Vorhersage bekommt eine Zeile (Schneehoehe, Wind, Wetter), nicht nur gute
+    $zeigeTage = array_filter($e['tage'], fn($t) => empty($t['vorbei']) && empty($t['offen']));
     $kartenZiel = stunden_link($r, in_array($nach, $tage, true) ? $nach : null);
 ?>
   <article class="karte region beste-<?= beste_stufe($e) ?><?= $guteTage ? '' : ' still' ?>" id="r-<?= h($r['id']) ?>" data-ziel="<?= h($kartenZiel) ?>">
@@ -564,18 +576,19 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
            title="<?= h(($c === null ? 'keine Ensemble-Daten' : zahl(100 * $c) . ' % der Läufe') . ', Neuschnee 72 h ' . cm($d['det']['neu72'])) ?>">
           <span class="t"><?= h(tag_kurz($t, $heute)) ?></span>
           <span class="w"><?= $c === null ? ($d['det']['geht'] ? 'ja' : '–') : zahl(100 * $c) . '<small>%</small>' ?></span>
-          <span class="n">❄ <?= h(cm($d['det']['neu72'])) ?></span><?= $lw ?>
+          <span class="n">❄ <?= h(cm($d['det']['neu72'])) ?><?= ($sy = himmel_symbol($d['det']['wolken'])) ? ' ' . $sy : '' ?></span><?= $lw ?>
         </a>
         <?php endif ?>
       <?php endforeach ?>
     </div>
-    <?php if ($guteTage): ?>
+    <?php if ($zeigeTage): ?>
       <ul class="details klein">
-        <?php foreach ($guteTage as $t => $d): ?>
-          <li>
+        <?php foreach ($zeigeTage as $t => $d): $gut = isset($guteTage[$t]); ?>
+          <li<?= $gut ? '' : ' class="leise"' ?>>
             <b><?= h(tag_kurz($t, $heute)) ?>:</b>
             <?= h(implode(' · ', schnee_text($d, $sport))) ?>
-            <?php if (!$d['det']['geht']): ?><span class="leise">· Modellmittel: <?= h($d['det']['grund']) ?>, nur ein Teil der Ensemble-Läufe passt</span><?php endif ?>
+            <?php if (!$gut): ?>· passt nicht: <?= h($d['det']['grund'] ?? '') ?>
+            <?php elseif (!$d['det']['geht']): ?><span class="leise">· Modellmittel: <?= h($d['det']['grund']) ?>, nur ein Teil der Ensemble-Läufe passt</span><?php endif ?>
             <?php if (!$geteilt && ($ab = abfahrt_text($e, $t, $d))): ?><span class="abfahrt">· <?= h($ab) ?></span><?php endif ?>
             <a class="stunden-link" href="<?= h(stunden_link($r, $t)) ?>">· Stunden ›</a>
             <?php if (teilenswert($d)): ?><button type="button" class="teilen" hidden
@@ -585,9 +598,10 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
           </li>
         <?php endforeach ?>
       </ul>
-    <?php else: ?>
-      <?php $offene = array_keys(array_filter($e['tage'], fn($x) => !empty($x['offen']))); ?>
-      <p class="klein leise">Kein passender Tag in diesem Zeitraum.<?= $offene ? ' Für ' . h(implode(', ', array_map(fn($x) => tag_kurz($x, $heute), $offene))) . ' gibt es noch keine Vorhersage.' : '' ?></p>
+    <?php endif ?>
+    <?php $offene = array_keys(array_filter($e['tage'], fn($x) => !empty($x['offen']))); ?>
+    <?php if (!$guteTage || $offene): ?>
+      <p class="klein leise"><?= $guteTage ? '' : 'Kein passender Tag in diesem Zeitraum.' ?><?= $offene ? ' Für ' . h(implode(', ', array_map(fn($x) => tag_kurz($x, $heute), $offene))) . ' gibt es noch keine Vorhersage.' : '' ?></p>
     <?php endif ?>
     <?= lawine_html($r, $lageVon[$r['id']] ?? [], $dienste, $tage) ?>
     <?php if (!empty($r['links'])): ?>
