@@ -623,6 +623,10 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     usort($punkte, fn($a, $b) => ($a['wert']['chance'] ?? ($a['wert']['geht'] ? 1 : -1)) <=> ($b['wert']['chance'] ?? ($b['wert']['geht'] ? 1 : -1)));
     [$vx, $vy, $vw, $vh] = karte_ausschnitt(array_merge($flug ? [] : [$heimXY], array_column($punkte, 'xy')));
     $rp = $vw / 42;   // Punktgroesse folgt dem Ausschnitt, auf dem Handy rund 9 px
+    // Wind je Punkt am gezeigten Tag (Pfeil und Farbfeld)
+    foreach ($punkte as $i => $p) {
+        $punkte[$i]['wind'] = $p['wert']['tag'] ? ($p['e']['tage'][$p['wert']['tag']]['wind'] ?? null) : null;
+    }
     $namen = karte_namen(array_map(fn($p) => ['xy' => $p['xy'], 'name' => $p['e']['region']['name'],
                                               'rang' => $p['wert']['chance'] ?? ($p['wert']['geht'] ? 1 : -1)], $punkte),
                          $rp, [$vx, $vy, $vw, $vh]);
@@ -632,6 +636,15 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <svg class="landkarte-bild" viewBox="<?= "$vx $vy $vw $vh" ?>" role="img" aria-label="Karte der Regionen im Umkreis">
     <rect class="meer" x="<?= $vx ?>" y="<?= $vy ?>" width="<?= $vw ?>" height="<?= $vh ?>"/>
     <use href="karte.svg#land" class="land"/>
+    <?php // Farbfeld (seit 8.11.2026): weicher Fleck je Region in der Farbe ihrer Windstaerke.
+          // Bewusst kein Feld zwischen den Regionen: ueber Hunderte Kilometer und die Alpen
+          // hinweg waere eine Mischung erfunden. ?>
+    <defs><filter id="weich" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="<?= round($rp * 0.9, 2) ?>"/></filter></defs>
+    <g class="windfeld" filter="url(#weich)">
+      <?php foreach ($punkte as $p): if (!$p['wind']) { continue; } ?>
+      <circle cx="<?= round($p['xy'][0], 1) ?>" cy="<?= round($p['xy'][1], 1) ?>" r="<?= round($rp * 2.4, 2) ?>" style="fill: <?= windfarbe($p['wind']['kn']) ?>"/>
+      <?php endforeach ?>
+    </g>
     <?php if (!$flug): ?>
     <circle class="umkreis" cx="<?= round($heimXY[0], 1) ?>" cy="<?= round($heimXY[1], 1) ?>" r="<?= round(karte_km((float)$km, $heim[0]), 1) ?>"/>
     <circle class="heim" cx="<?= round($heimXY[0], 1) ?>" cy="<?= round($heimXY[1], 1) ?>" r="<?= round($rp * 0.45, 2) ?>"><title><?= $eigenerOrt ? 'Dein Standort' : 'Inning am Ammersee' ?></title></circle>
@@ -641,19 +654,28 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
         $c = $p['wert']['chance'];
         $klasse = $c === null ? ($p['wert']['geht'] ? 'go' : 'leer') : stufe($c);
         $zahl = $c !== null && $c >= 0.15;
+        // Windpfeil (seit 8.11.2026, wie die Stationen auf ammerseewind.de): Dreieck am Rand
+        // des Punkts zeigt, wohin der Wind weht; am guten Tag im Fenster, sonst im Tagesmittel
+        $wnd = $p['wind'];
+        $pfeil = $wnd && $wnd['richtung'] !== null && $wnd['kn'] >= KARTE_PFEIL_AB_KN;
         $titel = $r['name'] . ': ' . ($c === null ? ($p['wert']['geht'] ? 'Fenster nach Modellmittel' : 'keine Ensemble-Daten')
                : zahl(100 * $c) . ' %') . ($p['wert']['tag'] && !$kartenTag ? ' (' . tag_kurz($p['wert']['tag'], $heute) . ')' : '')
+               . ($wnd ? ' · ' . ($wnd['richtung'] !== null ? 'aus ' . himmelsrichtung($wnd['richtung']) . ', ' : '') . 'Ø ' . zahl($wnd['kn']) . ' kn' . ($wnd['fenster'] ? ' im Fenster' : '') : '')
                . ' · ' . fahrzeit_mit_wort($p['e']['fahrt']);
+        $rk = $zahl ? $rp : $rp * 0.55;
     ?>
     <a href="<?= h(stunden_link($r, $p['wert']['tag'])) ?>" class="punkt <?= $klasse ?>">
       <title><?= h($titel) ?></title>
-      <circle cx="<?= round($p['xy'][0], 1) ?>" cy="<?= round($p['xy'][1], 1) ?>" r="<?= round($zahl ? $rp : $rp * 0.55, 2) ?>"/>
+      <?php if ($pfeil): ?><path class="windpfeil" d="M<?= round(-$rk * 0.62, 2) ?>,<?= round($rk * 0.7, 2) ?> L0,<?= round($rk + $rp * 0.75, 2) ?> L<?= round($rk * 0.62, 2) ?>,<?= round($rk * 0.7, 2) ?> Z" transform="translate(<?= round($p['xy'][0], 1) ?> <?= round($p['xy'][1], 1) ?>) rotate(<?= (int)round($wnd['richtung']) ?>)"/><?php endif ?>
+      <circle cx="<?= round($p['xy'][0], 1) ?>" cy="<?= round($p['xy'][1], 1) ?>" r="<?= round($rk, 2) ?>"/>
       <?php if ($zahl): ?><text class="zahl" x="<?= round($p['xy'][0], 1) ?>" y="<?= round($p['xy'][1] + $rp * 0.36, 2) ?>" font-size="<?= round($rp * 1.05, 2) ?>"><?= zahl(100 * $c) ?></text><?php endif ?>
       <?php if (isset($namen[$nr])): $rechts = $namen[$nr] === 'rechts'; ?><text class="name<?= $rechts ? '' : ' links' ?>" x="<?= round($p['xy'][0] + ($rechts ? 1 : -1) * $rp * 1.3, 2) ?>" y="<?= round($p['xy'][1] + $rp * 0.35, 2) ?>" font-size="<?= round($rp, 2) ?>" stroke-width="<?= round($rp * 0.3, 2) ?>"><?= h($r['name']) ?></text><?php endif ?>
     </a>
     <?php endforeach ?>
   </svg>
-  <p class="leise klein landkarte-fuss">Punkt antippen: Stunden der Region<?= $kartenTag ? '' : ' am besten Tag' ?>.<?= $flug ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße, darum fehlen manche Ziele innerhalb des Kreises.' ?> Karte: Natural Earth.</p>
+  <button type="button" class="feldknopf" id="feldKnopf" aria-pressed="true" hidden>Farbfeld Windstärke</button>
+  <?= windskala_legende() ?>
+  <p class="leise klein landkarte-fuss">Farbfeld: mittlerer Wind an der Region (am guten Tag im Fenster, sonst im Tagesmittel), nicht dazwischen. Spitze am Punkt: wohin der Wind weht (am guten Tag im Fenster, sonst im Tagesmittel, ab <?= KARTE_PFEIL_AB_KN ?> kn). Punkt antippen: Stunden der Region<?= $kartenTag ? '' : ' am besten Tag' ?>.<?= $flug ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße, darum fehlen manche Ziele innerhalb des Kreises.' ?> Karte: Natural Earth.</p>
 </details>
 <?php endif ?>
 
@@ -939,6 +961,25 @@ document.addEventListener('click', function (e) {
   if (sel && String(sel).length > 0) { return; }
   location.href = karte.dataset.ziel;
 });
+// Farbfeld der Landkarte an oder aus (seit 8.11.2026), Standard an, gemerkt
+(function () {
+  var k = document.getElementById('landkarte'), knopf = document.getElementById('feldKnopf');
+  if (!k || !knopf) { return; }
+  var SCHLUESSEL = 'wohinfahrma_farbfeld';
+  function setzen(an) {
+    k.classList.toggle('ohne-feld', !an);
+    knopf.setAttribute('aria-pressed', an ? 'true' : 'false');
+  }
+  var an = true;
+  try { an = localStorage.getItem(SCHLUESSEL) !== 'aus'; } catch (e) {}
+  setzen(an);
+  knopf.hidden = false;
+  knopf.addEventListener('click', function () {
+    an = !an;
+    setzen(an);
+    try { localStorage.setItem(SCHLUESSEL, an ? 'an' : 'aus'); } catch (e) {}
+  });
+})();
 // Landkarte auf- oder zugeklappt merken
 (function () {
   var k = document.getElementById('landkarte');

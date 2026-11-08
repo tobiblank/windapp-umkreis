@@ -148,10 +148,25 @@ a.tag:active { filter: brightness(.94); }
 .landkarte .punkt.maybe circle { fill: var(--maybe); }
 .landkarte .punkt.no circle { fill: var(--no); }
 .landkarte .punkt.leer circle, .landkarte .punkt.nix circle { fill: var(--nix); opacity: .75; }
+.landkarte .punkt .windpfeil { fill: var(--nix); stroke: var(--karte); stroke-width: 1px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.landkarte .punkt.go .windpfeil { fill: var(--go); }
+.landkarte .punkt.maybe .windpfeil { fill: var(--maybe); }
+.landkarte .punkt.no .windpfeil { fill: var(--no); }
+.landkarte .punkt.leer .windpfeil, .landkarte .punkt.nix .windpfeil { opacity: .75; }
 .landkarte .punkt text.zahl { fill: var(--karte); font-family: var(--zahlen); font-weight: 600; text-anchor: middle; pointer-events: none; }
 .landkarte .punkt text.name.links { text-anchor: end; }
 .landkarte .punkt text.name { fill: var(--text); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-weight: 500; paint-order: stroke; stroke: var(--land); stroke-linejoin: round; }
 .landkarte .punkt:hover circle, .landkarte .punkt:focus circle { stroke: var(--text); stroke-width: 2px; }
+.landkarte .windfeld { opacity: .55; pointer-events: none; }
+.landkarte.ohne-feld .windfeld, .landkarte.ohne-feld .windskala { display: none; }
+.feldknopf { display: inline-flex; align-items: center; min-height: 36px; margin-top: 8px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--linie, var(--leise)); background: transparent; color: var(--leise); font: 500 13px/1 system-ui, -apple-system, "Segoe UI", sans-serif; cursor: pointer; }
+.feldknopf[aria-pressed="true"] { color: var(--text); border-color: var(--akzent); }
+.windskala { margin: 8px 0 0; }
+.windskala .verlauf { height: 8px; border-radius: 4px; }
+.windskala .marken { position: relative; height: 16px; margin-top: 4px; font-size: 11px; color: var(--leise); }
+.windskala .marken span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.windskala .marken span:first-child { transform: none; }
+.windskala .marken span:last-child { transform: translateX(-100%); }
 .landkarte-fuss { margin: 8px 0 0; }
 .region { scroll-margin-top: 12px; }
 .region:target { box-shadow: 0 0 0 2px var(--akzent); }
