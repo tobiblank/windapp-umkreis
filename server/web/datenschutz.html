@@ -35,19 +35,20 @@ a { color: inherit; }
 <p>Ohne weiteres Zutun rechnet die Rangliste von Inning am Ammersee aus. Tippst du auf „Meinen Standort nehmen“, fragt dein Browser um Erlaubnis und ermittelt deinen Standort. Er wird schon im Browser auf 0,1 Grad gerundet (etwa 10 km) und erst dann als Teil der Adresse an den Server geschickt, um die Entfernungen zu berechnen. Der gerundete Wert erscheint dadurch in den Server-Logfiles (Abschnitt 3); darüber hinaus wird er auf dem Server nicht gespeichert. Rechtsgrundlage ist deine Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), die du mit dem Antippen und der Freigabe im Browser gibst.</p>
 
 <h2>5. Speicher im Browser</h2>
-<p>Die Seite merkt sich auf deinem Gerät (Browser-Speicher „wohinfahrma_wahl“) deine letzte Auswahl: Sportart, Umkreis, Zeitraum und gegebenenfalls den gerundeten Standort, damit du beim nächsten Besuch nicht neu wählen musst. Diese Angaben verlassen dein Gerät nur als Teil der Adresse beim Aufruf der Seite. Außerdem merkt sie sich („wohinfahrma_install“), ob du die App installiert oder den Hinweis zum Installieren mit „Nicht jetzt“ weggeklickt hast (dann 30 Tage Ruhe); das bleibt ebenfalls auf deinem Gerät. Löschen kannst du beides über die Website-Daten deines Browsers.</p>
+<p>Die Seite merkt sich auf deinem Gerät (Browser-Speicher „wohinfahrma_wahl“) deine letzte Auswahl: Sportart, Umkreis, Zeitraum und gegebenenfalls den gerundeten Standort, damit du beim nächsten Besuch nicht neu wählen musst. Diese Angaben verlassen dein Gerät nur als Teil der Adresse beim Aufruf der Seite. Außerdem merkt sie sich („wohinfahrma_install“), ob du die App installiert oder den Hinweis zum Installieren mit „Nicht jetzt“ weggeklickt hast (dann 30 Tage Ruhe); das bleibt ebenfalls auf deinem Gerät. Ebenfalls nur auf deinem Gerät stehen die Darstellung „Hell“ oder „Dunkel“, falls du sie im Fuß festlegst („wohinfahrma_design“), ob die Landkarte auf- oder zugeklappt ist („wohinfahrma_karte“) und ob das Farbfeld auf der Karte an ist („wohinfahrma_farbfeld“). Für die installierte App legt der Browser außerdem die Offline-Seite in seinem Zwischenspeicher ab, damit ohne Netz ein Hinweis statt einer Fehlermeldung erscheint. All das ist für die Funktionen nötig, die du nutzt (§ 25 Abs. 2 Nr. 2 TDDDG), und wird nicht ausgewertet. Löschen kannst du es über die Website-Daten deines Browsers.</p>
+<p>Der Knopf „Teilen“ übergibt Text und Link an das Teilen-Menü deines Geräts oder an die Zwischenablage. Die Seite erfährt nicht, ob und mit wem du teilst.</p>
 
-<h2>6. Wetterdaten</h2>
-<p>Die Vorhersagen ruft ein automatischer Ablauf (GitHub Actions) zweimal am Tag bei Open-Meteo ab und legt sie auf dem Server ab. Dein Browser nimmt dabei keinen Kontakt zu Open-Meteo auf, und es werden keine Daten über dich übermittelt.</p>
+<h2>6. Wetterdaten und Fahrzeiten</h2>
+<p>Die Vorhersagen ruft ein automatischer Ablauf (GitHub Actions) zweimal am Tag bei Open-Meteo ab und legt sie auf dem Server ab. Die Fahrzeiten holt ein solcher Ablauf bei openrouteservice (HeiGIT gGmbH, Heidelberg), wenn sich die Liste der Regionen ändert, und sonst einmal im Monat; dabei werden nur die festen Koordinaten der Regionen und von Inning am Ammersee gesendet, nie dein Standort. Dein Browser nimmt zu keinem der beiden Dienste Kontakt auf, und es werden keine Daten über dich übermittelt.</p>
 
 <h2>7. Keine Weitergabe, kein Tracking</h2>
-<p>Es gibt keine Analyse- oder Werbedienste, keine Social-Media-Einbindungen und keine Weitergabe an Dritte, außer an den Hoster im Rahmen der Auftragsverarbeitung.</p>
+<p>Es gibt keine Analyse- oder Werbedienste, keine Social-Media-Einbindungen und keine Weitergabe an Dritte, außer an den Hoster im Rahmen der Auftragsverarbeitung. Schrift, Landkarte und Symbole kommen vom eigenen Server; beim Aufruf entsteht keine Verbindung zu anderen Anbietern. Links zu anderen Seiten (z. B. lokale Vorhersagen oder ammerseewind.de) führen zu deren Angebot, dort gelten deren Datenschutzbestimmungen.</p>
 
 <h2>8. Deine Rechte</h2>
 <p>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch (Art. 15–21 DSGVO) sowie auf Widerruf deiner Einwilligung. Eine E-Mail an die Adresse in Abschnitt 1 genügt.</p>
 <p>Du kannst dich außerdem bei der Aufsichtsbehörde beschweren: Bayerisches Landesamt für Datenschutzaufsicht, Promenade 18, 91522 Ansbach, <a href="https://www.lda.bayern.de">www.lda.bayern.de</a>.</p>
 
-<p class="small">Stand: November 2026 · <a href="./">Zur Rangliste</a> · <a href="impressum.html">Impressum</a></p>
+<p class="small">Stand: 8. November 2026 · <a href="./">Zur Rangliste</a> · <a href="impressum.html">Impressum</a></p>
 </main>
 </body>
 </html>
