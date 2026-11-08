@@ -757,14 +757,15 @@ pruefe(preg_match('/id="r-adria-nord" data-ziel="stunden\.php\?region=adria-nord
        'Regionskarte: Karte, Name und Tageskacheln führen zur Stundenseite');
 [, $html] = holen($sitePort, 'index.php?km=1000&nach=' . $morgen);
 pruefe(str_contains($html, 'Chance Morgen') && preg_match('/class="punkt go".*?<text class="zahl"[^>]*>100</s', $html), 'Landkarte mit gewähltem Tag: Adria 100 %');
-pruefe(preg_match('/<path class="windpfeil" d="[^"]+" transform="translate\([\d. ]+\) rotate\(40\)"/', $html)
+pruefe(preg_match('/<path class="windpfeil" data-weht="[\d.]+,[\d.]+,40,[\d.]+" d="[^"]+" transform="translate\([\d. ]+\) rotate\(40\)"/', $html)
        && preg_match('/<g class="windfeld"[^>]*>\s*<circle [^>]*style="fill: rgb\(/', $html) && str_contains($html, 'class="windskala"')
        && str_contains($html, 'aus NO, Ø '),
-       'Landkarte: Windpfeil (Bora aus 40 Grad), Farbfeld nach Windstärke, Legende');
+       'Landkarte: Windpfeil (Bora aus 40 Grad, gute Region mit Daten für die Windstriche), Farbfeld nach Windstärke, Legende');
 pruefe(preg_match('/<g class="heim" id="heim" transform="translate\\([\\d. ]+\\) scale\\([\\d.]+\\)"[^>]* data-wohin="[\\d.]+,[\\d.]+">\\s*<title>Inning am Ammersee/', $html)
        && strrpos($html, 'class="heim"') > strrpos($html, 'class="punkt ') && str_contains($html, 'id="heimBus"')
-       && str_contains($html, 'id="heimZeig"') && str_contains($html, "getElementById('heim')"),
-       'Landkarte: Standort als Männchen über den Punkten, mit Ziel (Adria) und Bus für die Animation');
+       && str_contains($html, 'id="heimZeig"') && str_contains($html, "getElementById('heim')")
+       && str_contains($html, 'id="heimFahrer"') && str_contains($html, 'data-art="palme"'),
+       'Landkarte: Standort als Männchen über den Punkten, mit Ziel (Adria), Bus mit Fahrer und Palme (Adria südlich von 46°)');
 pruefe(str_contains($html, 'stunden.php?region=adria-nord&amp;sport=') && preg_match('/data-ziel="stunden\.php\?region=adria-nord&amp;sport=[a-z_]+&amp;tag=' . $morgen . '"/', $html),
        'mit gewähltem Tag: Karte und Punkt öffnen diesen Tag');
 [, $html] = holen($sitePort, "index.php?region=ammersee&nach=$morgen");

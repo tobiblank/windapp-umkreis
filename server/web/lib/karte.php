@@ -17,6 +17,7 @@ const KARTE_SEITE = 1.1;         // Hoehe : Breite des Ausschnitts (etwas hoeher
 const KARTE_MIN_GRAD = 2.5;      // kleinster Ausschnitt, in Laengengraden
 
 const KARTE_PFEIL_AB_KN = 3;   // darunter keine Windrichtung auf der Landkarte (wie ammerseewind.de)
+const ANKUNFT_PALME_BIS_BREITE = 46.0;   // Maennchen-Animation: Palme am Ziel nur am Meer suedlich davon, sonst Windsack
 
 /**
  * Farbskala fuer Windstaerke (seit 8.11.2026, aus ammerseewind.de/farben.php):

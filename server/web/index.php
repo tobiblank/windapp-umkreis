@@ -691,7 +691,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     ?>
     <a href="<?= h(stunden_link($r, $p['wert']['tag'])) ?>" class="punkt <?= $klasse ?>">
       <title><?= h($titel) ?></title>
-      <?php if ($pfeil): ?><path class="windpfeil" d="M<?= round(-$rk * 0.62, 2) ?>,<?= round($rk * 0.7, 2) ?> L0,<?= round($rk + $rp * 0.75, 2) ?> L<?= round($rk * 0.62, 2) ?>,<?= round($rk * 0.7, 2) ?> Z" transform="translate(<?= round($p['xy'][0], 1) ?> <?= round($p['xy'][1], 1) ?>) rotate(<?= (int)round($wnd['richtung']) ?>)"/><?php endif ?>
+      <?php if ($pfeil): ?><path class="windpfeil"<?php if ($klasse === 'go'): ?> data-weht="<?= round($p['xy'][0], 1) ?>,<?= round($p['xy'][1], 1) ?>,<?= (int)round($wnd['richtung']) ?>,<?= round($wnd['kn'], 1) ?>"<?php endif ?> d="M<?= round(-$rk * 0.62, 2) ?>,<?= round($rk * 0.7, 2) ?> L0,<?= round($rk + $rp * 0.75, 2) ?> L<?= round($rk * 0.62, 2) ?>,<?= round($rk * 0.7, 2) ?> Z" transform="translate(<?= round($p['xy'][0], 1) ?> <?= round($p['xy'][1], 1) ?>) rotate(<?= (int)round($wnd['richtung']) ?>)"/><?php endif ?>
       <circle cx="<?= round($p['xy'][0], 1) ?>" cy="<?= round($p['xy'][1], 1) ?>" r="<?= round($rk, 2) ?>"/>
       <?php if ($zahl): ?><text class="zahl" x="<?= round($p['xy'][0], 1) ?>" y="<?= round($p['xy'][1] + $rp * 0.36, 2) ?>" font-size="<?= round($rp * 1.05, 2) ?>"><?= zahl(100 * $c) ?></text><?php endif ?>
       <?php if (isset($namen[$nr])): $rechts = $namen[$nr] === 'rechts'; ?><text class="name<?= $rechts ? '' : ' links' ?>" x="<?= round($p['xy'][0] + ($rechts ? 1 : -1) * $rp * 1.3, 2) ?>" y="<?= round($p['xy'][1] + $rp * 0.35, 2) ?>" font-size="<?= round($rp, 2) ?>" stroke-width="<?= round($rp * 0.3, 2) ?>"><?= h($r['name']) ?></text><?php endif ?>
@@ -703,10 +703,20 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
         // auf die beste Region zeigen, in den Bus steigen und hinfahren. Geometrie in Einheiten
         // von $u (Kopf oben bei -3,65), die Gruppe skaliert. Ohne JavaScript steht es still da.
         $u = $rp * 0.7;
-        // Ziel: die beste Region (zuletzt gezeichnet), wenn sie gut ist wie beim Teilen:
-        // ab 40 % Chance, ohne Ensemble ein Fenster nach Modellmittel
-        $best = $punkte ? $punkte[array_key_last($punkte)] : null;
-        $ziel = $best && ($best['wert']['chance'] !== null ? $best['wert']['chance'] >= 0.4 : $best['wert']['geht']) ? $best : null;
+        // Ziel: die Region mit der hoechsten Chance auf der Karte, wenn sie gut ist wie beim Teilen
+        // (ab 40 %, ohne Ensemble ein Fenster nach Modellmittel). Ohne Ensemble zaehlt sie wie 50 %
+        // (wie im Roadtrip); bis 8.11.2026 abends wie 100 %, dann zeigte das Maennchen dorthin
+        // statt zur Region mit der groessten Zahl.
+        $zielRang = fn(array $p): float => $p['wert']['chance'] ?? ($p['wert']['geht'] ? 0.5 : -1.0);
+        $ziel = null;
+        foreach ($punkte as $p) {
+            $c = $p['wert']['chance'];
+            if (($c !== null ? $c >= 0.4 : $p['wert']['geht']) && (!$ziel || $zielRang($p) > $zielRang($ziel))) {
+                $ziel = $p;
+            }
+        }
+        // Am Ziel weht bei der Ankunft etwas: Palme am Meer im Sueden, sonst ein Windsack
+        $palme = $ziel && ($ziel['e']['region']['typ'] ?? '') === 'meer' && (float)$ziel['e']['region']['punkt'][0] < ANKUNFT_PALME_BIS_BREITE;
         $hx = round($heimXY[0], 1);
         $hy = round($heimXY[1], 1);
         $arm = fn(string $id, float $x, float $grad) => '<rect class="arm" id="' . $id . '" x="-0.15" y="0" width="0.3" height="1.4" rx="0.15" transform="translate(' . $x . ' -2.2) rotate(' . $grad . ')"/>';
@@ -722,7 +732,20 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
       <rect class="fenster" x="-0.85" y="-2.95" width="1.4" height="0.8" rx="0.2"/>
       <circle class="rad" cx="-1.6" cy="-0.7" r="0.62"/><circle class="nabe" cx="-1.6" cy="-0.7" r="0.22"/>
       <circle class="rad" cx="1.6" cy="-0.7" r="0.62"/><circle class="nabe" cx="1.6" cy="-0.7" r="0.22"/>
+      <circle class="fahrer" id="heimFahrer" cx="0" cy="-2.5" r="0.3" opacity="0"/>
     </g>
+    <path class="blick" id="heimBlick" d="" opacity="0"/>
+    <?php if ($palme): ?>
+    <g class="ankunft palme" id="heimAnkunft" data-art="palme" opacity="0">
+      <path class="stamm" d="M0,0Q0.4,-2 0.15,-4"/>
+      <g id="heimWedel"><?php foreach ([-165, -125, -80, -40, -5] as $w): ?><path class="wedel" data-w="<?= $w ?>" d="M0,0Q1.1,-0.7 2.3,0.4"/><?php endforeach ?></g>
+    </g>
+    <?php else: ?>
+    <g class="ankunft windsack" id="heimAnkunft" data-art="sack" opacity="0">
+      <line class="mast" x1="0" y1="0" x2="0" y2="-4.2"/>
+      <g id="heimSack"><?php for ($i = 0; $i < 4; $i++): ?><polygon class="<?= $i % 2 ? 'hell' : 'rot' ?>" points="0,0"/><?php endfor ?></g>
+    </g>
+    <?php endif ?>
     <?php endif ?>
     <g class="heim" id="heim" transform="translate(<?= $hx ?> <?= $hy ?>) scale(<?= round($u, 3) ?>)"
        data-x="<?= $hx ?>" data-y="<?= $hy ?>" data-u="<?= round($u, 3) ?>" data-rp="<?= round($rp, 3) ?>"<?php if ($ziel): ?> data-wohin="<?= round($ziel['xy'][0], 1) ?>,<?= round($ziel['xy'][1], 1) ?>"<?php endif ?>>
@@ -1055,29 +1078,36 @@ document.addEventListener('click', function (e) {
   });
 })();
 // Maennchen auf der Landkarte (seit 8.11.2026): Hand an die Stirn, nach links und rechts
-// umsehen, auf die beste Region zeigen, in den Bus steigen, hinfahren, wieder zu Hause stehen
-// und hinzeigen. Ohne gute Region: umsehen und Schultern zucken. Startet, sobald die Karte
-// sichtbar ist; Scrollen, Antippen der Karte oder eine Taste beenden die Animation sofort
-// in der Endpose. Bei "Bewegung reduzieren" gleich die Endpose. Antippen des Maennchens
-// spielt sie neu ab. Zeiten in ms, Laengen in Einheiten des Maennchens.
+// umsehen, auf die beste Region zeigen (mit gestrichelter Blicklinie), in den Bus steigen
+// und als Fahrer hinfahren; am Ziel wiegt sich eine Palme (Meer im Sueden) oder flattert ein
+// Windsack; dann steht es wieder zu Hause und zeigt hin. Ohne gute Region: umsehen und
+// Schultern zucken. Gleichzeitig ziehen an guten Regionen Windstriche in Windrichtung ueber
+// den Punkt (Laenge und Tempo nach der Staerke), und ihr Windpfeil wackelt kurz.
+// Startet, sobald die Karte sichtbar ist; Scrollen, Antippen der Karte oder eine Taste beenden
+// sofort in der Endpose. Bei "Bewegung reduzieren" gleich die Endpose. Antippen des Maennchens
+// spielt alles neu ab. Zeiten in ms, Laengen in Einheiten des Maennchens.
 (function () {
   var heim = document.getElementById('heim');
   if (!heim || !window.requestAnimationFrame) { return; }
   var svg = heim.ownerSVGElement;
+  var NS = 'http://www.w3.org/2000/svg';
   var X = +heim.dataset.x, Y = +heim.dataset.y, U = +heim.dataset.u, RP = +heim.dataset.rp;
   var ziel = heim.dataset.wohin ? heim.dataset.wohin.split(',').map(Number) : null;
   function el(id) { return document.getElementById(id); }
   var kopf = el('heimKopf'), armL = el('heimArmL'), armR = el('heimArmR'), ober = el('heimOber'),
-      unter = el('heimUnter'), zeig = el('heimZeig'), bus = el('heimBus'), spur = el('heimSpur'), puls = el('heimPuls');
-  var ARM = 1.4, OBER = 0.55, UNTER = 0.85, SX = 0.62, SY = -2.2, ELLE = [1.05, -2.55];
+      unter = el('heimUnter'), zeig = el('heimZeig'), bus = el('heimBus'), spur = el('heimSpur'),
+      puls = el('heimPuls'), fahrer = el('heimFahrer'), blick = el('heimBlick'), ankunft = el('heimAnkunft');
+  var ARM = 1.4, SX = 0.62, SY = -2.2, ELLE = [1.05, -2.55];
   var dir = ziel && ziel[0] < X ? -1 : 1;
-  // Fahrt im Bogen vom Maennchen zum Ziel, der Bus parkt neben dem Punkt; zu nah: keine Fahrt
+  // Fahrt im Bogen vom Maennchen zum Ziel, der Bus parkt neben dem Punkt. Nur die Entfernung
+  // zaehlt: bis 8.11.2026 abends musste das Ziel auch seitlich weit genug weg sein, dann fuhr
+  // der Bus zu Zielen fast genau im Sueden (Adria ab Inning) nie los.
   var A = null, B = null, C = null;
   if (ziel && bus) {
     A = [X + 4.2 * U * dir, Y];
     B = [ziel[0] - (RP * 1.4 + 3 * U) * dir, ziel[1] + RP * 0.8];
     var dx = B[0] - A[0], dy = B[1] - A[1], d = Math.sqrt(dx * dx + dy * dy);
-    if ((B[0] - A[0]) * dir > 2 * U && d > 6 * U) {
+    if (d > 6 * U) {
       var nx = -dy / d, ny = dx / d;
       if (ny > 0) { nx = -nx; ny = -ny; }   // Bogen nach oben
       C = [(A[0] + B[0]) / 2 + nx * d * 0.2, (A[1] + B[1]) / 2 + ny * d * 0.2];
@@ -1085,7 +1115,34 @@ document.addEventListener('click', function (e) {
     } else { A = null; }
   }
   var fahrt = !!A;
-  var ENDE = ziel ? (fahrt ? 8300 : 4400) : 4200;
+  // Ankunft: ueber dem Zielpunkt
+  var wedel = [], sack = [], art = ankunft ? ankunft.dataset.art : null;
+  if (ankunft) {
+    wedel = Array.prototype.slice.call(ankunft.querySelectorAll('.wedel'));
+    sack = Array.prototype.slice.call(ankunft.querySelectorAll('polygon'));
+  }
+  // Windstriche an guten Regionen: 4 je Region, unter den Punkten
+  var wehen = [];
+  var pfeile = svg.querySelectorAll('.windpfeil[data-weht]');
+  if (pfeile.length) {
+    var schicht = document.createElementNS(NS, 'g');
+    schicht.setAttribute('class', 'windstriche');
+    var erster = svg.querySelector('.punkt');
+    erster.parentNode.insertBefore(schicht, erster);
+    Array.prototype.forEach.call(pfeile, function (pf) {
+      var w = pf.dataset.weht.split(',').map(Number), th = w[2] * Math.PI / 180;
+      var striche = [];
+      for (var i = 0; i < 4; i++) {
+        var l = document.createElementNS(NS, 'line');
+        l.setAttribute('opacity', 0);
+        schicht.appendChild(l);
+        striche.push(l);
+      }
+      wehen.push({ pf: pf, trafo: pf.getAttribute('transform'), x: w[0], y: w[1], von: w[2], kn: w[3],
+                   vx: -Math.sin(th), vy: Math.cos(th), striche: striche, k: wehen.length });
+    });
+  }
+  var ENDE = ziel ? (fahrt ? 9300 : 4400) : 4300;
   function cl(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
   function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
   function seg(t, a, b) { return ease(cl((t - a) / (b - a))); }
@@ -1094,6 +1151,46 @@ document.addEventListener('click', function (e) {
   function arm(e, x, y, w, sichtbar) {
     e.setAttribute('transform', 'translate(' + x + ' ' + y + ') rotate(' + w.toFixed(1) + ')');
     e.setAttribute('opacity', sichtbar ? 1 : 0);
+  }
+  function wind(t) {
+    wehen.forEach(function (g) {
+      var wackel = t < 1600 ? 10 * Math.sin(t / 70) * (1 - t / 1600) : 0;
+      g.pf.setAttribute('transform', wackel ? g.trafo.replace(/rotate\(([-\d.]+)\)/, 'rotate(' + (g.von + wackel).toFixed(1) + ')') : g.trafo);
+      var tempo = 0.6 + g.kn / 30, len = RP * (1.1 + g.kn / 30);
+      g.striche.forEach(function (l, i) {
+        var p = (t - i * 380 - g.k * 120) / (1100 / tempo);
+        if (t > 4200 || p < 0) { l.setAttribute('opacity', 0); return; }
+        p = p % 1;
+        var s = RP * (-3.3 + 6.6 * p), off = RP * [-0.8, 0.35, -0.2, 0.9][i];
+        var x1 = g.x + g.vx * s - g.vy * off, y1 = g.y + g.vy * s + g.vx * off;
+        l.setAttribute('x1', x1.toFixed(2)); l.setAttribute('y1', y1.toFixed(2));
+        l.setAttribute('x2', (x1 + g.vx * len).toFixed(2)); l.setAttribute('y2', (y1 + g.vy * len).toFixed(2));
+        l.setAttribute('opacity', (0.75 * Math.sin(Math.PI * p) * (t > 3700 ? cl((4200 - t) / 500) : 1)).toFixed(2));
+      });
+    });
+  }
+  function weht(t, op) {   // Palme oder Windsack am Ziel
+    if (!ankunft) { return; }
+    var auf = seg(t, 7000, 7350), an = t > 7000 ? t - 7000 : 0, s = 0.3 + 0.7 * auf;
+    ankunft.setAttribute('opacity', (auf * op).toFixed(2));
+    var tr = 'translate(' + ziel[0] + ' ' + (ziel[1] - RP * 1.05) + ') scale(' + (s * U) + ')';
+    if (art === 'palme') {
+      var neig = an ? 5 + 6 * Math.sin(an / 260) : 0;
+      ankunft.setAttribute('transform', tr + ' rotate(' + neig.toFixed(1) + ')');
+      wedel.forEach(function (w, i) {
+        var fl = an ? 9 * Math.sin(an / 120 + i * 1.3) : 0;
+        w.setAttribute('transform', 'translate(0.15 -4) rotate(' + (+w.dataset.w + fl + neig * 0.8).toFixed(1) + ')');
+      });
+    } else {
+      ankunft.setAttribute('transform', tr);
+      var winkel = an ? 8 + 7 * Math.sin(an / 220) : 80;
+      sack.forEach(function (p, i) {
+        var x0 = i * 0.85, x1 = x0 + 0.85, h0 = 0.55 - i * 0.08, h1 = 0.55 - (i + 1) * 0.08;
+        var fl = an ? 0.22 * Math.sin(an / 70 + i * 0.9) * (i / 3) : 0;
+        p.setAttribute('points', [x0, -h0 + fl * 0.6, x1, -h1 + fl, x1, h1 + fl, x0, h0 + fl * 0.6].map(function (v) { return v.toFixed(2); }).join(' '));
+      });
+      el('heimSack').setAttribute('transform', 'translate(0 -3.9) rotate(' + winkel.toFixed(1) + ')');
+    }
   }
   function zeichne(t) {
     var sal = seg(t, 300, 650);
@@ -1106,16 +1203,17 @@ document.addEventListener('click', function (e) {
     sal *= 1 - runter;
     var zuck = ziel ? 0 : Math.sin(Math.PI * cl((t - 3450) / 700));
     var zg = ziel ? seg(t, 3350, 3700) : 0;
+    var bl = ziel ? seg(t, 3500, 3800) * (1 - seg(t, 4100, 4400)) : 0;
     var walk = 0, manOp = 1, busOp = 0, fa = 0, rr = 0;
     if (fahrt) {
-      if (t < 7500) {
+      if (t < 8500) {
         zg *= 1 - seg(t, 4200, 4400);
         walk = seg(t, 4400, 4800);
         manOp = 1 - seg(t, 4600, 4850);
       } else {
-        manOp = seg(t, 7700, 8200);
+        manOp = seg(t, 8700, 9200);
       }
-      busOp = seg(t, 4000, 4300) * (1 - seg(t, 7600, 8000));
+      busOp = seg(t, 4000, 4300) * (1 - seg(t, 8500, 8900));
       fa = seg(t, 4900, 7000);
       rr = cl((t - 7000) / 700);
     }
@@ -1130,11 +1228,15 @@ document.addEventListener('click', function (e) {
     arm(ober, SX, SY, grad(ELLE[0] - SX, ELLE[1] - SY), sal >= 0.05);
     arm(unter, ELLE[0], ELLE[1], grad(hk + 0.42 - ELLE[0], -3.35 - ELLE[1]), sal >= 0.05);
     if (ziel) {
-      var wx = ziel[0] - (X + SX * U * dir), wy = ziel[1] - (Y + SY * U);
-      // Zeigen wie zum Horizont: hoechstens 35 Grad nach unten, sonst sieht der Arm aus wie haengend
-      var w = Math.max(-70, Math.min(35, Math.atan2(wy, Math.abs(wx)) * 180 / Math.PI));
-      arm(zeig, SX, SY, w - 90, zg >= 0.02);
+      // Genau zum Ziel zeigen; die Blicklinie macht es eindeutig, auch wenn der Arm steil nach
+      // unten zeigt (bis 8.11.2026 abends auf 35 Grad begrenzt, dann zeigte er aufs falsche Ziel)
+      var ox = X + SX * U * dir, oy = Y + SY * U, wx = ziel[0] - ox, wy = ziel[1] - oy;
+      arm(zeig, SX, SY, grad(Math.abs(wx), wy), zg >= 0.02);
       zeig.setAttribute('height', (ARM * zg).toFixed(3));
+      var wl = Math.sqrt(wx * wx + wy * wy) || 1, hx = ox + wx / wl * ARM * U, hy = oy + wy / wl * ARM * U;
+      var ex = ziel[0] - wx / wl * RP * 1.3, ey = ziel[1] - wy / wl * RP * 1.3;
+      blick.setAttribute('d', 'M' + hx.toFixed(1) + ',' + hy.toFixed(1) + 'L' + (hx + (ex - hx) * bl).toFixed(1) + ',' + (hy + (ey - hy) * bl).toFixed(1));
+      blick.setAttribute('opacity', bl > 0.02 ? (t > 4100 ? 1 - seg(t, 4100, 4400) : 1) : 0);
     }
     if (fahrt) {
       var u = 1 - fa, px = u * u * A[0] + 2 * u * fa * C[0] + fa * fa * B[0], py = u * u * A[1] + 2 * u * fa * C[1] + fa * fa * B[1];
@@ -1142,15 +1244,18 @@ document.addEventListener('click', function (e) {
       var hop = faehrt ? -Math.abs(Math.sin(t / 85)) * 0.25 * U : 0;
       bus.setAttribute('transform', 'translate(' + px + ' ' + (py + hop) + ') scale(' + (dir * U) + ' ' + U + ')');
       bus.setAttribute('opacity', busOp);
+      fahrer.setAttribute('opacity', t > 4800 && t < 8500 ? 1 : 0);   // das Maennchen sitzt am Steuer
       spur.setAttribute('opacity', faehrt ? 0.6 : t >= 7000 && t < 7600 ? 0.6 * (1 - seg(t, 7000, 7600)) : 0);
       spur.style.strokeDashoffset = -t / 40;
+      weht(t, 1 - seg(t, 8500, 8900));
     }
     if (puls) {
       puls.setAttribute('r', (RP * (1 + 1.8 * ring)).toFixed(2));
       puls.setAttribute('opacity', ring > 0 ? 1 - ring : 0);
     }
+    wind(t);
   }
-  var t0 = null, raf = null, laeuft = false, gestoppt = 0;
+  var t0 = null, raf = null, laeuft = false, gestoppt = 0, gestartet = 0;
   function bild(ts) {
     if (t0 === null) { t0 = ts; }
     var t = ts - t0;
@@ -1173,7 +1278,6 @@ document.addEventListener('click', function (e) {
     gestartet = Date.now();
     raf = requestAnimationFrame(bild);
   }
-  var gestartet = 0;
   // Scrollen beendet; der Schwung des Scrollens, der die Karte ins Bild gebracht hat, nicht
   addEventListener('scroll', function () { if (Date.now() - gestartet > 400) { stopp(); } }, { passive: true });
   addEventListener('keydown', stopp);

@@ -155,6 +155,15 @@ a.tag:active { filter: brightness(.94); }
 .landkarte .bus .nabe { fill: var(--land); stroke: none; }
 .landkarte .busspur { fill: none; stroke: var(--akzent); stroke-width: 1.5px; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; }
 .landkarte .puls { fill: none; stroke: var(--go); stroke-width: 2px; vector-effect: non-scaling-stroke; }
+.landkarte .bus .fahrer { fill: var(--akzent); stroke: none; }
+.landkarte .blick { fill: none; stroke: var(--akzent); stroke-width: 1.5px; stroke-dasharray: 2 3; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
+.landkarte .windstriche line { stroke: var(--text); stroke-width: 1.5px; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
+.landkarte .ankunft { pointer-events: none; }
+.landkarte .palme .stamm { fill: none; stroke: #8a5a2b; stroke-width: 0.45; stroke-linecap: round; }
+.landkarte .palme .wedel { fill: none; stroke: #4f8a2a; stroke-width: 0.42; stroke-linecap: round; }
+.landkarte .windsack .mast { stroke: var(--leise); stroke-width: 0.28; stroke-linecap: round; }
+.landkarte .windsack .rot { fill: #e2574c; }
+.landkarte .windsack .hell { fill: #ffffff; }
 .landkarte .punkt circle { fill: var(--nix); stroke: var(--karte); stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
 .landkarte .punkt.go circle { fill: var(--go); }
 .landkarte .punkt.maybe circle { fill: var(--maybe); }
