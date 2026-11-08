@@ -820,6 +820,9 @@ pruefe(str_contains($html, 'class="m-aktiv"') && ohne_php_meldung($html), 'Woche
 pruefe($code === 200 && ohne_php_meldung($html) && substr_count($html, 'class="stunden-bild"') === 2 && substr_count($html, 'class="s-mittel"') === 2
        && substr_count($html, 'class="s-fahrbar ja"') === 10 && str_contains($html, 'Nördliche Adria') && str_contains($html, 'Ammersee'),
        'Stundenseite: zwei Diagramme im Vergleich, Adria und Ammersee morgen je 5 fahrbare Stunden');
+pruefe(substr_count($html, 'Wind: dicke Linie = Modellmittel') === 2
+       && preg_match('/Wind: dicke Linie[^<]*<\/p><svg class="stunden-bild"/', $html),
+       'Stundenseite: Legende Wind direkt über jedem Winddiagramm (wie bei den Wellen)');
 // Pfeil zeigt, wohin der Wind weht: Pfad zeigt ungedreht nach Sueden, gedreht wird um die Herkunft
 pruefe(preg_match_all('/<g class="s-pfeil" transform="translate\([\d. ]+\) rotate\((\d+)\)"><title>aus (\d+)°/', $html, $pf) > 0
        && $pf[1] === array_map(fn($g) => (string)((int)$g % 360), $pf[2]),
