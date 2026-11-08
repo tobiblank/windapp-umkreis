@@ -142,7 +142,19 @@ a.tag:active { filter: brightness(.94); }
 .landkarte .meer { fill: var(--meer); }
 .landkarte .land { fill: var(--land); stroke: var(--grenze); stroke-width: 0.6px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
 .landkarte .umkreis { fill: none; stroke: var(--leise); stroke-width: 1px; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; opacity: .7; }
-.landkarte .heim { fill: var(--akzent); stroke: var(--karte); stroke-width: 2.5px; vector-effect: non-scaling-stroke; stroke-linejoin: round; paint-order: stroke; }
+.landkarte .heim { fill: var(--akzent); stroke: var(--karte); stroke-width: 2.5px; stroke-linejoin: round; paint-order: stroke; }
+.landkarte .heim > *, .landkarte .bus > * { vector-effect: non-scaling-stroke; }
+.landkarte .heim.tippbar { cursor: pointer; }
+/* Animation des Maennchens (seit 8.11.2026): Bus, Spur und Puls am Ziel */
+.landkarte .bus, .landkarte .busspur, .landkarte .puls { pointer-events: none; }
+.landkarte .bus { stroke: var(--karte); stroke-width: 1.5px; stroke-linejoin: round; paint-order: stroke; }
+.landkarte .bus .wagen { fill: var(--akzent); }
+.landkarte .bus .dach { fill: var(--leise); }
+.landkarte .bus .fenster { fill: var(--meer); stroke: none; }
+.landkarte .bus .rad { fill: var(--text); }
+.landkarte .bus .nabe { fill: var(--land); stroke: none; }
+.landkarte .busspur { fill: none; stroke: var(--akzent); stroke-width: 1.5px; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; }
+.landkarte .puls { fill: none; stroke: var(--go); stroke-width: 2px; vector-effect: non-scaling-stroke; }
 .landkarte .punkt circle { fill: var(--nix); stroke: var(--karte); stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
 .landkarte .punkt.go circle { fill: var(--go); }
 .landkarte .punkt.maybe circle { fill: var(--maybe); }

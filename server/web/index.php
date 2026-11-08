@@ -698,12 +698,43 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     </a>
     <?php endforeach ?>
     <?php if (!$flug):
-        // Standort als Maennchen (seit 8.11.2026), ueber den Punkten, steht mit den Fuessen am Ort
+        // Standort als Maennchen (seit 8.11.2026), ueber den Punkten, steht mit den Fuessen am Ort.
+        // Seit 8.11.2026 abends mit Armen und Animation (Skript unten): Hand an die Stirn, umsehen,
+        // auf die beste Region zeigen, in den Bus steigen und hinfahren. Geometrie in Einheiten
+        // von $u (Kopf oben bei -3,65), die Gruppe skaliert. Ohne JavaScript steht es still da.
         $u = $rp * 0.7;
-        $m = fn(float $v) => round($v * $u, 2);
+        // Ziel: die beste Region (zuletzt gezeichnet), wenn sie gut ist wie beim Teilen:
+        // ab 40 % Chance, ohne Ensemble ein Fenster nach Modellmittel
+        $best = $punkte ? $punkte[array_key_last($punkte)] : null;
+        $ziel = $best && ($best['wert']['chance'] !== null ? $best['wert']['chance'] >= 0.4 : $best['wert']['geht']) ? $best : null;
+        $hx = round($heimXY[0], 1);
+        $hy = round($heimXY[1], 1);
+        $arm = fn(string $id, float $x, float $grad) => '<rect class="arm" id="' . $id . '" x="-0.15" y="0" width="0.3" height="1.4" rx="0.15" transform="translate(' . $x . ' -2.2) rotate(' . $grad . ')"/>';
     ?>
-    <path class="heim" transform="translate(<?= round($heimXY[0], 1) ?> <?= round($heimXY[1], 1) ?>)"
-          d="M0,<?= $m(-3.25) ?>a<?= $m(0.4) ?>,<?= $m(0.4) ?> 0 1,0 0.01,0Z M<?= $m(-0.75) ?>,<?= $m(-2.35) ?>H<?= $m(0.75) ?>V<?= $m(-1.1) ?>H<?= $m(0.55) ?>V0H<?= $m(0.13) ?>V<?= $m(-1.0) ?>H<?= $m(-0.13) ?>V0H<?= $m(-0.55) ?>V<?= $m(-1.1) ?>H<?= $m(-0.75) ?>Z"><title><?= $eigenerOrt ? 'Dein Standort' : 'Inning am Ammersee' ?></title></path>
+    <?php if ($ziel): ?>
+    <path class="busspur" id="heimSpur" d="" opacity="0"/>
+    <circle class="puls" id="heimPuls" cx="<?= round($ziel['xy'][0], 1) ?>" cy="<?= round($ziel['xy'][1], 1) ?>" r="<?= round($rp, 2) ?>" opacity="0"/>
+    <g class="bus" id="heimBus" opacity="0">
+      <rect class="dach" x="-2.2" y="-4" width="3.2" height="0.6" rx="0.25"/>
+      <path class="wagen" d="M-2.8,-0.8V-2.9Q-2.8,-3.3 -2.4,-3.3H1.5L2.8,-1.9V-0.8Z"/>
+      <path class="fenster" d="M1.65,-3.05L2.5,-2H1.65Z"/>
+      <rect class="fenster" x="-2.35" y="-2.95" width="1.2" height="0.8" rx="0.2"/>
+      <rect class="fenster" x="-0.85" y="-2.95" width="1.4" height="0.8" rx="0.2"/>
+      <circle class="rad" cx="-1.6" cy="-0.7" r="0.62"/><circle class="nabe" cx="-1.6" cy="-0.7" r="0.22"/>
+      <circle class="rad" cx="1.6" cy="-0.7" r="0.62"/><circle class="nabe" cx="1.6" cy="-0.7" r="0.22"/>
+    </g>
+    <?php endif ?>
+    <g class="heim" id="heim" transform="translate(<?= $hx ?> <?= $hy ?>) scale(<?= round($u, 3) ?>)"
+       data-x="<?= $hx ?>" data-y="<?= $hy ?>" data-u="<?= round($u, 3) ?>" data-rp="<?= round($rp, 3) ?>"<?php if ($ziel): ?> data-wohin="<?= round($ziel['xy'][0], 1) ?>,<?= round($ziel['xy'][1], 1) ?>"<?php endif ?>>
+      <title><?= $eigenerOrt ? 'Dein Standort' : 'Inning am Ammersee' ?><?= $ziel ? ' · antippen: wohin fahr ma?' : '' ?></title>
+      <?= $arm('heimArmL', -0.62, 12) ?>
+      <?= $arm('heimArmR', 0.62, -12) ?>
+      <rect class="arm" id="heimOber" x="-0.15" y="0" width="0.3" height="0.55" rx="0.15" opacity="0"/>
+      <rect class="arm" id="heimUnter" x="-0.15" y="0" width="0.3" height="0.85" rx="0.15" opacity="0"/>
+      <rect class="arm" id="heimZeig" x="-0.15" y="0" width="0.3" height="1.4" rx="0.15" opacity="0"/>
+      <path d="M-0.75,-2.35H0.75V-1.1H0.55V0H0.13V-1H-0.13V0H-0.55V-1.1H-0.75Z"/>
+      <circle id="heimKopf" cx="0" cy="-3.25" r="0.4"/>
+    </g>
     <?php endif ?>
   </svg>
   <button type="button" class="feldknopf" id="feldKnopf" aria-pressed="true" hidden>Farbfeld Windstärke</button>
@@ -1022,6 +1053,142 @@ document.addEventListener('click', function (e) {
   k.addEventListener('toggle', function () {
     try { localStorage.setItem(SCHLUESSEL, k.open ? 'auf' : 'zu'); } catch (e) {}
   });
+})();
+// Maennchen auf der Landkarte (seit 8.11.2026): Hand an die Stirn, nach links und rechts
+// umsehen, auf die beste Region zeigen, in den Bus steigen, hinfahren, wieder zu Hause stehen
+// und hinzeigen. Ohne gute Region: umsehen und Schultern zucken. Startet, sobald die Karte
+// sichtbar ist; Scrollen, Antippen der Karte oder eine Taste beenden die Animation sofort
+// in der Endpose. Bei "Bewegung reduzieren" gleich die Endpose. Antippen des Maennchens
+// spielt sie neu ab. Zeiten in ms, Laengen in Einheiten des Maennchens.
+(function () {
+  var heim = document.getElementById('heim');
+  if (!heim || !window.requestAnimationFrame) { return; }
+  var svg = heim.ownerSVGElement;
+  var X = +heim.dataset.x, Y = +heim.dataset.y, U = +heim.dataset.u, RP = +heim.dataset.rp;
+  var ziel = heim.dataset.wohin ? heim.dataset.wohin.split(',').map(Number) : null;
+  function el(id) { return document.getElementById(id); }
+  var kopf = el('heimKopf'), armL = el('heimArmL'), armR = el('heimArmR'), ober = el('heimOber'),
+      unter = el('heimUnter'), zeig = el('heimZeig'), bus = el('heimBus'), spur = el('heimSpur'), puls = el('heimPuls');
+  var ARM = 1.4, OBER = 0.55, UNTER = 0.85, SX = 0.62, SY = -2.2, ELLE = [1.05, -2.55];
+  var dir = ziel && ziel[0] < X ? -1 : 1;
+  // Fahrt im Bogen vom Maennchen zum Ziel, der Bus parkt neben dem Punkt; zu nah: keine Fahrt
+  var A = null, B = null, C = null;
+  if (ziel && bus) {
+    A = [X + 4.2 * U * dir, Y];
+    B = [ziel[0] - (RP * 1.4 + 3 * U) * dir, ziel[1] + RP * 0.8];
+    var dx = B[0] - A[0], dy = B[1] - A[1], d = Math.sqrt(dx * dx + dy * dy);
+    if ((B[0] - A[0]) * dir > 2 * U && d > 6 * U) {
+      var nx = -dy / d, ny = dx / d;
+      if (ny > 0) { nx = -nx; ny = -ny; }   // Bogen nach oben
+      C = [(A[0] + B[0]) / 2 + nx * d * 0.2, (A[1] + B[1]) / 2 + ny * d * 0.2];
+      spur.setAttribute('d', 'M' + A + 'Q' + C + ' ' + B);
+    } else { A = null; }
+  }
+  var fahrt = !!A;
+  var ENDE = ziel ? (fahrt ? 8300 : 4400) : 4200;
+  function cl(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+  function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+  function seg(t, a, b) { return ease(cl((t - a) / (b - a))); }
+  function wende(s) { return Math.abs(s) < 0.12 ? (s < 0 ? -0.12 : 0.12) : s; }   // schmal statt unsichtbar
+  function grad(x, y) { return Math.atan2(y, x) * 180 / Math.PI - 90; }   // Arm zeigt in Richtung (x, y)
+  function arm(e, x, y, w, sichtbar) {
+    e.setAttribute('transform', 'translate(' + x + ' ' + y + ') rotate(' + w.toFixed(1) + ')');
+    e.setAttribute('opacity', sichtbar ? 1 : 0);
+  }
+  function zeichne(t) {
+    var sal = seg(t, 300, 650);
+    var scan = (t > 650 && t < 1500 ? Math.sin((t - 650) / 850 * Math.PI * 2) : 0)
+             + (t > 2000 && t < 2800 ? Math.sin((t - 2000) / 800 * Math.PI * 2) : 0);
+    var sx = wende(-Math.cos(seg(t, 1500, 2000) * Math.PI));   // erst nach links, dann nach rechts
+    if (dir < 0 && t > 2800) { sx = wende(Math.cos(seg(t, 2800, 3200) * Math.PI)); }
+    var runter = seg(t, 3200, 3450);
+    var hk = (0.35 * sal + 0.15 * scan) * (1 - runter);
+    sal *= 1 - runter;
+    var zuck = ziel ? 0 : Math.sin(Math.PI * cl((t - 3450) / 700));
+    var zg = ziel ? seg(t, 3350, 3700) : 0;
+    var walk = 0, manOp = 1, busOp = 0, fa = 0, rr = 0;
+    if (fahrt) {
+      if (t < 7500) {
+        zg *= 1 - seg(t, 4200, 4400);
+        walk = seg(t, 4400, 4800);
+        manOp = 1 - seg(t, 4600, 4850);
+      } else {
+        manOp = seg(t, 7700, 8200);
+      }
+      busOp = seg(t, 4000, 4300) * (1 - seg(t, 7600, 8000));
+      fa = seg(t, 4900, 7000);
+      rr = cl((t - 7000) / 700);
+    }
+    var r1 = ziel ? cl((t - 3600) / 700) : 0;
+    var ring = r1 > 0 && r1 < 1 ? r1 : rr > 0 && rr < 1 ? rr : 0;
+    if (t > 3200 && ziel) { sx = dir; }
+    heim.setAttribute('transform', 'translate(' + (X + walk * 2.5 * U * dir) + ' ' + Y + ') scale(' + (sx * U) + ' ' + U + ')');
+    heim.setAttribute('opacity', manOp);
+    kopf.setAttribute('cx', hk.toFixed(3));
+    arm(armL, -SX, SY, 12 + 50 * zuck, true);
+    arm(armR, SX, SY, -12 - 50 * zuck, sal < 0.05 && zg < 0.02);
+    arm(ober, SX, SY, grad(ELLE[0] - SX, ELLE[1] - SY), sal >= 0.05);
+    arm(unter, ELLE[0], ELLE[1], grad(hk + 0.42 - ELLE[0], -3.35 - ELLE[1]), sal >= 0.05);
+    if (ziel) {
+      var wx = ziel[0] - (X + SX * U * dir), wy = ziel[1] - (Y + SY * U);
+      // Zeigen wie zum Horizont: hoechstens 35 Grad nach unten, sonst sieht der Arm aus wie haengend
+      var w = Math.max(-70, Math.min(35, Math.atan2(wy, Math.abs(wx)) * 180 / Math.PI));
+      arm(zeig, SX, SY, w - 90, zg >= 0.02);
+      zeig.setAttribute('height', (ARM * zg).toFixed(3));
+    }
+    if (fahrt) {
+      var u = 1 - fa, px = u * u * A[0] + 2 * u * fa * C[0] + fa * fa * B[0], py = u * u * A[1] + 2 * u * fa * C[1] + fa * fa * B[1];
+      var faehrt = t > 4900 && t < 7000;
+      var hop = faehrt ? -Math.abs(Math.sin(t / 85)) * 0.25 * U : 0;
+      bus.setAttribute('transform', 'translate(' + px + ' ' + (py + hop) + ') scale(' + (dir * U) + ' ' + U + ')');
+      bus.setAttribute('opacity', busOp);
+      spur.setAttribute('opacity', faehrt ? 0.6 : t >= 7000 && t < 7600 ? 0.6 * (1 - seg(t, 7000, 7600)) : 0);
+      spur.style.strokeDashoffset = -t / 40;
+    }
+    if (puls) {
+      puls.setAttribute('r', (RP * (1 + 1.8 * ring)).toFixed(2));
+      puls.setAttribute('opacity', ring > 0 ? 1 - ring : 0);
+    }
+  }
+  var t0 = null, raf = null, laeuft = false, gestoppt = 0;
+  function bild(ts) {
+    if (t0 === null) { t0 = ts; }
+    var t = ts - t0;
+    zeichne(Math.min(t, ENDE));
+    if (t < ENDE) { raf = requestAnimationFrame(bild); } else { laeuft = false; }
+  }
+  function stopp() {
+    if (!laeuft) { return; }
+    cancelAnimationFrame(raf);
+    laeuft = false;
+    gestoppt = Date.now();
+    zeichne(ENDE);
+  }
+  var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function start() {
+    cancelAnimationFrame(raf);
+    if (still) { zeichne(ENDE); return; }
+    t0 = null;
+    laeuft = true;
+    gestartet = Date.now();
+    raf = requestAnimationFrame(bild);
+  }
+  var gestartet = 0;
+  // Scrollen beendet; der Schwung des Scrollens, der die Karte ins Bild gebracht hat, nicht
+  addEventListener('scroll', function () { if (Date.now() - gestartet > 400) { stopp(); } }, { passive: true });
+  addEventListener('keydown', stopp);
+  svg.addEventListener('pointerdown', stopp);
+  heim.classList.add('tippbar');
+  heim.addEventListener('click', function (e) {
+    e.preventDefault();
+    if (!laeuft && Date.now() - gestoppt > 400) { start(); }
+  });
+  // Einmal je Seitenaufruf, sobald die Karte zu gut der Haelfte sichtbar ist (auch nach dem Aufklappen)
+  if (!('IntersectionObserver' in window)) { start(); return; }
+  var io = new IntersectionObserver(function (eintraege) {
+    if (eintraege.some(function (e) { return e.isIntersecting; })) { io.disconnect(); start(); }
+  }, { threshold: 0.55 });
+  io.observe(svg);
 })();
 (function () {
   var form = document.getElementById('wahl');
