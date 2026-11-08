@@ -20,6 +20,16 @@ return [
     // null = ohne Zwischenspeicher (rechnet bei jedem Aufruf neu, langsamer).
     // 'cache_dir' => '/usr/home/DEINUSER/umkreisdaten/cache',
 
+    // Optional: Startseite (ohne Parameter) fuer Suchmaschinen freigeben.
+    // Standard false = ueberall noindex. Erst einschalten, wenn Impressum
+    // und Datenschutz geprueft sind. Alle anderen Ansichten bleiben noindex.
+    // 'indexieren' => true,
+
+    // Optional: Bestaetigungscode der Google Search Console fuer eine
+    // URL-Praefix-Property (Methode "HTML-Tag": nur der Wert aus content="...").
+    // Fuer eine Domain-Property (DNS-TXT-Eintrag) nicht noetig.
+    // 'google_verifizierung' => 'abc123...',
+
     // Nur fuer den Sammler als Cronjob (server/sammler.php ohne --action):
     // 'modelle' => 'icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd',
     // 'openmeteo_limit' => 10000,

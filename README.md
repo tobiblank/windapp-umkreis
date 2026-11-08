@@ -22,10 +22,10 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Regionen-Katalog (`daten/regionen.json`) | 7.11.2026: Ammersee (Stegen, Herrsching, Eching; Link zu ammerseewind.de), Nördliche Adria (Bora, Scirocco), Walchensee (grob, mit Link zu Marcos Vorhersage); als Entwurf, ungeprüft: Leucate/Gruissan, Hyères/Almanarre, Fehmarn, Île de Ré, Bretagne, Normandie, Pas de Calais, Deutsche Bucht, Klitmøller, Władysławowo; dazu 15 Seen (Starnberger See, Kochelsee, Chiemsee, Bodensee, Achensee, Reschensee, Silvaplana, Gardasee Nord, Comer See Nord, Urnersee, Neuenburgersee, Attersee, Traunsee, Zeller See, Neusiedler See). 28 Regionen. Sektorgrenzen teils geschätzt, siehe `hinweis` je Eintrag. Die Tests nutzen einen eigenen festen Katalog (`tests/regionen_test.json`) |
 | Sammler (`server/sammler.php`) | 7.11.2026, läuft als GitHub Action zweimal am Tag (`sammeln.yml`); gegen einen Open-Meteo-Ersatz getestet, **noch nie gegen das echte Open-Meteo gelaufen** |
 | Bewertung (`server/web/lib/bewertung.php`) | 7.11.2026: Stunde fahrbar, bester Block ≥ 2 h, Ensemble-Chance, Rangliste; seit 8.11.2026 Tage ohne Daten „offen“ statt 0 % |
-| Seite Rangliste (`server/web/index.php`) | 7.11.2026: Sportart, Umkreis (seit 7.11.2026 Straßen-km, siehe „Fahrzeit und Abfahrt“), Standort (auf 0,1° gerundet), „Heute bis übermorgen“ und „Tag 3 bis 7“, Knopf „Teilen“ an guten Tagen (siehe „Teilen“); ohne Anmeldung, nicht in Suchmaschinen (`noindex`) |
+| Seite Rangliste (`server/web/index.php`) | 7.11.2026: Sportart, Umkreis (seit 7.11.2026 Straßen-km, siehe „Fahrzeit und Abfahrt“), Standort (auf 0,1° gerundet), „Heute bis übermorgen“ und „Tag 3 bis 7“, Knopf „Teilen“ an guten Tagen (siehe „Teilen“); ohne Anmeldung. Suchmaschinen seit 8.11.2026 vorbereitet, aber noch `noindex`, bis `indexieren` in `config.php` gesetzt ist (siehe „Suchmaschinen“) |
 | Impressum, Datenschutz (`server/web/*.html`) | 7.11.2026, aus stegen-wind abgeleitet – bitte prüfen |
 | Rangliste auf der Kommandozeile (`server/rangliste.php`) | zum Ausprobieren gegen Rohdaten |
-| Hosting | Hetzner Webhosting, seit 7.11.2026 unter **wohinfahrma.de** (Ordner `public_html/wohinfahrma`, Let's Encrypt); wohinfahrma.dablank.de und www leiten dauerhaft um (`server/web/.htaccess`). Deploy per GitHub Action |
+| Hosting | Hetzner Webhosting, seit 7.11.2026 unter **wohinfahrma.de** (Ordner `public_html/wohinfahrma`, Let's Encrypt); wohinfahrma.dablank.de und www leiten dauerhaft um (`server/web/.htaccess`). Deploy per GitHub Action. Tarif Webhosting S: 2 PHP-Prozesse, `memory_limit` seit 8.11.2026 192M (Maximum des Tarifs, vorher 128M), PHP 8.4 (vorher 8.3); die Actions testen mit derselben Version |
 | Web-App zum Installieren | 7.11.2026: `manifest.php` (Name Wohinfahrma, unter dem Symbol „Fahrma“), `sw.js` und `offline.html` nach stegen-wind (nur Offline-Seite, nichts zwischengespeichert), Symbol als Platzhalter (`icon.svg`, PNG 192/512/180). Erst nach dem Umzug auf wohinfahrma.de auf dem Handy installieren. Hinweis „Als App installieren“ beim ersten Besuch (Chrome/Edge/Android mit Knopf, iPhone als Text), nach „Nicht jetzt“ 30 Tage Ruhe |
 | Quellen für Regionen | 7.11.2026 gesichtet, siehe „Quellen für Regionen und Spots“ |
 | Regel-Windlagen | 7.11.2026: Druckdifferenzen und Grundströmung statt Modellwind für Thermik- und Föhnlagen; Reschensee, Silvaplana, Gardasee Nord, Urnersee. Stärken, Tageszeiten und Saison geschätzt, siehe „Regel-Windlagen“ |
@@ -111,7 +111,7 @@ Seit 7.11.2026. Vor einer langen Fahrt zählt nicht nur die Chance, sondern ob s
 
 **Rechenzeit** (gleicher Tag): Die Umrechnung der Zeitreihe in Ortszeit lief bis dahin für jeden der 51 Ensemble-Läufe einzeln (`ortszeiten()` macht das jetzt einmal je Abruf); die Rangliste für 40 Regionen brauchte dadurch 2,4 s, jetzt 0,16 s. `daten_laden()` entpackt ältere Zeilen nur noch, wenn ihnen noch Regionen fehlen. 
 
-**Speicher** (7.11.2026 abends): Nach dem Verlauf zeigte wohinfahrma.de HTTP 500. Nachgestellt mit 43 Regionen und vier Läufen in Originalgröße (Ensemble rund 5 MB je Lauf, wie im echten Sammler-Lauf um 16:05 UTC) brauchte die Seite 146 MB und brach bei `memory_limit=128M` in `verlauf_rechnen()` ab; schon die Fassung davor lag bei 136 MB. Das Limit bei Hetzner selbst ist weiter ungeprüft, 128 MB ist also die wahrscheinliche, nicht die belegte Ursache. Seitdem:
+**Speicher** (7.11.2026 abends): Nach dem Verlauf zeigte wohinfahrma.de HTTP 500. Nachgestellt mit 43 Regionen und vier Läufen in Originalgröße (Ensemble rund 5 MB je Lauf, wie im echten Sammler-Lauf um 16:05 UTC) brauchte die Seite 146 MB und brach bei `memory_limit=128M` in `verlauf_rechnen()` ab; schon die Fassung davor lag bei 136 MB. Am 8.11.2026 in der konsoleH bestätigt: eingestellt waren 128M, die Ursache stimmt also. Jetzt 192M, das Maximum im Tarif S; das Erbitten von 256 MB in `index.php` wirkt dort nicht. Seitdem:
 - `zeile_eintraege()` teilt die `payload`-Liste als Text in ihre Einträge (jeder beginnt mit `{"latitude":`) und entpackt nur, was gebraucht wird; passt die Teilung nicht, wird wie bisher die ganze Zeile entpackt.
 - `daten_laden(…, nur: [ids])` behält Einträge nur für Regionen im Umkreis; Stand (`_ts`) und Fingerabdruck des Ensembles (`_fp`) gibt es für alle, der Verlauf braucht nur diese.
 - Die Seite gibt die Rohdaten nach der Rangliste frei.
@@ -212,6 +212,18 @@ Seit 7.11.2026. Katalogfeld `infos` je Region (siehe Tabelle oben), angezeigt al
 ## Hell und Dunkel
 
 Seit 7.11.2026. Standard wie das Gerät (`prefers-color-scheme`, z. B. Android „Dunkles Design“ mit Zeitplan). Im Fuß der Rangliste und der Stundenseite: **Wie Gerät · Hell · Dunkel**. Die Wahl steht nur im Browser (`localStorage`, `wohinfahrma_design`) und setzt `data-theme="light|dark"` auf `<html>`; ein kleines Skript im Kopf setzt sie vor dem ersten Zeichnen, damit nichts aufblitzt, und passt die Farbe der Browserleiste an (`lib/design.php`). In `stil.css` stehen die dunklen Farben zweimal (für das Gerät und für die Wahl); der Test prüft, dass beide gleich sind. Ohne JavaScript ist der Schalter unsichtbar, dann gilt das Gerät. Impressum und Datenschutz folgen weiter nur dem Gerät.
+
+## Suchmaschinen
+
+Seit 8.11.2026 vorbereitet. In den Index soll nur die **Startseite ohne Parameter**; sie zeigt die Rangliste ab Inning im Standard-Umkreis. Alles andere bleibt draußen.
+
+- **Schalter:** `'indexieren' => true` in `config.php` auf dem Server. Ohne (Standard) bleibt jede Seite `noindex` wie bisher. Mit: Startseite ohne `noindex`, dafür `<link rel="canonical" href="https://wohinfahrma.de/">`. Jede Ansicht mit Parametern (Auswahl, Woche, Roadtrip, geteilte Links), die Stundenseite, Impressum, Datenschutz und die Offline-Seite bleiben `noindex`.
+- **`robots.txt`:** sperrt alle URLs mit `?`, `stunden.php`, `manifest.php` und `lib/`. Grund ist die Last, nicht nur der Index: Jeder Aufruf rechnet die Rangliste neu (rund 100 MB, bis etwa 1 s, bei 2 PHP-Prozessen geteilt mit ammerseewind.de); ein Crawler, der den Links in die Stundenseiten folgt, würde die Seite für Besucher blockieren. Nebenwirkung: Gesperrte Seiten sieht Google nicht, also auch nicht ihr `noindex`; verlinkt sie jemand öffentlich, kann die nackte URL im Index auftauchen.
+- **`sitemap.xml`:** nur die Startseite.
+- **Beschreibung:** `<title>` und `<meta name="description">` sowie `og:`-Angaben für Vorschauen in Messengern, auf allen Ansichten von `index.php`.
+- **Search Console:** am besten als **Domain-Property** `wohinfahrma.de`, bestätigt per DNS-TXT-Eintrag dort, wo das DNS der Domain verwaltet wird (vermutlich DNS-Verwaltung der konsoleH, ungeprüft); deckt alle Subdomains mit ab. Alternativ eine URL-Präfix-Property `https://wohinfahrma.de/` mit der Methode „HTML-Tag“: nur den Wert aus `content="…"` als `'google_verifizierung'` in `config.php` eintragen, die Startseite gibt dann den Meta-Tag aus (auch solange `noindex` gilt). Danach die Sitemap einreichen.
+- **Reihenfolge:** Impressum und Datenschutz prüfen → Property bestätigen → `indexieren` einschalten → Sitemap einreichen → in der Search Console „URL-Prüfung“ für die Startseite.
+- Die Prüfungen stehen in `tests/test.php` (Abschnitt „Seite“).
 
 ## Regel-Windlagen
 
@@ -363,7 +375,8 @@ tools/karte_bauen.py    erzeugt server/web/karte.svg aus Natural Earth
 6. Stegen: kalibrierte Chance aus ammerseewind.de über einen kleinen Endpoint übernehmen
 7. Mail-Benachrichtigung
 8. Regel-Windlagen nach dem ersten echten Lauf prüfen (Druckniveaus im Ensemble, plausible Tage); Stärken aus eigener Erfahrung eintragen
-9. Später: weitere Regeln (Achensee, Walchensee, Mistral), Spot-Meldungen, Korrektur je Spot aus Sessions
+9. Google Search Console: Impressum und Datenschutz prüfen, Domain bestätigen, `indexieren` einschalten, Sitemap einreichen (siehe „Suchmaschinen“)
+10. Später: weitere Regeln (Achensee, Walchensee, Mistral), Spot-Meldungen, Korrektur je Spot aus Sessions
 
 ### Ideen, in dieser Reihenfolge (7.11.2026)
 

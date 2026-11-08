@@ -653,6 +653,39 @@ pruefe($tk !== [] && str_starts_with(html_entity_decode($tk[0][3]), '?sport=') &
 [, $html] = holen($sitePort, 'index.php?sport=<script>');
 pruefe(!str_contains($html, '<script>alert') && ohne_php_meldung($html), 'unbekannte Sportart: Standard, nichts ungefiltert ausgegeben');
 
+// Suchmaschinen: ohne 'indexieren' ueberall noindex, mit nur die Startseite
+[, $html] = holen($sitePort, 'index.php');
+pruefe(str_contains($html, '<meta name="robots" content="noindex">') && !str_contains($html, 'rel="canonical"')
+       && !str_contains($html, 'google-site-verification') && str_contains($html, '<meta name="description"'),
+       'ohne indexieren: Startseite noindex, ohne canonical, mit Beschreibung');
+exec('cp -r ' . escapeshellarg("$ROOT/server/web") . ' ' . escapeshellarg("$site/suche"));
+copy(__DIR__ . "/regionen_test.json", "$site/suche/lib/regionen.json");
+file_put_contents("$site/suche/config.php", '<?php return ' . var_export(['data_dir' => "$tmp/action", 'indexieren' => true,
+                  'google_verifizierung' => 'Ab12-cd_34Ef56gh78'], true) . ';');
+[$code, $html] = holen($sitePort, 'suche/index.php');
+pruefe($code === 200 && ohne_php_meldung($html) && !str_contains($html, 'name="robots"')
+       && str_contains($html, '<link rel="canonical" href="https://wohinfahrma.de/">')
+       && str_contains($html, '<meta name="google-site-verification" content="Ab12-cd_34Ef56gh78">'),
+       'mit indexieren: Startseite ohne noindex, mit canonical und Google-Code');
+[, $html] = holen($sitePort, 'suche/index.php?km=100');
+pruefe(str_contains($html, '<meta name="robots" content="noindex">') && !str_contains($html, 'rel="canonical"')
+       && !str_contains($html, 'google-site-verification'), 'mit indexieren: Ansicht mit Parametern bleibt noindex');
+[, $html] = holen($sitePort, "suche/index.php?region=ammersee&nach=$morgen");
+pruefe(str_contains($html, '<meta name="robots" content="noindex">'), 'mit indexieren: geteilte Vorhersage bleibt noindex');
+file_put_contents("$site/suche/config.php", '<?php return ' . var_export(['data_dir' => "$tmp/action", 'indexieren' => 'ja',
+                  'google_verifizierung' => '"><script>'], true) . ';');
+[, $html] = holen($sitePort, 'suche/index.php');
+pruefe(str_contains($html, '<meta name="robots" content="noindex">') && !str_contains($html, 'google-site-verification'),
+       'indexieren nur mit true, ungültiger Google-Code wird ignoriert');
+[, $html] = holen($sitePort, 'stunden.php?region=ammersee');
+pruefe(str_contains($html, '<meta name="robots" content="noindex">'), 'Stundenseite bleibt noindex');
+$robots = (string)file_get_contents("$ROOT/server/web/robots.txt");
+pruefe(str_contains($robots, "Disallow: /*?\n") && str_contains($robots, "Disallow: /stunden.php\n")
+       && str_contains($robots, 'Sitemap: https://wohinfahrma.de/sitemap.xml') && !preg_match('/^Disallow: \/\s*$/m', $robots),
+       'robots.txt: Parameter und Stundenseite gesperrt, Startseite frei, Sitemap genannt');
+$sm = @simplexml_load_file("$ROOT/server/web/sitemap.xml");
+pruefe($sm !== false && count($sm->url) === 1 && (string)$sm->url[0]->loc === 'https://wohinfahrma.de/', 'sitemap.xml: gültig, nur die Startseite');
+
 // Eigene Kopie im Unterordner statt config.php auszutauschen: unabhaengig von Zwischenspeichern
 exec('cp -r ' . escapeshellarg("$ROOT/server/web") . ' ' . escapeshellarg("$site/leer"));
 copy(__DIR__ . "/regionen_test.json", "$site/leer/lib/regionen.json");

@@ -80,6 +80,18 @@ try {
     fehlerseite('Der Regionen-Katalog ist nicht lesbar.');
 }
 
+// --- Suchmaschinen ----------------------------------------------------
+// Nur die Startseite ohne Parameter darf in den Index, und erst, wenn
+// config.php es erlaubt ('indexieren' => true). Jede andere Ansicht
+// (Auswahl, geteilte Links) bleibt noindex; robots.txt sperrt sie ohnehin,
+// damit Crawler nicht hunderte Parameter-Kombinationen durchrechnen lassen.
+const SEITE_URL = 'https://wohinfahrma.de/';
+$startseite = $_GET === [];
+$indexierbar = $startseite && ($cfg['indexieren'] ?? false) === true;
+$googleCode = is_string($cfg['google_verifizierung'] ?? null)
+           && preg_match('/^[A-Za-z0-9_-]{10,100}$/', $cfg['google_verifizierung'])
+    ? $cfg['google_verifizierung'] : null;
+
 // --- Auswahl ----------------------------------------------------------
 $sportId = isset($_GET['sport']) && isset(SPORTARTEN[$_GET['sport']]) ? (string)$_GET['sport'] : 'kite_twintip';
 $sport = SPORTARTEN[$sportId];
@@ -490,8 +502,19 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<?php if ($indexierbar): ?>
+<link rel="canonical" href="<?= SEITE_URL ?>">
+<?php else: ?>
 <meta name="robots" content="noindex">
-<title>Wohinfahrma</title>
+<?php endif ?>
+<?php if ($googleCode !== null && $startseite): ?>
+<meta name="google-site-verification" content="<?= h($googleCode) ?>">
+<?php endif ?>
+<title>Wohinfahrma – Wo ist Wind? Fahr ma.</title>
+<meta name="description" content="Wo lohnt sich Kiten, Windsurfen, Wingen oder Wellenreiten in den nächsten Tagen? Rangliste der Windsport-Reviere im Umkreis, vom Ammersee bis Adria, Mittelmeer und Atlantik, nach Vorhersage und Chance.">
+<meta property="og:title" content="Wohinfahrma – Wo ist Wind? Fahr ma.">
+<meta property="og:description" content="Rangliste der Windsport-Reviere im Umkreis nach Vorhersage und Chance.">
+<meta property="og:type" content="website">
 <link rel="stylesheet" href="stil.css">
 <link rel="manifest" href="manifest.php">
 <link rel="icon" href="favicon.ico" sizes="32x32">
