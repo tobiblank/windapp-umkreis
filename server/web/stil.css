@@ -142,7 +142,7 @@ a.tag:active { filter: brightness(.94); }
 .landkarte .meer { fill: var(--meer); }
 .landkarte .land { fill: var(--land); stroke: var(--grenze); stroke-width: 0.6px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
 .landkarte .umkreis { fill: none; stroke: var(--leise); stroke-width: 1px; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; opacity: .7; }
-.landkarte .heim { fill: var(--text); stroke: var(--karte); stroke-width: 2px; vector-effect: non-scaling-stroke; }
+.landkarte .heim { fill: var(--akzent); stroke: var(--karte); stroke-width: 2.5px; vector-effect: non-scaling-stroke; stroke-linejoin: round; paint-order: stroke; }
 .landkarte .punkt circle { fill: var(--nix); stroke: var(--karte); stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
 .landkarte .punkt.go circle { fill: var(--go); }
 .landkarte .punkt.maybe circle { fill: var(--maybe); }

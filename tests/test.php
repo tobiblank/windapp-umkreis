@@ -686,6 +686,8 @@ pruefe(preg_match('/<path class="windpfeil" d="[^"]+" transform="translate\([\d.
        && preg_match('/<g class="windfeld"[^>]*>\s*<circle [^>]*style="fill: rgb\(/', $html) && str_contains($html, 'class="windskala"')
        && str_contains($html, 'aus NO, Ø '),
        'Landkarte: Windpfeil (Bora aus 40 Grad), Farbfeld nach Windstärke, Legende');
+pruefe(preg_match('/<path class="heim" transform="translate\([\d. ]+\)"\s+d="M0,[^"]+Z"><title>Inning am Ammersee<\/title><\/path>\s*<\?php|<path class="heim"/', $html)
+       && strrpos($html, 'class="heim"') > strrpos($html, 'class="punkt '), 'Landkarte: Standort als Männchen, über den Punkten');
 pruefe(str_contains($html, 'stunden.php?region=adria-nord&amp;sport=') && preg_match('/data-ziel="stunden\.php\?region=adria-nord&amp;sport=[a-z_]+&amp;tag=' . $morgen . '"/', $html),
        'mit gewähltem Tag: Karte und Punkt öffnen diesen Tag');
 [, $html] = holen($sitePort, "index.php?region=ammersee&nach=$morgen");
