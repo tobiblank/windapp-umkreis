@@ -76,3 +76,11 @@ jobs:
           hoch daten/regionen.json "${web}lib/regionen.json"
           hoch daten/schneeregionen.json "${web}lib/schneeregionen.json"
           echo "Fertig."
+
+      - name: Vorrechnen
+        # Seit 8.11.2026: ein Deploy aendert den Code der Bewertung, der Zwischenspeicher
+        # gilt dann nicht mehr. Ohne Secret VORRECHNEN_SCHLUESSEL uebersprungen.
+        env:
+          VORRECHNEN_SCHLUESSEL: ${{ secrets.VORRECHNEN_SCHLUESSEL }}
+          SEITE_URL: ${{ vars.SEITE_URL }}
+        run: tools/vorrechnen.sh

@@ -15,6 +15,7 @@ putenv('UMKREIS_WARTE_FEHLER=0');
 putenv('UMKREIS_PAUSE_ENSEMBLE=0');
 require "$ROOT/server/web/lib/regionen.php";
 require "$ROOT/server/web/lib/bewertung.php";
+require "$ROOT/server/web/lib/vorrechnen.php";
 require "$ROOT/server/web/lib/karte.php";
 require "$ROOT/server/web/lib/fahrzeit.php";
 require "$ROOT/server/web/lib/roadtrip.php";
@@ -552,6 +553,77 @@ foreach (array_keys($standFrei) as $q) {
 pruefe(verlauf_rechnen($regionen, "$tmp/action", $standFrei, $kite, $tageV, $jetztV)
        === verlauf_rechnen($regionen, "$tmp/action", $standA, $kite, $tageV, $jetztV),
        'Verlauf braucht die Rohdaten nicht mehr');
+$standOhneFp = daten_laden("$tmp/action", nur: ['adria-nord'], fingerabdruck: false);
+pruefe(array_keys($standOhneFp['_fp']['ensemble']) === ['adria-nord'] && $standOhneFp['_ts'] === $standNur['_ts']
+       && $standOhneFp['ensemble'] === $standNur['ensemble'],
+       'daten_laden ohne Fingerabdruck: _fp nur im Umkreis, sonst gleich');
+
+// ---------------------------------------------------------------
+echo "Vorgerechnete Bewertung\n";
+$vc = "$tmp/vorrechnen-cache";
+$ber = new DateTimeZone('Europe/Berlin');
+$heuteB = (new DateTimeImmutable('today', $ber))->format('Y-m-d');
+$tage7 = [];
+for ($i = 0; $i <= 6; $i++) {
+    $tage7[] = (new DateTimeImmutable("today +$i day", $ber))->format('Y-m-d');
+}
+$tage3 = array_slice($tage7, 0, 3);
+$j12 = new DateTimeImmutable("$heuteB 12:10", $ber);
+$direkt = rangliste($regionen, $standA, $kite, $inning, 1000, $tage3, $j12);
+$c1 = rangliste_mit_cache($regionen, "$tmp/action", $vc, 'kite_twintip', $inning, 1000, $tage3, $j12, 1);
+pruefe($c1['liste'] === $direkt && $c1['gerechnet'] === count($direkt) && $c1['aus_cache'] === 0,
+       'erster Aufruf: rechnet in Stapeln, Ergebnis gleich wie rangliste()');
+pruefe($c1['stand']['_ts'] === $standA['_ts'] && $c1['stand']['_fp'] === $standA['_fp'], 'Stand und Fingerabdruck wie daten_laden()');
+pruefe(count(glob("$vc/bewertung-kite_twintip-*.ser")) === 3 && count(glob("$vc/stand-*.ser")) === 1, 'je Tag eine Datei, dazu der Stand');
+$c2 = rangliste_mit_cache($regionen, "$tmp/action", $vc, 'kite_twintip', $inning, 1000, $tage3, $j12->modify('+40 minutes'));
+pruefe($c2['liste'] === $direkt && $c2['gerechnet'] === 0 && $c2['aus_cache'] === count($direkt), 'zweiter Aufruf in derselben Stunde: alles aus dem Zwischenspeicher');
+$nahD = rangliste($regionen, $standA, $kite, $inning, 100, $tage3, $j12);
+$nahC = rangliste_mit_cache($regionen, "$tmp/action", $vc, 'kite_twintip', $inning, 100, $tage3, $j12);
+$weitD = rangliste($regionen, $standA, $kite, [46.6, 30.0], 2500, $tage3, $j12);
+$weitC = rangliste_mit_cache($regionen, "$tmp/action", $vc, 'kite_twintip', [46.6, 30.0], 2500, $tage3, $j12);
+pruefe($nahC['liste'] === $nahD && $nahC['gerechnet'] === 0 && $weitC['liste'] === $weitD && $weitC['gerechnet'] === 2 && $weitC['aus_cache'] === 2,
+       'anderer Umkreis und Standort: vorhandene Einträge wiederverwendet, nur die zwei neuen Regionen gerechnet');
+$j13 = $j12->modify('+1 hour');
+$c3 = rangliste_mit_cache($regionen, "$tmp/action", $vc, 'kite_twintip', $inning, 1000, $tage3, $j13);
+pruefe($c3['liste'] === rangliste($regionen, $standA, $kite, $inning, 1000, $tage3, $j13) && $c3['gerechnet'] === count($direkt),
+       'nächste Stunde: heute wird neu gerechnet (Restfenster), gleich wie rangliste()');
+$tage46 = array_slice($tage7, 3);
+$c4 = rangliste_mit_cache($regionen, "$tmp/action", $vc, 'kite_twintip', $inning, 1000, $tage46, $j13);
+$c4b = rangliste_mit_cache($regionen, "$tmp/action", $vc, 'kite_twintip', $inning, 1000, $tage46, $j13->modify('+5 hours'));
+pruefe($c4['liste'] === rangliste($regionen, $standA, $kite, $inning, 1000, $tage46, $j13) && $c4b['gerechnet'] === 0,
+       'Tag 3 bis 7: hängt nicht an der Uhrzeit, bleibt im Zwischenspeicher');
+$regionenG = $regionen;
+$regionenG[0]['spots'][] = ['id' => 'neu-im-test', 'name' => 'Neuer Spot'];
+$c5 = rangliste_mit_cache($regionenG, "$tmp/action", $vc, 'kite_twintip', $inning, 1000, $tage3, $j13);
+pruefe($c5['gerechnet'] === 1 && $c5['liste'] === rangliste($regionenG, $standA, $kite, $inning, 1000, $tage3, $j13),
+       'geänderter Katalog-Eintrag: nur diese Region neu');
+$c6 = rangliste_mit_cache($regionen, "$tmp/action", $vc, 'wingfoil', $inning, 1000, $tage3, $j13);
+pruefe($c6['gerechnet'] === count($direkt) && $c6['liste'] === rangliste($regionen, $standA, SPORTARTEN['wingfoil'], $inning, 1000, $tage3, $j13),
+       'andere Sportart: eigene Dateien');
+pruefe(rangliste_mit_cache($regionen, "$tmp/action", null, 'kite_twintip', $inning, 1000, $tage3, $j13)['liste']
+       === rangliste($regionen, $standA, $kite, $inning, 1000, $tage3, $j13), 'ohne Zwischenspeicher: gleiches Ergebnis');
+// Neuer Lauf des Sammlers: neue Datei, neuer Schluessel
+$schl = daten_schluessel("$tmp/action");
+$ensDatei = glob("$tmp/action/ensemble/*.ndjson.gz")[0];
+$kopie = dirname($ensDatei) . '/' . gmdate('Y-m-d') . '_2359.ndjson.gz';
+copy($ensDatei, $kopie);
+pruefe(daten_schluessel("$tmp/action") !== $schl, 'neuer Lauf: neuer Datenschlüssel');
+$c7 = rangliste_mit_cache($regionen, "$tmp/action", $vc, 'kite_twintip', $inning, 1000, $tage3, $j13);
+pruefe($c7['gerechnet'] === count($direkt), 'neuer Lauf: alles neu gerechnet');
+unlink($kopie);
+// Vorrechnen fuer eine Sportart: danach kommt jede Ansicht aus dem Zwischenspeicher
+$vc2 = "$tmp/vorrechnen-cache2";
+mkdir($vc2);
+$vr = vorrechnen($regionen, "$tmp/action", $vc2, 'kite_twintip', 'Europe/Berlin', '', $j12);
+pruefe($vr['gerechnet'] > 0 && $vr['aus_cache'] === 0 && count(glob("$vc2/bewertung-*.ser")) === 7 && count(glob("$vc2/verlauf-*.json")) === 2,
+       'vorrechnen: 7 Tage und der Verlauf für beide Zeiträume');
+$c8 = rangliste_mit_cache($regionen, "$tmp/action", $vc2, 'kite_twintip', [46.6, 30.0], 100, $tage46, $j12);
+$c9 = rangliste_mit_cache($regionen, "$tmp/action", $vc2, 'kite_twintip', $inning, 1000, $tage7, $j12);
+pruefe($c8['gerechnet'] === 0 && $c9['gerechnet'] === 0 && $c9['liste'] === rangliste($regionen, $standA, $kite, $inning, 1000, $tage7, $j12),
+       'nach vorrechnen: Tag 3 bis 7 und Woche ohne Nachrechnen, gleich wie rangliste()');
+touch("$vc2/bewertung-alt.ser", time() - 3 * 86400);
+cache_aufraeumen($vc2);
+pruefe(!is_file("$vc2/bewertung-alt.ser") && count(glob("$vc2/bewertung-kite_twintip-*.ser")) === 7, 'Aufräumen: alte Dateien weg, aktuelle bleiben');
 
 // ---------------------------------------------------------------
 echo "Fahrzeiten\n";
@@ -748,6 +820,35 @@ file_put_contents("$site/verlauf/config.php", '<?php return ' . var_export(['dat
 pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, '<span class="v steigt">↑ von 0</span>')
        && str_contains($html, 'steigt (0 → 49 → 100 %)') && str_contains($html, 'Frühere Abrufe: '),
        'Seite mit früheren Abrufen: Pfeil in der Kachel, Verlauf in der Detailzeile');
+// Vorrechnen (seit 8.11.2026): nur mit Schluessel aus config.php, nur per POST
+function senden(int $port, string $pfad, array $felder): array
+{
+    $ctx = stream_context_create(['http' => ['method' => 'POST', 'ignore_errors' => true, 'timeout' => 60,
+        'header' => 'Content-Type: application/x-www-form-urlencoded', 'content' => http_build_query($felder)]]);
+    $body = @file_get_contents("http://127.0.0.1:$port/$pfad", false, $ctx);
+    preg_match('/^HTTP\/\S+ (\d+)/', $http_response_header[0] ?? '', $m);
+    return [(int)($m[1] ?? 0), (string)$body];
+}
+$vSchl = str_repeat('a1', 16);
+exec('cp -r ' . escapeshellarg("$ROOT/server/web") . ' ' . escapeshellarg("$site/vorr"));
+copy(__DIR__ . "/regionen_test.json", "$site/vorr/lib/regionen.json");
+file_put_contents("$site/vorr/config.php", '<?php return ' . var_export(['data_dir' => "$tmp/action", 'cache_dir' => "$tmp/vorr-cache",
+                  'vorrechnen_schluessel' => $vSchl], true) . ';');
+[$code] = senden($sitePort, 'vorrechnen.php', ['sport' => 'kite_twintip']);
+[$code2] = senden($sitePort, 'vorrechnen.php', ['schluessel' => 'falsch', 'sport' => 'kite_twintip']);
+[$code3] = senden($sitePort, 'vorr/vorrechnen.php', ['schluessel' => 'falsch', 'sport' => 'kite_twintip']);
+[$code4] = holen($sitePort, 'vorr/vorrechnen.php');
+pruefe($code === 404 && $code2 === 404 && $code3 === 404 && $code4 === 404, 'vorrechnen.php: ohne Schlüssel in config.php oder mit falschem 404');
+[$code, $antw] = senden($sitePort, 'vorr/vorrechnen.php', ['schluessel' => $vSchl, 'sport' => 'gibtsnicht']);
+pruefe($code === 400, 'vorrechnen.php: unbekannte Sportart 400');
+[$code, $antw] = senden($sitePort, 'vorr/vorrechnen.php', ['schluessel' => $vSchl, 'sport' => 'kite_twintip']);
+$vrA = json_decode($antw, true);
+pruefe($code === 200 && ($vrA['sport'] ?? '') === 'kite_twintip' && ($vrA['gerechnet'] ?? 0) > 0 && count(glob("$tmp/vorr-cache/bewertung-kite_twintip-*.ser")) === 7,
+       'vorrechnen.php: rechnet die Sportart vor' . ($code === 200 ? '' : " (HTTP $code: " . substr($antw, 0, 200) . ')'));
+[, $antw] = senden($sitePort, 'vorr/vorrechnen.php', ['schluessel' => $vSchl, 'sport' => 'kite_twintip']);
+pruefe((json_decode($antw, true)['gerechnet'] ?? -1) === 0, 'vorrechnen.php: zweiter Aufruf aus dem Zwischenspeicher');
+[$code, $html] = holen($sitePort, 'vorr/index.php?km=1000');
+pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'id="r-adria-nord"'), 'Seite nach dem Vorrechnen');
 [, $html] = holen($sitePort, 'index.php?km=1000');
 pruefe(str_contains($html, 'id="landkarte"') && substr_count($html, 'class="punkt ') === 2
        && preg_match('/<a href="stunden\.php\?region=adria-nord&amp;sport=[a-z_]+&amp;tag=\d{4}-\d\d-\d\d" class="punkt /', $html)

@@ -1,9 +1,10 @@
 # Wohinfahrma
 #
-# Nur die Startseite ist fuer Suchmaschinen gedacht. Jede Ansicht mit
-# Parametern und die Stundenseite rechnet die Rangliste neu (rund 100 MB
-# und bis zu einer Sekunde je Aufruf, bei 2 PHP-Prozessen im Tarif S);
-# ein Crawler, der alle Kombinationen abruft, wuerde die Seite blockieren.
+# Nur die Startseite ist fuer Suchmaschinen gedacht. Die Stundenseite rechnet
+# bei jedem Aufruf neu, die Rangliste seit 8.11.2026 meist aus dem
+# Zwischenspeicher, aber nach jedem Lauf und zu jeder vollen Stunde (heute)
+# einmal neu; ein Crawler, der alle Kombinationen abruft, wuerde die Seite
+# bei 2 PHP-Prozessen im Tarif S trotzdem blockieren.
 # Ob die Startseite in den Index darf, entscheidet 'indexieren' in config.php.
 
 User-agent: *
@@ -11,6 +12,7 @@ Disallow: /*?
 Disallow: /stunden.php
 Disallow: /schnee_stunden.php
 Disallow: /manifest.php
+Disallow: /vorrechnen.php
 Disallow: /lib/
 
 Sitemap: https://wohinfahrma.de/sitemap.xml

@@ -1130,32 +1130,44 @@ function rangliste(array $regionen, array $stand, array $sport, array $heim, flo
         if ($km > $radiusKm) {
             continue;
         }
-        $daten = [
-            'vorhersage' => $stand['vorhersage'][$r['id']] ?? null,
-            'ensemble'   => $stand['ensemble'][$r['id']] ?? null,
-            'welle'      => $stand['welle'][$r['id']] ?? null,
-            'wasser'     => wasser_eintrag($stand, $r['id']),
-            'druck'          => $stand['druck'] ?? [],
-            'druck_ensemble' => $stand['druck_ensemble'] ?? [],
-            'hoehe'          => $stand['hoehe'][$r['id']] ?? null,
-            'hoehe_ensemble' => $stand['hoehe_ensemble'][$r['id']] ?? null,
-        ];
-        if (!$daten['vorhersage'] && !$daten['ensemble']) {
+        $daten = region_daten($r, $stand);
+        if ($daten === null) {
             continue;
         }
-        $proTag = region_bewerten($r, $daten, $sport, $tage, $jetzt);
-        $erwartet = null;
-        $det = 0;
-        foreach ($proTag as $t) {
-            if ($t['ens'] !== null) {
-                $erwartet = ($erwartet ?? 0) + $t['ens']['chance'];
-            }
-            $det += $t['det']['geht'] ? 1 : 0;
-        }
-        $liste[] = ['region' => $r, 'km' => round($km), 'tage' => $proTag,
-                    'erwartete_tage' => $erwartet, 'tage_modellmittel' => $det];
+        $liste[] = ranglisten_eintrag($r, $km, region_bewerten($r, $daten, $sport, $tage, $jetzt));
     }
     return rangliste_sortieren($liste, 'summe');
+}
+
+/** Rohdaten einer Region aus daten_laden(); null ohne Vorhersage und Ensemble */
+function region_daten(array $r, array $stand): ?array
+{
+    $daten = [
+        'vorhersage' => $stand['vorhersage'][$r['id']] ?? null,
+        'ensemble'   => $stand['ensemble'][$r['id']] ?? null,
+        'welle'      => $stand['welle'][$r['id']] ?? null,
+        'wasser'     => wasser_eintrag($stand, $r['id']),
+        'druck'          => $stand['druck'] ?? [],
+        'druck_ensemble' => $stand['druck_ensemble'] ?? [],
+        'hoehe'          => $stand['hoehe'][$r['id']] ?? null,
+        'hoehe_ensemble' => $stand['hoehe_ensemble'][$r['id']] ?? null,
+    ];
+    return !$daten['vorhersage'] && !$daten['ensemble'] ? null : $daten;
+}
+
+/** Eintrag der Rangliste aus der Bewertung je Tag (region_bewerten) */
+function ranglisten_eintrag(array $r, float $km, array $proTag): array
+{
+    $erwartet = null;
+    $det = 0;
+    foreach ($proTag as $t) {
+        if ($t['ens'] !== null) {
+            $erwartet = ($erwartet ?? 0) + $t['ens']['chance'];
+        }
+        $det += $t['det']['geht'] ? 1 : 0;
+    }
+    return ['region' => $r, 'km' => round($km), 'tage' => $proTag,
+            'erwartete_tage' => $erwartet, 'tage_modellmittel' => $det];
 }
 
 /**
@@ -1200,12 +1212,13 @@ function rangliste_sortieren(array $liste, string $nach): array
  * und eine gezippte je Lauf (GitHub Action, 2026-11-07_0525.ndjson.gz).
  * Rueckgabe [quelle => [region_id => eintrag]], dazu ['_ts'][quelle][region_id].
  */
-function daten_laden(string $dataDir, array $quellen = ['vorhersage', 'ensemble', 'welle', 'wasser', 'seewasser', 'druck', 'druck_ensemble', 'hoehe', 'hoehe_ensemble'], ?array $nur = null): array
+function daten_laden(string $dataDir, array $quellen = ['vorhersage', 'ensemble', 'welle', 'wasser', 'seewasser', 'druck', 'druck_ensemble', 'hoehe', 'hoehe_ensemble'], ?array $nur = null, bool $fingerabdruck = true): array
 {
     // $nur: Regionen, deren Eintraege behalten werden (Umkreis); null = alle.
     // Stand (_ts) und Fingerabdruck des Ensembles (_fp) gibt es fuer alle Regionen,
     // der Verlauf braucht sie. Druckquellen sind nach Druckpunkt geschluesselt
-    // und werden nie gefiltert.
+    // und werden nie gefiltert. $fingerabdruck false: _fp nur fuer $nur (spart das
+    // Entpacken aller Ensemble-Eintraege, wenn _fp schon bekannt ist; seit 8.11.2026).
     $behalten = $nur === null ? null : array_fill_keys($nur, true);
     $out = ['_ts' => [], '_fp' => []];
     foreach ($quellen as $q) {
@@ -1234,7 +1247,7 @@ function daten_laden(string $dataDir, array $quellen = ['vorhersage', 'ensemble'
                 }
                 // Einzeln entpacken, nur was fehlt (Speicher, siehe zeile_eintraege). Ausserhalb
                 // des Umkreises nur fuer den Fingerabdruck des Ensembles, danach verworfen.
-                $z = zeile_eintraege($zeilen[$i], fn($id) => $fehlt($id) && (!$filter || isset($behalten[$id]) || $q === 'ensemble'));
+                $z = zeile_eintraege($zeilen[$i], fn($id) => $fehlt($id) && (!$filter || isset($behalten[$id]) || ($q === 'ensemble' && $fingerabdruck)));
                 if ($z === null) {
                     continue;
                 }

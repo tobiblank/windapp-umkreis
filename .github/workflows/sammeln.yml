@@ -22,6 +22,8 @@ name: Sammeln
 #   Secrets:   FTP_HOST, FTP_USER, FTP_PASSWORD (dieselben wie bei stegen-wind)
 #   Variables: HOME_DIR (optional; Ordner, in dem umkreisdaten/ liegt, relativ
 #              zum FTP-Startordner; leer = Startordner)
+#   Optional:  Secret VORRECHNEN_SCHLUESSEL (wie in config.php), Variable SEITE_URL
+#              (Standard https://wohinfahrma.de) fuer den Schritt Vorrechnen
 #
 # Rot heisst: mindestens ein Abruf ist fehlgeschlagen (GitHub mailt). Was geklappt
 # hat, ist trotzdem hochgeladen; die App zeigt dann den letzten guten Stand.
@@ -83,6 +85,17 @@ jobs:
             n=$((n + 1))
           done < <(find ausgabe -name '*.ndjson.gz' | sort)
           echo "$n Dateien hochgeladen."
+
+      - name: Vorrechnen
+        # Seit 8.11.2026: Bewertung je Sportart auf dem Server vorrechnen
+        # (server/web/vorrechnen.php), damit der erste Besucher nach dem Lauf nicht
+        # wartet. Nicht im kleinen Lauf um 7:40 (nur Lawine). Ohne Secret
+        # VORRECHNEN_SCHLUESSEL uebersprungen; ein Fehler hier macht den Lauf nicht rot.
+        if: github.event.schedule != '40 7 * * *'
+        env:
+          VORRECHNEN_SCHLUESSEL: ${{ secrets.VORRECHNEN_SCHLUESSEL }}
+          SEITE_URL: ${{ vars.SEITE_URL }}
+        run: tools/vorrechnen.sh
 
       - name: Ergebnis
         if: steps.abruf.outputs.rc != '0'

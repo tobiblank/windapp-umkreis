@@ -14,6 +14,7 @@ declare(strict_types=1);
 date_default_timezone_set('UTC');
 require __DIR__ . '/lib/regionen.php';
 require __DIR__ . '/lib/bewertung.php';
+require __DIR__ . '/lib/vorrechnen.php';
 require __DIR__ . '/lib/karte.php';
 require __DIR__ . '/lib/fahrzeit.php';
 require __DIR__ . '/lib/roadtrip.php';
@@ -170,24 +171,18 @@ function tag_datum(string $tag, DateTimeZone $tz): string
 // --- Rechnen ----------------------------------------------------------
 $jetzt = new DateTimeImmutable('now');
 $dataDir = rtrim($cfg['data_dir'], '/');
-// Nur die Regionen im Umkreis entpacken (Speicher)
 $zurAnreise = array_values(array_filter($regionen, fn($r) => in_array($anreise, region_anreise($r), true)));
-$imUmkreis = $geteilt
-    ? [$geteilt['id']]
-    : array_column(array_filter($zurAnreise, fn($r) => $flug || entfernung_km($heim, $r['punkt']) <= $km), 'id');
-$stand = daten_laden($dataDir, nur: $imUmkreis);
-$liste = $geteilt
-    ? rangliste([$geteilt], $stand, $sport, $heim, INF, $tage, $jetzt)
-    : rangliste($zurAnreise, $stand, $sport, $heim, $flug ? INF : (float)$km, $tage, $jetzt);
-// Speicher: die Rohdaten braucht ab hier nichts mehr (der Verlauf liest die Dateien
-// selbst, Stand und Fingerabdruecke stehen in _ts und _fp)
-foreach (array_keys($stand) as $q) {
-    if ($q[0] !== '_') {
-        $stand[$q] = [];
-    }
-}
-// Verlauf: dieselbe Chance aus frueheren Abrufen (mit Zwischenspeicher, Standard <data_dir>/cache)
+// Zwischenspeicher (Standard <data_dir>/cache): Verlauf und seit 8.11.2026 die
+// Bewertung je Region und Tag (lib/vorrechnen.php). Rohdaten werden nur noch fuer
+// Regionen entpackt, die dort fehlen; nach einem Lauf fuellt vorrechnen.php alles.
 $cacheDir = array_key_exists('cache_dir', $cfg) ? ($cfg['cache_dir'] === null ? null : rtrim((string)$cfg['cache_dir'], '/')) : "$dataDir/cache";
+$rb = $geteilt
+    ? rangliste_mit_cache([$geteilt], $dataDir, $cacheDir, $sportId, $heim, INF, $tage, $jetzt)
+    : rangliste_mit_cache($zurAnreise, $dataDir, $cacheDir, $sportId, $heim, $flug ? INF : (float)$km, $tage, $jetzt);
+$liste = $rb['liste'];
+$stand = $rb['stand'];   // nur _ts und _fp, ohne Rohdaten
+unset($rb);
+// Verlauf: dieselbe Chance aus frueheren Abrufen
 $verlauf = $roadtrip || $woche ? [] : verlauf_mit_cache($geteilt ? [$geteilt] : $regionen, $dataDir, $cacheDir, $stand, $sport, $tage, $jetzt,
                                               $cfg['regionen_datei'] ?? __DIR__ . '/lib/regionen.json');
 // Sortierung: alle Tage (summe), ein angezeigter Tag oder Entfernung
