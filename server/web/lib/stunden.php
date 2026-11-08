@@ -47,7 +47,7 @@ function region_stunden(array $region, array $daten, array $sport, string $tag, 
     $wd = welle_details($daten['welle'] ?? null, $tz);
     $ens = ensemble_stunden($daten['ensemble'] ?? null, $tz);
     [$vh, $ens] = regel_daten_einmischen($region, $daten, $tz, $vh, $ens);
-    $ens = ensemble_welle_einmischen($ens, $ws, $sport);
+    $ens = ensemble_welle_einmischen($ens, $ws, $sport, ($region['typ'] ?? '') === 'meer');
 
     // Wind je Modell
     $h = $daten['vorhersage']['hourly'];
@@ -93,13 +93,17 @@ function region_stunden(array $region, array $daten, array $sport, string $tag, 
                                           'regel' => $ok && !empty($lage['regel'])]);
         }
         $kn = [];
-        $ja = 0;
+        $n = $ja = 0;
         foreach (empty($sport['surf']) ? $ens : [] as $lauf) {   // Wellenreiten: Ensemble ohne Welle
             $e = $lauf[$tag][$s] ?? null;
             if ($e === null) {
                 continue;
             }
             $kn[] = $e['kn'];
+            if (!empty($e['welle_fehlt'])) {
+                continue;   // Wind fuers Band ja, Anteil ohne Welle nicht bewertbar
+            }
+            $n++;
             if (stunde_fahrbar($e + ['_h' => $s, '_monat' => $monat], $sport, $wl, $spot)[0]) {
                 $ja++;
             }
@@ -108,7 +112,7 @@ function region_stunden(array $region, array $daten, array $sport, string $tag, 
             $zeile['ens_p10'] = perzentil($kn, 0.1);
             $zeile['ens_p50'] = perzentil($kn, 0.5);
             $zeile['ens_p90'] = perzentil($kn, 0.9);
-            $zeile['ens_anteil'] = $ja / count($kn);
+            $zeile['ens_anteil'] = $n ? $ja / $n : null;
         }
         $stunden[$s] = $zeile;
     }

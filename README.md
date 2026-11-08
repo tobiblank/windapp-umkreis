@@ -21,7 +21,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 |---|---|
 | Regionen-Katalog (`daten/regionen.json`) | 7.11.2026: Ammersee (Stegen, Herrsching, Eching; Link zu ammerseewind.de), Nördliche Adria (Bora, Scirocco), Walchensee (grob, mit Link zu Marcos Vorhersage); als Entwurf, ungeprüft: Leucate/Gruissan, Hyères/Almanarre, Fehmarn, Île de Ré, Bretagne, Normandie, Pas de Calais, Deutsche Bucht, Klitmøller, Władysławowo; dazu 15 Seen (Starnberger See, Kochelsee, Chiemsee, Bodensee, Achensee, Reschensee, Silvaplana, Gardasee Nord, Comer See Nord, Urnersee, Neuenburgersee, Attersee, Traunsee, Zeller See, Neusiedler See). 28 Regionen. Sektorgrenzen teils geschätzt, siehe `hinweis` je Eintrag. Die Tests nutzen einen eigenen festen Katalog (`tests/regionen_test.json`) |
 | Sammler (`server/sammler.php`) | 7.11.2026, läuft als GitHub Action zweimal am Tag (`sammeln.yml`); gegen einen Open-Meteo-Ersatz getestet, **noch nie gegen das echte Open-Meteo gelaufen** |
-| Bewertung (`server/web/lib/bewertung.php`) | 7.11.2026: Stunde fahrbar, bester Block ≥ 2 h, Ensemble-Chance, Rangliste |
+| Bewertung (`server/web/lib/bewertung.php`) | 7.11.2026: Stunde fahrbar, bester Block ≥ 2 h, Ensemble-Chance, Rangliste; seit 8.11.2026 Tage ohne Daten „offen“ statt 0 % |
 | Seite Rangliste (`server/web/index.php`) | 7.11.2026: Sportart, Umkreis (seit 7.11.2026 Straßen-km, siehe „Fahrzeit und Abfahrt“), Standort (auf 0,1° gerundet), „Heute bis übermorgen“ und „Tag 3 bis 7“, Knopf „Teilen“ an guten Tagen (siehe „Teilen“); ohne Anmeldung, nicht in Suchmaschinen (`noindex`) |
 | Impressum, Datenschutz (`server/web/*.html`) | 7.11.2026, aus stegen-wind abgeleitet – bitte prüfen |
 | Rangliste auf der Kommandozeile (`server/rangliste.php`) | zum Ausprobieren gegen Rohdaten |
@@ -83,6 +83,8 @@ Geplante zusätzliche Felder (`grundstroemung`, `druck`, `saison`, `links`) sieh
 ## Bewertung
 
 Eine Stunde ist fahrbar, wenn sie im Tagesfenster liegt (9 Uhr Ortszeit oder Sonnenaufgang bis Sonnenuntergang), der Wind im Fenster der Sportart liegt, die Richtung zu einer Windlage passt, er nicht ablandig ist, kein Gewitter gerechnet wird (mindestens die Hälfte der Modelle WMO 95–99) und, falls die Sportart das verlangt, die Welle passt. Ein Tag geht ab 2 fahrbaren Stunden am Stück.
+
+**Tage ohne Daten** (seit 8.11.2026): Am 8.11.2026 zeigte Adria Nordwest für Windsurf Wave am Samstag 0 %, obwohl Windy dort 2 m Welle und über 20 kn sah. Ursache: Der letzte Sammler-Lauf war von 20:59 UTC am Vortag (geplant 17:25), Modellmittel und Marine API reichten mit 7 Tagen nur bis Freitag, das Ensemble mit 8 Tagen bis Samstag; ohne Welle zählte jeder Ensemble-Lauf als „keine Welle“. Seitdem holt der Sammler alle Quellen für 8 Tage (die Marine API erlaubt laut Doku höchstens 8), und ein Tag ohne Werte im Fenster ist **offen**: Fehlt das Modellmittel, heißt der Grund „noch keine Vorhersage“; fehlt am Meer für eine Wave-Sportart oder Wellenreiten die Welle, „noch keine Wellenvorhersage“. Ensemble-Läufe zählen bei Wave-Sportarten am Meer nur mit Welle (`welle_fehlt`). Bleibt keine Chance, zeigen Kachel, Woche und Stundenseite „?“ statt 0 %, die Karte überspringt den Tag, Roadtrip und erwartete gute Tage zählen ihn nicht. Ohne Modellmittel, aber mit Ensemble (Kite, Wing usw.) bleibt die Chance stehen. An Seen bleibt „keine Wellendaten“, dort gehen Wave-Sportarten nie.
 
 **Heute zählt nur der Rest** (seit 7.11.2026, wie stegen-wind): ab jetzt + 30 Minuten, auf die nächste volle Stunde gerundet, bis zum Ende des Tagesfensters. Das gilt für Modellmittel und Ensemble; die Kachel heißt dann „Heute ab 15“. Bleiben weniger als 2 Stunden, steht dort „vorbei“, und der Tag zählt nicht zu den erwarteten guten Tagen. Grenze: Eine Chance über wenige Reststunden ist eine Näherung mit derselben Regel. `REST_VORLAUF_MIN` in `bewertung.php`.
 
@@ -249,10 +251,10 @@ Sind alle Bedingungen einer Stunde erfüllt, rechnet die Bewertung mit der Mitte
 
 | Quelle | Inhalt | Takt als Cronjob |
 |---|---|---|
-| `vorhersage` | ICON-D2, ICON-EU, ECMWF IFS 9 km, GFS, AROME-HD: Wind, Richtung, Böen, Temperatur, Wettercode, Regen, Bewölkung; 7 Tage | stündlich |
+| `vorhersage` | ICON-D2, ICON-EU, ECMWF IFS 9 km, GFS, AROME-HD: Wind, Richtung, Böen, Temperatur, Wettercode, Regen, Bewölkung; 8 Tage (bis 8.11.2026: 7) | stündlich |
 | `ensemble` | ECMWF IFS 0,25°, 51 Läufe: Wind, Richtung, Bewölkung; 8 Tage | alle 6 h |
-| `welle` | Marine API: Wellenhöhe, -richtung, -periode, Swell; nur `typ: meer`; 7 Tage | alle 3 h |
-| `wasser` | Marine API: Meerestemperatur (`sea_surface_temperature`); nur `typ: meer`; 7 Tage | alle 6 h |
+| `welle` | Marine API: Wellenhöhe, -richtung, -periode, Swell; nur `typ: meer`; 8 Tage | alle 3 h |
+| `wasser` | Marine API: Meerestemperatur (`sea_surface_temperature`); nur `typ: meer`; 8 Tage | alle 6 h |
 | `druck` / `druck_ensemble` | Meeresspiegeldruck an den `druckpunkte`, Modelle wie `vorhersage` bzw. ECMWF-Ensemble | stündlich / alle 6 h |
 | `hoehe` / `hoehe_ensemble` | Wind in 850 und 700 hPa, nur Regionen mit Grundströmung in dieser Höhe | stündlich / alle 6 h |
 

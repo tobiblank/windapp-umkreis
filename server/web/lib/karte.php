@@ -123,7 +123,7 @@ function karte_wert(array $eintrag, ?string $tag): array
     $tage = $tag !== null ? [$tag => $eintrag['tage'][$tag] ?? null] : $eintrag['tage'];
     $best = ['chance' => null, 'tag' => null, 'geht' => false];
     foreach ($tage as $t => $d) {
-        if ($d === null || !empty($d['vorbei'])) {
+        if ($d === null || !empty($d['vorbei']) || !empty($d['offen'])) {
             continue;
         }
         $c = $d['ens']['chance'] ?? null;

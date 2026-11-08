@@ -329,9 +329,13 @@ function region_sperre(array $region, array $sport, int $monat): ?string
  * Wave-Sportarten (welle_min/welle_max): Das Ensemble hat keine Welle. Damit die
  * Chance nicht Tage mit zu kleiner Welle zaehlt, bekommt jeder Lauf die
  * Wellenhoehe der Marine-Vorhersage (fuer alle Laeufe gleich, seit 7.11.2026).
+ * Am Meer ohne Wellenwert fuer die Stunde (Marine-Vorhersage reicht nicht so
+ * weit oder fehlt) ist die Stunde unbekannt ('welle_fehlt', seit 8.11.2026):
+ * ensemble_chance zaehlt solche Laeufe nicht, statt sie als "keine Welle" zu
+ * werten. An Seen bleibt welle = null, die Stunde geht dort nie.
  * Andere Sportarten: unveraendert (ohne Schluessel 'welle' prueft rest_grund nicht).
  */
-function ensemble_welle_einmischen(array $ens, array $ws, array $sport): array
+function ensemble_welle_einmischen(array $ens, array $ws, array $sport, bool $meer = false): array
 {
     if (!isset($sport['welle_min']) && !isset($sport['welle_max'])) {
         return $ens;
@@ -339,11 +343,32 @@ function ensemble_welle_einmischen(array $ens, array $ws, array $sport): array
     foreach ($ens as $lid => $proTag) {
         foreach ($proTag as $t => $proStunde) {
             foreach ($proStunde as $s => $_) {
-                $ens[$lid][$t][$s]['welle'] = $ws[$t][$s] ?? null;
+                $wert = $ws[$t][$s] ?? null;
+                $ens[$lid][$t][$s]['welle'] = $wert;
+                if ($meer && $wert === null) {
+                    $ens[$lid][$t][$s]['welle_fehlt'] = true;
+                }
             }
         }
     }
     return $ens;
+}
+
+/** Braucht die Sportart Wellendaten? (Wave-Sportarten, Wellenreiten) */
+function braucht_welle(array $sport): bool
+{
+    return isset($sport['welle_min']) || isset($sport['welle_max']) || !empty($sport['surf']);
+}
+
+/** Gibt es fuer mindestens eine Stunde im Fenster [ab, bis) einen Wert? */
+function fenster_hat_werte(array $proStunde, array $fenster): bool
+{
+    for ($s = $fenster[0]; $s < $fenster[1]; $s++) {
+        if (isset($proStunde[$s])) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -834,7 +859,8 @@ function lauf_mittel(array $lauf): float
 
 /**
  * Chance aus dem Ensemble: Anteil der Laeufe, an denen der Tag geht.
- * Nur Laeufe mit Werten fuer alle Fensterstunden zaehlen. null = keine Daten.
+ * Nur Laeufe mit Werten fuer alle Fensterstunden zaehlen (bei Wave-Sportarten
+ * am Meer auch mit Welle). null = keine Daten.
  */
 function ensemble_chance(array $laeufe, string $tag, array $fenster, array $sport, array $windlagen, ?array $spot): ?array
 {
@@ -844,7 +870,7 @@ function ensemble_chance(array $laeufe, string $tag, array $fenster, array $spor
         $st = $proTag[$tag] ?? [];
         $voll = true;
         for ($s = $ab; $s < $bis; $s++) {
-            if (!isset($st[$s])) {
+            if (!isset($st[$s]) || !empty($st[$s]['welle_fehlt'])) {
                 $voll = false;
                 break;
             }
@@ -880,7 +906,8 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
     $wt = wasser_stunden($daten['wasser'] ?? null, $tz);
     $ens = ensemble_stunden($daten['ensemble'] ?? null, $tz);
     [$vh, $ens] = regel_daten_einmischen($region, $daten, $tz, $vh, $ens);
-    $ens = ensemble_welle_einmischen($ens, $ws, $sport);
+    $meer = ($region['typ'] ?? '') === 'meer';
+    $ens = ensemble_welle_einmischen($ens, $ws, $sport, $meer);
     $spots = $region['spots'] ?? [];
     if (!$spots) {
         $spots = [null];   // Region selbst, mit ihren Windlagen
@@ -893,7 +920,7 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
         if ($vorbei) {
             $leer = ['geht' => false, 'stunden' => 0, 'grund' => 'Tag vorbei'];
             $out[$tag] = ['spot' => null, 'spot_name' => null, 'det' => $leer, 'ens' => null,
-                          'fenster' => $fenster, 'rest' => true, 'vorbei' => true, 'alle' => []];
+                          'fenster' => $fenster, 'rest' => true, 'vorbei' => true, 'offen' => false, 'alle' => []];
             continue;
         }
         $stunden = $vh[$tag] ?? [];
@@ -913,6 +940,18 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
                 'ens'       => empty($sport['surf']) ? ensemble_chance($ens, $tag, $fenster, $sport, $wl, $spot) : null,
             ];
         }
+        // Fehlende Daten (seit 8.11.2026): Reicht die Vorhersage nicht bis zu diesem
+        // Tag, oder fehlt am Meer die Welle fuer eine Wave-Sportart, ist der Tag
+        // offen, nicht schlecht. Ohne Ensemble-Chance zeigt die Seite dann "?" statt 0 %.
+        $fehlt = !fenster_hat_werte($vh[$tag] ?? [], $fenster) ? 'noch keine Vorhersage'
+               : ($meer && braucht_welle($sport) && !fenster_hat_werte($ws[$tag] ?? [], $fenster) ? 'noch keine Wellenvorhersage' : null);
+        if ($fehlt !== null) {
+            foreach ($alle as $k => $x) {
+                if (!$x['det']['geht']) {
+                    $alle[$k]['det']['grund'] = $fehlt;
+                }
+            }
+        }
         if ($sperre !== null) {
             // Sperre aus den Spot-Infos: Tag geht nicht, auch nicht im Ensemble
             foreach ($alle as $k => $x) {
@@ -923,7 +962,8 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
         usort($alle, 'spot_vergleich');
         $det = $alle[0]['det'];
         $temp = tag_temperaturen($vh[$tag] ?? [], $wt[$tag] ?? [], $det['geht'] ? [$det['von'], $det['bis']] : $fenster);
-        $out[$tag] = $alle[0] + ['fenster' => $fenster, 'rest' => $rest, 'vorbei' => false, 'alle' => $alle, 'temp' => $temp,
+        $offen = $fehlt !== null && $sperre === null && !$det['geht'] && $alle[0]['ens'] === null;
+        $out[$tag] = $alle[0] + ['fenster' => $fenster, 'rest' => $rest, 'vorbei' => false, 'offen' => $offen, 'alle' => $alle, 'temp' => $temp,
                                  'welle' => tag_welle($wd[$tag] ?? [], $det['geht'] ? [$det['von'], $det['bis']] : $fenster)];
     }
     return $out;
