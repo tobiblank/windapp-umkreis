@@ -178,6 +178,7 @@ Seit 7.11.2026. Eigene Seite `server/web/stunden.php?region=<id>&sport=…&tag=Y
 
 - **Tage** als Knöpfe mit Chance; ohne `tag` der beste Tag.
 - **Diagramm** (SVG ohne Fremdbibliothek, Farben aus `stil.css`): Tagesfenster hinterlegt, Wind je Modell dünn, Modellmittel dick, Böen gestrichelt, Band = 10. bis 90. Perzentil der 51 Ensemble-Läufe, Windfenster der Sportart als waagrechte Linien, darüber Pfeile (wohin der Wind weht; bis 8.11.2026 zeigten sie fälschlich, woher er kommt, entgegen der Landkarte), darunter je Stunde: fahrbar im Modellmittel (grün; Tooltip mit Grund) und Anteil der Ensemble-Läufe, die die Stunde fahrbar sehen. Zeigt das Tagesfenster ±2 Stunden, Ortszeit der Region.
+- **Legende** (seit 8.11.2026) direkt über dem Winddiagramm, wie bei den Wellen; unten auf der Seite nur noch Modelle, Windfenster und was „fahrbar“ heißt.
 - **Vergleich:** zweite Region im selben Maßstab darunter (Auswahl am Ende der Seite).
 - Bei Regel-Windlagen rechnet die Bewertung mit der typischen Stärke, die Linien zeigen trotzdem den Modellwind.
 

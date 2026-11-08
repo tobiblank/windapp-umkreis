@@ -351,6 +351,8 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
         $teile[] = $n['text'] !== null ? 'Neopren: ' . $n['text'] . ($n['waermer'] ? ' (eine Stufe wärmer wegen Wind)' : '') : 'Wassertemperatur unbekannt';
         $o .= '<p class="klein leise">' . h(implode(' · ', $teile)) . '</p>';
     }
+    // Legende direkt ueber dem Diagramm wie bei den Wellen (seit 8.11.2026; vorher nur unten auf der Seite)
+    $o .= '<p class="klein leise welle-titel">Wind: dicke Linie = Modellmittel, dünne = einzelne Modelle, gestrichelt = Böen, Band = 80 % der Ensemble-Läufe, grün gestrichelt = Windfenster, Pfeile = wohin der Wind weht. Grüne Balken = Stunde fahrbar, % = Anteil der Ensemble-Läufe, die sie fahrbar sehen</p>';
     $o .= stunden_svg($st, $sport, $ymax);
     if (!empty($st['hat_welle'])) {
         $o .= '<p class="klein leise welle-titel">Wellen: Balken = gesamte Welle, Linie = Dünung, Pfeile = wohin die Dünung läuft, Zahlen = Periode in Sekunden</p>' . welle_svg($st, $sport, $mmax);
@@ -417,10 +419,8 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
 </form>
 
 <p class="leise klein erklaerung">
-  <b>Linien:</b> dick = Modellmittel, dünn = einzelne Modelle (<?= h(implode(', ', array_values($st['modelle'] ?? []))) ?>), gestrichelt = Böen.
-  <b>Band:</b> 80 % der 51 ECMWF-Ensemble-Läufe. <b>Waagrecht gestrichelt:</b> Windfenster <?= h($sport['name']) ?> (<?= h($wind) ?>).
-  <b>Pfeile:</b> wohin der Wind weht. <b>Balken:</b> Stunde fahrbar im Modellmittel (Richtung, ablandig, Gewitter, Welle geprüft).
-  <b>%:</b> Anteil der Ensemble-Läufe, die die Stunde fahrbar sehen. Hinterlegt: Tagesfenster. Zeiten in Ortszeit der Region.
+  <b>Modelle:</b> <?= h(implode(', ', array_values($st['modelle'] ?? []))) ?>; Ensemble: 51 Läufe von ECMWF. <b>Windfenster</b> <?= h($sport['name']) ?>: <?= h($wind) ?>.
+  <b>Fahrbar</b> heißt im Modellmittel: Wind im Fenster, Richtung passt, nicht ablandig, kein Gewitter, Welle passt. Hinterlegt: Tagesfenster. Zeiten in Ortszeit der Region.
   Bei Regel-Windlagen rechnet die Bewertung mit einer typischen Stärke; die Linien zeigen trotzdem den Modellwind.
 </p>
 <footer class="fuss klein leise">
