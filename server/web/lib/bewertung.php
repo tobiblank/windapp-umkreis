@@ -470,6 +470,30 @@ function tag_temperaturen(array $stunden, array $wasser, array $fenster): array
 }
 
 /**
+ * Wind eines Tages fuer die Windpfeile der Landkarte (seit 8.11.2026): im Fenster
+ * des Modellmittels dessen Mittel und Richtung (bei Regel-Windlagen die typische
+ * Staerke und Sektormitte), sonst Mittel ueber das Tagesfenster. null ohne Daten.
+ * Rueckgabe ['kn' => float, 'richtung' => float|null, 'fenster' => bool]
+ */
+function tag_wind(array $stunden, array $det, array $fenster): ?array
+{
+    if (!empty($det['geht'])) {
+        $kn = !empty($det['regel']) ? ($det['staerke'][0] + $det['staerke'][1]) / 2 : $det['mittel_kn'];
+        return ['kn' => (float)$kn, 'richtung' => $det['richtung'] ?? null, 'fenster' => true];
+    }
+    $k = $r = [];
+    for ($s = $fenster[0]; $s < $fenster[1]; $s++) {
+        if (isset($stunden[$s]['kn'])) {
+            $k[] = $stunden[$s]['kn'];
+            if (isset($stunden[$s]['richtung'])) {
+                $r[] = $stunden[$s]['richtung'];
+            }
+        }
+    }
+    return $k ? ['kn' => array_sum($k) / count($k), 'richtung' => richtung_mittel($r), 'fenster' => false] : null;
+}
+
+/**
  * Ensemble: je Lauf (Kontrolllauf + Member) Wind, Richtung und Bewoelkung je Ortstag/Stunde.
  * Schluessel des Laufs ist das Suffix der Open-Meteo-Variablen: '' (Kontrolllauf)
  * oder '_member01' usw. - damit lassen sich Laeufe verschiedener Abrufe (Druck,
@@ -801,7 +825,9 @@ function tag_bewerten(array $stunden, array $fenster, array $sport, array $windl
             }
         }
         if ($ok) {
-            $lauf[$s] = ['lage' => $lage, 'kn' => $knEff];
+            // Richtung: bei Regel-Windlagen die Mitte des Sektors (wie die Staerke), sonst der Modellwind
+            $lauf[$s] = ['lage' => $lage, 'kn' => $knEff,
+                         'richtung' => !empty($lage['regel']) ? sektor_mitte($lage['sektor']) : ($stunden[$s]['richtung'] ?? null)];
             continue;
         }
         if ($lauf && ($best === null || count($lauf) > count($best)
@@ -841,6 +867,7 @@ function tag_bewerten(array $stunden, array $fenster, array $sport, array $windl
         'bis'       => array_key_last($best) + 1,
         'stunden'   => count($best),
         'mittel_kn' => round(lauf_mittel($best), 1),
+        'richtung'  => richtung_mittel(array_values(array_filter(array_column($best, 'richtung'), fn($r) => $r !== null))),
         'boe_max'   => $boen ? round(max($boen), 1) : null,
         'windlage'  => $lage['name'] ?? null,
         'charakter' => $lage['charakter'] ?? null,
@@ -964,6 +991,8 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
         $temp = tag_temperaturen($vh[$tag] ?? [], $wt[$tag] ?? [], $det['geht'] ? [$det['von'], $det['bis']] : $fenster);
         $offen = $fehlt !== null && $sperre === null && !$det['geht'] && $alle[0]['ens'] === null;
         $out[$tag] = $alle[0] + ['fenster' => $fenster, 'rest' => $rest, 'vorbei' => false, 'offen' => $offen, 'alle' => $alle, 'temp' => $temp,
+                                 // Wellenreiten: Fenster nach Duenung, dort ist mittel_kn die Hoehe; also Tagesmittel
+                                 'wind' => tag_wind($vh[$tag] ?? [], empty($sport['surf']) ? $det : [], $fenster),
                                  'welle' => tag_welle($wd[$tag] ?? [], $det['geht'] ? [$det['von'], $det['bis']] : $fenster)];
     }
     return $out;

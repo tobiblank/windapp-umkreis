@@ -401,6 +401,11 @@ pruefe(!isset($ensSee[0]['2026-01-01'][12]['welle_fehlt']) && $ensSee[0]['2026-0
 $stOhneW = region_stunden($adriaR, ['welle' => null] + $datA, SPORTARTEN['kite_wave'], $morgen);
 $zw = $stOhneW['stunden'][$stOhneW['fenster'][0]];
 pruefe($zw['ens_anteil'] === null && $zw['ens_p50'] !== null, 'Stundenseite ohne Welle: Band bleibt, Anteil der Läufe offen');
+$wA = region_bewerten($adriaR, $datA, $kite, [$morgen])[$morgen]['wind'];
+pruefe($wA['fenster'] && abs($wA['richtung'] - 40) < 1 && abs($wA['kn'] - $kw2['det']['mittel_kn']) < 1e-9, 'Wind je Tag: im Fenster Mittel und Richtung (Bora 40 Grad)');
+pruefe(tag_wind([10 => ['kn' => 10.0, 'richtung' => 350.0], 11 => ['kn' => 20.0, 'richtung' => 10.0]], ['geht' => false], [9, 17]) == ['kn' => 15.0, 'richtung' => 0.0, 'fenster' => false]
+       && tag_wind([], ['geht' => false], [9, 17]) === null, 'Wind ohne Fenster: Tagesmittel, Richtung als Vektormittel; ohne Daten null');
+pruefe(windfarbe(0.0) === 'rgb(96, 120, 205)' && windfarbe(12.0) === 'rgb(83, 198, 100)' && windfarbe(99.0) === 'rgb(120, 70, 185)', 'Windfarbe: Stützstellen, fließend, gekappt');
 pruefe(duenung($wi(1.0, 9, 200)) === [1.0, 9, 200] && duenung(['hoehe' => 0.8, 'periode' => 5, 'richtung' => 60, 'swell' => null, 'swell_periode' => null, 'swell_richtung' => null]) === [0.8, 5, 60],
        'Dünung: Swell, ohne Swell die gesamte Welle');
 
@@ -677,6 +682,10 @@ pruefe(preg_match('/id="r-adria-nord" data-ziel="stunden\.php\?region=adria-nord
        'Regionskarte: Karte, Name und Tageskacheln führen zur Stundenseite');
 [, $html] = holen($sitePort, 'index.php?km=1000&nach=' . $morgen);
 pruefe(str_contains($html, 'Chance Morgen') && preg_match('/class="punkt go".*?<text class="zahl"[^>]*>100</s', $html), 'Landkarte mit gewähltem Tag: Adria 100 %');
+pruefe(preg_match('/<path class="windpfeil" d="[^"]+" transform="translate\([\d. ]+\) rotate\(40\)"/', $html)
+       && preg_match('/<g class="windfeld"[^>]*>\s*<circle [^>]*style="fill: rgb\(/', $html) && str_contains($html, 'class="windskala"')
+       && str_contains($html, 'aus NO, Ø '),
+       'Landkarte: Windpfeil (Bora aus 40 Grad), Farbfeld nach Windstärke, Legende');
 pruefe(str_contains($html, 'stunden.php?region=adria-nord&amp;sport=') && preg_match('/data-ziel="stunden\.php\?region=adria-nord&amp;sport=[a-z_]+&amp;tag=' . $morgen . '"/', $html),
        'mit gewähltem Tag: Karte und Punkt öffnen diesen Tag');
 [, $html] = holen($sitePort, "index.php?region=ammersee&nach=$morgen");

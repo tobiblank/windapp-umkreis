@@ -16,6 +16,62 @@ const KARTE_HOEHE = 614.3;       // bis 22 Grad Nord
 const KARTE_SEITE = 1.1;         // Hoehe : Breite des Ausschnitts (etwas hoeher als breit, fuers Handy)
 const KARTE_MIN_GRAD = 2.5;      // kleinster Ausschnitt, in Laengengraden
 
+const KARTE_PFEIL_AB_KN = 3;   // darunter keine Windrichtung auf der Landkarte (wie ammerseewind.de)
+
+/**
+ * Farbskala fuer Windstaerke (seit 8.11.2026, aus ammerseewind.de/farben.php):
+ * angelehnt an Windy, blau leicht, gruen ab etwa 10 kn, ueber gelb und orange
+ * zu rot, violett ab etwa 40 kn. Nur fuer Windstaerke; die Chance behaelt ihre
+ * eigenen Farben (go, maybe, no).
+ */
+const WINDSKALA = [
+    0  => [96, 120, 205],
+    6  => [64, 160, 215],
+    10 => [56, 190, 130],
+    14 => [110, 205, 70],
+    17 => [225, 212, 60],
+    21 => [245, 160, 50],
+    26 => [236, 88, 62],
+    32 => [205, 64, 140],
+    40 => [150, 90, 215],
+    50 => [120, 70, 185],
+];
+
+/** CSS-Farbe fuer eine Windstaerke in kn, fliessend zwischen den Stuetzstellen */
+function windfarbe(float $kn): string
+{
+    $stellen = array_keys(WINDSKALA);
+    $c = WINDSKALA[end($stellen)];
+    if ($kn <= $stellen[0]) {
+        $c = WINDSKALA[$stellen[0]];
+    } else {
+        for ($i = 1; $i < count($stellen); $i++) {
+            [$a, $b] = [$stellen[$i - 1], $stellen[$i]];
+            if ($kn <= $b) {
+                $t = ($kn - $a) / ($b - $a);
+                $c = array_map(fn($x, $y) => (int)round($x + ($y - $x) * $t), WINDSKALA[$a], WINDSKALA[$b]);
+                break;
+            }
+        }
+    }
+    return "rgb($c[0], $c[1], $c[2])";
+}
+
+/** Legende als Farbverlauf 0-40 kn mit Marken */
+function windskala_legende(): string
+{
+    $teile = [];
+    for ($kn = 0; $kn <= 40; $kn += 2) {
+        $teile[] = windfarbe((float)$kn) . ' ' . round($kn / 40 * 100, 1) . '%';
+    }
+    $html = '<div class="windskala" aria-hidden="true"><div class="verlauf" style="background: linear-gradient(to right, '
+          . implode(', ', $teile) . ')"></div><div class="marken">';
+    foreach ([0, 10, 20, 30, 40] as $m) {
+        $html .= '<span style="left: ' . ($m / 40 * 100) . '%">' . $m . ($m === 40 ? ' kn' : '') . '</span>';
+    }
+    return $html . '</div></div>';
+}
+
 function karte_merc(float $lat): float
 {
     return rad2deg(log(tan(M_PI / 4 + deg2rad($lat) / 2)));
