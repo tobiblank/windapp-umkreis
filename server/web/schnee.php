@@ -222,28 +222,27 @@ function cm(?float $c): string
     return $c === null ? '?' : zahl(round($c)) . ' cm';
 }
 
-/** Kennwerte eines Tages fuer die Detailzeile */
-function schnee_text(array $d, array $sport): array
+/** ☀ / ⛅ / ☁ nach der Bewoelkung im Fenster, null ohne Wert */
+function himmel_symbol(?float $wolken, bool $schneit = false): ?string
 {
+    if ($schneit) {
+        return '❄';
+    }
+    return match (schnee_himmel($wolken)) { 'sonnig' => '☀', 'teils sonnig' => '⛅', 'bewölkt' => '☁', default => null };
+}
+
+/** Tooltip der Kachel: alles, was dort keinen Platz hat */
+function kachel_titel(array $d): string
+{
+    $c = $d['ens']['chance'] ?? null;
     $k = $d['det'];
-    $t = [];
-    $t[] = 'Neuschnee 72 h ' . cm($k['neu72']) . ($k['grenze'] !== null && ($k['neu72'] ?? 0) >= 1 ? ' (Schneefallgrenze bis ' . meter($k['grenze']) . ')' : '');
-    if (($k['neu_tag'] ?? 0) >= 1) {
-        $t[] = 'am Tag ' . cm($k['neu_tag']);
-    }
-    if ($k['wolken'] !== null) {
-        $t[] = schnee_himmel($k['wolken']) . ' (' . zahl($k['wolken']) . ' % Wolken)';
-    }
-    if ($k['kamm'] !== null) {
-        $t[] = 'Wind am Kamm ' . zahl($k['kamm']) . ' km/h';
-    }
-    if ($k['nullgrad'] !== null) {
-        $t[] = 'Nullgrad ' . meter($k['nullgrad']);
-    }
-    if ($k['hs'] !== null) {
-        $t[] = 'Schneehöhe ≈ ' . cm($k['hs']) . ' (Modell)';
-    }
-    return $t;
+    return implode(' · ', array_filter([
+        $c === null ? 'keine Ensemble-Daten' : zahl(100 * $c) . ' % der Läufe passen',
+        'Neuschnee 72 h ' . cm($k['neu72']), $k['hs'] !== null ? 'Schneehöhe ≈ ' . cm($k['hs']) . ' (Modell)' : null,
+        $k['wolken'] !== null ? schnee_himmel($k['wolken']) . ' (' . zahl($k['wolken']) . ' % Wolken)' : null,
+        $k['kamm'] !== null ? 'Wind am Kamm ' . zahl($k['kamm']) . ' km/h' : null,
+        $k['geht'] ? null : 'passt nicht: ' . $k['grund'],
+    ]));
 }
 
 function abfahrt_text(array $e, string $tag, array $d): ?string
@@ -290,13 +289,13 @@ function ausgabe_text(string $iso, DateTimeZone $tz, DateTimeImmutable $heute): 
 }
 
 /** Lawinen-Abzeichen fuer eine Kachel oder null */
-function lawine_abzeichen(?array $lage): string
+function lawine_abzeichen(?array $lage, string $wort = 'LWS'): string
 {
     if (!$lage) {
         return '';
     }
     $s = $lage['stufe'];
-    return '<span class="lw lw' . $s . '" title="' . h('Lawinengefahr: ' . lawine_stufen_text($lage['teile'])) . '">' . ($s ?: '–') . '</span>';
+    return '<span class="lw lw' . $s . '" title="' . h('Lawinenwarnstufe (Gefahrenstufe des Warndiensts): ' . lawine_stufen_text($lage['teile'])) . '">' . h($wort) . ' ' . ($s ?: '–') . '</span>';
 }
 
 /** Block mit der Lawinenlage fuer heute und morgen (soweit angezeigt) */
@@ -316,7 +315,12 @@ function lawine_html(array $region, array $lagenTage, array $dienste, array $tag
     if (!lawine_freigegeben($region, $dienste)) {
         return '<div class="lawine klein"><p>Lawinenlage: ' . $link . ' <span class="leise">(die Stufe zeigen wir hier, sobald die Nutzung mit dem Warndienst geklärt ist)</span></p></div>';
     }
-    $o = '<div class="lawine klein">';
+    $zus = [];
+    foreach ($kurze as $t) {
+        $l = $lagenTage[$t] ?? null;
+        $zus[] = h(tag_kurz($t, $heute)) . ' ' . ($l ? 'LWS ' . ($l['stufe'] ?: '–') : 'kein Bericht');
+    }
+    $o = '<details class="lawine klein"><summary>Lawinenlage: ' . implode(', ', $zus) . '</summary>';
     foreach ($kurze as $t) {
         $l = $lagenTage[$t] ?? null;
         if (!$l) {
@@ -324,13 +328,13 @@ function lawine_html(array $region, array $lagenTage, array $dienste, array $tag
             continue;
         }
         $probleme = array_map(fn($p) => h(lawine_problem_text($p)) . ($p['aspekte'] && count($p['aspekte']) < 8 ? ' ' . lawine_rose($p['aspekte']) : ''), $l['probleme']);
-        $o .= '<p><b>' . h(tag_kurz($t, $heute)) . ':</b> ' . lawine_abzeichen($l) . ' ' . h(lawine_stufen_text($l['teile']))
+        $o .= '<p><b>' . h(tag_kurz($t, $heute)) . ':</b> ' . lawine_abzeichen($l, 'Gefahrenstufe') . ' ' . h(lawine_stufen_text($l['teile'], true))
             . ($probleme ? ' · ' . implode(' · ', $probleme) : '')
             . ' · ' . $link . ' <span class="leise">ausgegeben ' . h(ausgabe_text($l['veroeffentlicht'], $tzSeite, $heute)) . '</span>'
             . ($l['ueber_namen'] ? ' <span class="leise" title="' . h('Mikroregionen über den Namen zugeordnet: ' . implode(', ', array_map(fn($r) => $r[1], $l['regionen']))) . '">(Zuordnung über den Namen)</span>' : '')
             . '</p>';
     }
-    return $o . '<p class="leise">' . h(HAFTUNG) . '</p></div>';
+    return $o . '<p class="leise">' . h(HAFTUNG) . '</p></details>';
 }
 
 // Lage je Region und Tag (nur fuer freigegebene Dienste; heute und morgen)
@@ -440,7 +444,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
   Prozent = Anteil der 51 Läufe des ECMWF-Ensembles, an denen der Tag nach denselben Regeln passt (ohne Wind am Kamm).
   Schneehöhe ist ein Modellwert und im Gebirge grob. Schwellen sind Startwerte, nicht kalibriert.
   </p>
-  <p>Blau statt Grün: Ein gutes Feld heißt „guter Schnee“, nie „sicher“. Die Lawinenstufe steht in den offiziellen Farben daneben, nur für Tage mit Lagebericht.</p>
+  <p>Blau statt Grün: Ein gutes Feld heißt „guter Schnee“, nie „sicher“. Die Lawinenstufe steht in den offiziellen Farben daneben, nur für Tage mit Lagebericht: „LWS 3“ = Lawinenwarnstufe, im Bericht „Gefahrenstufe 3“.</p>
 </details>
 
 <?php if ($liste && !$geteilt):
@@ -548,11 +552,13 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
           $d = $e['tage'][$t];
           $c = $d['ens']['chance'] ?? null;
           $lw = lawine_abzeichen($lageVon[$r['id']][$t] ?? null);
+          // LWS-Zeile immer gleich hoch: ohne Bericht ein leises "LWS –"
+          $lwZeile = $lw !== '' ? $lw : '<span class="lw lw-leer" title="' . h(lawine_freigegeben($r, $dienste) ? 'Kein Lagebericht für diesen Tag (heißt nicht „keine Gefahr“)' : 'Lawinenwarnstufe im Bericht des Warndiensts nachsehen') . '">LWS –</span>';
       ?>
         <?php if (!empty($d['vorbei'])): ?>
         <div class="tag leer" title="Für heute ist das Tourenfenster vorbei">
           <span class="t"><?= h(tag_kurz($t, $heute)) ?></span>
-          <span class="w vorbei">vorbei</span><?= $lw ?>
+          <span class="w vorbei">vorbei</span><?= $lwZeile ?>
         </div>
         <?php elseif (!empty($d['offen'])): ?>
         <a class="tag leer" href="<?= h(stunden_link($r, $t)) ?>" title="Noch keine Vorhersage für diesen Tag">
@@ -561,10 +567,13 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
         </a>
         <?php else: ?>
         <a class="tag <?= $c === null ? ($d['det']['geht'] ? 's-go' : 'nix') : s_stufe($c) ?><?= $nach === $t ? ' gewaehlt' : '' ?>" href="<?= h(stunden_link($r, $t)) ?>"
-           title="<?= h(($c === null ? 'keine Ensemble-Daten' : zahl(100 * $c) . ' % der Läufe') . ', Neuschnee 72 h ' . cm($d['det']['neu72'])) ?>">
+           title="<?= h(kachel_titel($d)) ?>">
           <span class="t"><?= h(tag_kurz($t, $heute)) ?></span>
-          <span class="w"><?= $c === null ? ($d['det']['geht'] ? 'ja' : '–') : zahl(100 * $c) . '<small>%</small>' ?></span>
-          <span class="n">❄ <?= h(cm($d['det']['neu72'])) ?></span><?= $lw ?>
+          <span class="himmel"><?= himmel_symbol($d['det']['wolken'], ($d['det']['neu_tag'] ?? 0) >= 2) ?? '–' ?></span>
+          <span class="zeile"><span class="k">Neu</span> <?= h(cm($d['det']['neu72'])) ?></span>
+          <span class="zeile"><span class="k">Höhe</span> <?= h(cm($d['det']['hs'])) ?></span>
+          <?= $lwZeile ?>
+          <span class="chance"><?= $c === null ? ($d['det']['geht'] ? 'passt' : '') : zahl(100 * $c) . ' %' ?></span>
         </a>
         <?php endif ?>
       <?php endforeach ?>
@@ -574,10 +583,9 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
         <?php foreach ($guteTage as $t => $d): ?>
           <li>
             <b><?= h(tag_kurz($t, $heute)) ?>:</b>
-            <?= h(implode(' · ', schnee_text($d, $sport))) ?>
-            <?php if (!$d['det']['geht']): ?><span class="leise">· Modellmittel: <?= h($d['det']['grund']) ?>, nur ein Teil der Ensemble-Läufe passt</span><?php endif ?>
-            <?php if (!$geteilt && ($ab = abfahrt_text($e, $t, $d))): ?><span class="abfahrt">· <?= h($ab) ?></span><?php endif ?>
-            <a class="stunden-link" href="<?= h(stunden_link($r, $t)) ?>">· Stunden ›</a>
+            <?php if (!$d['det']['geht']): ?><span class="leise">nur ein Teil der Ensemble-Läufe passt ·</span><?php endif ?>
+            <?php if (!$geteilt && ($ab = abfahrt_text($e, $t, $d))): ?><span class="abfahrt"><?= h($ab) ?> ·</span><?php endif ?>
+            <a class="stunden-link" href="<?= h(stunden_link($r, $t)) ?>">Details ›</a>
             <?php if (teilenswert($d)): ?><button type="button" class="teilen" hidden
               data-titel="<?= h('Wohinfahrma: ' . $r['name'] . ', ' . tag_datum($t, $tzSeite)) ?>"
               data-text="<?= h(teilen_text($r, $t, $d, $sport, $tzSeite)) ?>"
@@ -585,9 +593,10 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
           </li>
         <?php endforeach ?>
       </ul>
-    <?php else: ?>
-      <?php $offene = array_keys(array_filter($e['tage'], fn($x) => !empty($x['offen']))); ?>
-      <p class="klein leise">Kein passender Tag in diesem Zeitraum.<?= $offene ? ' Für ' . h(implode(', ', array_map(fn($x) => tag_kurz($x, $heute), $offene))) . ' gibt es noch keine Vorhersage.' : '' ?></p>
+    <?php endif ?>
+    <?php $offene = array_keys(array_filter($e['tage'], fn($x) => !empty($x['offen']))); ?>
+    <?php if (!$guteTage || $offene): ?>
+      <p class="klein leise"><?= $guteTage ? '' : 'Kein passender Tag in diesem Zeitraum.' ?><?= $offene ? ' Für ' . h(implode(', ', array_map(fn($x) => tag_kurz($x, $heute), $offene))) . ' gibt es noch keine Vorhersage.' : '' ?></p>
     <?php endif ?>
     <?= lawine_html($r, $lageVon[$r['id']] ?? [], $dienste, $tage) ?>
     <?php if (!empty($r['links'])): ?>

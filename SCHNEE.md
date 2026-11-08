@@ -6,14 +6,14 @@ Zweiter Modus in Wohinfahrma für Skitourengeher und Freerider, nur Alpen: Wo li
 
 ## Grundsatz Lawine
 
-Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnstufe geht **nicht** in Prozent, Sortierung oder Farbe der Bewertung ein. Sie steht als eigenes Abzeichen in den offiziellen EAWS-Farben daneben, mit Link zum Bericht und Ausgabezeit, nur für Tage mit gültigem Bericht (meist heute und morgen). Keine eigene Hochrechnung. Die Bewertung nutzt deshalb eine **Blau-Skala** statt Grün/Gelb/Rot. Fester Hinweis oben auf der Seite, je Region, im Teilen-Text, auf der Stundenseite und im Impressum: „Die Lawinenlage stammt vom Warndienst. Sie ersetzt keine Beurteilung vor Ort. Wohinfahrma bewertet nur Schnee und Wetter.“
+Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnstufe geht **nicht** in Prozent, Sortierung oder Farbe der Bewertung ein. Sie steht als eigenes Abzeichen in den offiziellen EAWS-Farben daneben (Kachel „LWS 3“, im Lawinenblock und auf der Stundenseite „Gefahrenstufe 3“ wie im Bericht), mit Link zum Bericht und Ausgabezeit, nur für Tage mit gültigem Bericht (meist heute und morgen). Keine eigene Hochrechnung. Die Bewertung nutzt deshalb eine **Blau-Skala** statt Grün/Gelb/Rot. Fester Hinweis oben auf der Seite, je Region, im Teilen-Text, auf der Stundenseite und im Impressum: „Die Lawinenlage stammt vom Warndienst. Sie ersetzt keine Beurteilung vor Ort. Wohinfahrma bewertet nur Schnee und Wetter.“
 
 ## Stand
 
 | Baustein | Status |
 |---|---|
-| Seite `server/web/schnee.php` | Sportart (Freeride, Skitour), Umkreis 100–800 km Straße, Standort, Sortierung (alle Tage, ein Tag, Fahrzeit), Ansichten Liste (Heute – Übermorgen, Tag 3 – 7) und Woche, Karte mit blauen Punkten und Männchen (ohne Animation), Kacheln mit Chance, Neuschnee und Lawinen-Abzeichen, Detailzeile, Abfahrt, Teilen, geteilte Ansicht `?region=…&nach=…`. `noindex` |
-| Stundenseite `server/web/schnee_stunden.php` | Neuschnee je Stunde (72 h bis 8 Uhr und der Tag), Schneefallgrenze und Nullgradgrenze gegen Tour- und Talhöhe, Wetter im Fenster, Streuung des Ensembles, Lawinenlage mit Expositionsrose |
+| Seite `server/web/schnee.php` | Sportart (Freeride, Skitour), Umkreis 100–800 km Straße, Standort, Sortierung (alle Tage, ein Tag, Fahrzeit), Ansichten Liste (Heute – Übermorgen, Tag 3 – 7) und Woche, Karte mit blauen Punkten und Männchen (ohne Animation), Kacheln mit allem auf einen Blick: Wetter (☀ ⛅ ☁, ❄ bei Schneefall am Tag), Neuschnee 72 h, Schneehöhe, LWS, darunter klein die Chance; Wind und Gründe im Tooltip und auf der Stundenseite. Darunter nur für gute Tage Abfahrt, Details und Teilen; Lawinenlage einklappbar, geteilte Ansicht `?region=…&nach=…`. `noindex` |
+| Stundenseite `server/web/schnee_stunden.php` | Neuschnee je Stunde (72 h bis 8 Uhr und der Tag), Schneefallgrenze und Nullgradgrenze gegen Tour- und Talhöhe vor einer Bergsilhouette (feste Form, kein echtes Gelände), Wetter im Fenster, Streuung des Ensembles, Lawinenlage mit Expositionsrose |
 | Schalter Wind · Schnee | im Kopf beider Seiten; es sind zwei Seiten, nicht ein Formular. Die Wind-Seite merkt sich ihre Wahl wie bisher, die Schnee-Seite merkt sich nichts im Browser |
 | Katalog `daten/schneeregionen.json` | 9 Regionen ab Inning: Werdenfels, Allgäu/Oberstdorf, Kühtai/Sellrain, Stubai, Zillertal/Tux, Arlberg, Ötztal/Obergurgl, Ahrntal, Oberengadin. Punkte, Tour- und Talhöhen geschätzt. Prüfung `schneeregionen_pruefen()` |
 | Bewertung `server/web/lib/schnee.php` | siehe „Bewertung“ |

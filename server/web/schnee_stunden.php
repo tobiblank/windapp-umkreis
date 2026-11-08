@@ -190,6 +190,18 @@ function schnee_svg(array $reihe, array $region, string $tag, array $fenster): s
         $o[] = '<text class="s-achse" x="' . ($L - 4) . '" y="' . $r($y2($k) + 3) . '" text-anchor="end">' . zahl($k) . '</text>';
     }
     $o[] = '<text class="s-achse" x="' . ($L - 4) . '" y="' . ($o2 - 9) . '" text-anchor="end">m</text>';
+    // Bergsilhouette (seit 8.11.2026): feste Kammlinie vom Talort bis etwas ueber die Tourhoehe,
+    // nur zur Orientierung, kein echtes Gelaende. Darueber die Linien.
+    $gipfel = min($mMax, (float)$region['hoehe_tour'] + 600);
+    $tal = max($mMin, (float)$region['hoehe_tal']);
+    $kamm = [[0, 0], [.08, .35], [.14, .18], [.22, .7], [.28, .45], [.36, .86], [.42, .58], [.5, 1.0], [.56, .7], [.63, .88],
+             [.7, .38], [.77, .62], [.84, .28], [.91, .5], [1, .05]];
+    $pb = [$r($L) . ',' . $r($o2 + $h2)];
+    foreach ($kamm as [$fx, $fy]) {
+        $pb[] = $r($L + $fx * ($W - $L - $R)) . ',' . $r($y2($tal + $fy * ($gipfel - $tal)));
+    }
+    $pb[] = $r($W - $R) . ',' . $r($o2 + $h2);
+    $o[] = '<polygon class="s-berg" points="' . implode(' ', $pb) . '"><title>Berg nur zur Orientierung, kein echtes Gelände</title></polygon>';
     foreach (['hoehe_tour' => 'Tourhöhe', 'hoehe_tal' => 'Talort'] as $f => $name) {
         $o[] = '<line class="s-tour" x1="' . $L . '" x2="' . ($W - $R) . '" y1="' . $r($y2((float)$region[$f])) . '" y2="' . $r($y2((float)$region[$f])) . '"><title>' . $name . ' ' . zahl((float)$region[$f]) . ' m</title></line>';
     }
@@ -259,7 +271,7 @@ sort($neuEns);
       $k['nullgrad'] !== null ? 'Nullgrad bis ' . meter($k['nullgrad']) : null,
       $k['hs'] !== null ? 'Schneehöhe ≈ ' . cm($k['hs']) . ' (Modell)' : null,
   ]))) ?></p>
-  <p class="klein leise welle-titel">Oben: Neuschnee je Stunde auf Tourhöhe. Unten: Schneefallgrenze (durchgezogen), Nullgradgrenze (gestrichelt), Tourhöhe und Talort (gepunktet). Grau: Tourenfenster.</p>
+  <p class="klein leise welle-titel">Oben: Neuschnee je Stunde auf Tourhöhe. Unten: Schneefallgrenze (durchgezogen), Nullgradgrenze (gestrichelt), Tourhöhe und Talort (gepunktet) vor einem Berg zur Orientierung. Grau: Tourenfenster.</p>
   <?= schnee_svg($reihe, $region, $tag, $b['fenster']) ?>
   <?php endif ?>
 </section>
@@ -271,7 +283,7 @@ sort($neuEns);
   <?php elseif (!$lage): ?>
     <p class="klein">Kein Lagebericht für diesen Tag. Das heißt nicht „keine Gefahr“. <a href="<?= h($dienst['url_bericht']) ?>" rel="noopener"><?= h($dienst['kurz']) ?> ↗</a></p>
   <?php else: ?>
-    <p class="klein"><span class="lw lw<?= $lage['stufe'] ?>"><?= $lage['stufe'] ?: '–' ?></span> <?= h(lawine_stufen_text($lage['teile'])) ?></p>
+    <p class="klein"><span class="lw lw<?= $lage['stufe'] ?>">Gefahrenstufe <?= $lage['stufe'] ?: '–' ?></span> <?= h(lawine_stufen_text($lage['teile'], true)) ?></p>
     <?php foreach ($lage['probleme'] as $p): ?>
       <p class="klein"><?= $p['aspekte'] && count($p['aspekte']) < 8 ? lawine_rose($p['aspekte'], 22) . ' ' : '' ?><?= h(lawine_problem_text($p)) ?></p>
     <?php endforeach ?>

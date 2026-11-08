@@ -341,8 +341,11 @@ function lawine_hoehe_text(?string $h): ?string
     };
 }
 
-/** "3 erheblich über 2200 m, darunter 2 mäßig" */
-function lawine_stufen_text(array $teile): string
+/**
+ * "3 erheblich über 2.200 m, 2 mäßig unter 2.200 m"; mit $nachAbzeichen (das Abzeichen
+ * davor zeigt schon "Stufe 3"): "erheblich über 2.200 m, darunter Stufe 2 mäßig"
+ */
+function lawine_stufen_text(array $teile, bool $nachAbzeichen = false): string
 {
     $teile = array_values(array_filter($teile, fn($t) => ($t['zeit'] ?? 'all_day') !== 'later')) ?: $teile;
     usort($teile, fn($a, $b) => $b['stufe'] <=> $a['stufe']);
@@ -352,7 +355,14 @@ function lawine_stufen_text(array $teile): string
         $wo = $t['ab'] !== null ? ' über ' . lawine_hoehe_text($t['ab']) : ($t['bis'] !== null ? ' unter ' . lawine_hoehe_text($t['bis']) : '');
         $out[] = $name . $wo;
     }
-    return implode(', ', array_unique($out));
+    $out = array_values(array_unique($out));
+    if ($nachAbzeichen && $out) {
+        $out[0] = preg_replace('/^\d /', '', $out[0]);
+        foreach (array_slice(array_keys($out), 1) as $i) {
+            $out[$i] = preg_match('/^(\d) (.+) unter /u', $out[$i], $m) ? "darunter Stufe $m[1] $m[2]" : 'Stufe ' . $out[$i];
+        }
+    }
+    return implode(', ', $out);
 }
 
 /** "Triebschnee (N, NO, O über 2000 m)" */
