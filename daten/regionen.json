@@ -1057,11 +1057,10 @@
     },
     {
       "id": "embalse-del-ebro",
-      "name": "Embalse del Ebro (Kantabrien)",
+      "name": "Embalse del Ebro (Cabañas de Virtus)",
       "land": "ES",
       "typ": "see",
-      "punkt": [43.005, -3.92],
-      "anfahrt": [42.99, -3.946],
+      "punkt": [43.002, -3.868],
       "zeitzone": "Europe/Madrid",
       "thermik": true,
       "infos": [
@@ -1069,13 +1068,13 @@
         {"art": "gefahr", "text": "Cabañas: 200 m Abstand zur Stromleitung im Osten; Corconte liegt bei Nordwind im Lee mit starken ablandigen Böen.", "quelle": "kitesurf-reisen.eu"},
         {"art": "saison", "text": "März bis Oktober; Thermik im Sommer am beständigsten.", "quelle": "lets-kite.com, picuco.com"}
       ],
-      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. Wörtlich der Ebro-Stausee, bei Reinosa. lets-kite.com: N, S, W, WNW, NW, NNW, übrige Richtungen je nach Lage; Saison März bis Oktober; meist 7–12 kn, für Einsteiger. kitesurf-reisen.eu: Wind meist aus N über die Berge, starke Thermik; Cabañas (Weiler südöstlich des Sees) bei Nord auflandig; Corconte (Schule ebrokite) im Lee mit ablandigen Böen, eher für Windsurfer. picuco.com: Thermik ab Mittag, Juni bis September Böen 15–25 kn. Windfinder-Station seit Jahren außer Betrieb. Lage der Spots, Sektoren und ablandig geschätzt; Corconte nur für Süd eingetragen. Wasserstand schwankt stark (Stausee). thermik=true. Anfahrt ungefähr, von Claude am 8.11.2026 für die Fahrzeit gesetzt.",
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. Wörtlich der Ebro-Stausee, bei Reinosa. lets-kite.com (Spot 18139, von Tobias genannt): Koordinaten 43,0022 N, 3,8681 W bei Cabañas de Virtus (Burgos), dort auch als Vorhersagepunkt und Fahrziel; N, S, W, WNW, NW, NNW gut, übrige Richtungen je nach Lage; Saison März bis Oktober, Mai bis August fast jeder Tag fahrbar, Dezember am schwächsten; fahrbare Stunden zu 62 % mit 7–12 kn, 34 % 13–20 kn; für Einsteiger; Schulen ebroKite in Cabañas de Virtus (1 km) und Northwind in Corconte (5 km). kitesurf-reisen.eu: Wind meist aus N über die Berge, starke Thermik; Cabañas (Weiler südöstlich des Sees) bei Nord auflandig; Corconte im Lee mit ablandigen Böen, eher für Windsurfer. picuco.com: Thermik ab Mittag, Juni bis September Böen 15–25 kn. Windfinder-Station seit Jahren außer Betrieb. Uferausrichtung, Sektoren und ablandig geschätzt; Corconte nur für Süd eingetragen. Arija (Westteil, 7 km) bis 8.11.2026 im Spotnamen, ohne Quelle für Kiten, entfernt. Wasserstand schwankt stark (Stausee). thermik=true.",
       "windlagen": [
         {"name": "West bis Nord", "sektor": [250, 20], "charakter": "Sommer mit Thermik"},
         {"name": "Süd", "sektor": [160, 210], "charakter": "je nach Lage"}
       ],
       "spots": [
-        {"id": "arija-cabanas", "name": "Arija / Cabañas (Südufer)", "ablandig": [[100, 250]]},
+        {"id": "cabanas-de-virtus", "name": "Cabañas de Virtus", "ablandig": [[100, 250]]},
         {"id": "corconte", "name": "Corconte (Nordufer)", "windlagen": [{"name": "Süd", "sektor": [160, 210]}], "ablandig": [[300, 60]]}
       ]
     },
