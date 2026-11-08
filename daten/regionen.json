@@ -986,6 +986,170 @@
         {"id": "brandon-bay", "name": "Brandon Bay (Stradbally / Fermoyle)", "ablandig": [[100, 210]]},
         {"id": "castlegregory", "name": "Castlegregory (Tralee Bay)", "ablandig": [[190, 300]]}
       ]
+    },
+    {
+      "id": "galicien-razo",
+      "name": "Galicien (Razo, Baldaio)",
+      "land": "ES",
+      "typ": "meer",
+      "punkt": [43.33, -8.72],
+      "anfahrt": [43.292, -8.7],
+      "zeitzone": "Europe/Madrid",
+      "infos": [
+        {"art": "gefahr", "text": "Große Wellen und starke Strömung; am Hauptpeak Localism, lieber weiter rechts fahren.", "quelle": "kite-and-windsurfing-guide.com"},
+        {"art": "zone", "text": "Lagune von Baldaio ist Vogelschutzgebiet: nur bei genug Wasser (Hochwasser kommt dort etwa zwei Stunden später) und gegen Niedrigwasser fernbleiben, sonst droht ein Kiteverbot.", "quelle": "kite-and-windsurfing-guide.com"},
+        {"art": "niveau", "text": "Für Fortgeschrittene; Einsteiger lernen im Stehbereich der Lagune.", "quelle": "kite-and-windsurfing-guide.com"}
+      ],
+      "anreise": ["auto", "flug"],
+      "flughafen": {"name": "A Coruña (LCG)", "transfer_min": 35},
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. kite-and-windsurfing-guide.com (Razo/Baldaio, Rías Altas): langer Strand im Naturschutzgebiet östlich von Razo, Lagune dahinter; NE cross-onshore mit großer Welle und starker Strömung; Winter-SW noch größere Welle, schwer zu kontrollieren. Strand nach NW, Sektoren und ablandig daraus geschätzt. Rías Baixas (A Lanzada, Arousa) liegen rund 100 km südlich und wären eine eigene Region. Anfahrt ungefähr, von Claude am 8.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer von Claude am 8.11.2026 geschätzt.",
+      "windlagen": [
+        {"name": "Nordés", "sektor": [20, 80], "charakter": "Sommer, cross-onshore"},
+        {"name": "Südwest bis Nordwest", "sektor": [200, 330], "charakter": "Tiefdruck, eher Winter, große Welle"}
+      ],
+      "spots": [
+        {"id": "razo-baldaio", "name": "Razo / Baldaio", "ablandig": [[100, 190]]}
+      ]
+    },
+    {
+      "id": "ebrodelta",
+      "name": "Ebrodelta",
+      "land": "ES",
+      "typ": "meer",
+      "punkt": [40.62, 0.82],
+      "anfahrt": [40.64, 0.745],
+      "zeitzone": "Europe/Madrid",
+      "infos": [
+        {"art": "gefahr", "text": "Trabucador: Stromleitung entlang des Strands; bei Sturm und Hochwasser wird die Nehrung überflutet.", "quelle": "kite-and-windsurfing-guide.com, barcelonalowdown.com"},
+        {"art": "niveau", "text": "Trabucador: Lagune lange stehtief, ideal für Einsteiger und Flachwasser; Kiteschüler rechts vom Steg, andere links.", "quelle": "kite-and-windsurfing-guide.com, barcelonalowdown.com"},
+        {"art": "tipp", "text": "Am Trabucador geht jede Richtung, wahlweise Meer- oder Lagunenseite.", "quelle": "kite-and-windsurfing-guide.com"}
+      ],
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. kite-and-windsurfing-guide.com (Trabucador): alle Richtungen fahrbar; Sommer Südthermik, die stärkste der Region, aber schwächer als im Golf de Roses; Winter Mestral (NW) oder Llevant (O), auflandig zur Meerseite mit chaotischer Welle. Regionsseite: Frühjahr Garbí (SW) und Xaloc (SO) oft 4–5 Bft, Sommer eher schwach. barcelonalowdown.com (2013): Mestral Herbst bis Frühjahr, böiger als die Tramuntana; Riumar bei Mestral cross-shore; nennt den Mestral dort NO, gemeint ist nach den übrigen Quellen NW. Trabucador ohne ablandig, weil die Seite nach Wind gewählt wird. Ablandig Riumar geschätzt (Strand nach O). Anfahrt (Trabucador) ungefähr. Anfahrt ungefähr, von Claude am 8.11.2026 für die Fahrzeit gesetzt.",
+      "windlagen": [
+        {"name": "Mestral", "sektor": [290, 360], "charakter": "Herbst bis Frühjahr, böig"},
+        {"name": "Llevant", "sektor": [50, 110], "charakter": "Winter, chaotische Welle"},
+        {"name": "Garbí / Süd (Thermik)", "sektor": [160, 250], "charakter": "Frühjahr und Sommer"}
+      ],
+      "spots": [
+        {"id": "trabucador", "name": "Trabucador (Badia dels Alfacs)", "ablandig": []},
+        {"id": "riumar", "name": "Riumar", "windlagen": [{"name": "Mestral", "sektor": [290, 360], "charakter": "cross-shore"}, {"name": "Llevant", "sektor": [50, 110], "charakter": "Welle"}], "ablandig": [[200, 290]]}
+      ]
+    },
+    {
+      "id": "la-loteta",
+      "name": "La Loteta (Zaragoza)",
+      "land": "ES",
+      "typ": "see",
+      "punkt": [41.815, -1.323],
+      "zeitzone": "Europe/Madrid",
+      "infos": [
+        {"art": "zone", "text": "Strand nach Kite und Windsurf getrennt; eine Flagge zeigt die Seite für Könner und die für Schüler.", "quelle": "se.kiteforum.com"},
+        {"art": "gefahr", "text": "Flach, trübes Wasser, schlammiger Grund mit Steinen und Muscheln: Neoprenschuhe mitnehmen.", "quelle": "se.kiteforum.com"},
+        {"art": "niveau", "text": "Cierzo sehr kräftig und kalt, laut einer Quelle nur für Könner.", "quelle": "wannakitesurf.com"}
+      ],
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. Stausee im Ebrotal, rund 45 km von Zaragoza (wannakitesurf.com, Koordinaten dort). sportaragon.com: einer der windigsten Orte Europas, über 150 Windtage im Jahr; Club Kitesurf La Loteta, Kitefoil-Meisterschaften. Richtung widersprüchlich: se.kiteforum.com N bis NE, wannakitesurf.com NE cross-shore; der Cierzo weht im Ebrotal sonst aus NW (windy.app zeigte NW). Deshalb Sektor W über N bis NO, ohne ablandig, weil die Seite (Spot Mitte oder Nord) nach Wind gewählt wird. Sektor und Seite vor Ort prüfen. Bochorno (SO) nicht eingetragen.",
+      "windlagen": [
+        {"name": "Cierzo", "sektor": [270, 40], "charakter": "kräftig, kalt"}
+      ],
+      "spots": [
+        {"id": "loteta", "name": "La Loteta (Playas de Luceni)", "ablandig": []}
+      ]
+    },
+    {
+      "id": "embalse-del-ebro",
+      "name": "Embalse del Ebro (Kantabrien)",
+      "land": "ES",
+      "typ": "see",
+      "punkt": [43.005, -3.92],
+      "anfahrt": [42.99, -3.946],
+      "zeitzone": "Europe/Madrid",
+      "thermik": true,
+      "infos": [
+        {"art": "tipp", "text": "Cabañas: Stehbereich mindestens 100 m breit, Flachwasser; Vorhersagen von Windy und Windfinder passten, eher etwa 4 kn dazurechnen.", "quelle": "kitesurf-reisen.eu"},
+        {"art": "gefahr", "text": "Cabañas: 200 m Abstand zur Stromleitung im Osten; Corconte liegt bei Nordwind im Lee mit starken ablandigen Böen.", "quelle": "kitesurf-reisen.eu"},
+        {"art": "saison", "text": "März bis Oktober; Thermik im Sommer am beständigsten.", "quelle": "lets-kite.com, picuco.com"}
+      ],
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. Wörtlich der Ebro-Stausee, bei Reinosa. lets-kite.com: N, S, W, WNW, NW, NNW, übrige Richtungen je nach Lage; Saison März bis Oktober; meist 7–12 kn, für Einsteiger. kitesurf-reisen.eu: Wind meist aus N über die Berge, starke Thermik; Cabañas (Weiler südöstlich des Sees) bei Nord auflandig; Corconte (Schule ebrokite) im Lee mit ablandigen Böen, eher für Windsurfer. picuco.com: Thermik ab Mittag, Juni bis September Böen 15–25 kn. Windfinder-Station seit Jahren außer Betrieb. Lage der Spots, Sektoren und ablandig geschätzt; Corconte nur für Süd eingetragen. Wasserstand schwankt stark (Stausee). thermik=true. Anfahrt ungefähr, von Claude am 8.11.2026 für die Fahrzeit gesetzt.",
+      "windlagen": [
+        {"name": "West bis Nord", "sektor": [250, 20], "charakter": "Sommer mit Thermik"},
+        {"name": "Süd", "sektor": [160, 210], "charakter": "je nach Lage"}
+      ],
+      "spots": [
+        {"id": "arija-cabanas", "name": "Arija / Cabañas (Südufer)", "ablandig": [[100, 250]]},
+        {"id": "corconte", "name": "Corconte (Nordufer)", "windlagen": [{"name": "Süd", "sektor": [160, 210]}], "ablandig": [[300, 60]]}
+      ]
+    },
+    {
+      "id": "viana-do-castelo",
+      "name": "Viana do Castelo (Nordportugal)",
+      "land": "PT",
+      "typ": "meer",
+      "punkt": [41.68, -8.88],
+      "anfahrt": [41.675, -8.83],
+      "zeitzone": "Europe/Lisbon",
+      "infos": [
+        {"art": "tipp", "text": "Am großen Hafenwall sehr flach, weiter südlich Welle; beste Wellen bei cross bis cross-offshore und über 2 m Westdünung.", "quelle": "kite-and-windsurfing-guide.com"},
+        {"art": "gefahr", "text": "Einige Felsen im Wasser; Wellen werden bei ablaufendem Wasser schwächer, groß schließen sie.", "quelle": "kite-and-windsurfing-guide.com"}
+      ],
+      "anreise": ["auto", "flug"],
+      "flughafen": {"name": "Porto (OPO)", "transfer_min": 50},
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. kite-and-windsurfing-guide.com: Cabedelo gegenüber Viana do Castelo, beliebtester Spot Nordportugals, oft voll; Nortada (thermisch) regelmäßig um 25 kn; cross bis cross-offshore. Windsurfer starten weiter südlich am Campingplatz. GKA-Weltcup-Ort. Strand nach W, Sektoren und ablandig geschätzt. Anfahrt ungefähr, von Claude am 8.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer von Claude am 8.11.2026 geschätzt.",
+      "windlagen": [
+        {"name": "Nortada", "sektor": [330, 40], "charakter": "Sommer, thermisch, oft um 25 kn"},
+        {"name": "Südwest bis West", "sektor": [200, 290], "charakter": "Tiefdruck, eher Winter"}
+      ],
+      "spots": [
+        {"id": "cabedelo", "name": "Cabedelo", "ablandig": [[60, 160]]}
+      ]
+    },
+    {
+      "id": "guincho",
+      "name": "Guincho (Lissabon)",
+      "land": "PT",
+      "typ": "meer",
+      "punkt": [38.73, -9.5],
+      "anfahrt": [38.732, -9.472],
+      "zeitzone": "Europe/Lisbon",
+      "infos": [
+        {"art": "niveau", "text": "Für Mittlere und Könner; bei Dünung sehr anspruchsvoll.", "quelle": "se.kiteforum.com, waterwind.it"},
+        {"art": "gefahr", "text": "Felsen an beiden Seiten und in der Mitte des Strands; kaltes Wasser (etwa 11–17 °C).", "quelle": "se.kiteforum.com"}
+      ],
+      "anreise": ["auto", "flug"],
+      "flughafen": {"name": "Lissabon (LIS)", "transfer_min": 35},
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. se.kiteforum.com: Hauptrichtung N, außerdem NNW, NW, WNW, W; an der Westküste meist N–NW. waterwind.it: geht bei Nordwind side, mit Dünung sehr anspruchsvoll, im Sommer gute Tage. Strand nach W, ablandig daraus geschätzt. Lagoa de Albufeira (Flachwasser, 30 km südlich) nicht eingetragen. Anfahrt ungefähr, von Claude am 8.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer von Claude am 8.11.2026 geschätzt.",
+      "windlagen": [
+        {"name": "Nortada", "sektor": [330, 30], "charakter": "Sommer, kräftig, side"},
+        {"name": "West bis Nordwest", "sektor": [260, 330]}
+      ],
+      "spots": [
+        {"id": "guincho", "name": "Praia do Guincho", "ablandig": [[40, 170]]}
+      ]
+    },
+    {
+      "id": "algarve-lagos",
+      "name": "Algarve West (Lagos, Alvor)",
+      "land": "PT",
+      "typ": "meer",
+      "punkt": [37.08, -8.62],
+      "anfahrt": [37.11, -8.655],
+      "zeitzone": "Europe/Lisbon",
+      "thermik": true,
+      "infos": [
+        {"art": "niveau", "text": "Meia Praia: rund 2 km Sand, kleiner Shorebreak, für Einsteiger bis Freestyle.", "quelle": "surf-store.com"},
+        {"art": "tipp", "text": "Ria de Alvor: bei Niedrigwasser Flachwasser; Thermik aus NW meist 16–25 kn, März bis November, nachmittags.", "quelle": "wannakitesurf.com"},
+        {"art": "saison", "text": "Beste Zeit Februar bis Oktober; im Hochsommer eher schwach (10–14 kn), Thermik rettet manche Tage.", "quelle": "surf-store.com"}
+      ],
+      "anreise": ["auto", "flug"],
+      "flughafen": {"name": "Faro (FAO)", "transfer_min": 60},
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. surf-store.com: Meia Praia Thermik meist 14–17 Uhr; Monatsrichtungen allgemein (nicht je Spot) W–NW im Winter, NW–N im Frühjahr, N–NE im Sommer. wannakitesurf.com (Ria do Alvor): beste Richtung NW, thermisch 16–25 kn, flach bei Niedrigwasser, Koordinaten dort umstritten. Ausrichtung der Strände und alle Sektoren geschätzt; ob die Thermik im Modellmittel ankommt, ungeprüft (thermik=true). Ostalgarve (Fuseta, Cabanas: Lagune bei Niedrigwasser trocken, im Sommer leichter SW) nicht eingetragen. Anfahrt ungefähr, von Claude am 8.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer von Claude am 8.11.2026 geschätzt.",
+      "windlagen": [
+        {"name": "West bis Südwest (Thermik)", "sektor": [200, 290], "charakter": "nachmittags"},
+        {"name": "Nordwest", "sektor": [290, 340]}
+      ],
+      "spots": [
+        {"id": "meia-praia", "name": "Meia Praia (Lagos)", "windlagen": [{"name": "West bis Südwest (Thermik)", "sektor": [200, 290], "charakter": "nachmittags, side"}], "ablandig": [[300, 60]]},
+        {"id": "ria-de-alvor", "name": "Ria de Alvor (Lagune)", "ablandig": [[20, 120]]}
+      ]
     }
   ]
 }
