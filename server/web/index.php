@@ -647,7 +647,6 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     </g>
     <?php if (!$flug): ?>
     <circle class="umkreis" cx="<?= round($heimXY[0], 1) ?>" cy="<?= round($heimXY[1], 1) ?>" r="<?= round(karte_km((float)$km, $heim[0]), 1) ?>"/>
-    <circle class="heim" cx="<?= round($heimXY[0], 1) ?>" cy="<?= round($heimXY[1], 1) ?>" r="<?= round($rp * 0.45, 2) ?>"><title><?= $eigenerOrt ? 'Dein Standort' : 'Inning am Ammersee' ?></title></circle>
     <?php endif ?>
     <?php foreach ($punkte as $nr => $p):
         $r = $p['e']['region'];
@@ -672,10 +671,18 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
       <?php if (isset($namen[$nr])): $rechts = $namen[$nr] === 'rechts'; ?><text class="name<?= $rechts ? '' : ' links' ?>" x="<?= round($p['xy'][0] + ($rechts ? 1 : -1) * $rp * 1.3, 2) ?>" y="<?= round($p['xy'][1] + $rp * 0.35, 2) ?>" font-size="<?= round($rp, 2) ?>" stroke-width="<?= round($rp * 0.3, 2) ?>"><?= h($r['name']) ?></text><?php endif ?>
     </a>
     <?php endforeach ?>
+    <?php if (!$flug):
+        // Standort als Maennchen (seit 8.11.2026), ueber den Punkten, steht mit den Fuessen am Ort
+        $u = $rp * 0.7;
+        $m = fn(float $v) => round($v * $u, 2);
+    ?>
+    <path class="heim" transform="translate(<?= round($heimXY[0], 1) ?> <?= round($heimXY[1], 1) ?>)"
+          d="M0,<?= $m(-3.25) ?>a<?= $m(0.4) ?>,<?= $m(0.4) ?> 0 1,0 0.01,0Z M<?= $m(-0.75) ?>,<?= $m(-2.35) ?>H<?= $m(0.75) ?>V<?= $m(-1.1) ?>H<?= $m(0.55) ?>V0H<?= $m(0.13) ?>V<?= $m(-1.0) ?>H<?= $m(-0.13) ?>V0H<?= $m(-0.55) ?>V<?= $m(-1.1) ?>H<?= $m(-0.75) ?>Z"><title><?= $eigenerOrt ? 'Dein Standort' : 'Inning am Ammersee' ?></title></path>
+    <?php endif ?>
   </svg>
   <button type="button" class="feldknopf" id="feldKnopf" aria-pressed="true" hidden>Farbfeld Windstärke</button>
   <?= windskala_legende() ?>
-  <p class="leise klein landkarte-fuss">Farbfeld: mittlerer Wind an der Region (am guten Tag im Fenster, sonst im Tagesmittel), nicht dazwischen. Spitze am Punkt: wohin der Wind weht (am guten Tag im Fenster, sonst im Tagesmittel, ab <?= KARTE_PFEIL_AB_KN ?> kn). Punkt antippen: Stunden der Region<?= $kartenTag ? '' : ' am besten Tag' ?>.<?= $flug ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße, darum fehlen manche Ziele innerhalb des Kreises.' ?> Karte: Natural Earth.</p>
+  <p class="leise klein landkarte-fuss">Farbfeld: mittlerer Wind an der Region (am guten Tag im Fenster, sonst im Tagesmittel), nicht dazwischen. Spitze am Punkt: wohin der Wind weht (am guten Tag im Fenster, sonst im Tagesmittel, ab <?= KARTE_PFEIL_AB_KN ?> kn). <?= $flug ? '' : 'Männchen: ' . ($eigenerOrt ? 'dein Standort' : 'Inning') . '. ' ?>Punkt antippen: Stunden der Region<?= $kartenTag ? '' : ' am besten Tag' ?>.<?= $flug ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße, darum fehlen manche Ziele innerhalb des Kreises.' ?> Karte: Natural Earth.</p>
 </details>
 <?php endif ?>
 
