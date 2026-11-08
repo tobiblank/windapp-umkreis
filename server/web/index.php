@@ -746,6 +746,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
       <g id="heimSack"><?php for ($i = 0; $i < 4; $i++): ?><polygon class="<?= $i % 2 ? 'hell' : 'rot' ?>" points="0,0"/><?php endfor ?></g>
     </g>
     <?php endif ?>
+    <g class="juchhu" id="heimJuchhu" opacity="0"><path d="M0,0L0.9,-1H4.2Q4.6,-1 4.6,-1.4V-2.6Q4.6,-3 4.2,-3H-0.4Q-0.8,-3 -0.8,-2.6V-1.4Q-0.8,-1 -0.4,-1H0.25Z"/><text x="1.9" y="-1.58" font-size="1.2">Juchhu!</text></g>
     <?php endif ?>
     <g class="heim" id="heim" transform="translate(<?= $hx ?> <?= $hy ?>) scale(<?= round($u, 3) ?>)"
        data-x="<?= $hx ?>" data-y="<?= $hy ?>" data-u="<?= round($u, 3) ?>" data-rp="<?= round($rp, 3) ?>"<?php if ($ziel): ?> data-wohin="<?= round($ziel['xy'][0], 1) ?>,<?= round($ziel['xy'][1], 1) ?>"<?php endif ?>>
@@ -1079,14 +1080,16 @@ document.addEventListener('click', function (e) {
   });
 })();
 // Maennchen auf der Landkarte (seit 8.11.2026): Hand an die Stirn, nach links und rechts
-// umsehen, auf die beste Region zeigen (mit gestrichelter Blicklinie), in den Bus steigen
+// umsehen, auf die beste Region zeigen (mit gestrichelter Blicklinie), vor Freude mit
+// hochgerissenen Armen springen ("Juchhu!" in einer Sprechblase), in den Bus steigen
 // und als Fahrer hinfahren; am Ziel wiegt sich eine Palme (Meer im Sueden) oder flattert ein
 // Windsack; dann steht es wieder zu Hause und zeigt hin. Ohne gute Region: umsehen und
 // Schultern zucken. Gleichzeitig ziehen an guten Regionen Windstriche in Windrichtung ueber
 // den Punkt (Laenge und Tempo nach der Staerke), und ihr Windpfeil wackelt kurz.
 // Startet, sobald die Karte sichtbar ist; Scrollen, Antippen der Karte oder eine Taste beenden
 // sofort in der Endpose. Bei "Bewegung reduzieren" gleich die Endpose. Antippen des Maennchens
-// spielt alles neu ab, dann mit Ton: Doppelhupe beim Einsteigen, Motor waehrend der Fahrt
+// spielt alles neu ab, dann mit Ton: Jubelpfiff beim Juchhu, Doppelhupe beim Einsteigen,
+// Motor waehrend der Fahrt
 // (Web Audio, ohne Datei; seit 8.11.2026). Beim Laden bleibt es stumm, weil Browser Ton erst
 // nach einem Antippen erlauben und eine Wetterseite nicht von selbst brummen soll. Schalter
 // "Ton" im Fuss, gemerkt in wohinfahrma_ton (Standard an). Zeiten in ms, Laengen in Einheiten
@@ -1101,7 +1104,8 @@ document.addEventListener('click', function (e) {
   function el(id) { return document.getElementById(id); }
   var kopf = el('heimKopf'), armL = el('heimArmL'), armR = el('heimArmR'), ober = el('heimOber'),
       unter = el('heimUnter'), zeig = el('heimZeig'), bus = el('heimBus'), spur = el('heimSpur'),
-      puls = el('heimPuls'), fahrer = el('heimFahrer'), blick = el('heimBlick'), ankunft = el('heimAnkunft');
+      puls = el('heimPuls'), fahrer = el('heimFahrer'), blick = el('heimBlick'), ankunft = el('heimAnkunft'),
+      juchhu = el('heimJuchhu');
   var ARM = 1.4, SX = 0.62, SY = -2.2, ELLE = [1.05, -2.55];
   var dir = ziel && ziel[0] < X ? -1 : 1;
   // Fahrt im Bogen vom Maennchen zum Ziel, der Bus parkt neben dem Punkt. Nur die Entfernung
@@ -1147,7 +1151,21 @@ document.addEventListener('click', function (e) {
                    vx: -Math.sin(th), vy: Math.cos(th), striche: striche, k: wehen.length });
     });
   }
-  var ENDE = ziel ? (fahrt ? 9300 : 4400) : 4300;
+  // Juchhu von 4000 bis 4900 ms; alles danach (Bus, Fahrt, Ankunft) liegt seit 8.11.2026 abends
+  // um 900 ms spaeter als in der ersten Fassung
+  var ENDE = ziel ? (fahrt ? 10200 : 5300) : 4300;
+  // Sprechblase ueber dem Kopf; ist darueber kein Platz (Standort am oberen Kartenrand),
+  // rechts neben dem Kopf mit dem Zipfel nach links
+  var blaseOben = true;
+  if (juchhu) {
+    var vb = svg.viewBox && svg.viewBox.baseVal;
+    if (vb && Y - 7.4 * U < vb.y) {
+      blaseOben = false;
+      juchhu.querySelector('path').setAttribute('d', 'M0,0L0.8,-0.4V-0.6Q0.8,-1 1.2,-1H5.6Q6,-1 6,-0.6V0.6Q6,1 5.6,1H1.2Q0.8,1 0.8,0.6V0.4Z');
+      var tx = juchhu.querySelector('text');
+      tx.setAttribute('x', '3.4'); tx.setAttribute('y', '0.42');
+    }
+  }
   function cl(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
   function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
   function seg(t, a, b) { return ease(cl((t - a) / (b - a))); }
@@ -1176,7 +1194,7 @@ document.addEventListener('click', function (e) {
   }
   function weht(t, op) {   // Palme oder Windsack am Ziel
     if (!ankunft) { return; }
-    var auf = seg(t, 7000, 7350), an = t > 7000 ? t - 7000 : 0, s = 0.3 + 0.7 * auf;
+    var auf = seg(t, 7900, 8250), an = t > 7900 ? t - 7900 : 0, s = 0.3 + 0.7 * auf;
     ankunft.setAttribute('opacity', (auf * op).toFixed(2));
     var tr = 'translate(' + ziel[0] + ' ' + (ziel[1] - RP * 1.05) + ') scale(' + (s * U) + ')';
     if (art === 'palme') {
@@ -1207,29 +1225,36 @@ document.addEventListener('click', function (e) {
     var hk = (0.35 * sal + 0.15 * scan) * (1 - runter);
     sal *= 1 - runter;
     var zuck = ziel ? 0 : Math.sin(Math.PI * cl((t - 3450) / 700));
-    var zg = ziel ? seg(t, 3350, 3700) : 0;
-    var bl = ziel ? seg(t, 3500, 3800) * (1 - seg(t, 4100, 4400)) : 0;
+    var hoch = ziel ? seg(t, 4000, 4130) * (1 - seg(t, 4750, 4900)) : 0;   // Juchhu: Arme hoch
+    var sprung = ziel && t > 4000 && t < 4900 ? Math.abs(Math.sin((t - 4000) / 900 * Math.PI * 2)) : 0;
+    var zg = ziel ? seg(t, 3350, 3700) * (1 - hoch) : 0;
+    var bl = ziel ? seg(t, 3500, 3800) * (1 - seg(t, 3900, 4100)) : 0;
     var walk = 0, manOp = 1, busOp = 0, fa = 0, rr = 0;
     if (fahrt) {
-      if (t < 8500) {
-        zg *= 1 - seg(t, 4200, 4400);
-        walk = seg(t, 4400, 4800);
-        manOp = 1 - seg(t, 4600, 4850);
+      if (t < 9400) {
+        if (t >= 4000) { zg = 0; }
+        walk = seg(t, 5300, 5700);
+        manOp = 1 - seg(t, 5500, 5750);
       } else {
-        manOp = seg(t, 8700, 9200);
+        manOp = seg(t, 9600, 10100);
       }
-      busOp = seg(t, 4000, 4300) * (1 - seg(t, 8500, 8900));
-      fa = seg(t, 4900, 7000);
-      rr = cl((t - 7000) / 700);
+      busOp = seg(t, 4900, 5200) * (1 - seg(t, 9400, 9800));
+      fa = seg(t, 5800, 7900);
+      rr = cl((t - 7900) / 700);
     }
     var r1 = ziel ? cl((t - 3600) / 700) : 0;
     var ring = r1 > 0 && r1 < 1 ? r1 : rr > 0 && rr < 1 ? rr : 0;
     if (t > 3200 && ziel) { sx = dir; }
-    heim.setAttribute('transform', 'translate(' + (X + walk * 2.5 * U * dir) + ' ' + Y + ') scale(' + (sx * U) + ' ' + U + ')');
+    heim.setAttribute('transform', 'translate(' + (X + walk * 2.5 * U * dir) + ' ' + (Y - sprung * U) + ') scale(' + (sx * U) + ' ' + U + ')');
     heim.setAttribute('opacity', manOp);
     kopf.setAttribute('cx', hk.toFixed(3));
-    arm(armL, -SX, SY, 12 + 50 * zuck, true);
-    arm(armR, SX, SY, -12 - 50 * zuck, sal < 0.05 && zg < 0.02);
+    arm(armL, -SX, SY, 12 + 50 * zuck + 138 * hoch, true);
+    arm(armR, SX, SY, -12 - 50 * zuck - 138 * hoch, (sal < 0.05 && zg < 0.02) || hoch > 0.05);
+    if (juchhu) {
+      var jb = t < 4000 ? 0 : t < 4120 ? (t - 4000) / 120 : 1 - seg(t, 4900, 5150), pop = 0.85 + 0.15 * cl((t - 4000) / 150);
+      juchhu.setAttribute('transform', 'translate(' + (X + (blaseOben ? 0.5 : 1.2) * U) + ' ' + (Y - (blaseOben ? 4.1 : 3.1) * U) + ') scale(' + (U * pop).toFixed(3) + ')');
+      juchhu.setAttribute('opacity', jb.toFixed(2));
+    }
     arm(ober, SX, SY, grad(ELLE[0] - SX, ELLE[1] - SY), sal >= 0.05);
     arm(unter, ELLE[0], ELLE[1], grad(hk + 0.42 - ELLE[0], -3.35 - ELLE[1]), sal >= 0.05);
     if (ziel) {
@@ -1241,18 +1266,18 @@ document.addEventListener('click', function (e) {
       var wl = Math.sqrt(wx * wx + wy * wy) || 1, hx = ox + wx / wl * ARM * U, hy = oy + wy / wl * ARM * U;
       var ex = ziel[0] - wx / wl * RP * 1.3, ey = ziel[1] - wy / wl * RP * 1.3;
       blick.setAttribute('d', 'M' + hx.toFixed(1) + ',' + hy.toFixed(1) + 'L' + (hx + (ex - hx) * bl).toFixed(1) + ',' + (hy + (ey - hy) * bl).toFixed(1));
-      blick.setAttribute('opacity', bl > 0.02 ? (t > 4100 ? 1 - seg(t, 4100, 4400) : 1) : 0);
+      blick.setAttribute('opacity', bl > 0.02 ? 1 : 0);
     }
     if (fahrt) {
       var u = 1 - fa, px = u * u * A[0] + 2 * u * fa * C[0] + fa * fa * B[0], py = u * u * A[1] + 2 * u * fa * C[1] + fa * fa * B[1];
-      var faehrt = t > 4900 && t < 7000;
+      var faehrt = t > 5800 && t < 7900;
       var hop = faehrt ? -Math.abs(Math.sin(t / 85)) * 0.25 * U : 0;
       bus.setAttribute('transform', 'translate(' + px + ' ' + (py + hop) + ') scale(' + (dir * U) + ' ' + U + ')');
       bus.setAttribute('opacity', busOp);
-      fahrer.setAttribute('opacity', t > 4800 && t < 8500 ? 1 : 0);   // das Maennchen sitzt am Steuer
-      spur.setAttribute('opacity', faehrt ? 0.6 : t >= 7000 && t < 7600 ? 0.6 * (1 - seg(t, 7000, 7600)) : 0);
+      fahrer.setAttribute('opacity', t > 5700 && t < 9400 ? 1 : 0);   // das Maennchen sitzt am Steuer
+      spur.setAttribute('opacity', faehrt ? 0.6 : t >= 7900 && t < 8500 ? 0.6 * (1 - seg(t, 7900, 8500)) : 0);
       spur.style.strokeDashoffset = -t / 40;
-      weht(t, 1 - seg(t, 8500, 8900));
+      weht(t, 1 - seg(t, 9400, 9800));
     }
     if (puls) {
       puls.setAttribute('r', (RP * (1 + 1.8 * ring)).toFixed(2));
@@ -1269,7 +1294,7 @@ document.addEventListener('click', function (e) {
       b.setAttribute('aria-pressed', (b.dataset.ton === 'an') === tonAn ? 'true' : 'false');
     });
   }
-  if (tonBox && fahrt) {
+  if (tonBox && ziel) {
     tonBox.hidden = false;
     tonZeigen();
     tonBox.addEventListener('click', function (e) {
@@ -1293,6 +1318,21 @@ document.addEventListener('click', function (e) {
       });
     });
   }
+  function pfiff(t0) {   // Jubelpfiff "ju-huu": kurz, dann aufsteigend mit Vibrato
+    function ton(a, d, f0, f1, vib) {
+      var o = ctx.createOscillator(), g = ctx.createGain(), l = ctx.createOscillator(), lg = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(f0, a); o.frequency.exponentialRampToValueAtTime(f1, a + d * 0.7);
+      o.frequency.setValueAtTime(f1, a + d * 0.7); o.frequency.exponentialRampToValueAtTime(f1 * 0.93, a + d);
+      l.frequency.value = vib || 1; lg.gain.value = vib ? f1 * 0.025 : 0; l.connect(lg); lg.connect(o.frequency);
+      g.gain.setValueAtTime(0, a); g.gain.linearRampToValueAtTime(0.9, a + 0.02);
+      g.gain.setValueAtTime(0.9, a + d - 0.06); g.gain.linearRampToValueAtTime(0, a + d);
+      o.connect(g); g.connect(master);
+      [o, l].forEach(function (n) { n.start(a); n.stop(a + d + 0.02); knoten.push(n); });
+    }
+    ton(t0, 0.13, 620, 760, 0);
+    ton(t0 + 0.19, 0.42, 700, 1180, 7);
+  }
   function motor(t0, dauer) {   // tiefes Brummen mit Tuckern, schwillt an und rollt aus
     var o = ctx.createOscillator(), o2 = ctx.createOscillator(), lfo = ctx.createOscillator();
     var f = ctx.createBiquadFilter(), g = ctx.createGain(), tuck = ctx.createGain(), lfoG = ctx.createGain();
@@ -1310,7 +1350,7 @@ document.addEventListener('click', function (e) {
     [o, o2, lfo].forEach(function (n) { n.start(t0); n.stop(t0 + dauer + 0.25); knoten.push(n); });
   }
   function tonStart() {   // im Antippen aufrufen, sonst erlaubt der Browser keinen Ton
-    if (!tonAn || !fahrt) { return; }
+    if (!tonAn || !ziel) { return; }
     var AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) { return; }
     try {
@@ -1318,8 +1358,11 @@ document.addEventListener('click', function (e) {
       if (ctx.state === 'suspended') { ctx.resume(); }
       master = ctx.createGain(); master.gain.value = 0.2; master.connect(ctx.destination);
       var t0 = ctx.currentTime;
-      hupe(t0 + 4.45);          // beim Einsteigen
-      motor(t0 + 4.85, 2.25);   // Fahrt 4900 bis 7000 ms
+      pfiff(t0 + 4.0);            // Juchhu
+      if (fahrt) {
+        hupe(t0 + 5.35);          // beim Einsteigen
+        motor(t0 + 5.75, 2.25);   // Fahrt 5800 bis 7900 ms
+      }
     } catch (e) { master = null; }
   }
   function tonStopp() {
