@@ -245,8 +245,9 @@ function matrix_kopf(string $tag, DateTimeImmutable $heute): string
 }
 
 /**
- * Temperatur fuer die Detailzeile (seit 7.11.2026): Meer "Wasser 14 °C, 4/3 mm",
- * See "Luft 12 °C, gefühlt 6 °C". Rueckgabe [text, tooltip] oder null.
+ * Temperatur fuer die Detailzeile (seit 7.11.2026): "Wasser 14 °C, 4/3 mm"
+ * (Meer seit 7.11., Seen mit Alplakes seit 8.11.2026), sonst "Luft 12 °C, gefühlt 6 °C".
+ * Rueckgabe [text, tooltip] oder null.
  */
 function temp_text(array $d): ?array
 {
@@ -257,9 +258,11 @@ function temp_text(array $d): ?array
     $luft = $n['luft'] !== null ? 'Luft ' . zahl($n['luft']) . ' °C' . ($n['gefuehlt'] !== null && $n['gefuehlt'] <= $n['luft'] - 2 ? ', gefühlt ' . zahl($n['gefuehlt']) . ' °C' : '') : null;
     if ($n['text'] !== null) {
         return ['Wasser ' . zahl($n['wasser']) . ' °C, ' . $n['text'],
-                'Neopren-Faustregel nach der Wassertemperatur' . ($n['waermer'] ? ', eine Stufe wärmer wegen kalter Luft bei Wind' : '') . ($luft ? '. ' . $luft : '')];
+                'Neopren-Faustregel nach der Wassertemperatur' . ($n['waermer'] ? ', eine Stufe wärmer wegen kalter Luft bei Wind' : '')
+                . (($d['temp']['wasser_quelle'] ?? null) === 'see' ? '. Wasser: Seemodell von Alplakes (Eawag), Seemitte in 1 m Tiefe; am Ufer kann es abweichen' : '')
+                . ($luft ? '. ' . $luft : '')];
     }
-    return $luft ? [$luft, 'Wassertemperatur für Seen nicht bekannt, deshalb keine Neopren-Empfehlung. Gefühlt: Windchill bei Wind im Fenster.'] : null;
+    return $luft ? [$luft, 'Wassertemperatur für diesen See nicht bekannt, deshalb keine Neopren-Empfehlung. Gefühlt: Windchill bei Wind im Fenster.'] : null;
 }
 
 /** Stunden als Uhrzeit, auf 5 Minuten: 11.25 -> "11:15", ueber Mitternacht weiter gezaehlt */
@@ -902,7 +905,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <p><b>Regel</b> heißt: Die Windlage ist aus Druckdifferenzen und Grundströmung abgeleitet (nach lokalen Vorhersageseiten wie kitewetter.at), die Stärke ist ein geschätzter typischer Wert.</p>
   <p><b>Rohwerte, nicht kalibriert.</b> Modelle unterschätzen lokale Thermik oft (Seen mit „Thermik“ markiert, dort lieber die verlinkte lokale Vorhersage ansehen); Böen und Gewitter prüft nur das Modellmittel. Umkreis nach Straßen-km mit dem Auto (ohne Landweg: Luftlinie zum Vorhersagepunkt); Fahrzeit ohne Verkehr und Pausen, „≈“ heißt aus der Luftlinie geschätzt. Flugziele (Anreise „Flug“): ohne Umkreis, mit geschätztem Transfer vom Flughafen.</p>
   <?php if ($fahrzeiten): ?><p>Fahrzeiten ab <?= h($fahrzeiten['start']['name'] ?? 'Startort') ?>: © <a href="https://openrouteservice.org/">openrouteservice.org</a> by HeiGIT, Kartendaten © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende.</p><?php endif ?>
-  <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0) · Für Stegen genauer: <a href="https://ammerseewind.de">ammerseewind.de</a></p>
+  <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0) · Wassertemperatur der Seen: <a href="https://www.alplakes.eawag.ch/">Alplakes, Eawag</a> (CC BY 4.0) · Für Stegen genauer: <a href="https://ammerseewind.de">ammerseewind.de</a></p>
   <?= design_schalter() ?>
   <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
 </footer>

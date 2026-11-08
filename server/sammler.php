@@ -108,6 +108,13 @@ try {
  * wasser:     Meerestemperatur (sea_surface_temperature, Marine API), nur "meer",
  *             alle 6 h (seit 7.11.2026). Eigene Quelle, damit ein Fehler dort die
  *             Wellendaten nicht mitreisst; Variablenname ungeprueft.
+ * seewasser:  Wassertemperatur der Seen mit Katalogfeld "alplakes" (seit 8.11.2026),
+ *             nicht von Open-Meteo, sondern vom Seemodell Simstrat bei Alplakes
+ *             (Eawag, CC BY 4.0): ein Abruf je See, 1 m Tiefe, Seemitte. Alplakes
+ *             rechnet jeden Morgen, rund 4-5 Tage voraus, alle 3 Stunden; der Sammler
+ *             fuellt die Stunden dazwischen linear (alplakes_eintrag()). Am 8.11.2026
+ *             im Browser geprueft: ein Zeitraum ueber das Vorhersageende hinaus liefert,
+ *             was da ist; ein unbekannter See gibt HTTP 400.
  */
 function quellen(array $katalog, string $modelle): array
 {
@@ -189,6 +196,82 @@ function quellen(array $katalog, string $modelle): array
             'basis'    => 'https://marine-api.open-meteo.com/v1/marine',
             'query'    => 'hourly=sea_surface_temperature&forecast_days=8&timezone=UTC',
         ],
+        'seewasser' => [
+            'every'    => 360,
+            'regionen' => array_values(array_filter($alle, fn($r) => $r['typ'] === 'see' && !empty($r['alplakes']))),
+            'art'      => 'alplakes',
+            'basis'    => ALPLAKES_BASIS,
+        ],
+    ];
+}
+
+// ===================================================================
+// ALPLAKES (Wassertemperatur der Seen, seit 8.11.2026)
+// ===================================================================
+
+const ALPLAKES_BASIS = 'https://alplakes-api.eawag.ch/simulations/1d/point/simstrat';
+const ALPLAKES_TIEFE = 1;   // m; die Simstrat-Modelle beginnen bei 1 m
+
+/** URL fuer einen See: von gestern 0 Uhr bis in 8 Tagen (UTC), Alplakes liefert, was da ist */
+function alplakes_url(string $basis, string $see, ?int $jetzt = null): string
+{
+    $jetzt ??= time();
+    $von = gmdate('Ymd', $jetzt - 86400) . '0000';
+    $bis = gmdate('Ymd', $jetzt + 8 * 86400) . '0000';
+    return "$basis/" . rawurlencode($see) . "/$von/$bis/" . ALPLAKES_TIEFE;
+}
+
+/**
+ * Antwort von Alplakes ({time: [ISO], variables: {T: {data: [...]}}}) als Eintrag
+ * in der Form von Open-Meteo, damit daten_laden() und die Bewertung ihn wie die
+ * Meerestemperatur lesen: hourly.time ("Y-m-d\TH:i", UTC) und
+ * hourly.water_temperature. Die Zeitpunkte (alle 3 Stunden, ein paar Sekunden nach
+ * der vollen Stunde) werden auf die volle Stunde gerundet, die Stunden dazwischen
+ * linear gefuellt. Erstes Feld latitude, wie bei Open-Meteo (payload_teile()).
+ * Rueckgabe null, wenn die Antwort nicht passt.
+ */
+function alplakes_eintrag(string $body, array $region): ?array
+{
+    $j = json_decode($body, true);
+    $zeiten = $j['time'] ?? null;
+    $werte = $j['variables']['T']['data'] ?? null;
+    if (!is_array($zeiten) || !is_array($werte) || count($zeiten) !== count($werte) || !$zeiten) {
+        return null;
+    }
+    $punkte = [];
+    foreach ($zeiten as $i => $t) {
+        $ts = is_string($t) ? strtotime($t) : false;
+        if ($ts === false || !is_numeric($werte[$i])) {
+            continue;
+        }
+        $punkte[(int)(round($ts / 3600) * 3600)] = (float)$werte[$i];
+    }
+    if (!$punkte) {
+        return null;
+    }
+    ksort($punkte);
+    $ts = array_keys($punkte);
+    $time = $temp = [];
+    for ($k = 0; $k < count($ts); $k++) {
+        $a = $ts[$k];
+        $b = $ts[$k + 1] ?? $a;
+        for ($s = $a; $s < $b || $s === $a; $s += 3600) {
+            $f = $b > $a ? ($s - $a) / ($b - $a) : 0.0;
+            $time[] = gmdate('Y-m-d\TH:i', $s);
+            $temp[] = round($punkte[$a] + $f * ($punkte[$b] - $punkte[$a]), 2);
+            if ($b === $a) {
+                break;
+            }
+        }
+    }
+    return [
+        'latitude'  => (float)$region['punkt'][0],
+        'longitude' => (float)$region['punkt'][1],
+        'quelle'    => 'alplakes',
+        'modell'    => 'simstrat',
+        'see'       => $region['alplakes'],
+        'tiefe_m'   => ALPLAKES_TIEFE,
+        'hourly'    => ['time' => $time, 'water_temperature' => $temp],
     ];
 }
 
@@ -252,6 +335,32 @@ function fetch(string $url, int $timeout): array
         'err'   => $err,
         'body'  => $body,
     ];
+}
+
+/**
+ * Abruf mit Wiederholung: bei 429 eine Minute warten; bei Zeitueberschreitung
+ * (http 0) oder 5xx kurz. Am 8.11.2026 brach die Wiederholung nach 429 mit
+ * "SSL connection timeout" ab, deshalb bis zu zwei Wiederholungen fuer beide Faelle.
+ */
+function abruf(string $url, int $timeout, string $wo, array &$bericht): array
+{
+    $r = fetch($url, $timeout);
+    for ($versuch = 1; $versuch <= 2 && ($r['http'] === 429 || $r['http'] === 0 || $r['http'] >= 500); $versuch++) {
+        $warte = $r['http'] === 429
+            ? umkreis_wartezeit('UMKREIS_WARTE_429', 65)
+            : umkreis_wartezeit('UMKREIS_WARTE_FEHLER', 15);
+        $grund = $r['http'] === 0 ? 'keine Antwort' : "HTTP {$r['http']}";
+        $bericht[] = "$wo: $grund, warte $warte s ($versuch. Wiederholung)";
+        sleep($warte);
+        $r = fetch($url, $timeout);
+    }
+    return $r;
+}
+
+/** Nur fuer die Tests: Open-Meteo und Alplakes durch einen lokalen Ersatz tauschen */
+function test_url(string $url, ?string $ersatz): string
+{
+    return $ersatz ? preg_replace('#^https://(?:[a-z-]+\.open-meteo\.com|alplakes-api\.eawag\.ch)#', $ersatz, $url) : $url;
 }
 
 /** Koordinaten mehrerer Regionen als Open-Meteo-Parameter */
@@ -413,14 +522,53 @@ foreach (quellen($KATALOG, $MODELLE) as $name => $q) {
     }
 
     $alleOk = true;
-    foreach (teile($q['regionen'], $TEIL_GROESSE) as $teilNr => [$teil, $zusatz]) {
-        $ids = array_column($teil, 'id');
-        $url = $q['basis'] . '?' . koordinaten($teil) . '&' . $q['query'] . $zusatz;
-        // Nur fuer tests/sammler_test.php: Open-Meteo durch einen lokalen Ersatz tauschen
-        $ersatz = $CFG['test_url_ersatz'] ?? (getenv('UMKREIS_TEST_URL') ?: null);
-        if ($ersatz) {
-            $url = preg_replace('#^https://[a-z-]+\.open-meteo\.com#', $ersatz, $url);
+    $ersatz = $CFG['test_url_ersatz'] ?? (getenv('UMKREIS_TEST_URL') ?: null);
+
+    if (($q['art'] ?? '') === 'alplakes') {
+        // Ein Abruf je See; eine Zeile mit allen Seen, die geklappt haben, und eine
+        // Fehlerzeile mit den uebrigen. Zaehlt nicht zum Open-Meteo-Kontingent.
+        $gut = [];
+        $schlecht = [];
+        $kb = 0;
+        $ms = 0;
+        foreach ($q['regionen'] as $reg) {
+            $r = abruf(test_url(alplakes_url($q['basis'], $reg['alplakes']), $ersatz), $TIMEOUT, "$name/{$reg['id']}", $bericht);
+            $e = ($r['http'] >= 200 && $r['http'] < 300) ? alplakes_eintrag($r['body'], $reg) : null;
+            $ms += $r['ms'];
+            if ($e === null) {
+                $schlecht[$reg['id']] = "{$reg['alplakes']}: http={$r['http']} "
+                    . ($r['err'] !== '' ? $r['err'] : substr(preg_replace('/\s+/', ' ', $r['body']), 0, 200));
+                $bericht[] = "$name/{$reg['id']}: FEHLER " . $schlecht[$reg['id']];
+                continue;
+            }
+            $gut[$reg['id']] = $e;
+            $kb += $r['bytes'] / 1024;
         }
+        $ts = gmdate('Y-m-d\TH:i:s\Z');
+        if ($gut) {
+            $fp = fingerabdruck(array_values($gut));
+            $fpDatei = "$DATA_DIR/.state/$name.0.fp";
+            if (!$ACTION && @file_get_contents($fpDatei) === $fp . '|' . implode(',', array_keys($gut))) {
+                $bericht[] = "$name: unveraendert";
+            } elseif (anhaengen($DATA_DIR, $name, ['ts' => $ts, 'source' => $name, 'ok' => true, 'http' => 200, 'ms' => $ms,
+                                                    'regionen' => array_keys($gut), 'payload' => array_values($gut)], $LAUF)) {
+                @file_put_contents($fpDatei, $fp . '|' . implode(',', array_keys($gut)));
+                $bericht[] = sprintf('%s: ok, %d Seen, %d KB, %d ms', $name, count($gut), $kb, $ms);
+            } else {
+                $probleme[] = "$name: Schreiben in $DATA_DIR fehlgeschlagen";
+                $alleOk = false;
+            }
+        }
+        if ($schlecht) {
+            $alleOk = false;
+            anhaengen($DATA_DIR, $name, ['ts' => $ts, 'source' => $name, 'ok' => false, 'http' => 0, 'ms' => 0,
+                                         'regionen' => array_keys($schlecht), 'err' => implode(' | ', $schlecht)], $LAUF);
+        }
+    }
+
+    foreach (($q['art'] ?? '') === 'alplakes' ? [] : teile($q['regionen'], $TEIL_GROESSE) as $teilNr => [$teil, $zusatz]) {
+        $ids = array_column($teil, 'id');
+        $url = test_url($q['basis'] . '?' . koordinaten($teil) . '&' . $q['query'] . $zusatz, $ersatz);
         // Open-Meteo zaehlt je Minute (ein Ort und ein Ensemble-Abruf wiegen mehrfach).
         // Am 8.11.2026 (52 Regionen) gingen ensemble/0 und /1 durch, /2 bekam HTTP 429.
         // Deshalb vor jedem weiteren Ensemble-Teil eine Minute Pause.
@@ -429,19 +577,7 @@ foreach (quellen($KATALOG, $MODELLE) as $name => $q) {
             $bericht[] = "$name/$teilNr: Pause $pause s (Minutenlimit)";
             sleep($pause);
         }
-        $r = fetch($url, $TIMEOUT);
-        // Bei 429 eine Minute warten; bei Zeitueberschreitung (http 0) oder 5xx kurz.
-        // Am 8.11.2026 brach die Wiederholung nach 429 mit "SSL connection timeout" ab,
-        // deshalb bis zu zwei Wiederholungen fuer beide Faelle.
-        for ($versuch = 1; $versuch <= 2 && ($r['http'] === 429 || $r['http'] === 0 || $r['http'] >= 500); $versuch++) {
-            $warte = $r['http'] === 429
-                ? umkreis_wartezeit('UMKREIS_WARTE_429', 65)
-                : umkreis_wartezeit('UMKREIS_WARTE_FEHLER', 15);
-            $grund = $r['http'] === 0 ? 'keine Antwort' : "HTTP {$r['http']}";
-            $bericht[] = "$name/$teilNr: $grund, warte $warte s ($versuch. Wiederholung)";
-            sleep($warte);
-            $r = fetch($url, $TIMEOUT);
-        }
+        $r = abruf($url, $TIMEOUT, "$name/$teilNr", $bericht);
 
         // Im Action-Modus nicht zaehlen: kein bleibender Zustand, Abrufe von GitHub-IPs
         $omHeute = $ACTION ? 0.0 : om_zaehlen($DATA_DIR, om_gewicht($q['query'], count($teil)));

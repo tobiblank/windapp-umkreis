@@ -426,22 +426,39 @@ function welle_stunden(?array $eintrag, DateTimeZone $tz): array
     return $out;
 }
 
-/** Meerestemperatur je Ortstag und Stunde (Marine API, seit 7.11.2026) */
+/**
+ * Wassertemperatur je Ortstag und Stunde: Meer aus der Marine API
+ * (sea_surface_temperature, seit 7.11.2026), Seen aus dem Seemodell von Alplakes
+ * (water_temperature, 1 m Tiefe, vom Sammler auf Stunden gefuellt, seit 8.11.2026).
+ */
 function wasser_stunden(?array $eintrag, DateTimeZone $tz): array
 {
-    if (!$eintrag || empty($eintrag['hourly']['sea_surface_temperature'])) {
+    $var = null;
+    foreach (['sea_surface_temperature', 'water_temperature'] as $v) {
+        if (!empty($eintrag['hourly'][$v])) {
+            $var = $v;
+            break;
+        }
+    }
+    if ($var === null) {
         return [];
     }
     $h = $eintrag['hourly'];
     $orte = ortszeiten($h['time'], $tz);
     $out = [];
     foreach ($h['time'] as $i => $_) {
-        if (isset($h['sea_surface_temperature'][$i])) {
+        if (isset($h[$var][$i])) {
             [$tag, $stunde] = $orte[$i];
-            $out[$tag][$stunde] = (float)$h['sea_surface_temperature'][$i];
+            $out[$tag][$stunde] = (float)$h[$var][$i];
         }
     }
     return $out;
+}
+
+/** Wasser-Eintrag einer Region: Meer aus "wasser", Seen aus "seewasser" (Alplakes) */
+function wasser_eintrag(array $stand, string $id): ?array
+{
+    return $stand['wasser'][$id] ?? $stand['seewasser'][$id] ?? null;
 }
 
 /**
@@ -989,6 +1006,8 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
         usort($alle, 'spot_vergleich');
         $det = $alle[0]['det'];
         $temp = tag_temperaturen($vh[$tag] ?? [], $wt[$tag] ?? [], $det['geht'] ? [$det['von'], $det['bis']] : $fenster);
+        // Herkunft der Wassertemperatur fuer den Tooltip (Seen: Modell der Seemitte)
+        $temp['wasser_quelle'] = $temp['wasser'] === null ? null : ($meer ? 'meer' : 'see');
         $offen = $fehlt !== null && $sperre === null && !$det['geht'] && $alle[0]['ens'] === null;
         $out[$tag] = $alle[0] + ['fenster' => $fenster, 'rest' => $rest, 'vorbei' => false, 'offen' => $offen, 'alle' => $alle, 'temp' => $temp,
                                  // Wellenreiten: Fenster nach Duenung, dort ist mittel_kn die Hoehe; also Tagesmittel
@@ -1115,7 +1134,7 @@ function rangliste(array $regionen, array $stand, array $sport, array $heim, flo
             'vorhersage' => $stand['vorhersage'][$r['id']] ?? null,
             'ensemble'   => $stand['ensemble'][$r['id']] ?? null,
             'welle'      => $stand['welle'][$r['id']] ?? null,
-            'wasser'     => $stand['wasser'][$r['id']] ?? null,
+            'wasser'     => wasser_eintrag($stand, $r['id']),
             'druck'          => $stand['druck'] ?? [],
             'druck_ensemble' => $stand['druck_ensemble'] ?? [],
             'hoehe'          => $stand['hoehe'][$r['id']] ?? null,
@@ -1181,7 +1200,7 @@ function rangliste_sortieren(array $liste, string $nach): array
  * und eine gezippte je Lauf (GitHub Action, 2026-11-07_0525.ndjson.gz).
  * Rueckgabe [quelle => [region_id => eintrag]], dazu ['_ts'][quelle][region_id].
  */
-function daten_laden(string $dataDir, array $quellen = ['vorhersage', 'ensemble', 'welle', 'wasser', 'druck', 'druck_ensemble', 'hoehe', 'hoehe_ensemble'], ?array $nur = null): array
+function daten_laden(string $dataDir, array $quellen = ['vorhersage', 'ensemble', 'welle', 'wasser', 'seewasser', 'druck', 'druck_ensemble', 'hoehe', 'hoehe_ensemble'], ?array $nur = null): array
 {
     // $nur: Regionen, deren Eintraege behalten werden (Umkreis); null = alle.
     // Stand (_ts) und Fingerabdruck des Ensembles (_fp) gibt es fuer alle Regionen,

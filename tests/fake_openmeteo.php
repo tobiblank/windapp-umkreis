@@ -15,6 +15,28 @@
  */
 
 $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+// Ersatz fuer Alplakes (seit 8.11.2026): /simulations/1d/point/simstrat/{see}/{von}/{bis}/{tiefe}
+// Wie die echte API alle 3 Stunden, ein paar Sekunden nach der vollen Stunde, von gestern
+// 1 Uhr UTC bis in 4 Tagen. Ammersee: abwechselnd 10 und 13 Grad (prueft das Fuellen der
+// Stunden dazwischen). Andere Seen: HTTP 400 wie bei Alplakes.
+if (preg_match('#^/simulations/1d/point/simstrat/([a-z0-9]+)/\d{12}/\d{12}/[\d.]+$#', $pfad, $m)) {
+    header('Content-Type: application/json');
+    if ($m[1] !== 'ammersee') {
+        http_response_code(400);
+        echo json_encode(['detail' => "simstrat simulation results are not available for {$m[1]}"]);
+        exit;
+    }
+    $start = strtotime(gmdate('Y-m-d', time() - 86400) . ' 01:00 UTC');
+    $zeiten = $werte = [];
+    for ($i = 0; $i < 8 * 5; $i++) {
+        $zeiten[] = gmdate('Y-m-d\TH:i:', $start + 3 * 3600 * $i) . '02.880000+00:00';
+        $werte[] = $i % 2 ? 13.0 : 10.0;
+    }
+    echo json_encode(['time' => $zeiten, 'depth' => ['data' => 1.0, 'unit' => 'm'], 'resample' => null,
+                      'variables' => ['T' => ['data' => $werte, 'unit' => 'degC', 'description' => 'Temperature']]]);
+    exit;
+}
 parse_str((string)parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY), $q);
 $lats = explode(',', $q['latitude'] ?? '');
 $tage = (int)($q['forecast_days'] ?? 7);

@@ -193,6 +193,24 @@ pruefe($zz[0]['payload'][0]['test_cell_selection'] === null && $zz[1]['payload']
 $ensZ = array_map(fn($l) => json_decode($l, true), file($tmp . "/daten/ensemble/$heute.ndjson"));
 pruefe(($ensZ[1]['payload'][0]['test_cell_selection'] ?? null) === 'sea', 'auch das Ensemble fragt für das Meer eine Wasser-Zelle an');
 
+echo "Seewasser (Alplakes)\n";
+$sw = array_map(fn($l) => json_decode($l, true), file("$tmp/daten/seewasser/$heute.ndjson") ?: []);
+pruefe(count($sw) === 1 && $sw[0]['ok'] && $sw[0]['regionen'] === ['ammersee'], 'seewasser: eine Zeile, nur der See mit alplakes-Schlüssel');
+$swH = $sw[0]['payload'][0]['hourly'] ?? [];
+pruefe(str_starts_with(json_encode($sw[0]['payload'][0]), '{"latitude":') && ($sw[0]['payload'][0]['see'] ?? null) === 'ammersee',
+       'Eintrag beginnt mit latitude (payload_teile) und nennt den See');
+$i1 = array_search(gmdate('Y-m-d') . 'T01:00', $swH['time'] ?? [], true);
+$swW = fn(int $k) => (float)$swH['water_temperature'][$i1 + $k];
+pruefe($i1 !== false && abs($swW(0) - 10) < 1e-9 && abs($swW(1) - 11) < 1e-9 && abs($swW(2) - 12) < 1e-9 && abs($swW(3) - 13) < 1e-9,
+       'Stunden zwischen den 3-Stunden-Werten linear gefüllt (10, 11, 12, 13), auf volle Stunden gerundet');
+$swT = $swH['time'] ?? [];
+pruefe(count($swT) === count(array_unique($swT)) && count($swT) === 3 * 39 + 1, 'Stundenreihe lückenlos ohne doppelte Zeiten (' . count($swT) . ')');
+pruefe(in_array('seewasser: unveraendert', $aus3, true), 'seewasser: gleiche Werte werden nicht doppelt geschrieben');
+$kat = json_decode(file_get_contents(__DIR__ . '/regionen_test.json'), true);
+$kat['regionen'][1]['alplakes'] = 'adria';
+$kat['regionen'][2]['alplakes'] = 'Gibts Nicht';
+pruefe(count(regionen_pruefen($kat)) === 2, 'Prüfung: alplakes nur bei Seen und nur a-z, 0-9');
+
 proc_terminate($server);
 
 // ---------------------------------------------------------------
@@ -233,6 +251,12 @@ $adriaW = array_values(array_filter($rlw, fn($e) => $e['region']['id'] === 'adri
 pruefe($adriaW['det']['grund'] === 'zu wenig Welle', 'Wave Adria morgen: zu wenig Welle (0,8 m)');
 $amW = array_values(array_filter($rlw, fn($e) => $e['region']['id'] === 'ammersee'))[0]['tage'][$morgen];
 pruefe($amW['det']['grund'] === 'keine Wellendaten', 'Wave Ammersee: keine Wellendaten (See)');
+$amT = $am['temp'] ?? [];
+pruefe(isset($amT['wasser']) && $amT['wasser'] >= 10 && $amT['wasser'] <= 13 && $amT['wasser_quelle'] === 'see',
+       'Ammersee morgen: Wassertemperatur aus Alplakes (10–13 °C), Quelle See' . (isset($amT['wasser']) ? sprintf(' (ist %.2f)', $amT['wasser']) : ''));
+pruefe(neopren($amT)['text'] !== null, 'Ammersee: Neopren-Empfehlung wie am Meer');
+$adT = $rl[0]['tage'][$morgen]['temp'] ?? [];
+pruefe(($adT['wasser'] ?? null) == 14.0 && $adT['wasser_quelle'] === 'meer', 'Adria morgen: Wasser weiter aus der Marine API (14 °C)');
 
 echo "Regel-Windlagen\n";
 foreach (['druck', 'druck_ensemble', 'hoehe', 'hoehe_ensemble'] as $q) {
@@ -334,6 +358,18 @@ pruefe(!is_dir("$tmp/action/.state"), 'kein Zustand im Ausgabeordner (wird nicht
 $standA = daten_laden("$tmp/action");
 $rlA = rangliste($regionen, $standA, $kite, $inning, 1000, [$morgen]);
 pruefe(count($rlA) === 2 && abs($rlA[0]['tage'][$morgen]['ens']['chance'] - 1.0) < 1e-9, 'gezippte Läufe werden gelesen, gleiche Rangliste');
+$swA = glob("$tmp/action/seewasser/" . gmdate('Y-m-d') . '_*.ndjson.gz');
+pruefe(count($swA) === 1 && isset($standA['seewasser']['ammersee']['hourly']['water_temperature']), 'seewasser: gezippt je Lauf und von daten_laden gelesen');
+// Ein See, den Alplakes nicht kennt (HTTP 400): Fehler melden, der andere See bleibt
+$katX = json_decode(file_get_contents(__DIR__ . '/regionen_test.json'), true);
+$katX['regionen'][2]['alplakes'] = 'gibtsnicht';
+file_put_contents("$tmp/regionen_x.json", json_encode($katX));
+exec('UMKREIS_TEST_URL=' . escapeshellarg("http://127.0.0.1:$port") . ' php ' . escapeshellarg("$ROOT/server/sammler.php")
+     . ' --action ' . escapeshellarg("$tmp/regionen_x.json") . ' ' . escapeshellarg("$tmp/action_x") . ' 2>&1', $ausX, $rcX);
+$standX = daten_laden("$tmp/action_x", ['seewasser']);
+pruefe($rcX === 1 && str_contains(implode("\n", $ausX), 'seewasser: Abruf fehlgeschlagen') && $ausX === ['Windapp Umkreis Sammler:', '- seewasser: Abruf fehlgeschlagen (Einzelheiten in der Datei dieses Laufs)'],
+       'unbekannter See: nur seewasser meldet einen Fehler' . ($rcX !== 1 ? '' : ' (' . implode(' | ', $ausX) . ')'));
+pruefe(isset($standX['seewasser']['ammersee']) && !isset($standX['seewasser']['testsee-druck']), 'unbekannter See: Ammersee trotzdem gespeichert');
 exec('php ' . escapeshellarg("$ROOT/server/sammler.php") . ' --action 2>&1', $ausF, $rcF);
 pruefe($rcF === 1, 'Action ohne Pfade: Hinweis und Exit 1');
 // Fehlgeschlagener Abruf: Open-Meteo nicht erreichbar
@@ -796,6 +832,8 @@ pruefe($code === 404, 'Stundenseite: unbekannte Region 404');
 pruefe(str_contains($html, 'class="stunden-link" href="stunden.php?region=adria-nord'), 'Rangliste verlinkt die Stundenseite');
 [, $html] = holen($sitePort, 'index.php?km=1000');
 pruefe(str_contains($html, 'Wasser 14 °C, 5/4 mm, Schuhe') && str_contains($html, 'Luft 12 °C'), 'Detailzeile: Meer mit Wasser und Neopren, See mit Luft');
+pruefe(str_contains($html, 'Seemodell von Alplakes (Eawag), Seemitte in 1 m Tiefe') && str_contains($html, '>Alplakes, Eawag</a> (CC BY 4.0)'),
+       'Ammersee: Wasser aus Alplakes im Tooltip, Quellenangabe im Fuß');
 [, $html] = holen($sitePort, 'index.php?km=1000');
 pruefe(str_contains($html, 'Welle 0,8 m (Dünung 0,3 m, 5 s aus ONO)'), 'Detailzeile am Meer: Welle mit Dünung');
 [$code, $html] = holen($sitePort, "stunden.php?region=adria-nord&tag=$morgen");

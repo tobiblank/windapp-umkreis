@@ -15,6 +15,7 @@
       "typ": "see",
       "punkt": [48.0, 11.135],
       "zeitzone": "Europe/Berlin",
+      "alplakes": "ammersee",
       "hinweis": "Punkt in der Seemitte. Richtungen hängen hier am Spot, deshalb keine Windlagen auf Regionsebene.",
       "windlagen": [],
       "spots": [
@@ -106,6 +107,7 @@
       "typ": "see",
       "punkt": [47.59, 11.34],
       "zeitzone": "Europe/Berlin",
+      "alplakes": "walchensee",
       "hinweis": "Thermik-See: das 10-m-Modellmittel bildet die Thermik schlecht ab, deshalb ohne Windlagen (grob), bis grundstroemung eingebaut ist. Richtung der Thermik noch offen. Marcos Prognose nur verlinkt; seine Zahlen erst nach seiner Zustimmung für Wohinfahrma. Punkt geschätzt (Seemitte), bitte prüfen.",
       "windlagen": [],
       "spots": [],
@@ -300,6 +302,7 @@
       "typ": "see",
       "punkt": [47.91, 11.31],
       "zeitzone": "Europe/Berlin",
+      "alplakes": "starnberger",
       "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
       "windlagen": [],
       "spots": []
@@ -311,6 +314,7 @@
       "typ": "see",
       "punkt": [47.645, 11.345],
       "zeitzone": "Europe/Berlin",
+      "alplakes": "kochelsee",
       "thermik": true,
       "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Kleiner See: die Gitterzelle liegt womöglich an Land. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
       "windlagen": [],
@@ -324,6 +328,7 @@
       "punkt": [47.88, 12.48],
       "anfahrt": [47.89, 12.53],
       "zeitzone": "Europe/Berlin",
+      "alplakes": "chiemsee",
       "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Punkt östlich der Inseln. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert. Anfahrt (Chieming) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
       "windlagen": [],
       "spots": []
@@ -335,6 +340,7 @@
       "typ": "see",
       "punkt": [47.6, 9.45],
       "zeitzone": "Europe/Berlin",
+      "alplakes": "upperconstance",
       "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Großer See, Punkt im Obersee zwischen Friedrichshafen und Romanshorn; einzelne Ufer später als Spots. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
       "windlagen": [],
       "spots": []
@@ -373,6 +379,7 @@
       "typ": "see",
       "punkt": [46.455, 9.79],
       "zeitzone": "Europe/Zurich",
+      "alplakes": "silvaplana",
       "infos": [
         {"art": "saison", "text": "Mitte Februar bis Ende Oktober, früh im Jahr oft noch Eis", "quelle": "unhooked.ch"},
         {"art": "tipp", "text": "Kiten nur bei Süd bis Südwest", "quelle": "kitesailing.ch"}
@@ -394,6 +401,7 @@
       "typ": "see",
       "punkt": [45.85, 10.86],
       "zeitzone": "Europe/Rome",
+      "alplakes": "garda",
       "thermik": true,
       "hinweis": "Regel nach kitewetter.at (Föhndiagramm): Druckdifferenz Bozen − Brescia/Ghedi; höherer Druck in Brescia bringt Ora, umgekehrt Vento (Pelèr). Eine Schwelle nennt die Seite nicht, hier 0 hPa. Geschätzt (Claude): Stärken, Tageszeiten (Pelèr bis 12, Ora ab 12 Uhr), Saison April–Oktober. Gardasee Süd wäre eine eigene Region. Punkt geschätzt.",
       "windlagen": [
@@ -432,6 +440,7 @@
       "typ": "see",
       "punkt": [46.11, 9.33],
       "zeitzone": "Europe/Rome",
+      "alplakes": "como",
       "thermik": true,
       "hinweis": "Entwurf (Claude), ungeprüft: Tivano (N, morgens) und Breva (S, nachmittags) aus allgemeinem Wissen, Sektorgrenzen geschätzt. Punkt im Nordteil bei Dervio/Colico. Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
       "windlagen": [
@@ -447,6 +456,7 @@
       "typ": "see",
       "punkt": [46.93, 8.6],
       "zeitzone": "Europe/Zurich",
+      "alplakes": "lucerneurnersee",
       "infos": [
         {"art": "sperre", "text": "Kiten im November und Dezember verboten", "monate": [11, 12], "sportarten": ["kite"], "quelle": "unhooked.ch, nicht aktuell geprüft"},
         {"art": "zone", "text": "Kiten nur in ausgewiesenen Zonen", "quelle": "unhooked.ch, nicht aktuell geprüft"}
@@ -465,6 +475,7 @@
       "typ": "see",
       "punkt": [46.87, 6.8],
       "zeitzone": "Europe/Zurich",
+      "alplakes": "neuchatel",
       "hinweis": "Bise (NO) und Westwind laut unhooked, Sektorgrenzen geschätzt. Punkt gegenüber Estavayer. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
       "windlagen": [
         {"name": "Bise", "sektor": [20, 80]},
@@ -479,6 +490,7 @@
       "typ": "see",
       "punkt": [47.88, 13.55],
       "zeitzone": "Europe/Vienna",
+      "alplakes": "attersee",
       "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
       "windlagen": [],
       "spots": []
@@ -490,6 +502,7 @@
       "typ": "see",
       "punkt": [47.87, 13.795],
       "zeitzone": "Europe/Vienna",
+      "alplakes": "traunsee",
       "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
       "windlagen": [],
       "spots": []
@@ -501,6 +514,7 @@
       "typ": "see",
       "punkt": [47.31, 12.8],
       "zeitzone": "Europe/Vienna",
+      "alplakes": "zeller",
       "thermik": true,
       "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Kleiner See: die Gitterzelle liegt womöglich an Land. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
       "windlagen": [],
