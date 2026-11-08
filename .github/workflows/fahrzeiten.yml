@@ -1,7 +1,7 @@
 name: Fahrzeiten
 
 # Fahrzeit mit dem Auto von Inning am Ammersee zu jeder Region, bei
-# openrouteservice (ORS). Laeuft, wenn sich der Katalog auf main aendert,
+# openrouteservice (ORS), seit 8.11.2026 auch zu den Schnee-Regionen. Laeuft, wenn sich der Katalog auf main aendert,
 # einmal im Monat und von Hand. Ergebnis per FTPS nach
 #   <HOME_DIR>/umkreisdaten/fahrzeiten.json
 #
@@ -18,6 +18,7 @@ on:
     branches: [main]
     paths:
       - "daten/regionen.json"
+      - "daten/schneeregionen.json"
       - "server/fahrzeiten.php"
   schedule:
     - cron: "10 4 1 * *"
@@ -52,7 +53,7 @@ jobs:
             echo "ok=0" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          php server/fahrzeiten.php daten/regionen.json ausgabe/fahrzeiten.json --debug
+          php server/fahrzeiten.php daten/regionen.json daten/schneeregionen.json ausgabe/fahrzeiten.json --debug
           echo "ok=1" >> "$GITHUB_OUTPUT"
 
       - name: Hochladen

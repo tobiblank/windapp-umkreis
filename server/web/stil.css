@@ -27,6 +27,10 @@
      den Ergebnissen abheben; Gruen/Gelb/Rot bleiben fuer die Bewertung */
   --steuer: #dbeaf1; --steuer-feld: #ffffff; --steuer-linie: #bcd5e1; --steuer-text: #0d4a63;
   --akzent-auf: #ffffff;
+  /* Schnee-Modus (seit 8.11.2026): eigene Skala in Blau, damit niemand ein gruenes Feld
+     als "sicher" liest; Gelb, Orange und Rot sind in der Lawinenskala vergeben */
+  --s-go: #1b4f9c; --s-maybe: #3570b8; --s-no: #5f80a8;
+  --s-go-bg: #d6e4f8; --s-maybe-bg: #e3ecf8; --s-no-bg: #edf1f7;
   --zahlen: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
   color-scheme: light;
 }
@@ -44,6 +48,8 @@
     --meer: #0c1a20; --land: #1f3640; --grenze: #33525d;
     --steuer: #123543; --steuer-feld: #0e2833; --steuer-linie: #1f4a5c; --steuer-text: #a9dcef;
     --akzent-auf: #08202a;
+    --s-go: #8cbcff; --s-maybe: #a9c8f2; --s-no: #8ea4c2;
+    --s-go-bg: #1c3557; --s-maybe-bg: #1b2c44; --s-no-bg: #1a2735;
     color-scheme: dark;
   }
 }
@@ -58,6 +64,8 @@
     --meer: #0c1a20; --land: #1f3640; --grenze: #33525d;
     --steuer: #123543; --steuer-feld: #0e2833; --steuer-linie: #1f4a5c; --steuer-text: #a9dcef;
     --akzent-auf: #08202a;
+    --s-go: #8cbcff; --s-maybe: #a9c8f2; --s-no: #8ea4c2;
+    --s-go-bg: #1c3557; --s-maybe-bg: #1b2c44; --s-no-bg: #1a2735;
     color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -304,3 +312,32 @@ a.tag:active { filter: brightness(.94); }
 .beste-no { --balken: var(--no); }
 .beste-nix, .beste-leer { --balken: var(--linie); }
 .region:target { box-shadow: inset 5px 0 0 var(--balken, transparent), 0 0 0 2px var(--akzent); }
+
+/* Schnee-Modus (seit 8.11.2026) */
+.modus { display: inline-flex; gap: 2px; padding: 2px; border-radius: 999px; background: var(--steuer); margin-top: 4px; }
+.modus a { padding: 2px 12px; border-radius: 999px; color: var(--steuer-text); text-decoration: none; font-size: 13px; font-weight: 600; }
+.modus a[aria-current] { background: var(--akzent); color: var(--akzent-auf); }
+.tag.s-go { background: var(--s-go-bg); } .tag.s-go .w { color: var(--s-go); }
+.tag.s-maybe { background: var(--s-maybe-bg); } .tag.s-maybe .w { color: var(--s-maybe); }
+.tag.s-no { background: var(--s-no-bg); } .tag.s-no .w { color: var(--s-no); }
+.tag .n { display: block; font-size: 12px; color: var(--leise); white-space: nowrap; }
+.beste-s-go { --balken: var(--s-go); } .beste-s-maybe { --balken: var(--s-maybe); } .beste-s-no { --balken: var(--s-no); }
+.matrix td.s-go { background: var(--s-go-bg); } .matrix td.s-go a { color: var(--s-go); }
+.matrix td.s-maybe { background: var(--s-maybe-bg); } .matrix td.s-maybe a { color: var(--s-maybe); }
+.matrix td.s-no { background: var(--s-no-bg); } .matrix td.s-no a { color: var(--s-no); }
+.landkarte .punkt.s-go circle { fill: var(--s-go); } .landkarte .punkt.s-maybe circle { fill: var(--s-maybe); } .landkarte .punkt.s-no circle { fill: var(--s-no); }
+/* Lawinen-Abzeichen in den offiziellen EAWS-Farben; Schrift immer dunkel */
+.lw { display: inline-block; min-width: 1.6em; padding: 0 5px; border-radius: 6px; font: 600 14px/1.45 var(--zahlen); text-align: center; color: #1a1a1a; border: 1px solid rgba(0, 0, 0, .25); }
+.lw1 { background: #ccff66; } .lw2 { background: #ffff00; } .lw3 { background: #ff9900; } .lw4 { background: #ff0000; color: #fff; }
+.lw5 { background: repeating-linear-gradient(45deg, #ff0000 0 5px, #1a1a1a 5px 10px); color: #fff; }
+.lw0 { background: var(--kachel); color: var(--leise); }
+.tag .lw { margin-top: 3px; font-size: 12px; line-height: 1.35; }
+.lawine { margin: 8px 0 0; padding: 8px 10px; border-radius: 10px; background: var(--kachel); }
+.lawine p { margin: 0 0 4px; } .lawine p:last-child { margin-bottom: 0; }
+.rose { vertical-align: -4px; } .rose path { fill: var(--karte); stroke: var(--leise); stroke-width: .6; } .rose path.an { fill: var(--text); }
+.haftung { border-left: 4px solid var(--leise); }
+.stunden-bild .s-schnee { fill: var(--s-maybe); }
+.stunden-bild .s-sfg { fill: none; stroke: var(--s-go); stroke-width: 2; stroke-linejoin: round; }
+.stunden-bild .s-null { fill: none; stroke: var(--maybe); stroke-width: 1.4; stroke-dasharray: 4 3; }
+.stunden-bild .s-tour { stroke: var(--text); stroke-width: 1; stroke-dasharray: 2 3; }
+.stunden-bild .s-wolke { fill: var(--leise); }

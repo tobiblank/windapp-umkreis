@@ -8,7 +8,10 @@
  * (.github/workflows/fahrzeiten.yml), wenn sich der Katalog aendert, und
  * einmal im Monat; das Ergebnis liegt als fahrzeiten.json im Datenordner.
  *
- *     ORS_API_KEY=... php server/fahrzeiten.php daten/regionen.json ausgabe/fahrzeiten.json [--debug]
+ *     ORS_API_KEY=... php server/fahrzeiten.php daten/regionen.json [daten/schneeregionen.json] ausgabe/fahrzeiten.json [--debug]
+ *
+ * Seit 8.11.2026 optional ein zweiter Katalog (Schnee-Modus); die ids beider
+ * Kataloge muessen verschieden sein, sie landen in derselben Datei.
  *
  * Ziel je Region: anfahrt (Katalog), sonst punkt des ersten Spots, sonst der
  * Vorhersagepunkt. Der liegt meist auf dem Wasser; deshalb erst auf die
@@ -39,6 +42,7 @@
 
 date_default_timezone_set('UTC');
 require __DIR__ . '/web/lib/regionen.php';
+require __DIR__ . '/web/lib/schnee.php';
 
 const START_NAME = 'Inning am Ammersee';
 const START_PUNKT = [48.07, 11.15];
@@ -48,11 +52,13 @@ const TIMEOUT = 60;
 
 $args = array_values(array_filter(array_slice($argv, 1), fn($a) => $a !== '--debug'));
 $DEBUG = in_array('--debug', $argv, true);
-if (count($args) !== 2) {
-    fwrite(STDERR, "Aufruf: ORS_API_KEY=... php fahrzeiten.php <regionen.json> <ausgabe.json> [--debug]\n");
+if (count($args) !== 2 && count($args) !== 3) {
+    fwrite(STDERR, "Aufruf: ORS_API_KEY=... php fahrzeiten.php <regionen.json> [<schneeregionen.json>] <ausgabe.json> [--debug]\n");
     exit(2);
 }
-[$katalogDatei, $ausgabe] = $args;
+$katalogDatei = $args[0];
+$schneeDatei = count($args) === 3 ? $args[1] : null;
+$ausgabe = $args[count($args) - 1];
 $key = (string)getenv('ORS_API_KEY');
 if ($key === '') {
     fwrite(STDERR, "ORS_API_KEY fehlt (kostenloser Schluessel bei openrouteservice.org)\n");
@@ -95,6 +101,14 @@ function ors(string $url, string $key, array $body): array
 
 try {
     $regionen = regionen_laden($katalogDatei);
+    if ($schneeDatei !== null) {
+        $schnee = schnee_katalog_laden($schneeDatei)['regionen'];
+        $doppelt = array_intersect(array_column($regionen, 'id'), array_column($schnee, 'id'));
+        if ($doppelt) {
+            throw new RuntimeException('ids in beiden Katalogen: ' . implode(', ', $doppelt));
+        }
+        $regionen = array_merge($regionen, $schnee);
+    }
 } catch (RuntimeException $e) {
     fwrite(STDERR, $e->getMessage() . "\n");
     exit(2);

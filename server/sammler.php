@@ -27,6 +27,11 @@
  *    Die Action laedt sie per FTPS in den Datenordner. Exit 1 bei jedem Fehler,
  *    dann mailt GitHub; erfolgreiche Teile werden trotzdem hochgeladen.
  *
+ * SCHNEE-MODUS (seit 8.11.2026): mit --schnee <schneeregionen.json> (Action) bzw.
+ * 'schneeregionen_datei' in config.php (Cron) zusaetzlich die Quellen
+ * schnee_vorhersage, schnee_ensemble und lawine. --nur lawine,schnee_vorhersage
+ * ruft nur diese Quellen ab (Morgenlauf fuer den Lagebericht).
+ *
  * VERHALTEN: bei Erfolg still, nur im Fehlerfall Ausgabe (Cron-Mail).
  *
  * AUSGABE: eine Datei pro Quelle und Tag, aeltere Tage gezippt:
@@ -68,8 +73,15 @@ if ($i !== false) {
     $CFG = ['regionen_datei' => $argv[$i + 1], 'data_dir' => $argv[$i + 2]];
 }
 $LAUF = $ACTION ? gmdate('Y-m-d_Hi') : null;
+// Schnee-Katalog (seit 8.11.2026): --schnee <datei>; nur bestimmte Quellen: --nur a,b
+$j = array_search('--schnee', $argv ?? [], true);
+$SCHNEE_DATEI = $j !== false ? ($argv[$j + 1] ?? null) : null;
+$j = array_search('--nur', $argv ?? [], true);
+$NUR = $j !== false && isset($argv[$j + 1]) ? array_filter(explode(',', $argv[$j + 1])) : null;
 
 require $WEB_DIR . '/lib/regionen.php';
+require $WEB_DIR . '/lib/schnee.php';
+require $WEB_DIR . '/lib/lawine.php';
 
 if (!$ACTION) {
     $CFG = @include $WEB_DIR . '/config.php';
@@ -83,8 +95,11 @@ $MODELLE  = $CFG['modelle'] ?? 'icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofran
 $OM_LIMIT = (int)($CFG['openmeteo_limit'] ?? 10000);
 $OM_WARNUNG_AB = 0.7;
 
+$SCHNEE_DATEI ??= $CFG['schneeregionen_datei'] ?? null;
+$SCHNEE_MODELLE = $CFG['schnee_modelle'] ?? 'icon_d2,icon_eu,ecmwf_ifs,gfs_seamless';
 try {
     $KATALOG = katalog_laden($CFG['regionen_datei'] ?? "$WEB_DIR/lib/regionen.json");
+    $SCHNEE = $SCHNEE_DATEI ? schnee_katalog_laden($SCHNEE_DATEI) : null;
 } catch (RuntimeException $e) {
     echo $e->getMessage(), "\n";
     exit(1);
@@ -116,7 +131,47 @@ try {
  *             im Browser geprueft: ein Zeitraum ueber das Vorhersageende hinaus liefert,
  *             was da ist; ein unbekannter See gibt HTTP 400.
  */
-function quellen(array $katalog, string $modelle): array
+function quellen(array $katalog, string $modelle, ?array $schnee = null, string $schneeModelle = ''): array
+{
+    return quellen_wind($katalog, $modelle) + ($schnee ? quellen_schnee($schnee, $schneeModelle) : []);
+}
+
+/**
+ * Schnee-Modus (seit 8.11.2026). Vorhersage auf Tourhoehe (elevation je Ort, siehe
+ * koordinaten()), 3 Tage zurueck fuer den Neuschnee der letzten 72 h. Wind in km/h.
+ * UNGEPRUEFT: welche Modelle snowfall_height liefern (sonst null, das Mittel nimmt
+ * die uebrigen), ob das Ensemble past_days, snow_depth und freezing_level_height kennt.
+ * lawine: Lageberichte der freigegebenen Warndienste, heute und morgen (lawine.php).
+ */
+function quellen_schnee(array $schnee, string $modelle): array
+{
+    $vars = 'precipitation,snowfall,snowfall_height,freezing_level_height,temperature_2m,cloud_cover,'
+          . 'snow_depth,wind_speed_700hPa,wind_gusts_10m,weather_code';
+    $dienste = array_filter($schnee['lawinendienste'], fn($d) => !empty($d['freigegeben']));
+    return [
+        'schnee_vorhersage' => [
+            'every'    => 60,
+            'regionen' => $schnee['regionen'],
+            'basis'    => 'https://api.open-meteo.com/v1/forecast',
+            'query'    => "hourly=$vars&models=$modelle&wind_speed_unit=kmh&past_days=3&forecast_days=8&timezone=UTC",
+        ],
+        'schnee_ensemble' => [
+            'every'    => 360,
+            'regionen' => $schnee['regionen'],
+            'basis'    => 'https://ensemble-api.open-meteo.com/v1/ensemble',
+            'query'    => 'hourly=precipitation,snowfall,freezing_level_height,temperature_2m,cloud_cover,snow_depth'
+                        . '&models=ecmwf_ifs025&past_days=3&forecast_days=8&timezone=UTC',
+        ],
+        'lawine' => [
+            'every'    => 360,
+            'regionen' => array_map(fn($id) => ['id' => $id, 'typ' => 'lawine'], array_keys($dienste)),
+            'art'      => 'lawine',
+            'dienste'  => $dienste,
+        ],
+    ];
+}
+
+function quellen_wind(array $katalog, string $modelle): array
 {
     $alle = $katalog['regionen'];
     $meer = array_values(array_filter($alle, fn($r) => $r['typ'] === 'meer'));
@@ -288,7 +343,7 @@ function alplakes_eintrag(string $body, array $region): ?array
 function teile(array $regionen, int $groesse): array
 {
     $out = [];
-    foreach (['see' => '', 'meer' => '&cell_selection=sea', 'druck' => ''] as $typ => $zusatz) {
+    foreach (['see' => '', 'meer' => '&cell_selection=sea', 'druck' => '', 'schnee' => ''] as $typ => $zusatz) {
         $gruppe = array_values(array_filter($regionen, fn($r) => $r['typ'] === $typ));
         foreach (array_chunk($gruppe, $groesse) as $teil) {
             $out[] = [$teil, $zusatz];
@@ -360,7 +415,56 @@ function abruf(string $url, int $timeout, string $wo, array &$bericht): array
 /** Nur fuer die Tests: Open-Meteo und Alplakes durch einen lokalen Ersatz tauschen */
 function test_url(string $url, ?string $ersatz): string
 {
-    return $ersatz ? preg_replace('#^https://(?:[a-z-]+\.open-meteo\.com|alplakes-api\.eawag\.ch)#', $ersatz, $url) : $url;
+    return $ersatz ? preg_replace('#^https://(?:[a-z-]+\.open-meteo\.com|alplakes-api\.eawag\.ch|aws\.slf\.ch|static\.avalanche\.report|static\.lawinen-warnung\.eu)#', $ersatz, $url) : $url;
+}
+
+/**
+ * Lagebericht eines Warndiensts fuer heute und morgen (Ortstag in Mitteleuropa).
+ * HTTP 404 heisst "noch kein Bericht" (morgen vor 17 Uhr, ausserhalb der Saison),
+ * kein Fehler. Fehler: keine Antwort, andere HTTP-Codes oder ein unlesbarer Bericht.
+ * Gespeichert werden nur freigegebene Mikroregionen.
+ * Rueckgabe [zeile fuer die Datei, fehler|null, ms]
+ */
+function lawine_abrufen(string $id, array $dienst, ?string $ersatz, int $timeout, array &$bericht): array
+{
+    $tz = new DateTimeZone('Europe/Berlin');
+    $heute = new DateTimeImmutable('today', $tz);
+    $urls = [];
+    foreach ([$heute, $heute->modify('+1 day')] as $d) {
+        $urls[lawine_url($dienst, $d->format('Y-m-d'))][] = $d->format('Y-m-d');
+    }
+    $tage = [];
+    $fehler = [];
+    $ms = 0;
+    foreach ($urls as $url => $daten) {
+        $r = abruf(test_url($url, $ersatz), $timeout, "lawine/$id", $bericht);
+        $ms += $r['ms'];
+        $b = null;
+        if ($r['http'] === 404) {
+            $bericht[] = "lawine/$id: " . implode(', ', $daten) . ' noch kein Bericht (404)';
+        } elseif ($r['http'] >= 200 && $r['http'] < 300) {
+            $b = lawine_lesen($r['body'], $dienst['format']);
+            if ($b === null) {
+                $fehler[] = implode(', ', $daten) . ': Antwort ist kein CAAML-v6-Bericht: ' . substr(preg_replace('/\s+/', ' ', $r['body']), 0, 150);
+            } else {
+                $b = lawine_filtern($b, $dienst['freigegeben']);
+                $bericht[] = sprintf('lawine/%s: %s ok, %d Berichtsteile, %d KB, %d ms', $id, implode(', ', $daten), count($b), $r['bytes'] / 1024, $r['ms']);
+            }
+        } else {
+            $fehler[] = implode(', ', $daten) . ": http={$r['http']} " . ($r['err'] !== '' ? $r['err'] : substr(preg_replace('/\s+/', ' ', $r['body']), 0, 150));
+        }
+        // Ohne {datum} gilt derselbe Bericht fuer alle Tage (SLF: gerade gueltiger Bericht)
+        foreach ($daten as $d) {
+            $tage[$d] = $b;
+        }
+    }
+    $ok = !$fehler || array_filter($tage) !== [];
+    $zeile = ['ts' => gmdate('Y-m-d\TH:i:s\Z'), 'source' => 'lawine', 'ok' => $ok, 'http' => $ok ? 200 : 0, 'ms' => $ms,
+              'dienst' => $id, 'regionen' => [$id], 'tage' => $tage];
+    if ($fehler) {
+        $zeile['err'] = implode(' | ', $fehler);
+    }
+    return [$zeile, $fehler ? implode(' | ', $fehler) : null];
 }
 
 /** Koordinaten mehrerer Regionen als Open-Meteo-Parameter */
@@ -372,7 +476,14 @@ function koordinaten(array $regionen): string
         $lat[] = round((float)$r['punkt'][0], 4);
         $lon[] = round((float)$r['punkt'][1], 4);
     }
-    return 'latitude=' . implode(',', $lat) . '&longitude=' . implode(',', $lon);
+    $q = 'latitude=' . implode(',', $lat) . '&longitude=' . implode(',', $lon);
+    // Schnee-Regionen (seit 8.11.2026): Vorhersage auf Tourhoehe statt Gitter- oder Talhoehe
+    // (Open-Meteo: "elevation used for statistical downscaling"); eine Hoehe je Ort
+    $hoehen = array_column($regionen, 'hoehe_tour');
+    if ($hoehen && count($hoehen) === count($regionen)) {
+        $q .= '&elevation=' . implode(',', array_map('intval', $hoehen));
+    }
+    return $q;
 }
 
 /**
@@ -507,8 +618,8 @@ function alte_zippen(string $dataDir, string $quelle): void
 $probleme = [];
 $bericht  = [];
 
-foreach (quellen($KATALOG, $MODELLE) as $name => $q) {
-    if (!$q['regionen']) {
+foreach (quellen($KATALOG, $MODELLE, $SCHNEE, $SCHNEE_MODELLE) as $name => $q) {
+    if (!$q['regionen'] || ($NUR !== null && !in_array($name, $NUR, true))) {
         continue;
     }
 
@@ -566,13 +677,28 @@ foreach (quellen($KATALOG, $MODELLE) as $name => $q) {
         }
     }
 
-    foreach (($q['art'] ?? '') === 'alplakes' ? [] : teile($q['regionen'], $TEIL_GROESSE) as $teilNr => [$teil, $zusatz]) {
+    if (($q['art'] ?? '') === 'lawine') {
+        foreach ($q['dienste'] as $id => $dienst) {
+            [$zeile, $f] = lawine_abrufen($id, $dienst, $ersatz, $TIMEOUT, $bericht);
+            if (!anhaengen($DATA_DIR, $name, $zeile, $LAUF)) {
+                $probleme[] = "$name: Schreiben in $DATA_DIR fehlgeschlagen";
+                $alleOk = false;
+            }
+            if ($f !== null) {
+                $bericht[] = "$name/$id: FEHLER $f";
+                $alleOk = false;
+            }
+        }
+    }
+
+    foreach (in_array($q['art'] ?? '', ['alplakes', 'lawine'], true) ? [] : teile($q['regionen'], $TEIL_GROESSE) as $teilNr => [$teil, $zusatz]) {
         $ids = array_column($teil, 'id');
         $url = test_url($q['basis'] . '?' . koordinaten($teil) . '&' . $q['query'] . $zusatz, $ersatz);
         // Open-Meteo zaehlt je Minute (ein Ort und ein Ensemble-Abruf wiegen mehrfach).
         // Am 8.11.2026 (52 Regionen) gingen ensemble/0 und /1 durch, /2 bekam HTTP 429.
         // Deshalb vor jedem weiteren Ensemble-Teil eine Minute Pause.
-        if ($teilNr > 0 && str_ends_with($name, 'ensemble')) {
+        // Seit 8.11.2026 auch vor dem Schnee-Ensemble, das nach dem Wind-Ensemble im selben Lauf kommt
+        if (($teilNr > 0 && str_ends_with($name, 'ensemble')) || ($teilNr === 0 && $name === 'schnee_ensemble' && $NUR === null)) {
             $pause = umkreis_wartezeit('UMKREIS_PAUSE_ENSEMBLE', 61);
             $bericht[] = "$name/$teilNr: Pause $pause s (Minutenlimit)";
             sleep($pause);

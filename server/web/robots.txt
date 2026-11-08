@@ -9,6 +9,7 @@
 User-agent: *
 Disallow: /*?
 Disallow: /stunden.php
+Disallow: /schnee_stunden.php
 Disallow: /manifest.php
 Disallow: /lib/
 
