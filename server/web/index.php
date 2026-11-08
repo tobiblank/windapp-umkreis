@@ -733,11 +733,12 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
               $c = $d['ens']['chance'] ?? null;
               $geht = !empty($d['det']['geht']);
               $vorbei = !$d || !empty($d['vorbei']);
-              $klasse = $vorbei ? 'leer' : ($c === null ? ($geht ? 'go' : 'leer') : stufe($c));
-              // 0 % bleibt leer, damit die guten Tage herausstechen
-              $text = $vorbei ? '' : ($c === null ? ($geht ? 'ja' : '') : ($c < 0.005 ? '' : zahl(100 * $c)));
-              $titel = $r['name'] . ', ' . tag_kurz($t, $heute) . ': ' . ($vorbei ? 'vorbei'
-                     : ($c === null ? ($geht ? 'Fenster nach Modellmittel' : 'kein Fenster') : zahl(100 * $c) . ' %')
+              $offen = !$vorbei && !empty($d['offen']);
+              $klasse = $vorbei || $offen ? 'leer' : ($c === null ? ($geht ? 'go' : 'leer') : stufe($c));
+              // 0 % bleibt leer, damit die guten Tage herausstechen; "?" = noch keine Vorhersage
+              $text = $vorbei ? '' : ($offen ? '?' : ($c === null ? ($geht ? 'ja' : '') : ($c < 0.005 ? '' : zahl(100 * $c))));
+              $titel = $r['name'] . ', ' . tag_kurz($t, $heute) . ': ' . ($vorbei ? 'vorbei' : ($offen ? $d['det']['grund']
+                     : ($c === null ? ($geht ? 'Fenster nach Modellmittel' : 'kein Fenster') : zahl(100 * $c) . ' %'))
                      . ($geht ? ', ' . $d['det']['von'] . '–' . $d['det']['bis'] . ' Uhr' . ', ' . staerke_text($d, $sport, false) : ''));
           ?>
             <td class="<?= $klasse ?>" title="<?= h($titel) ?>"><a href="stunden.php?<?= h(http_build_query(['region' => $r['id'], 'sport' => $sportId, 'tag' => $t])) ?>"><?= h($text) ?></a></td>
@@ -769,6 +770,11 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
         <div class="tag leer" title="Für heute bleibt nicht mehr genug Zeit bis Sonnenuntergang">
           <span class="t"><?= h(tag_kurz($t, $heute)) ?></span>
           <span class="w vorbei">vorbei</span>
+        </div>
+        <?php elseif (!empty($d['offen'])): ?>
+        <div class="tag leer<?= $nach === $t ? ' gewaehlt' : '' ?>" title="<?= h(ucfirst($d['det']['grund']) . ' für diesen Tag') ?>">
+          <span class="t"><?= h(tag_kurz($t, $heute)) ?></span>
+          <span class="w vorbei">?</span>
         </div>
         <?php else: ?>
         <div class="tag <?= stufe($c) ?><?= $nach === $t ? ' gewaehlt' : '' ?>" title="<?= h(($c === null ? 'keine Ensemble-Daten' : zahl(100 * $c) . ' % der Läufe')
@@ -815,7 +821,12 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
       </ul>
     <?php else: ?>
       <?php $sperrGrund = array_values(array_filter(array_map(fn($x) => $x['det']['grund'] ?? '', $e['tage']), fn($g) => str_starts_with((string)$g, 'Sperre')))[0] ?? null; ?>
-      <p class="klein leise"><?= $sperrGrund ? h($sperrGrund) . ' (für ' . h($sport['name']) . ').' : 'Kein passender Tag in diesem Zeitraum.' ?></p>
+      <?php
+          $offeneTage = array_keys(array_filter($e['tage'], fn($x) => !empty($x['offen'])));
+          $offenText = $offeneTage ? 'Für ' . implode(', ', array_map(fn($x) => tag_kurz($x, $heute), $offeneTage)) . ' gibt es noch keine Vorhersage.' : '';
+          $alleOffen = count($offeneTage) === count(array_filter($e['tage'], fn($x) => empty($x['vorbei'])));
+      ?>
+      <p class="klein leise"><?= $sperrGrund ? h($sperrGrund) . ' (für ' . h($sport['name']) . ').' : ($alleOffen && $offeneTage ? h($offenText) : 'Kein passender Tag in diesem Zeitraum.' . ($offenText ? ' ' . h($offenText) : '')) ?></p>
     <?php endif ?>
     <?= spotinfo_html($r) ?>
     <?php if (!empty($r['links'])): ?>

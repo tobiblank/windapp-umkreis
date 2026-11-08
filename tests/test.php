@@ -386,6 +386,21 @@ $kw = region_bewerten($adriaR, $datA, SPORTARTEN['kite_wave'], [$morgen])[$morge
 pruefe(!$kw['det']['geht'] && isset($kw['ens']['chance']) && $kw['ens']['chance'] == 0, 'Kite Wave an der Adria (0,8 m Welle, mind. 1 m): auch die Ensemble-Chance ist 0');
 $kw2 = region_bewerten($adriaR, $datA, SPORTARTEN['kite_twintip'], [$morgen])[$morgen];
 pruefe(($kw2['ens']['chance'] ?? 0) > 0.9, 'Kite Twintip am selben Tag: Welle egal, Chance unverändert');
+// Fehlende Daten (seit 8.11.2026): offen statt 0 %
+$ohneW = region_bewerten($adriaR, ['welle' => null] + $datA, SPORTARTEN['kite_wave'], [$morgen])[$morgen];
+pruefe($ohneW['offen'] && $ohneW['ens'] === null && $ohneW['det']['grund'] === 'noch keine Wellenvorhersage',
+       'Kite Wave am Meer ohne Wellendaten: Tag offen, keine Chance statt 0 %');
+$ohneV = region_bewerten($adriaR, ['vorhersage' => null, 'welle' => null] + $datA, SPORTARTEN['kite_wave'], [$morgen])[$morgen];
+pruefe($ohneV['offen'] && $ohneV['det']['grund'] === 'noch keine Vorhersage', 'ohne Modellmittel und Welle: offen, "noch keine Vorhersage"');
+$ohneVK = region_bewerten($adriaR, ['vorhersage' => null] + $datA, SPORTARTEN['kite_twintip'], [$morgen])[$morgen];
+pruefe(!$ohneVK['offen'] && ($ohneVK['ens']['chance'] ?? 0) > 0.9 && $ohneVK['det']['grund'] === 'noch keine Vorhersage',
+       'Kite Twintip ohne Modellmittel: Ensemble-Chance bleibt, Tag nicht offen');
+pruefe(!$kw['offen'] && !$kw2['offen'], 'mit allen Daten: nicht offen');
+$ensSee = ensemble_welle_einmischen([0 => ['2026-01-01' => [12 => ['kn' => 20]]]], [], SPORTARTEN['kite_wave'], false);
+pruefe(!isset($ensSee[0]['2026-01-01'][12]['welle_fehlt']) && $ensSee[0]['2026-01-01'][12]['welle'] === null, 'See: Welle null, nicht "fehlt" (geht dort nie)');
+$stOhneW = region_stunden($adriaR, ['welle' => null] + $datA, SPORTARTEN['kite_wave'], $morgen);
+$zw = $stOhneW['stunden'][$stOhneW['fenster'][0]];
+pruefe($zw['ens_anteil'] === null && $zw['ens_p50'] !== null, 'Stundenseite ohne Welle: Band bleibt, Anteil der Läufe offen');
 pruefe(duenung($wi(1.0, 9, 200)) === [1.0, 9, 200] && duenung(['hoehe' => 0.8, 'periode' => 5, 'richtung' => 60, 'swell' => null, 'swell_periode' => null, 'swell_richtung' => null]) === [0.8, 5, 60],
        'Dünung: Swell, ohne Swell die gesamte Welle');
 

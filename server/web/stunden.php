@@ -117,7 +117,7 @@ $tag = in_array($_GET['tag'] ?? '', $tage, true) ? (string)$_GET['tag'] : null;
 if ($tag === null) {
     $best = -1.0;
     foreach ($woche as $t => $d) {
-        $w = !empty($d['vorbei']) ? -1.0 : (($d['ens']['chance'] ?? ($d['det']['geht'] ? 1.0 : 0.0)) + ($d['det']['geht'] ? 0.01 : 0));
+        $w = !empty($d['vorbei']) || !empty($d['offen']) ? -1.0 : (($d['ens']['chance'] ?? ($d['det']['geht'] ? 1.0 : 0.0)) + ($d['det']['geht'] ? 0.01 : 0));
         if ($w > $best) {
             $best = $w;
             $tag = $t;
@@ -335,7 +335,7 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
     $det = $b['det'];
     $o .= '<p class="klein">' . h(tag_kurz($tag, $heute)) . ': ' . (!empty($b['vorbei']) ? 'vorbei'
         : ($det['geht'] ? h($det['windlage'] ?? 'jede Richtung') . ' · ' . $det['von'] . '–' . $det['bis'] . ' Uhr' : '<span class="leise">' . h($det['grund']) . '</span>')) . '</p>';
-    if (!empty($b['temp'])) {
+    if (!empty($b['temp']) && $det['grund'] !== 'noch keine Vorhersage') {
         $n = neopren($b['temp']);
         $teile = [];
         if ($n['wasser'] !== null) {
@@ -382,7 +382,7 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
       $d = $woche[$t] ?? null;
       $c = $d && empty($d['vorbei']) ? ($d['ens']['chance'] ?? null) : null;
   ?>
-    <a href="<?= h(link_mit(['tag' => $t])) ?>"<?= $t === $tag ? ' aria-current="true"' : '' ?>><?= h(tag_kurz($t, $heute)) ?><?= $c !== null ? ' <span class="leise">' . zahl(100 * $c) . ' %</span>' : '' ?></a>
+    <a href="<?= h(link_mit(['tag' => $t])) ?>"<?= $t === $tag ? ' aria-current="true"' : '' ?><?= !empty($d['offen']) ? ' title="' . h(ucfirst($d['det']['grund'])) . '"' : '' ?>><?= h(tag_kurz($t, $heute)) ?><?= $c !== null ? ' <span class="leise">' . zahl(100 * $c) . ' %</span>' : (!empty($d['offen']) ? ' <span class="leise">?</span>' : '') ?></a>
   <?php endforeach ?>
 </nav>
 

@@ -140,7 +140,7 @@ function quellen(array $katalog, string $modelle): array
             'basis'    => 'https://api.open-meteo.com/v1/forecast',
             'query'    => 'hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,'
                         . 'temperature_2m,weather_code,precipitation,cloud_cover'
-                        . "&models=$modelle&wind_speed_unit=kn&forecast_days=7&timezone=UTC",
+                        . "&models=$modelle&wind_speed_unit=kn&forecast_days=8&timezone=UTC",
         ],
         'ensemble' => [
             'every'    => 360,
@@ -155,7 +155,7 @@ function quellen(array $katalog, string $modelle): array
             'every'    => 60,
             'regionen' => $druck,
             'basis'    => 'https://api.open-meteo.com/v1/forecast',
-            'query'    => "hourly=pressure_msl&models=$modelle&forecast_days=7&timezone=UTC",
+            'query'    => "hourly=pressure_msl&models=$modelle&forecast_days=8&timezone=UTC",
         ],
         'druck_ensemble' => [
             'every'    => 360,
@@ -167,7 +167,7 @@ function quellen(array $katalog, string $modelle): array
             'every'    => 60,
             'regionen' => $hoehe,
             'basis'    => 'https://api.open-meteo.com/v1/forecast',
-            'query'    => "hourly=$hoeheVars&models=$modelle&wind_speed_unit=kn&forecast_days=7&timezone=UTC",
+            'query'    => "hourly=$hoeheVars&models=$modelle&wind_speed_unit=kn&forecast_days=8&timezone=UTC",
         ],
         'hoehe_ensemble' => [
             'every'    => 360,
@@ -181,13 +181,13 @@ function quellen(array $katalog, string $modelle): array
             'basis'    => 'https://marine-api.open-meteo.com/v1/marine',
             'query'    => 'hourly=wave_height,wave_direction,wave_period,'
                         . 'swell_wave_height,swell_wave_direction,swell_wave_period'
-                        . '&forecast_days=7&timezone=UTC',
+                        . '&forecast_days=8&timezone=UTC',
         ],
         'wasser' => [
             'every'    => 360,
             'regionen' => $meer,
             'basis'    => 'https://marine-api.open-meteo.com/v1/marine',
-            'query'    => 'hourly=sea_surface_temperature&forecast_days=7&timezone=UTC',
+            'query'    => 'hourly=sea_surface_temperature&forecast_days=8&timezone=UTC',
         ],
     ];
 }
