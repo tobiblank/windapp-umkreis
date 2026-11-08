@@ -36,7 +36,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Roadtrip | 7.11.2026: dritter Reiter, Reise vom Standort und zurück über bis zu 7 Tage, Hin-, Rückfahrt und Etappen bis 5 h; die App sucht die beste Länge; siehe „Roadtrip“ |
 | Woche | 7.11.2026: Reiter „Woche“, Matrix Regionen × 7 Tage; siehe „Woche“ |
 | Stunden | 7.11.2026: `stunden.php`, Diagramm je Stunde mit allen Modellen, Ensemble-Spanne, Böen, Richtung, fahrbaren Stunden; Vergleich zweier Regionen; siehe „Stunden“ |
-| Wasser und Neopren | 7.11.2026: Meerestemperatur aus der Marine API (neue Quelle `wasser`), Neopren-Faustregel in der Detailzeile und auf der Stundenseite; Seen nur Luft und gefühlt. **Variablenname noch nie gegen das echte Open-Meteo geprüft**; siehe „Wasser und Neopren“ |
+| Wasser und Neopren | 7.11.2026: Meerestemperatur aus der Marine API (neue Quelle `wasser`), Neopren-Faustregel in der Detailzeile und auf der Stundenseite. **Variablenname noch nie gegen das echte Open-Meteo geprüft**. Seit 8.11.2026 auch 14 von 18 Seen: Wassertemperatur aus dem Seemodell von Alplakes (Eawag, Quelle `seewasser`, Katalogfeld `alplakes`); Achensee, Reschensee, Lago di Santa Croce und Neusiedler See weiter nur Luft und gefühlt. Siehe „Wasser und Neopren“ |
 | Wellen | 7.11.2026: Welle und Dünung in der Detailzeile und als Diagramm auf der Stundenseite; Sportarten Kite Wave, Windsurf Wave (mit Mindestwelle) und Wellenreiten; siehe „Wellen“ |
 | Spot-Infos | 7.11.2026: Katalogfeld `infos` (Niveau, Zone, Sperre, Saison, Achtung, Tipp) für 15 Regionen, aus den Quellen im `hinweis`; Sperren mit Monaten wirken auf die Bewertung; siehe „Spot-Infos“ |
 | Bedienung | 7.11.2026 aufgeräumt: Sortierung als Auswahlfeld im Formular; drei Ansichten Liste · Woche · Roadtrip; Zeitraum (Heute – Übermorgen / Tag 3 – 7) nur in der Liste; Erklärung eingeklappt hinter „Wie wird gerechnet?“ |
@@ -70,6 +70,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | `charakter` | frei, z. B. „böig“; wird angezeigt |
 | `hinweis` | Herkunft und offene Fragen (nicht auf der Seite) |
 | `links` | optional, `[{name, url}]`: lokale Spezialprognose, auf der Seite als „Genauer: …“ verlinkt; nur `https://` |
+| `alplakes` | optional, nur Seen: Schlüssel des Simstrat-Seemodells bei [Alplakes](https://www.alplakes.eawag.ch/models), z. B. `ammersee`, `upperconstance`, `lucerneurnersee`. Damit holt der Sammler die Wassertemperatur (Quelle `seewasser`) |
 | `thermik` | optional, `true`: Thermik-See. Die Seite zeigt den Hinweis „Thermik“, weil das Modellmittel den Wind dort vermutlich unterschätzt |
 | `anreise` | optional, `["auto"]` (Standard), `["flug"]` oder `["auto", "flug"]`: in welcher Ansicht die Region erscheint. Reine Flugziele bekommen keine Fahrzeit |
 | `flughafen` | optional, `{name, transfer_min}`: Flughafen für die Ansicht „Flug“, Transfer zum Spot in Minuten (geschätzt) |
@@ -187,8 +188,12 @@ Seit 7.11.2026.
 - **Quelle:** Sammler-Quelle `wasser`, Marine API `hourly=sea_surface_temperature`, nur `typ: meer`, alle 6 h, mit `cell_selection=sea` wie die anderen Meer-Abrufe. Eigene Quelle, damit ein Fehler dort die Wellendaten nicht mitreißt. Den Variablennamen kenne ich aus der Variablenliste der Rust-Bibliothek openmeteo-rs, nicht aus einem echten Abruf: beim ersten Lauf in der Action prüfen, ob `wasser` grün ist.
 - **Je Tag** (`tag_temperaturen()`): Mittel von Luft, Wasser und Wind über das gefundene Fenster (sonst das Tagesfenster), in `region_bewerten()` als `temp`.
 - **Neopren** (`lib/neopren.php`), Faustregel nach dem Wasser, Grenzen geschätzt (Quellen schwanken um 1–2 °C): ab 24 °C Lycra/Shorty, 21 Shorty 2 mm, 18 3/2, 15 4/3, 12 5/4 + Schuhe, 9 5/4–6/5 mit Haube, Schuhen, Handschuhen, darunter 6/5 mit allem. Eine Stufe wärmer, wenn die gefühlte Temperatur mehr als 5 °C unter dem Wasser liegt. Gefühlt = Windchill (Environment Canada/NWS) bis 10 °C Luft und ab 4,8 km/h Wind, darüber die Luft.
-- **Seen:** keine Wassertemperatur, deshalb keine Empfehlung, nur „Luft 12 °C, gefühlt 6 °C“. Im Frühjahr ist das Wasser viel kälter als die Luft, im Herbst wärmer; die Luft allein wäre irreführend. Später denkbar: Messwerte bayerischer Seen (Gewässerkundlicher Dienst), Nutzungsbedingungen prüfen.
-- **Anzeige:** in der Detailzeile guter Tage „· Wasser 14 °C, 5/4 mm, Schuhe“ (Tooltip mit Luft und Begründung), auf der Stundenseite unter dem Fenster.
+- **Seen** (seit 8.11.2026): Wassertemperatur aus [Alplakes](https://www.alplakes.eawag.ch/) (Eawag, Lizenz CC BY 4.0, Quellenangabe im Fuß, im Impressum und in der Datenschutzerklärung). Alplakes rechnet für über 100 Seen das eindimensionale Seemodell Simstrat, jeden Morgen neu, rund 4–5 Tage voraus, alle 3 Stunden. Ein Wert je See für die Seemitte, nicht je Ufer.
+  - **Abruf:** Sammler-Quelle `seewasser`, ein Abruf je See mit Katalogfeld `alplakes`: `GET https://alplakes-api.eawag.ch/simulations/1d/point/simstrat/<see>/<von>/<bis>/1` (Zeiten UTC als `YYYYmmddHHMM`, von gestern 0 Uhr bis in 8 Tagen, Tiefe 1 m, weil die Modelle bei 1 m beginnen). Antwort `{time: [ISO], variables: {T: {data}}}`; `alplakes_eintrag()` rundet die Zeitpunkte (ein paar Sekunden nach der vollen Stunde) auf volle Stunden, füllt die Stunden dazwischen linear und speichert sie wie Open-Meteo als `hourly.water_temperature`. Danach liest die Bewertung See und Meer gleich (`wasser_eintrag()`, `wasser_stunden()`).
+  - **Geprüft** am 8.11.2026 im Browser (aus dem Workspace war die API nicht erreichbar): alle 14 Seen HTTP 200, 48 Werte von 7.11. 1 Uhr bis 12.11. 22 Uhr UTC; ein Zeitraum über das Vorhersageende hinaus liefert, was da ist; ein unbekannter See gibt HTTP 400; ein Zeitraum ganz in der Zukunft ebenfalls 400. Die Umrechnung lief mit der echten Ammersee-Antwort. Ein Abruf in einer Schleife über alle Seen scheiterte einmal an einem See ohne `variables` (nicht reproduziert); der Sammler meldet so etwas als Fehler, die übrigen Seen bleiben gespeichert. Dokumentierte Abrufgrenzen gibt es keine; Fragen zur API an James Runnalls (Eawag).
+  - **Seen und Schlüssel:** Ammersee `ammersee`, Walchensee `walchensee`, Starnberger See `starnberger`, Kochelsee `kochelsee`, Chiemsee `chiemsee`, Bodensee `upperconstance` (Obersee), Silvaplana `silvaplana`, Gardasee Nord `garda` (ganzer See), Comer See Nord `como` (ganzer See), Urnersee `lucerneurnersee` (eigenes Becken), Neuenburgersee `neuchatel`, Attersee `attersee`, Traunsee `traunsee`, Zeller See `zeller`. Nicht bei Alplakes: Achensee, Reschensee, Lago di Santa Croce, Neusiedler See; dort weiter keine Empfehlung, nur „Luft 12 °C, gefühlt 6 °C“ (im Frühjahr ist das Wasser viel kälter als die Luft, im Herbst wärmer; die Luft allein wäre irreführend).
+  - **Genauigkeit** (Alplakes, Seite „Models“, Fehler an der Oberfläche gegen Messprofile): meist 0,8–1,4 °C; Kochelsee 2,2 und Gardasee 2,2 °C (1D). Für die Neoprenstufen in 3-Grad-Schritten reicht das; an der Grenze zweier Stufen kann es eine Stufe danebenliegen. Später denkbar: für den Gardasee das 3D-Modell (`/simulations/point/delft3d-flow/garda/…` mit Koordinate im Norden, Gesamtfehler 0,73 °C), nicht getestet.
+- **Anzeige:** in der Detailzeile guter Tage „· Wasser 14 °C, 5/4 mm, Schuhe“ (Tooltip mit Luft und Begründung, bei Seen mit dem Hinweis auf das Seemodell), auf der Stundenseite unter dem Fenster („Wasser 11 °C (Seemitte, 1 m, Modell Alplakes)“).
 
 ## Wellen
 
@@ -272,6 +277,7 @@ Sind alle Bedingungen einer Stunde erfüllt, rechnet die Bewertung mit der Mitte
 | `ensemble` | ECMWF IFS 0,25°, 51 Läufe: Wind, Richtung, Bewölkung; 8 Tage | alle 6 h |
 | `welle` | Marine API: Wellenhöhe, -richtung, -periode, Swell; nur `typ: meer`; 8 Tage | alle 3 h |
 | `wasser` | Marine API: Meerestemperatur (`sea_surface_temperature`); nur `typ: meer`; 8 Tage | alle 6 h |
+| `seewasser` | **Alplakes** (Eawag), nicht Open-Meteo: Wassertemperatur der Seen mit `alplakes` in 1 m Tiefe, ein Abruf je See, auf Stunden gefüllt; zählt nicht zum Open-Meteo-Kontingent (seit 8.11.2026) | alle 6 h |
 | `druck` / `druck_ensemble` | Meeresspiegeldruck an den `druckpunkte`, Modelle wie `vorhersage` bzw. ECMWF-Ensemble | stündlich / alle 6 h |
 | `hoehe` / `hoehe_ensemble` | Wind in 850 und 700 hPa, nur Regionen mit Grundströmung in dieser Höhe | stündlich / alle 6 h |
 
@@ -351,7 +357,7 @@ Ausprobieren auf der Kommandozeile: `php server/rangliste.php wingfoil 800 48.07
 php tests/test.php
 ```
 
-Ohne Netz: Einzelfunktionen, Katalog, Tagesfenster, der Sammler in beiden Betriebsarten gegen `tests/fake_openmeteo.php` (eingebauter PHP-Server), die Rangliste aus den geschriebenen Daten, der Verlauf über frühere Abrufe, die Landkarte (Projektion, Ausschnitt, Namen), die Fahrzeiten gegen `tests/fake_ors.php` (Einrasten, Schätzung, Abfahrt) und ein Rauchtest der Seite (HTTP-Status, keine PHP-Meldungen, Rundung des Standorts, geteilte Vorhersage und Teilen-Knopf, ohne Daten, ohne config.php). Läuft vor jedem Deploy (`deploy.yml`) und auf anderen Branches (`pruefen.yml`).
+Ohne Netz: Einzelfunktionen, Katalog, Tagesfenster, der Sammler in beiden Betriebsarten gegen `tests/fake_openmeteo.php` (eingebauter PHP-Server, seit 8.11.2026 auch Ersatz für Alplakes), die Rangliste aus den geschriebenen Daten, der Verlauf über frühere Abrufe, die Landkarte (Projektion, Ausschnitt, Namen), die Fahrzeiten gegen `tests/fake_ors.php` (Einrasten, Schätzung, Abfahrt) und ein Rauchtest der Seite (HTTP-Status, keine PHP-Meldungen, Rundung des Standorts, geteilte Vorhersage und Teilen-Knopf, ohne Daten, ohne config.php). Läuft vor jedem Deploy (`deploy.yml`) und auf anderen Branches (`pruefen.yml`).
 
 ## Ordner
 
@@ -389,7 +395,7 @@ tools/karte_bauen.py    erzeugt server/web/karte.svg aus Natural Earth
 5. ~~Roadtrip-Modus~~ (erledigt, siehe „Roadtrip“)
 6. ~~Matrix Regionen × Tage~~ (erledigt, siehe „Woche“)
 7. ~~Stundenansicht je Region, Vergleich zweier Regionen~~ (erledigt, siehe „Stunden“)
-8. ~~Wassertemperatur und Neoprenempfehlung~~ (erledigt fürs Meer, siehe „Wasser und Neopren“)
+8. ~~Wassertemperatur und Neoprenempfehlung~~ (erledigt fürs Meer, seit 8.11.2026 auch für 14 Seen über Alplakes, siehe „Wasser und Neopren“)
 9. ~~Gezeiten~~ (verworfen 7.11.2026: entscheidet nicht „wohin“, sondern „wann“; das klärt eine Gezeitentabelle vor Ort. Stattdessen Wellen, siehe „Wellen“)
 10. ~~Spot-Infos~~ (erledigt, siehe „Spot-Infos“)
 11. Kalendereintrag (.ics) für ein gutes Fenster

@@ -7,6 +7,8 @@
  *           windlagen [{name, sektor [von, bis], charakter?}], spots [...],
  *           links? [{name, url}] (lokale Spezialprognose, nur verlinkt),
  *           thermik? true (Modellwind unterschaetzt den Wind vermutlich; auf der Seite markiert)
+ *           alplakes? "ammersee": Schluessel des Simstrat-Seemodells bei Alplakes (Eawag),
+ *           nur bei Seen; der Sammler holt damit die Wassertemperatur (seit 8.11.2026)
  *           anfahrt? [lat, lon] (Ziel fuer die Fahrzeit, z. B. Parkplatz am Spot; sonst
  *           punkt des ersten Spots, sonst der Vorhersagepunkt; seit 7.11.2026)
  *           anreise? ["auto"] (Standard) | ["flug"] | ["auto", "flug"]: in welcher
@@ -130,6 +132,9 @@ function regionen_pruefen(array $d): array
         }
         if (isset($r['thermik']) && !is_bool($r['thermik'])) {
             $f[] = "$wo: thermik muss true oder false sein";
+        }
+        if (isset($r['alplakes']) && (($r['typ'] ?? '') !== 'see' || !is_string($r['alplakes']) || !preg_match('/^[a-z0-9]+$/', $r['alplakes']))) {
+            $f[] = "$wo: alplakes nur bei Seen, als Schluessel des Simstrat-Modells (a-z, 0-9)";
         }
         foreach ($r['links'] ?? [] as $l) {
             if (empty($l['name']) || !is_string($l['url'] ?? null) || !preg_match('#^https://[^\s"<>]+$#', $l['url'])) {

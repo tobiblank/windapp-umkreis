@@ -12,6 +12,7 @@
         11.135
       ],
       "zeitzone": "Europe/Berlin",
+      "alplakes": "ammersee",
       "infos": [{"art": "tipp", "text": "Testtipp für den Ammersee", "quelle": "Test"}],
       "hinweis": "Punkt in der Seemitte. Richtungen hängen hier am Spot, deshalb keine Windlagen auf Regionsebene.",
       "windlagen": [],

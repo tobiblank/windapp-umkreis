@@ -9,8 +9,10 @@
  * (Environment Canada / US NWS), gilt fuer Luft bis 10 Grad und Wind ab 4,8 km/h;
  * darueber die Lufttemperatur.
  *
- * Ohne Wassertemperatur (Seen) keine Empfehlung: die Luft sagt zu wenig, im
+ * Ohne Wassertemperatur keine Empfehlung: die Luft sagt zu wenig, im
  * Fruehjahr ist das Wasser viel kaelter als die Luft, im Herbst waermer.
+ * Seen haben seit 8.11.2026 eine Wassertemperatur, wenn Alplakes sie rechnet
+ * (Katalogfeld "alplakes"); die uebrigen Seen bleiben ohne Empfehlung.
  */
 
 const NEOPREN_STUFEN = [

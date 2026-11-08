@@ -105,7 +105,7 @@ function daten_fuer(array $r, array $stand): array
         $druckEns[$p] = $stand['druck_ensemble'][$p] ?? null;
     }
     return ['vorhersage' => $stand['vorhersage'][$r['id']] ?? null, 'ensemble' => $stand['ensemble'][$r['id']] ?? null,
-            'welle' => $stand['welle'][$r['id']] ?? null, 'wasser' => $stand['wasser'][$r['id']] ?? null, 'druck' => array_filter($druck), 'hoehe' => $stand['hoehe'][$r['id']] ?? null,
+            'welle' => $stand['welle'][$r['id']] ?? null, 'wasser' => wasser_eintrag($stand, $r['id']), 'druck' => array_filter($druck), 'hoehe' => $stand['hoehe'][$r['id']] ?? null,
             'druck_ensemble' => array_filter($druckEns), 'hoehe_ensemble' => $stand['hoehe_ensemble'][$r['id']] ?? null];
 }
 
@@ -342,7 +342,8 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
         $n = neopren($b['temp']);
         $teile = [];
         if ($n['wasser'] !== null) {
-            $teile[] = 'Wasser ' . zahl($n['wasser']) . ' °C';
+            $teile[] = 'Wasser ' . zahl($n['wasser']) . ' °C'
+                     . (($b['temp']['wasser_quelle'] ?? null) === 'see' ? ' (Seemitte, 1 m, Modell Alplakes)' : '');
         }
         if ($n['luft'] !== null) {
             $teile[] = 'Luft ' . zahl($n['luft']) . ' °C' . ($n['gefuehlt'] !== null && $n['gefuehlt'] <= $n['luft'] - 2 ? ', gefühlt ' . zahl($n['gefuehlt']) . ' °C' : '');
@@ -423,7 +424,7 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
   Bei Regel-Windlagen rechnet die Bewertung mit einer typischen Stärke; die Linien zeigen trotzdem den Modellwind.
 </p>
 <footer class="fuss klein leise">
-  <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0). Rohwerte, nicht kalibriert.</p>
+  <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0). Wassertemperatur der Seen: <a href="https://www.alplakes.eawag.ch/">Alplakes, Eawag</a> (CC BY 4.0). Rohwerte, nicht kalibriert.</p>
   <?= design_schalter() ?>
   <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
 </footer>

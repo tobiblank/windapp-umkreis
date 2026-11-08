@@ -2,6 +2,8 @@ name: Sammeln
 
 # Ruft zweimal am Tag die Vorhersage fuer alle Regionen bei Open-Meteo ab und
 # laedt die Rohdaten per FTPS in den Datenordner auf dem Webspace.
+# Seit 8.11.2026 zusaetzlich die Wassertemperatur der Seen bei Alplakes (Eawag,
+# Quelle seewasser, ein Abruf je See mit Katalogfeld alplakes).
 # Damit braucht die App keinen Cronjob auf Hetzner, und die Abrufe kommen von
 # GitHub, nicht vom Server von ammerseewind.de (eigenes Open-Meteo-Kontingent).
 #
