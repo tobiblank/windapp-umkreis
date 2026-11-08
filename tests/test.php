@@ -152,6 +152,9 @@ $tmp = sys_get_temp_dir() . '/umkreis-test-' . getmypid();
 @mkdir("$tmp/web/lib", 0700, true);
 @mkdir("$tmp/daten", 0700, true);
 copy("$ROOT/server/web/lib/regionen.php", "$tmp/web/lib/regionen.php");
+foreach (['schnee.php', 'lawine.php'] as $lib) {
+    copy("$ROOT/server/web/lib/$lib", "$tmp/web/lib/$lib");
+}
 copy(__DIR__ . "/regionen_test.json", "$tmp/regionen.json");
 $port = 18000 + getmypid() % 1000;
 file_put_contents("$tmp/web/config.php", '<?php return ' . var_export([
@@ -872,6 +875,9 @@ foreach ($m['icons'] ?? [] as $ic) {
     pruefe($info && $info[0] . 'x' . $info[1] === $ic['sizes'], "Symbol {$ic['src']} hat {$ic['sizes']}");
 }
 proc_terminate($web);
+
+// Schnee-Modus (seit 8.11.2026)
+require __DIR__ . '/test_schnee.php';
 
 // Aufraeumen
 exec('rm -rf ' . escapeshellarg($tmp));

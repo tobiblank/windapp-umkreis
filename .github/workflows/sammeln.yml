@@ -4,6 +4,12 @@ name: Sammeln
 # laedt die Rohdaten per FTPS in den Datenordner auf dem Webspace.
 # Seit 8.11.2026 zusaetzlich die Wassertemperatur der Seen bei Alplakes (Eawag,
 # Quelle seewasser, ein Abruf je See mit Katalogfeld alplakes).
+# Seit 8.11.2026 auch der Schnee-Modus (daten/schneeregionen.json): Vorhersage auf
+# Tourhoehe, Ensemble und die Lageberichte der freigegebenen Warndienste. Die
+# Berichte kommen meist um 17 Uhr fuer den Folgetag und gegen 8 Uhr als Update;
+# deshalb ein dritter, kleiner Lauf um 7:40 UTC (8:40 Uhr im Winter) nur fuer
+# lawine und schnee_vorhersage.
+#
 # Damit braucht die App keinen Cronjob auf Hetzner, und die Abrufe kommen von
 # GitHub, nicht vom Server von ammerseewind.de (eigenes Open-Meteo-Kontingent).
 #
@@ -23,6 +29,7 @@ name: Sammeln
 on:
   schedule:
     - cron: "25 5,17 * * *"
+    - cron: "40 7 * * *"
   workflow_dispatch:
 
 permissions:
@@ -48,7 +55,9 @@ jobs:
         id: abruf
         run: |
           set +e
-          php server/sammler.php --action daten/regionen.json ausgabe --debug
+          nur=""
+          if [ "${{ github.event.schedule }}" = "40 7 * * *" ]; then nur="--nur lawine,schnee_vorhersage"; fi
+          php server/sammler.php --action daten/regionen.json ausgabe --schnee daten/schneeregionen.json $nur --debug
           echo "rc=$?" >> "$GITHUB_OUTPUT"
 
       - name: Hochladen

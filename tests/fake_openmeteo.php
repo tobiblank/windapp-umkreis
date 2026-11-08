@@ -11,6 +11,13 @@
  *   Druckpunkt B (Breite 46,0): 1015 hPa
  *   700/850 hPa: morgen 8 kn aus SW (225 Grad), sonst 20 kn aus N; im Ensemble
  *     skaliert die Staerke mit dem Lauf
+ * Schnee-Modus (seit 8.11.2026), Tage relativ zu heute (past_days wie Open-Meteo):
+ *   Breite 47,2 (Schneeregion A, Tour 2400 m): gestern 1,5 mm/h, Schneefallgrenze 1200 m
+ *     (= 25 cm), sonst trocken; gestern 95 % Wolken, sonst 10 %; 80 cm Schnee; Kamm 20 km/h
+ *   Breite 46,3 (Schneeregion B, Tour 2000 m): gestern 1 mm/h Regen (Grenze 2800 m),
+ *     20 % Wolken, 10 cm Schnee, Kamm 50 km/h
+ * Lageberichte (CAAML v6): SLF (JSON), Euregio (JSON, morgen 404), Bayern (XML),
+ * Pfad mit _XX_ -> HTTP 500 (darf nie abgerufen werden, Dienst nicht freigegeben).
  * Mehrere Orte -> Liste, ein Ort -> Objekt (wie Open-Meteo).
  */
 
@@ -37,22 +44,92 @@ if (preg_match('#^/simulations/1d/point/simstrat/([a-z0-9]+)/\d{12}/\d{12}/[\d.]
                       'variables' => ['T' => ['data' => $werte, 'unit' => 'degC', 'description' => 'Temperature']]]);
     exit;
 }
+// Lageberichte (seit 8.11.2026)
+$jetztTs = time();
+$gueltig = ['startTime' => gmdate('Y-m-d\TH:i:s\Z', $jetztTs - 86400), 'endTime' => gmdate('Y-m-d\TH:i:s\Z', $jetztTs + 2 * 86400)];
+if ($pfad === '/api/bulletin/caaml/de/json') {
+    header('Content-Type: application/json');
+    echo json_encode(['bulletins' => [[
+        'bulletinID' => 'slf-1', 'lang' => 'de', 'publicationTime' => gmdate('Y-m-d\TH:i:s\Z', $jetztTs - 3600), 'validTime' => $gueltig,
+        'regions' => [['regionID' => 'CH-7111', 'name' => 'Oberengadin'], ['regionID' => 'CH-7112', 'name' => 'Bernina']],
+        'dangerRatings' => [['mainValue' => 'considerable', 'elevation' => ['lowerBound' => '2200'], 'validTimePeriod' => 'all_day'],
+                            ['mainValue' => 'moderate', 'elevation' => ['upperBound' => '2200'], 'validTimePeriod' => 'all_day']],
+        'avalancheProblems' => [['problemType' => 'wind_slab', 'elevation' => ['lowerBound' => '2000'], 'aspects' => ['N', 'NE', 'E'], 'validTimePeriod' => 'all_day'],
+                                ['problemType' => 'persistent_weak_layers', 'elevation' => ['lowerBound' => 'treeline'], 'aspects' => ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']]],
+    ]]]);
+    exit;
+}
+if (preg_match('#^/bulletins/(\d{4}-\d{2}-\d{2})/\1_(EUREGIO|DE-BY|XX)_de_CAAMLv6\.(json|xml)$#', $pfad, $m)) {
+    $heuteB = (new DateTimeImmutable('today', new DateTimeZone('Europe/Berlin')))->format('Y-m-d');
+    if ($m[2] === 'XX') {
+        http_response_code(500);
+        exit;
+    }
+    if ($m[2] === 'EUREGIO') {
+        if ($m[1] !== $heuteB) {
+            http_response_code(404);
+            exit;
+        }
+        header('Content-Type: application/json');
+        echo json_encode(['bulletins' => [
+            ['bulletinID' => 'eu-1', 'publicationTime' => gmdate('Y-m-d\TH:i:s\Z', $jetztTs - 7200), 'validTime' => $gueltig,
+             'regions' => [['regionID' => 'AT-07-14-01', 'name' => 'Tirol (nicht freigegeben)'], ['regionID' => 'IT-32-BZ-08-01', 'name' => 'Ahrntal Ost']],
+             'dangerRatings' => [['mainValue' => 'high', 'validTimePeriod' => 'all_day']], 'avalancheProblems' => [['problemType' => 'new_snow']]],
+            ['bulletinID' => 'eu-2', 'publicationTime' => gmdate('Y-m-d\TH:i:s\Z', $jetztTs - 7200), 'validTime' => $gueltig,
+             'regions' => [['regionID' => 'AT-07-02', 'name' => 'Nur Tirol']], 'dangerRatings' => [['mainValue' => 'low']]],
+        ]]);
+        exit;
+    }
+    // Bayern: XML wie 2025-12-20_DE-BY_de_CAAMLv6.xml, dazu Lawinenproblem und Hoehengrenze
+    header('Content-Type: application/xml');
+    $pub = gmdate('Y-m-d\TH:i:s\Z', $jetztTs - 1800);
+    echo '<?xml version="1.0" encoding="UTF-8"?><bulletins xmlns="http://caaml.org/Schemas/V6.0/Profiles/BulletinEAWS">'
+       . '<bulletin bulletinID="by-1" lang="de"><publicationTime>' . $pub . '</publicationTime><validTime><startTime>' . $gueltig['startTime']
+       . '</startTime><endTime>' . $gueltig['endTime'] . '</endTime></validTime><unscheduled>false</unscheduled>'
+       . '<source><person><name>Lawinenwarndienst Bayern</name></person></source>'
+       . '<region regionID="DE-BY-30"><name>Werdenfelser Alpen</name></region><region regionID="DE-BY-12"><name>Allgäuer Alpen Mitte</name></region>'
+       . '<dangerRating><mainValue>moderate</mainValue><elevation><lowerBound>1800</lowerBound></elevation><validTimePeriod>all_day</validTimePeriod></dangerRating>'
+       . '<dangerRating><mainValue>low</mainValue><elevation><upperBound>1800</upperBound></elevation><validTimePeriod>all_day</validTimePeriod></dangerRating>'
+       . '<avalancheProblem><problemType>wind_slab</problemType><elevation><lowerBound>1800</lowerBound></elevation><aspects><aspect>N</aspect><aspect>NW</aspect></aspects><validTimePeriod>all_day</validTimePeriod></avalancheProblem>'
+       . '<customData><ALBINA><mainDate>' . $m[1] . '</mainDate></ALBINA></customData></bulletin></bulletins>';
+    exit;
+}
+
 parse_str((string)parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY), $q);
 $lats = explode(',', $q['latitude'] ?? '');
 $tage = (int)($q['forecast_days'] ?? 7);
 $vars = explode(',', $q['hourly'] ?? '');
 $modelle = isset($q['models']) ? explode(',', $q['models']) : [];
 
-$start = strtotime(gmdate('Y-m-d') . ' 00:00 UTC');
+$vorher = (int)($q['past_days'] ?? 0);
+$start = strtotime(gmdate('Y-m-d') . ' 00:00 UTC') - 86400 * $vorher;
 $zeiten = [];
-for ($i = 0; $i < 24 * $tage; $i++) {
+for ($i = 0; $i < 24 * ($tage + $vorher); $i++) {
     $zeiten[] = gmdate('Y-m-d\TH:i', $start + 3600 * $i);
 }
 
 function wert(int $ort, string $var, int $i, float $faktor): ?float
 {
-    $tag = intdiv($i, 24);
+    global $vorher;
+    $tag = intdiv($i, 24) - $vorher;
     $h = $i % 24;
+    if ($ort === 5 || $ort === 6) {
+        $a = $ort === 5;
+        $nass = $tag === -1;
+        return match ($var) {
+            'precipitation'         => $nass ? round(($a ? 1.5 : 1.0) * $faktor, 2) : 0.0,
+            'snowfall'              => $nass && $a ? round(1.5 * 0.7 * $faktor, 2) : 0.0,
+            'snowfall_height'       => $a ? 1200.0 : 2800.0,
+            'freezing_level_height' => $a ? 1500.0 : 3100.0,
+            'temperature_2m'        => $a ? -2.0 : 3.0,
+            'cloud_cover'           => $a ? ($nass ? 95 : 10) : 20,
+            'snow_depth'            => $a ? 0.8 : 0.1,
+            'wind_speed_700hPa'     => $a ? 20.0 : 50.0,
+            'wind_gusts_10m'        => 30.0,
+            'weather_code'          => $nass ? 73 : 0,
+            default                 => null,
+        };
+    }
     if ($ort === 0) {
         $an = $tag === 1 && $h >= 10 && $h < 15;
         $kn = $an ? 16 : 6;
@@ -95,6 +172,8 @@ foreach ($lats as $lat) {
         abs((float)$lat - 45.5) < 0.01 => 1,
         abs((float)$lat - 47.0) < 0.01 => 3,
         abs((float)$lat - 46.0) < 0.01 => 4,
+        abs((float)$lat - 47.2) < 0.01 => 5,
+        abs((float)$lat - 46.3) < 0.01 => 6,
         default => 2,
     };
     $hourly = ['time' => $zeiten];
@@ -119,7 +198,7 @@ foreach ($lats as $lat) {
     }
     // Echo der Zellwahl, damit der Test pruefen kann, was angefragt wurde
     $liste[] = ['latitude' => (float)$lat, 'generationtime_ms' => mt_rand(1, 99) / 10,
-                'test_cell_selection' => $q['cell_selection'] ?? null, 'hourly' => $hourly];
+                'test_cell_selection' => $q['cell_selection'] ?? null, 'test_elevation' => $q['elevation'] ?? null, 'hourly' => $hourly];
 }
 
 header('Content-Type: application/json');

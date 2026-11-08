@@ -30,6 +30,12 @@ return [
     // Fuer eine Domain-Property (DNS-TXT-Eintrag) nicht noetig.
     // 'google_verifizierung' => 'abc123...',
 
+    // Optional (seit 8.11.2026): Schnee-Katalog. Standard: lib/schneeregionen.json,
+    // dorthin laedt die Action "Deploy" daten/schneeregionen.json.
+    // 'schneeregionen_datei' => '/usr/home/DEINUSER/umkreis/schneeregionen.json',
+    // Nur Cronjob: Modelle fuer den Schnee-Modus
+    // 'schnee_modelle' => 'icon_d2,icon_eu,ecmwf_ifs,gfs_seamless',
+
     // Nur fuer den Sammler als Cronjob (server/sammler.php ohne --action):
     // 'modelle' => 'icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd',
     // 'openmeteo_limit' => 10000,

@@ -535,6 +535,8 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     <div>
       <h1 class="marke">Wohin<span>fahrma</span></h1>
       <p class="leise klein">Wo ist Wind? Fahr ma.</p>
+      <?php // Seit 8.11.2026: zweiter Modus fuer Skitour und Freeride (schnee.php) ?>
+      <nav class="modus" aria-label="Modus"><a href="./" aria-current="page">Wind</a><a href="schnee.php">Schnee</a></nav>
     </div>
   </div>
   <?php if ($standText): ?><p class="leise klein rechts">Stand<br><?= h($standText) ?></p><?php endif ?>

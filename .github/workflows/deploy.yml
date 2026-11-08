@@ -5,6 +5,7 @@ name: Deploy zu Hetzner
 #
 #   server/web/*         -> <WEB_DIR>/                 (Webordner von wohinfahrma.dablank.de)
 #   daten/regionen.json  -> <WEB_DIR>/lib/regionen.json (per .htaccess gesperrt)
+#   daten/schneeregionen.json -> <WEB_DIR>/lib/schneeregionen.json (seit 8.11.2026)
 #
 # Benoetigt unter Settings > Secrets and variables > Actions:
 #   Secrets:   FTP_HOST, FTP_USER, FTP_PASSWORD (dieselben wie bei stegen-wind)
@@ -18,6 +19,7 @@ on:
     paths:
       - "server/web/**"
       - "daten/regionen.json"
+      - "daten/schneeregionen.json"
       - "tests/**"
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
@@ -72,4 +74,5 @@ jobs:
             hoch "$f" "${web}${f#server/web/}"
           done
           hoch daten/regionen.json "${web}lib/regionen.json"
+          hoch daten/schneeregionen.json "${web}lib/schneeregionen.json"
           echo "Fertig."
