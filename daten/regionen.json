@@ -1,5 +1,5 @@
 {
-  "stand": "2026-11-07",
+  "stand": "2026-11-08",
   "druckpunkte": {
     "bozen": {"name": "Bozen", "punkt": [46.5, 11.35]},
     "innsbruck": {"name": "Innsbruck", "punkt": [47.26, 11.39]},
@@ -797,6 +797,180 @@
           ],
           "ablandig": [[30, 130]]
         }
+      ]
+    },
+    {
+      "id": "talamone",
+      "name": "Talamone (Toskana)",
+      "land": "IT",
+      "typ": "meer",
+      "punkt": [42.53, 11.12],
+      "anfahrt": [42.565, 11.158],
+      "zeitzone": "Europe/Rome",
+      "thermik": true,
+      "infos": [
+        {"art": "tipp", "text": "Im Sommer NW-Thermik, oft über 15 kn, durch das Tal am Nordende der Bucht verstärkt.", "quelle": "ikointl.com (TWKC), se.kiteforum.com"},
+        {"art": "gefahr", "text": "NO und O kommen böig und ablandig. Auf Boote aus dem Hafen von Talamone achten.", "quelle": "waterwind.it"},
+        {"art": "niveau", "text": "Flach bis Kabbelwasser, für alle Niveaus, mehrere Schulen.", "quelle": "unplug-kitesurf.com, vvanat.fr"}
+      ],
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. waterwind.it: NW-Thermik am Nachmittag, geht auch bei Mistral, W, SW und S; NO und O böig und ablandig, Parkplatz im Winter zu. windy.app: S bis WNW. ikointl.com (TWKC): Sommerthermik aus NW meist über 15 kn. thermik=true, weil das Modellmittel die Sommerthermik vermutlich unterschätzt. Ablandig geschätzt. Weitere Spots in der Nähe (Feniglia, Giannella/Orbetello) nicht eingetragen. Anreise nur Auto; Rom FCO wäre rund 2 h entfernt. Anfahrt (erster Spot) ungefähr, von Claude am 8.11.2026 für die Fahrzeit gesetzt.",
+      "windlagen": [
+        {"name": "Maestrale / Thermik", "sektor": [290, 350], "charakter": "Sommer nachmittags, ufernah böig"},
+        {"name": "Libeccio / Ponente", "sektor": [200, 290]},
+        {"name": "Scirocco / Ostro", "sektor": [140, 200]}
+      ],
+      "spots": [
+        {"id": "talamone", "name": "Talamone (Baia di Talamone)", "ablandig": [[20, 120]]}
+      ]
+    },
+    {
+      "id": "balagne",
+      "name": "Balagne / Algajola (Korsika)",
+      "land": "FR",
+      "typ": "meer",
+      "punkt": [42.64, 8.86],
+      "anfahrt": [42.608, 8.863],
+      "zeitzone": "Europe/Paris",
+      "infos": [
+        {"art": "niveau", "text": "Wellenspot, eher für Fortgeschrittene; mehrere Peaks zum Springen und Abreiten.", "quelle": "vvanat.fr"},
+        {"art": "saison", "text": "Wellen vor allem Herbst bis Frühjahr.", "quelle": "rove.me"}
+      ],
+      "anreise": ["auto", "flug"],
+      "flughafen": {"name": "Calvi (CLY)", "transfer_min": 20},
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. vvanat.fr: Algajola und Ghjunchidu gehen bei Westwind (je nach Ausrichtung S, N oder W), Algajola deutlich häufiger fahrbar; Bucht von Calvi bei starkem Mistral oder Ostwind. se.kiteforum.com: Hauptrichtung W, außerdem NE, SW bis NW. Mit dem Auto nur mit Fähre (Livorno, Savona, Nizza nach Bastia, L'Île-Rousse oder Calvi); wie ORS das rechnet, ist offen wie bei Sardinien. Ablandig geschätzt. Anfahrt (erster Spot) ungefähr, von Claude am 8.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer von Claude am 8.11.2026 geschätzt.",
+      "windlagen": [
+        {"name": "West (Libeccio, Mistral)", "sektor": [230, 330], "charakter": "Welle"},
+        {"name": "Nordost", "sektor": [20, 70], "charakter": "selten"}
+      ],
+      "spots": [
+        {"id": "algajola", "name": "Algajola (Plage d'Aregno)", "ablandig": [[110, 210]]}
+      ]
+    },
+    {
+      "id": "fischland-darss",
+      "name": "Fischland-Darß",
+      "land": "DE",
+      "typ": "meer",
+      "punkt": [54.4, 12.33],
+      "anfahrt": [54.384, 12.523],
+      "zeitzone": "Europe/Berlin",
+      "infos": [
+        {"art": "zone", "text": "Born ist der einzige offizielle Wassersportzugang zum Bodden auf der Halbinsel; Grenzen des Nationalparks beachten.", "quelle": "surf-magazin.de, off-to-mv.com"},
+        {"art": "niveau", "text": "Born: Bodden mit wenig Welle und viel Stehbereich, am besten bei SW. Ahrenshoop (Ostsee): für Könner, Strömung und Buhnen.", "quelle": "off-to-mv.com, se.kiteforum.com"}
+      ],
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. Zwei Spot-Typen mit fast gegensätzlichen Ablandig-Sektoren: Bodden (Born, Ufer nach Süden) und Außenküste (Fischland, Ufer nach WNW). off-to-mv.com: Born klassischer Boddenspot, beste Freeride-Bedingungen bei SW. se.kiteforum.com: Ahrenshoop Ostsee, Kabbel bis mittlere Welle, Strömung, Buhnen, Experten. Sektoren und ablandig aus der Uferausrichtung geschätzt. Vorhersagepunkt auf der Ostsee; den Bodden kann das Modell nicht auflösen. Prerow und Zingst (Küste nach Norden) nicht eingetragen. Anfahrt (erster Spot) ungefähr, von Claude am 8.11.2026 für die Fahrzeit gesetzt.",
+      "windlagen": [],
+      "spots": [
+        {"id": "born", "name": "Born (Saaler Bodden)", "windlagen": [{"name": "Süd bis West", "sektor": [150, 290], "charakter": "Flachwasser, stehtief"}], "ablandig": [[330, 90]]},
+        {"id": "wustrow-ahrenshoop", "name": "Wustrow / Ahrenshoop (Ostsee)", "windlagen": [{"name": "Südwest bis Nord", "sektor": [200, 20], "charakter": "Welle"}], "ablandig": [[40, 170]]}
+      ]
+    },
+    {
+      "id": "nord-devon",
+      "name": "Nord-Devon (Bideford Bay)",
+      "land": "GB",
+      "typ": "meer",
+      "punkt": [51.07, -4.3],
+      "anfahrt": [51.057, -4.232],
+      "zeitzone": "Europe/London",
+      "infos": [
+        {"art": "zone", "text": "Westward Ho!: Kitebereich am Ende des Strands gegenüber der Slipanlage, hinter dem Rettungsschwimmer-Häuschen. Saunton: Einschränkungen, wo gestartet werden darf.", "quelle": "extremekites.org (Forum, 2011)"},
+        {"art": "gefahr", "text": "Großer Tidenhub: bei Springniedrigwasser weiter Weg zum Wasser; Saunton mit gefährlichen Rippströmungen.", "quelle": "iksurfmag.com, surf-forecast.com"}
+      ],
+      "anreise": ["auto", "flug"],
+      "flughafen": {"name": "Exeter (EXT)", "transfer_min": 80},
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. iksurfmag.com: Westward Ho! zeigt nach WNW, sehr flach, voll exponiert; jede Westlage gut, Süd (cross) böig wegen der Landzunge; Saunton bei W/NW, alles mit Süd böig. extremekites.org: Westward Ho! NW, W onshore, SW, N und S cross. windsurf.co.uk: Westward Ho! am besten S und SW, NW auch, aber Saunton dann besser. Windigste Monate Okt bis Feb. Mit dem Auto über den Kanal (Fähre oder Eurotunnel); ob ORS das rechnet, ungeprüft. Transfer Exeter geschätzt. Anfahrt (erster Spot) ungefähr, von Claude am 8.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer von Claude am 8.11.2026 geschätzt.",
+      "windlagen": [],
+      "spots": [
+        {"id": "westward-ho", "name": "Westward Ho!", "windlagen": [{"name": "Süd bis Nord über West", "sektor": [170, 10], "charakter": "S böig"}], "ablandig": [[30, 150]]},
+        {"id": "saunton", "name": "Saunton Sands", "windlagen": [{"name": "SW bis NW", "sektor": [200, 330], "charakter": "S böig"}], "ablandig": [[30, 150]]}
+      ]
+    },
+    {
+      "id": "sued-devon",
+      "name": "Süd-Devon (Bigbury, Exmouth)",
+      "land": "GB",
+      "typ": "meer",
+      "punkt": [50.25, -3.85],
+      "anfahrt": [50.282, -3.892],
+      "zeitzone": "Europe/London",
+      "infos": [
+        {"art": "tipp", "text": "Bigbury: bei Ostwind und großer Südwelle eine der besten Backbord-Wellen Englands.", "quelle": "kite-and-windsurfing-guide.com"},
+        {"art": "niveau", "text": "Exmouth: Duckpond (Mündung der Exe) bei Hochwasser flach, für Einsteiger; Seafront eher für Fortgeschrittene, Wind gegen Strom.", "quelle": "eola.co, kite-and-windsurfing-guide.com"}
+      ],
+      "anreise": ["auto", "flug"],
+      "flughafen": {"name": "Exeter (EXT)", "transfer_min": 50},
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. bigsalty.com: Bigbury bester Allround- und Wellenspot der Südküste Devons, in den meisten Richtungen fahrbar. forces-of-nature.co.uk: bei NW Bigbury statt Bantham (Bantham im Lee). surf-forecast.com: ablandig NO. windsurf.co.uk: Exmouth in allen Richtungen. Exmouth liegt rund 60 km nordöstlich des Vorhersagepunkts. Sektoren und ablandig geschätzt. Alternative oder Ergänzung: 'mounts-bay' unter 'optional'. Anfahrt (erster Spot) ungefähr, von Claude am 8.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer von Claude am 8.11.2026 geschätzt.",
+      "windlagen": [],
+      "spots": [
+        {"id": "bigbury", "name": "Bigbury-on-Sea / Burgh Island", "windlagen": [{"name": "Ost bis Nordwest über Süd", "sektor": [80, 330], "charakter": "O/SO Welle (Backbordbug)"}], "ablandig": [[350, 70]]},
+        {"id": "exmouth", "name": "Exmouth (Seafront)", "windlagen": [{"name": "Ost bis West über Süd", "sektor": [70, 280]}], "ablandig": [[300, 50]]}
+      ]
+    },
+    {
+      "id": "anglesey",
+      "name": "Anglesey / Rhosneigr (Wales)",
+      "land": "GB",
+      "typ": "meer",
+      "punkt": [53.21, -4.56],
+      "zeitzone": "Europe/London",
+      "infos": [
+        {"art": "tipp", "text": "Zwei Buchten, durch Felsen getrennt: Südstrand nach SW, Nordstrand nach W und S; Strand nach Wind und Tide wählen. Beste Wellen meist bei auflaufendem Wasser.", "quelle": "se.kiteforum.com, rhosneigr.co.uk"},
+        {"art": "niveau", "text": "Für Mittlere, Könner haben viel Freude; einer der besten Big-Air-Spots Großbritanniens.", "quelle": "unplug-kitesurf.com, northernkites.co.uk"}
+      ],
+      "anreise": ["flug"],
+      "flughafen": {"name": "Manchester (MAN)", "transfer_min": 135},
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. boards.co.uk (Ben Todd): fahrbar in fast jeder Richtung, Windwelle aus SO bis WSW durch die Irische See, NW bis N zum Springen mit Steuerbordbug. rhosneigr.co.uk: S und SW ideal, N/NW für Wellen. surf-forecast.com: ablandig NO. Sektor und ablandig geschätzt. Nur Flug eingetragen, weil Rhosneigr mit dem Auto weiter ist als Nord-Devon; Transfer Manchester geschätzt. Flughafen und Transfer von Claude am 8.11.2026 geschätzt.",
+      "windlagen": [
+        {"name": "Südost bis Nord über West", "sektor": [130, 20], "charakter": "S/SW Welle, NW–N Steuerbord springen"}
+      ],
+      "spots": [
+        {"id": "rhosneigr", "name": "Rhosneigr", "ablandig": [[20, 110]]}
+      ]
+    },
+    {
+      "id": "tiree",
+      "name": "Tiree (Schottland)",
+      "land": "GB",
+      "typ": "meer",
+      "punkt": [56.42, -6.9],
+      "zeitzone": "Europe/London",
+      "infos": [
+        {"art": "gefahr", "text": "Balevullin: bei Hochwasser wegen Rippströmungen kaum fahrbar, bei halber bis niedriger Tide gut; großer Felsen in der Bucht.", "quelle": "boards.co.uk"},
+        {"art": "tipp", "text": "Bei typischem SW: Balevullin down the line, Crossapol Steuerbord cross-onshore, Gott Bay Flachwasser.", "quelle": "boards.co.uk"}
+      ],
+      "anreise": ["flug"],
+      "flughafen": {"name": "Tiree (TRE), über Glasgow", "transfer_min": 10},
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. boards.co.uk Spotguide: Strände in alle Richtungen. Balevullin nach NW, am besten SW, schlecht NW. Gott Bay nach SO bis SW, geht in allem, NW ablandig (Speed). Crossapol nach S/SO, am besten W, schlecht S/SO. Deshalb Windlage über alle Richtungen [0, 360], nur ablandig je Spot (geschätzt). Anreise per Flug Glasgow–Tiree oder Fähre ab Oban; Fahrzeit nicht sinnvoll. Kein Landweg. Flughafen und Transfer von Claude am 8.11.2026 geschätzt.",
+      "windlagen": [
+        {"name": "alle Richtungen", "sektor": [0, 360]}
+      ],
+      "spots": [
+        {"id": "balevullin", "name": "Balevullin", "ablandig": [[80, 180]]},
+        {"id": "gott-bay", "name": "Gott Bay", "ablandig": [[300, 30]]},
+        {"id": "crossapol", "name": "Crossapol", "ablandig": [[320, 40]]}
+      ]
+    },
+    {
+      "id": "brandon-bay",
+      "name": "Brandon Bay / Maharees (Kerry)",
+      "land": "IE",
+      "typ": "meer",
+      "punkt": [52.3, -10.04],
+      "zeitzone": "Europe/Dublin",
+      "infos": [
+        {"art": "tipp", "text": "Scraggane Bay an der Spitze der Maharees ist vor der Atlantikwelle geschützt und in fast jeder Windrichtung fahrbar.", "quelle": "surf-forecast.com"},
+        {"art": "niveau", "text": "Brandon Bay: offener Atlantik, große Wellen; einer der Top-Windsurfspots Irlands.", "quelle": "en.wikipedia.org (Brandon, County Kerry)"}
+      ],
+      "anreise": ["flug"],
+      "flughafen": {"name": "Kerry (KIR)", "transfer_min": 50},
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. Maharees-Halbinsel zwischen Brandon Bay (Strand nach N/NW, offen zum Atlantik, ablandig SO laut surf-forecast.com) und Tralee Bay (Castlegregory: laut se.kiteforum.com Hauptrichtung NE, sideshore NNW und SSE, also Strand etwa nach ONO). Zusammen in fast jeder Richtung fahrbar, deshalb Windlage über alle Richtungen [0, 360]. Scraggane Bay mangels Ausrichtung nicht als Spot eingetragen. Ablandig geschätzt. Schulen: Jamie Knox (Windsurf, Wing), Ryan Coote (Kite). Flughafen und Transfer von Claude am 8.11.2026 geschätzt.",
+      "windlagen": [
+        {"name": "alle Richtungen", "sektor": [0, 360]}
+      ],
+      "spots": [
+        {"id": "brandon-bay", "name": "Brandon Bay (Stradbally / Fermoyle)", "ablandig": [[100, 210]]},
+        {"id": "castlegregory", "name": "Castlegregory (Tralee Bay)", "ablandig": [[190, 300]]}
       ]
     }
   ]
