@@ -677,7 +677,9 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
         $klasse = $c === null ? ($p['wert']['geht'] ? 'go' : 'leer') : stufe($c);
         $zahl = $c !== null && $c >= 0.15;
         // Windpfeil (seit 8.11.2026, wie die Stationen auf ammerseewind.de): Dreieck am Rand
-        // des Punkts zeigt, wohin der Wind weht; am guten Tag im Fenster, sonst im Tagesmittel
+        // des Punkts zeigt, wohin der Wind weht; am guten Tag im Fenster, sonst im Tagesmittel.
+        // Seit 9.11.2026 mit Abstand zum Kreis: am Kreis angesetzt sah der Punkt wie eine
+        // Stecknadel aus, deren Spitze auf den Nachbarort zeigte (Reschensee/Silvaplana)
         $wnd = $p['wind'];
         $pfeil = $wnd && $wnd['richtung'] !== null && $wnd['kn'] >= KARTE_PFEIL_AB_KN;
         $titel = $r['name'] . ': ' . ($c === null ? ($p['wert']['geht'] ? 'Fenster nach Modellmittel' : 'keine Ensemble-Daten')
@@ -688,7 +690,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     ?>
     <a href="<?= h(stunden_link($r, $p['wert']['tag'])) ?>" class="punkt <?= $klasse ?>">
       <title><?= h($titel) ?></title>
-      <?php if ($pfeil): ?><path class="windpfeil"<?php if ($klasse === 'go'): ?> data-weht="<?= round($p['xy'][0], 1) ?>,<?= round($p['xy'][1], 1) ?>,<?= (int)round($wnd['richtung']) ?>,<?= round($wnd['kn'], 1) ?>"<?php endif ?> d="M<?= round(-$rk * 0.62, 2) ?>,<?= round($rk * 0.7, 2) ?> L0,<?= round($rk + $rp * 0.75, 2) ?> L<?= round($rk * 0.62, 2) ?>,<?= round($rk * 0.7, 2) ?> Z" transform="translate(<?= round($p['xy'][0], 1) ?> <?= round($p['xy'][1], 1) ?>) rotate(<?= (int)round($wnd['richtung']) ?>)"/><?php endif ?>
+      <?php if ($pfeil): ?><path class="windpfeil"<?php if ($klasse === 'go'): ?> data-weht="<?= round($p['xy'][0], 1) ?>,<?= round($p['xy'][1], 1) ?>,<?= (int)round($wnd['richtung']) ?>,<?= round($wnd['kn'], 1) ?>"<?php endif ?> d="M<?= round(-$rp * 0.4, 2) ?>,<?= round($rk + $rp * 0.25, 2) ?> L0,<?= round($rk + $rp * 0.95, 2) ?> L<?= round($rp * 0.4, 2) ?>,<?= round($rk + $rp * 0.25, 2) ?> Z" transform="translate(<?= round($p['xy'][0], 1) ?> <?= round($p['xy'][1], 1) ?>) rotate(<?= (int)round($wnd['richtung']) ?>)"/><?php endif ?>
       <circle cx="<?= round($p['xy'][0], 1) ?>" cy="<?= round($p['xy'][1], 1) ?>" r="<?= round($rk, 2) ?>"/>
       <?php if ($zahl): ?><text class="zahl" x="<?= round($p['xy'][0], 1) ?>" y="<?= round($p['xy'][1] + $rp * 0.36, 2) ?>" font-size="<?= round($rp * 1.05, 2) ?>"><?= zahl(100 * $c) ?></text><?php endif ?>
       <?php if (isset($namen[$nr])): $rechts = $namen[$nr] === 'rechts'; ?><text class="name<?= $rechts ? '' : ' links' ?>" x="<?= round($p['xy'][0] + ($rechts ? 1 : -1) * $rp * 1.3, 2) ?>" y="<?= round($p['xy'][1] + $rp * 0.35, 2) ?>" font-size="<?= round($rp, 2) ?>" stroke-width="<?= round($rp * 0.3, 2) ?>"><?= h($r['name']) ?></text><?php endif ?>
