@@ -153,6 +153,12 @@ $tourB = array_values(array_filter($tour, fn($e) => $e['region']['id'] === 'schn
 $tourA = array_values(array_filter($tour, fn($e) => $e['region']['id'] === 'schnee-a'))[0]['tage'][$t1]['det'] ?? [];
 pruefe(($tourA['geht'] ?? false) && ($tourB['grund'] ?? '') === 'zu wenig Schnee', 'Skitour: A mit 80 cm geht, B mit 10 cm zu wenig Schnee');
 pruefe(schnee_tag_geht(['neu72' => 30, 'hs' => 50, 'wolken' => 10, 'kamm' => 45], SCHNEE_SPORTARTEN['freeride'])[1] === 'zu viel Wind am Kamm', 'zu viel Wind am Kamm');
+$kr = schnee_kriterien(['neu72' => 13.0, 'hs' => 7.0, 'wolken' => 100.0, 'kamm' => null], SCHNEE_SPORTARTEN['freeride']);
+pruefe(count($kr) === 3 && $kr[0]['ok'] === false && $kr[0]['wert'] === '13 cm' && $kr[1]['ok'] === false && $kr[2]['ok'] === null
+       && array_column(array_filter($kr, fn($c) => $c['ok'] === false), 'grund') === ['zu wenig Neuschnee', 'zu bewölkt'],
+       'Regeln einzeln: alle Gründe, unbekannt bleibt offen');
+pruefe(schneefarbe(0) === 'rgb(128, 146, 156)' && schneefarbe(10) === 'rgb(52, 120, 222)' && schneefarbe(500) === schneefarbe(80)
+       && schneefarbe_hell(1.0) && !schneefarbe_hell(20.0), 'Neuschnee-Farbskala');
 
 echo "Schnee: Lawinenlage je Region\n";
 $sR = [];
@@ -224,8 +230,9 @@ pruefe(preg_match('#id="r-schnee-c".*?Schneehöhe gemessen heute .*?Bezett eins 
 [, $html] = holen($wPort, "schnee.php?region=schnee-a&nach=$t1");
 pruefe(str_contains($html, 'Geteilte Vorhersage') && !str_contains($html, 'id="r-schnee-b"') && !str_contains($html, 'id="wahl"'), 'geteilte Vorhersage: nur diese Region, ohne Auswahl');
 [, $html] = holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t1);
-pruefe(str_contains($html, 'class="s-schnee"') && str_contains($html, 'class="s-sfg"') && str_contains($html, 'class="lw lw3"') && str_contains($html, 'Ensemble: Mitte'),
-       'Stundenseite: Schneebalken, Schneefallgrenze, Lawinenlage, Streuung des Ensembles');
+pruefe(str_contains($html, 'class="s-schnee"') && str_contains($html, 'class="s-sfg"') && str_contains($html, 'class="lw lw3"') && (str_contains($html, 'Spanne ') || str_contains($html, 'Ensemble einig'))
+       && str_contains($html, '<ul class="kriterien') && !str_contains($html, 's-berg'),
+       'Stundenseite: Schneebalken, Schneefallgrenze, Lawinenlage, Spanne des Ensembles, Regeln einzeln');
 [, $html] = holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t0);
 pruefe(str_contains($html, 'Schneehöhe gemessen') && str_contains($html, 'Sprungjoch'), 'Stundenseite heute: gemessene Schneehöhe');
 pruefe(!str_contains(holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t1)[1], 'Schneehöhe gemessen'), 'Stundenseite morgen: keine Messung');

@@ -129,84 +129,113 @@ function link_mit(array $aenderung): string
     return 'schnee_stunden.php?' . http_build_query(array_merge(['region' => $region['id'], 'sport' => $sportId, 'tag' => $tag], $aenderung));
 }
 
-/** Diagramm Neuschnee je Stunde und Hoehen (Schneefallgrenze, Nullgrad, Tour, Tal) */
-function schnee_svg(array $reihe, array $region, string $tag, array $fenster): string
+/**
+ * Diagramm (neu am 9.11.2026, vorher mit Bergsilhouette und vier Hoehenlinien):
+ * oben Niederschlag je Stunde auf Tourhoehe, blau als Schnee, grau als Regen, in
+ * Abschnitten von SCHNEE_MORGEN bis SCHNEE_MORGEN Uhr mit der Summe darueber (wie die
+ * Tagesknoepfe); darunter nur die Schneefallgrenze gegen Tourhoehe und Talort.
+ * Eine Zeitachse: Marken um SCHNEE_MORGEN Uhr.
+ */
+function schnee_svg(array $reihe, array $region, string $tag, array $fenster, ?string $jetzt): string
 {
     $W = 360;
-    $L = 34;
-    $R = 6;
+    $L = 38;
+    $R = 8;
     $n = count($reihe);
     $bw = ($W - $L - $R) / max(1, $n);
     $r = fn(float $v) => round($v, 1);
     $x = fn(int $i) => $L + $i * $bw;
-    $maxNeu = max(1.0, ...array_map(fn($z) => (float)($z['w']['neu'] ?? 0), $reihe));
-    $maxNeu = ceil($maxNeu);
-    $oben = 20;
-    $hoehe = 70;
+    $regen = fn(array $w) => ($w['neu'] ?? 0) < 0.05 && ($w['nied'] ?? 0) > 0.05 ? $w['nied'] * SCHNEE_CM_JE_MM : 0.0;
+    $maxNeu = 1.0;
+    foreach ($reihe as $z) {
+        $maxNeu = max($maxNeu, (float)($z['w']['neu'] ?? 0), $regen($z['w'] ?? []));
+    }
+    $maxNeu = $maxNeu <= 2 ? ceil($maxNeu * 2) / 2 : ceil($maxNeu);
+    $oben = 34;
+    $hoehe = 74;
     $y = fn(float $v) => $oben + $hoehe - $v / $maxNeu * $hoehe;
-    // Hoehen-Teil darunter
-    $o2 = $oben + $hoehe + 34;
-    $h2 = 90;
-    $werte = array_filter(array_merge(array_column(array_column($reihe, 'w'), 'grenze'), array_column(array_column($reihe, 'w'), 'nullgrad')), fn($v) => $v !== null);
-    $mMin = max(0, (int)(floor(min(array_merge($werte, [$region['hoehe_tal']])) / 500) * 500) - 0);
-    $mMax = (int)(ceil(max(array_merge($werte, [$region['hoehe_tour'] + 300])) / 500) * 500);
-    $mMax = min(max($mMax, $mMin + 1000), 5000);
-    $y2 = fn(float $m) => $o2 + $h2 - (min(max($m, $mMin), $mMax) - $mMin) / ($mMax - $mMin) * $h2;
-    $o = ['<svg class="stunden-bild" viewBox="0 0 ' . $W . ' ' . ($o2 + $h2 + 22) . '" role="img" aria-label="Neuschnee und Schneefallgrenze je Stunde">'];
-    // Tagesfenster
+    $o2 = $oben + $hoehe + 30;
+    $h2 = 64;
+    $tour = (float)$region['hoehe_tour'];
+    $tal = (float)$region['hoehe_tal'];
+    $gr = array_values(array_filter(array_map(fn($z) => $z['w']['grenze'] ?? null, $reihe), fn($v) => $v !== null));
+    $mMin = (int)(floor((min(array_merge($gr, [$tal])) - 100) / 500) * 500);
+    $mMax = (int)(ceil((max(array_merge($gr, [$tour])) + 200) / 500) * 500);
+    $y2 = fn(float $m) => $o2 + $h2 - ($m - $mMin) / max(1, $mMax - $mMin) * $h2;
+    $unten = $o2 + $h2;
+    $o = ['<svg class="stunden-bild schnee-bild" viewBox="0 0 ' . $W . ' ' . ($unten + 18) . '" role="img" aria-label="Neuschnee und Regen je Stunde, Schneefallgrenze">'];
+    // Tourenfenster
     foreach ($reihe as $i => $z) {
         if ($z['tag'] === $tag && $z['h'] === $fenster[0]) {
-            $o[] = '<rect class="s-fenster" x="' . $r($x($i)) . '" y="' . $oben . '" width="' . $r(($fenster[1] - $fenster[0]) * $bw) . '" height="' . ($o2 + $h2 - $oben) . '"><title>Tourenfenster ' . $fenster[0] . '–' . $fenster[1] . ' Uhr</title></rect>';
+            $o[] = '<rect class="s-fenster" x="' . $r($x($i)) . '" y="' . ($oben - 4) . '" width="' . $r(($fenster[1] - $fenster[0]) * $bw) . '" height="' . ($unten - $oben + 4) . '"><title>Tourenfenster ' . $fenster[0] . '–' . $fenster[1] . ' Uhr</title></rect>';
         }
     }
-    foreach ([0, $maxNeu / 2, $maxNeu] as $k) {
+    // Raster und Achse oben
+    foreach ([0, $maxNeu] as $k) {
         $o[] = '<line class="s-raster" x1="' . $L . '" x2="' . ($W - $R) . '" y1="' . $r($y($k)) . '" y2="' . $r($y($k)) . '"/>';
-        $o[] = '<text class="s-achse" x="' . ($L - 4) . '" y="' . $r($y($k) + 3) . '" text-anchor="end">' . zahl($k, $k < 2 && $k != 0 ? 1 : 0) . '</text>';
+        $o[] = '<text class="s-achse" x="' . ($L - 4) . '" y="' . $r($y($k) + 3) . '" text-anchor="end">' . zahl($k, fmod($k, 1.0) != 0 ? 1 : 0) . '</text>';
     }
-    $o[] = '<text class="s-achse" x="' . ($L - 4) . '" y="' . ($oben - 9) . '" text-anchor="end">cm/h</text>';
+    $o[] = '<text class="s-achse" x="' . ($L - 4) . '" y="' . $r($y($maxNeu / 2) + 3) . '" text-anchor="end">cm/h</text>';
+    // Abschnitte bis SCHNEE_MORGEN Uhr mit Summe darueber
+    $grenzen = [];
+    foreach ($reihe as $i => $z) {
+        if ($z['h'] === SCHNEE_MORGEN) {
+            $grenzen[] = $i;
+        }
+    }
+    $grenzen[] = $n;
+    for ($j = 0; $j < count($grenzen) - 1; $j++) {
+        [$a, $b] = [$grenzen[$j], $grenzen[$j + 1]];
+        $mitte = $r(($x($a) + $x($b)) / 2);
+        $bisTag = $reihe[$b]['tag'] ?? null;
+        $teil = array_slice($reihe, $a, $b - $a);
+        $mitWert = array_filter($teil, fn($z) => $z['w'] !== null);
+        $summe = $bisTag !== null && count($mitWert) < SCHNEE_MIN_STUNDEN_24 ? null : array_sum(array_map(fn($z) => (float)($z['w']['neu'] ?? 0), $teil));
+        $o[] = '<text class="s-summe" x="' . $mitte . '" y="13" text-anchor="middle">' . ($summe === null ? '?' : zahl(round($summe))) . ' cm</text>';
+        $o[] = '<text class="s-achse" x="' . $mitte . '" y="24" text-anchor="middle">' . ($bisTag === null ? 'am Tourtag' : 'bis ' . h(WOCHENTAGE[(int)(new DateTimeImmutable($bisTag))->format('w')]) . ' ' . SCHNEE_MORGEN . ' Uhr') . '</text>';
+    }
+    foreach ($grenzen as $i) {
+        if ($i < $n) {
+            $o[] = '<line class="s-trenn" x1="' . $r($x($i)) . '" x2="' . $r($x($i)) . '" y1="4" y2="' . $unten . '"/>';
+            $d = new DateTimeImmutable($reihe[$i]['tag']);
+            $o[] = '<text class="s-achse" x="' . $r($x($i)) . '" y="' . ($unten + 12) . '" text-anchor="' . ($i === 0 ? 'start' : 'middle') . '">' . WOCHENTAGE[(int)$d->format('w')] . ' ' . $d->format('j.') . '</text>';
+        }
+    }
+    // Balken
     foreach ($reihe as $i => $z) {
         $v = (float)($z['w']['neu'] ?? 0);
+        $rg = $regen($z['w'] ?? []);
+        $zeit = WOCHENTAGE[(int)(new DateTimeImmutable($z['tag']))->format('w')] . ' ' . $z['h'] . ' Uhr: ';
         if ($v > 0.05) {
             $o[] = '<rect class="s-schnee" x="' . $r($x($i) + 0.3) . '" y="' . $r($y($v)) . '" width="' . $r(max(0.6, $bw - 0.6)) . '" height="' . $r($oben + $hoehe - $y($v)) . '"><title>'
-                 . h($z['tag'] . ' ' . $z['h'] . ' Uhr: ' . zahl($v, 1) . ' cm') . '</title></rect>';
+                 . h($zeit . zahl($v, 1) . ' cm Schnee') . '</title></rect>';
+        } elseif ($rg > 0.05) {
+            $o[] = '<rect class="s-regen" x="' . $r($x($i) + 0.3) . '" y="' . $r($y($rg)) . '" width="' . $r(max(0.6, $bw - 0.6)) . '" height="' . $r($oben + $hoehe - $y($rg)) . '"><title>'
+                 . h($zeit . zahl((float)$z['w']['nied'], 1) . ' mm Regen auf Tourhöhe') . '</title></rect>';
         }
-        if ($z['h'] === 0) {
-            $d = new DateTimeImmutable($z['tag']);
-            $o[] = '<line class="s-raster" x1="' . $r($x($i)) . '" x2="' . $r($x($i)) . '" y1="' . $oben . '" y2="' . ($o2 + $h2) . '"/>';
-            $o[] = '<text class="s-achse" x="' . $r($x($i) + 2) . '" y="' . ($o2 + $h2 + 12) . '">' . WOCHENTAGE[(int)$d->format('w')] . ' ' . $d->format('j.') . '</text>';
+        if ($jetzt !== null && $z['tag'] . ' ' . $z['h'] === $jetzt) {
+            $o[] = '<line class="s-jetzt" x1="' . $r($x($i)) . '" x2="' . $r($x($i)) . '" y1="' . ($oben - 4) . '" y2="' . $unten . '"/>';
+            $o[] = '<text class="s-achse s-jetzttext" x="' . $r($x($i) + 2) . '" y="' . ($oben + 6) . '">jetzt</text>';
         }
     }
-    // Hoehen
-    foreach ([$mMin, ($mMin + $mMax) / 2, $mMax] as $k) {
-        $o[] = '<line class="s-raster" x1="' . $L . '" x2="' . ($W - $R) . '" y1="' . $r($y2($k)) . '" y2="' . $r($y2($k)) . '"/>';
+    // Schneefallgrenze gegen Tourhoehe und Talort
+    $o[] = '<text class="s-achse s-sfgtext" x="' . ($W - $R) . '" y="' . ($o2 - 6) . '" text-anchor="end">Schneefallgrenze</text>';
+    foreach ([$mMin, $mMax] as $k) {
         $o[] = '<text class="s-achse" x="' . ($L - 4) . '" y="' . $r($y2($k) + 3) . '" text-anchor="end">' . zahl($k) . '</text>';
     }
-    $o[] = '<text class="s-achse" x="' . ($L - 4) . '" y="' . ($o2 - 9) . '" text-anchor="end">m</text>';
-    // Bergsilhouette (seit 8.11.2026): feste Kammlinie vom Talort bis etwas ueber die Tourhoehe,
-    // nur zur Orientierung, kein echtes Gelaende. Darueber die Linien.
-    $gipfel = min($mMax, (float)$region['hoehe_tour'] + 600);
-    $tal = max($mMin, (float)$region['hoehe_tal']);
-    $kamm = [[0, 0], [.08, .35], [.14, .18], [.22, .7], [.28, .45], [.36, .86], [.42, .58], [.5, 1.0], [.56, .7], [.63, .88],
-             [.7, .38], [.77, .62], [.84, .28], [.91, .5], [1, .05]];
-    $pb = [$r($L) . ',' . $r($o2 + $h2)];
-    foreach ($kamm as [$fx, $fy]) {
-        $pb[] = $r($L + $fx * ($W - $L - $R)) . ',' . $r($y2($tal + $fy * ($gipfel - $tal)));
+    $o[] = '<line class="s-raster" x1="' . $L . '" x2="' . ($W - $R) . '" y1="' . $r($unten) . '" y2="' . $r($unten) . '"/>';
+    foreach ([[$tour, 'Tour'], [$tal, 'Tal']] as [$m, $name]) {
+        $o[] = '<line class="s-tour" x1="' . $L . '" x2="' . ($W - $R) . '" y1="' . $r($y2($m)) . '" y2="' . $r($y2($m)) . '"><title>' . $name . ' ' . zahl($m) . ' m</title></line>';
+        $o[] = '<text class="s-achse s-hoehe" x="' . ($L + 3) . '" y="' . $r($y2($m) - 3) . '">' . $name . ' ' . zahl($m) . ' m</text>';
     }
-    $pb[] = $r($W - $R) . ',' . $r($o2 + $h2);
-    $o[] = '<polygon class="s-berg" points="' . implode(' ', $pb) . '"><title>Berg nur zur Orientierung, kein echtes Gelände</title></polygon>';
-    foreach (['hoehe_tour' => 'Tourhöhe', 'hoehe_tal' => 'Talort'] as $f => $name) {
-        $o[] = '<line class="s-tour" x1="' . $L . '" x2="' . ($W - $R) . '" y1="' . $r($y2((float)$region[$f])) . '" y2="' . $r($y2((float)$region[$f])) . '"><title>' . $name . ' ' . zahl((float)$region[$f]) . ' m</title></line>';
+    $p = [];
+    foreach ($reihe as $i => $z) {
+        if (($z['w']['grenze'] ?? null) !== null) {
+            $p[] = $r($x($i) + $bw / 2) . ',' . $r($y2((float)$z['w']['grenze']));
+        }
     }
-    foreach (['grenze' => ['s-sfg', 'Schneefallgrenze'], 'nullgrad' => ['s-null', 'Nullgradgrenze']] as $k => [$klasse, $titel]) {
-        $p = [];
-        foreach ($reihe as $i => $z) {
-            if (($z['w'][$k] ?? null) !== null) {
-                $p[] = $r($x($i) + $bw / 2) . ',' . $r($y2((float)$z['w'][$k]));
-            }
-        }
-        if (count($p) > 1) {
-            $o[] = '<polyline class="' . $klasse . '" points="' . implode(' ', $p) . '"><title>' . $titel . '</title></polyline>';
-        }
+    if (count($p) > 1) {
+        $o[] = '<polyline class="s-sfg" points="' . implode(' ', $p) . '"><title>Schneefallgrenze</title></polyline>';
     }
     $o[] = '</svg>';
     return implode('', $o);
@@ -214,6 +243,8 @@ function schnee_svg(array $reihe, array $region, string $tag, array $fenster): s
 
 $k = $b['det'];
 $e = $b['ens'];
+$jetztOrt = new DateTimeImmutable('now', $tz);
+$jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
 ?>
 <!doctype html>
 <html lang="de">
@@ -247,25 +278,36 @@ $e = $b['ens'];
 
 <section class="karte stunden-region">
   <div class="region-kopf"><h2><?= h($region['name']) ?></h2>
-    <span class="leise klein fahrzeit"><?= $k['geht'] ? 'passt' : '' ?><span class="km"><?= h(tag_kurz($tag, $heute)) ?></span></span></div>
+    <span class="leise klein fahrzeit"><span class="km"><?= h(tag_kurz($tag, $heute)) ?></span></span></div>
   <?php if (!$daten['vorhersage'] && !$daten['ensemble']): ?>
     <p class="leise">Für diese Region gibt es gerade keine Vorhersagedaten.</p>
-  <?php else: ?>
-  <p class="klein"><?= $b['vorbei'] ? 'Für heute ist das Tourenfenster vorbei.' : ($k['geht'] ? 'Passt für ' . h($sport['name']) . ' nach Modellmittel.' : '<span class="leise">Modellmittel: ' . h($k['grund']) . '.</span>') ?></p>
-  <p class="klein">Neuschnee 24 h bis <?= SCHNEE_MORGEN ?> Uhr: <b><?= h(cm($k['neu24'])) ?></b>
-    <?php if ($e && $e['neu24_p10'] !== null): ?><span class="leise">(Ensemble: Mitte <?= h(cm($e['neu24_p50'])) ?>, 80 % der Läufe <?= h(cm($e['neu24_p10'])) ?>–<?= h(cm($e['neu24_p90'])) ?>)</span><?php endif ?>
-    · 72 h: <?= h(cm($k['neu72'])) ?>
-    <?php if ($k['grenze'] !== null): ?> · Schneefallgrenze bis <?= h(meter($k['grenze'])) ?><?php endif ?></p>
-  <p class="klein leise"><?= SCHNEE_TAG[0] ?>–<?= SCHNEE_TAG[1] ?> Uhr: <?= h(implode(' · ', array_filter([
-      $k['wolken'] !== null ? schnee_himmel($k['wolken']) . ' (' . zahl($k['wolken']) . ' % Wolken)' : null,
-      $k['kamm'] !== null ? 'Wind am Kamm ' . zahl($k['kamm']) . ' km/h' : null,
-      $k['boe'] !== null ? 'Böen im Tal bis ' . zahl($k['boe']) . ' km/h' : null,
-      $k['nullgrad'] !== null ? 'Nullgrad bis ' . meter($k['nullgrad']) : null,
-      $k['hs'] !== null ? 'Schneehöhe ≈ ' . cm($k['hs']) . ' (Modell)' : null,
-  ]))) ?></p>
+  <?php else:
+      $kriterien = schnee_kriterien($k, $sport);
+      $fehlt = array_column(array_filter($kriterien, fn($c) => $c['ok'] === false), 'grund');
+  ?>
+  <p class="urteil <?= $b['vorbei'] ? 'vorbei' : ($k['geht'] ? 'passt' : 'nein') ?>">
+    <?php if ($b['vorbei']): ?><b>Heute vorbei</b> <span class="leise">– das Tourenfenster bis <?= SCHNEE_TAG[1] ?> Uhr ist zu kurz.</span>
+    <?php elseif ($k['geht']): ?><b>✓ Passt für <?= h($sport['name']) ?></b>
+    <?php else: ?><b>Passt nicht für <?= h($sport['name']) ?></b><?= $fehlt ? ': ' . h(implode(', ', $fehlt)) : ($k['grund'] ? ': ' . h($k['grund']) : '') ?>
+    <?php endif ?></p>
+  <ul class="kriterien klein">
+    <?php foreach ($kriterien as $c): ?>
+    <li class="<?= $c['ok'] === null ? 'unbekannt' : ($c['ok'] ? 'ja' : 'nein') ?>"><span class="zeichen" aria-hidden="true"><?= $c['ok'] === null ? '?' : ($c['ok'] ? '✓' : '✗') ?></span><span><?= h($c['name']) ?></span><b><?= h($c['wert']) ?></b><span class="leise"><?= h($c['soll']) ?></span></li>
+    <?php endforeach ?>
+  </ul>
+  <div class="kennzahlen">
+    <div class="kz"><span class="t">Neuschnee 24 h</span><span class="w"><?= h(cm($k['neu24'])) ?></span><span class="u"<?= $e && $e['neu24_p10'] !== null ? ' title="80 % der 51 Ensemble-Läufe, Mitte ' . h(cm($e['neu24_p50'])) . '"' : '' ?>><?= $e && $e['neu24_p10'] !== null ? (round($e['neu24_p10']) == round($e['neu24_p90']) ? 'Ensemble einig' : 'Spanne ' . h(zahl(round($e['neu24_p10']))) . '–' . h(cm($e['neu24_p90']))) : 'bis ' . SCHNEE_MORGEN . ' Uhr' ?></span></div>
+    <div class="kz"><span class="t">Schneefallgrenze</span><span class="w"><?= h(meter($k['grenze'])) ?></span><span class="u"><?= $k['grenze'] === null ? 'kein Niederschlag' : 'tiefste in 72 h' ?></span></div>
+    <div class="kz"><span class="t">Nullgrad</span><span class="w"><?= h(meter($k['nullgrad'])) ?></span><span class="u">höchste am Tag</span></div>
+    <?php if (!isset($sport['hoehe_min'])): ?><div class="kz"><span class="t">Schneehöhe</span><span class="w"><?= h(cm($k['hs'])) ?></span><span class="u">Modell, grob</span></div><?php endif ?>
+    <div class="kz"><span class="t">Himmel</span><span class="w"><?= h(schnee_himmel($k['wolken']) ?? '?') ?></span><span class="u"><?= SCHNEE_TAG[0] ?>–<?= SCHNEE_TAG[1] ?> Uhr</span></div>
+    <div class="kz"><span class="t">Böen im Tal</span><span class="w"><?= $k['boe'] === null ? '?' : zahl($k['boe']) ?></span><span class="u">km/h, höchste</span></div>
+  </div>
   <?= $tag === $heute->format('Y-m-d') ? stationen_html(stationen_region($region, stationen_laden($dataDir)), $schnee['messnetze'], $tzSeite, $heute) : '' ?>
-  <p class="klein leise welle-titel">Oben: Neuschnee je Stunde auf Tourhöhe. Unten: Schneefallgrenze (durchgezogen), Nullgradgrenze (gestrichelt), Tourhöhe und Talort (gepunktet) vor einem Berg zur Orientierung. Grau: Tourenfenster.</p>
-  <?= schnee_svg($reihe, $region, $tag, $b['fenster']) ?>
+  <h3 class="klein diagramm-titel">Die drei Tage davor und der Tag</h3>
+  <p class="legende klein"><span><i class="l-schnee"></i>Schnee</span><span><i class="l-regen"></i>Regen auf Tourhöhe</span><span><i class="l-sfg"></i>Schneefallgrenze</span><span><i class="l-fenster"></i>Tourenfenster</span></p>
+  <?= schnee_svg($reihe, $region, $tag, $b['fenster'], $jetztStunde) ?>
+  <p class="klein leise">Oben die Summe je 24 h bis <?= SCHNEE_MORGEN ?> Uhr, wie in den Tagesknöpfen. Liegt die Schneefallgrenze unter der Tourhöhe, fällt dort Schnee.</p>
   <?php endif ?>
 </section>
 

@@ -351,3 +351,41 @@ a.tag:active { filter: brightness(.94); }
 .lw.lw-leer { background: transparent; color: var(--leise); border-color: var(--linie); font-weight: 400; }
 details.lawine summary { cursor: pointer; }
 details.lawine[open] summary { margin-bottom: 6px; }
+/* Schnee-Karte (seit 9.11.2026): Punkte in der Neuschnee-Skala (Farbe inline), Ring = passt */
+.landkarte .punkt.s-go circle { stroke: var(--text); stroke-width: 2.5px; }
+.landkarte .schneefeld ~ .punkt text.zahl { fill: #ffffff; }
+.landkarte .schneefeld ~ .punkt text.zahl.dunkel { fill: #10222b; }
+/* Schnee-Stundenseite (neu am 9.11.2026): Urteil, Regeln einzeln, Kennzahlen, ein Diagramm */
+.urteil { margin: 4px 0 8px; font-size: 17px; }
+.urteil.passt b { color: var(--s-go); }
+.kriterien { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 4px; }
+.kriterien li { display: grid; grid-template-columns: 1.3em minmax(0, 1fr) auto 5.6em; gap: 6px; align-items: baseline; padding: 6px 10px; border-radius: 10px; background: var(--kachel); }
+.kriterien li b { font: 600 16px/1.2 var(--zahlen); font-variant-numeric: tabular-nums; text-align: right; }
+.kriterien li .leise { text-align: right; }
+.kriterien .zeichen { font-weight: 700; }
+.kriterien li.ja .zeichen { color: var(--s-go); }
+.kriterien li.nein .zeichen, .kriterien li.nein b { color: var(--maybe); }
+.kriterien li.unbekannt .zeichen { color: var(--leise); }
+.kennzahlen { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0 0 12px; }
+.kz { background: var(--kachel); border-radius: 12px; padding: 8px 6px; text-align: center; min-width: 0; }
+.kz span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kz .t { font-size: 11px; color: var(--leise); }
+.kz .w { font: 600 21px/1.2 var(--zahlen); font-variant-numeric: tabular-nums; }
+.kz .u { font-size: 11px; color: var(--leise); }
+.diagramm-titel { margin: 14px 0 4px; }
+.legende { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 2px; color: var(--leise); }
+.legende i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.legende .l-schnee { background: var(--s-go); }
+.legende .l-regen { background: var(--nix); opacity: .6; }
+.legende .l-sfg { height: 3px; vertical-align: 3px; background: var(--akzent); }
+.legende .l-fenster { background: var(--kachel); border: 1px solid var(--linie); }
+.schnee-bild .s-schnee { fill: var(--s-go); }
+.schnee-bild .s-regen { fill: var(--nix); opacity: .6; }
+.schnee-bild .s-sfg { stroke: var(--akzent); stroke-width: 2.2; }
+.schnee-bild .s-trenn { stroke: var(--linie); stroke-width: .8; }
+.schnee-bild .s-summe { fill: var(--text); font: 600 13px var(--zahlen); }
+.schnee-bild .s-achse { font-size: 9.5px; }
+.schnee-bild .s-hoehe { fill: var(--text); }
+.schnee-bild .s-sfgtext { fill: var(--akzent); }
+.schnee-bild .s-jetzt { stroke: var(--maybe); stroke-width: 1.2; stroke-dasharray: 2 2; }
+.schnee-bild .s-jetzttext { fill: var(--maybe); }

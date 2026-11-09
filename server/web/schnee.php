@@ -467,21 +467,31 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
   <svg class="landkarte-bild" viewBox="<?= "$vx $vy $vw $vh" ?>" role="img" aria-label="Karte der Schnee-Regionen im Umkreis">
     <rect class="meer" x="<?= $vx ?>" y="<?= $vy ?>" width="<?= $vw ?>" height="<?= $vh ?>"/>
     <use href="karte.svg#land" class="land"/>
+    <?php // Farbfeld (seit 9.11.2026): weicher Fleck je Region in der Farbe ihres Neuschnees,
+          // wie das Windfeld im Wind-Modus; bewusst kein Feld zwischen den Regionen. ?>
+    <defs><filter id="weich" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="<?= round($rp * 0.9, 2) ?>"/></filter></defs>
+    <g class="windfeld schneefeld" filter="url(#weich)">
+      <?php foreach ($punkte as $p): if (($p['wert']['neu'] ?? 0) < 0.5) { continue; } ?>
+      <circle cx="<?= round($p['xy'][0], 1) ?>" cy="<?= round($p['xy'][1], 1) ?>" r="<?= round($rp * 2.4, 2) ?>" style="fill: <?= schneefarbe((float)$p['wert']['neu']) ?>"/>
+      <?php endforeach ?>
+    </g>
     <circle class="umkreis" cx="<?= round($heimXY[0], 1) ?>" cy="<?= round($heimXY[1], 1) ?>" r="<?= round(karte_km((float)$km, $heim[0]), 1) ?>"/>
     <?php foreach ($punkte as $nr => $p):
         $r = $p['e']['region'];
         $n = $p['wert']['neu'];
         $klasse = $p['wert']['klasse'];
+        $dunkel = $n !== null && $n >= 0.5 && schneefarbe_hell((float)$n) ? ' dunkel' : '';
         $zahl = $n !== null && $n >= 0.5;
         $rk = $zahl ? $rp : $rp * 0.55;
+        $fuellung = $n === null ? '' : ' style="fill: ' . schneefarbe((float)$n) . '"';
         $titel = $r['name'] . ': Neuschnee ' . cm($n) . ($kartenTag ? '' : ' im Zeitraum')
                . ($p['wert']['geht'] ? ' · passt' . ($kartenTag ? '' : ' ab ' . tag_kurz($p['wert']['tag'], $heute)) : '')
                . ' · ' . fahrzeit_text($p['e']['fahrt']) . ' Fahrt';
     ?>
     <a href="<?= h(stunden_link($r, $p['wert']['tag'])) ?>" class="punkt <?= $klasse ?>">
       <title><?= h($titel) ?></title>
-      <circle cx="<?= round($p['xy'][0], 1) ?>" cy="<?= round($p['xy'][1], 1) ?>" r="<?= round($rk, 2) ?>"/>
-      <?php if ($zahl): ?><text class="zahl" x="<?= round($p['xy'][0], 1) ?>" y="<?= round($p['xy'][1] + $rp * 0.36, 2) ?>" font-size="<?= round($rp * 1.05, 2) ?>"><?= zahl(round($n)) ?></text><?php endif ?>
+      <circle cx="<?= round($p['xy'][0], 1) ?>" cy="<?= round($p['xy'][1], 1) ?>" r="<?= round($rk, 2) ?>"<?= $fuellung ?>/>
+      <?php if ($zahl): ?><text class="zahl<?= $dunkel ?>" x="<?= round($p['xy'][0], 1) ?>" y="<?= round($p['xy'][1] + $rp * 0.36, 2) ?>" font-size="<?= round($rp * 1.05, 2) ?>"><?= zahl(round($n)) ?></text><?php endif ?>
       <?php if (isset($namen[$nr])): $rechts = $namen[$nr] === 'rechts'; ?><text class="name<?= $rechts ? '' : ' links' ?>" x="<?= round($p['xy'][0] + ($rechts ? 1 : -1) * $rp * 1.3, 2) ?>" y="<?= round($p['xy'][1] + $rp * 0.35, 2) ?>" font-size="<?= round($rp, 2) ?>" stroke-width="<?= round($rp * 0.3, 2) ?>"><?= h($r['name']) ?></text><?php endif ?>
     </a>
     <?php endforeach ?>
@@ -493,7 +503,8 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
       <circle cx="0" cy="-3.25" r="0.4"/>
     </g>
   </svg>
-  <p class="leise klein landkarte-fuss">Zahl: Neuschnee in cm<?= $kartenTag ? ' (24 h bis ' . SCHNEE_MORGEN . ' Uhr)' : ', alle Tage im Zeitraum zusammen' ?>. Kräftiges Blau: ein Tag passt. Punkt antippen: Stunden der Region. Kreis: <?= zahl($km) ?> km Luftlinie; der Umkreis zählt die Straße. Karte: Natural Earth.</p>
+  <?= schneeskala_legende() ?>
+  <p class="leise klein landkarte-fuss">Farbe und Zahl: Neuschnee in cm<?= $kartenTag ? ' (24 h bis ' . SCHNEE_MORGEN . ' Uhr)' : ', alle Tage im Zeitraum zusammen' ?>. Ring: <?= $kartenTag ? 'der Tag passt' : 'ein Tag passt' ?>. Punkt antippen: Stunden der Region. Kreis: <?= zahl($km) ?> km Luftlinie; der Umkreis zählt die Straße. Karte: Natural Earth.</p>
 </details>
 <?php endif ?>
 

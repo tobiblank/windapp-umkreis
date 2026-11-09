@@ -389,6 +389,34 @@ function schnee_tag_geht(array $k, array $sport): array
     return [true, null];
 }
 
+/**
+ * Alle Regeln der Sportart einzeln, fuer die Stundenseite (seit 9.11.2026): damit man sieht,
+ * was fehlt und wie viel, nicht nur den ersten Grund wie schnee_tag_geht().
+ * Rueckgabe Liste von ['name', 'wert' (Text), 'soll' (Text), 'grund' (wenn nicht ok), 'ok' true|false|null (unbekannt)]
+ */
+function schnee_kriterien(array $k, array $sport): array
+{
+    $z = fn(?float $v) => $v === null ? '?' : number_format(round($v), 0, ',', '.');
+    $out = [];
+    if (isset($sport['neu_min'])) {
+        $out[] = ['name' => 'Neuschnee 72 h', 'wert' => $z($k['neu72']) . ' cm', 'soll' => 'ab ' . $sport['neu_min'] . ' cm', 'grund' => 'zu wenig Neuschnee',
+                  'ok' => $k['neu72'] === null ? null : $k['neu72'] >= $sport['neu_min']];
+    }
+    if (isset($sport['hoehe_min'])) {
+        $out[] = ['name' => 'Schneehöhe (Modell)', 'wert' => $z($k['hs']) . ' cm', 'soll' => 'ab ' . $sport['hoehe_min'] . ' cm', 'grund' => 'zu wenig Schnee',
+                  'ok' => $k['hs'] === null ? null : $k['hs'] >= $sport['hoehe_min']];
+    }
+    if (isset($sport['wolken_max'])) {
+        $out[] = ['name' => 'Wolken ' . SCHNEE_TAG[0] . '–' . SCHNEE_TAG[1] . ' Uhr', 'wert' => $z($k['wolken']) . ' %', 'soll' => 'bis ' . $sport['wolken_max'] . ' %', 'grund' => 'zu bewölkt',
+                  'ok' => $k['wolken'] === null ? null : $k['wolken'] <= $sport['wolken_max']];
+    }
+    if (isset($sport['kamm_max'])) {
+        $out[] = ['name' => 'Wind am Kamm', 'wert' => $z($k['kamm']) . ' km/h', 'soll' => 'bis ' . $sport['kamm_max'] . ' km/h', 'grund' => 'zu viel Wind am Kamm',
+                  'ok' => $k['kamm'] === null ? null : $k['kamm'] <= $sport['kamm_max']];
+    }
+    return $out;
+}
+
 /** Perzentil (0..1) einer Liste, linear zwischen den Werten; null bei leerer Liste */
 function schnee_perzentil(array $w, float $p): ?float
 {

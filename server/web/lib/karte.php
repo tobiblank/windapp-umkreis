@@ -58,6 +58,73 @@ function windfarbe(float $kn): string
     return "rgb($c[0], $c[1], $c[2])";
 }
 
+/**
+ * Farbskala fuer Neuschnee in cm (seit 9.11.2026, Schnee-Karte): grau ohne Schnee,
+ * hellblau ab wenigen cm, kraeftiges Blau um 10 cm, ueber Indigo zu Violett und
+ * Magenta ab 50 cm, aehnlich gaengigen Neuschneekarten. Blau bleibt "guter Schnee",
+ * nie "sicher"; die Lawinenstufe hat ihre eigenen Farben.
+ */
+const SCHNEESKALA = [
+    0   => [128, 146, 156],
+    1   => [150, 196, 226],
+    5   => [96, 168, 236],
+    10  => [52, 120, 222],
+    20  => [64, 72, 200],
+    35  => [124, 64, 204],
+    50  => [188, 70, 186],
+    80  => [226, 96, 160],
+];
+const SCHNEESKALA_LEGENDE_BIS = 50;
+
+/** Farbe fuer Neuschnee in cm, fliessend zwischen den Stuetzstellen (wie windfarbe) */
+function schneefarbe_rgb(float $cm): array
+{
+    $stellen = array_keys(SCHNEESKALA);
+    if ($cm <= $stellen[0]) {
+        return SCHNEESKALA[$stellen[0]];
+    }
+    for ($i = 1; $i < count($stellen); $i++) {
+        [$a, $b] = [$stellen[$i - 1], $stellen[$i]];
+        if ($cm <= $b) {
+            $t = ($cm - $a) / ($b - $a);
+            return array_map(fn($x, $y) => (int)round($x + ($y - $x) * $t), SCHNEESKALA[$a], SCHNEESKALA[$b]);
+        }
+    }
+    return SCHNEESKALA[end($stellen)];
+}
+
+function schneefarbe(float $cm): string
+{
+    $c = schneefarbe_rgb($cm);
+    return "rgb($c[0], $c[1], $c[2])";
+}
+
+/** Ist die Farbe hell genug, dass die Zahl darauf dunkel stehen muss? (relative Helligkeit) */
+function schneefarbe_hell(float $cm): bool
+{
+    [$r, $g, $b] = array_map(function (int $v): float {
+        $v /= 255;
+        return $v <= 0.04045 ? $v / 12.92 : (($v + 0.055) / 1.055) ** 2.4;
+    }, schneefarbe_rgb($cm));
+    return 0.2126 * $r + 0.7152 * $g + 0.0722 * $b > 0.3;
+}
+
+/** Legende als Farbverlauf 0-50 cm mit Marken */
+function schneeskala_legende(): string
+{
+    $bis = SCHNEESKALA_LEGENDE_BIS;
+    $teile = [];
+    for ($cm = 0; $cm <= $bis; $cm += 1) {
+        $teile[] = schneefarbe((float)$cm) . ' ' . round($cm / $bis * 100, 1) . '%';
+    }
+    $html = '<div class="windskala schneeskala" aria-hidden="true"><div class="verlauf" style="background: linear-gradient(to right, '
+          . implode(', ', $teile) . ')"></div><div class="marken">';
+    foreach ([0, 10, 20, 35, 50] as $m) {
+        $html .= '<span style="left: ' . ($m / $bis * 100) . '%">' . $m . ($m === $bis ? '+ cm' : '') . '</span>';
+    }
+    return $html . '</div></div>';
+}
+
 /** Legende als Farbverlauf 0-40 kn mit Marken */
 function windskala_legende(): string
 {
