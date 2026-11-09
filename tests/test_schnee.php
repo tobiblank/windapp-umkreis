@@ -128,7 +128,7 @@ for ($i = 0; $i < 4; $i++) {
     $sTage[] = (new DateTimeImmutable("+$i day", new DateTimeZone('Europe/Berlin')))->format('Y-m-d');
 }
 $fruehmorgens = new DateTimeImmutable('today 05:00', new DateTimeZone('Europe/Berlin'));
-$sRl = schnee_rangliste($sKat['regionen'], $sStand, SCHNEE_SPORTARTEN['freeride'], [48.07, 11.15], 1000, $sTage, $fruehmorgens);
+$sRl = schnee_rangliste($sKat['regionen'], $sStand, [48.07, 11.15], 1000, $sTage, $fruehmorgens);
 $sBy = [];
 foreach ($sRl as $e) {
     $sBy[$e['region']['id']] = $e;
@@ -136,7 +136,9 @@ foreach ($sRl as $e) {
 [$t0, $t1, $t2, $t3] = $sTage;
 $a1 = $sBy['schnee-a']['tage'][$t1] ?? null;
 pruefe($a1 && $a1['det']['neu72'] > 22 && $a1['det']['neu72'] < 32 && $a1['det']['geht'],
-       'Region A morgen: rund 25 cm Neuschnee in 72 h, sonnig, passt (' . ($a1['det']['neu72'] ?? '?') . ' cm)');
+       'Region A morgen: rund 25 cm Neuschnee in 72 h, sonnig, Pulvertag (' . ($a1['det']['neu72'] ?? '?') . ' cm)');
+pruefe(abs($a1['det']['pulver'] - $a1['det']['neu72']) < 0.01 && $sBy['schnee-a']['pulver_max'] >= $a1['det']['pulver'],
+       'Pulver = Neuschnee 72 h am Pulvertag, Region nach dem besten Tag');
 $aT = $sBy['schnee-a']['tage'];
 $summe24 = ($aT[$t1]['det']['neu24'] ?? 0) + ($aT[$t2]['det']['neu24'] ?? 0) + ($aT[$t3]['det']['neu24'] ?? 0);
 pruefe(($aT[$t3]['det']['neu72'] ?? null) !== null && abs($summe24 - $aT[$t3]['det']['neu72']) < 0.2,
@@ -155,18 +157,24 @@ pruefe(($sBy['schnee-a']['tage'][$t3]['det']['grund'] ?? '') === 'zu wenig Neusc
 pruefe(($sBy['schnee-b']['tage'][$t1]['det']['neu72'] ?? null) == 0.0 && $sBy['schnee-b']['tage'][$t1]['det']['grenze'] == 2800, 'Region B: Regen über der Tourhöhe zählt nicht');
 pruefe(array_key_first($sBy) === 'schnee-a' || array_key_first($sBy) === 'schnee-d', 'Rangliste: Regionen mit Neuschnee vorn');
 pruefe(($sBy['schnee-a']['tage'][$t0]['vorbei'] ?? true) === false && $sBy['schnee-a']['tage'][$t0]['fenster'] === SCHNEE_TAG, 'heute früh: Tag nicht vorbei, volles Tourenfenster');
-$spaet = schnee_region_bewerten($sKat['regionen'][0], ['vorhersage' => $sStand['schnee_vorhersage']['schnee-a'], 'ensemble' => null], SCHNEE_SPORTARTEN['freeride'], [$t0],
+$spaet = schnee_region_bewerten($sKat['regionen'][0], ['vorhersage' => $sStand['schnee_vorhersage']['schnee-a'], 'ensemble' => null], [$t0],
                                 new DateTimeImmutable('today 14:00', new DateTimeZone('Europe/Vienna')))[$t0];
-pruefe($spaet['vorbei'] && !$spaet['det']['geht'], 'heute nach 13:30: vorbei');
-$tour = schnee_rangliste($sKat['regionen'], $sStand, SCHNEE_SPORTARTEN['skitour'], [48.07, 11.15], 1000, [$t1], $fruehmorgens);
-$tourB = array_values(array_filter($tour, fn($e) => $e['region']['id'] === 'schnee-b'))[0]['tage'][$t1]['det'] ?? [];
-$tourA = array_values(array_filter($tour, fn($e) => $e['region']['id'] === 'schnee-a'))[0]['tage'][$t1]['det'] ?? [];
-pruefe(($tourA['geht'] ?? false) && ($tourB['grund'] ?? '') === 'zu wenig Schnee', 'Skitour: A mit 80 cm geht, B mit 10 cm zu wenig Schnee');
-pruefe(schnee_tag_geht(['neu72' => 30, 'hs' => 50, 'wolken' => 10, 'kamm' => 45], SCHNEE_SPORTARTEN['freeride'])[1] === 'zu viel Wind am Kamm', 'zu viel Wind am Kamm');
-$kr = schnee_kriterien(['neu72' => 13.0, 'hs' => 7.0, 'wolken' => 100.0, 'kamm' => null], SCHNEE_SPORTARTEN['freeride']);
-pruefe(count($kr) === 3 && $kr[0]['ok'] === false && $kr[0]['wert'] === '13 cm' && $kr[1]['ok'] === false && $kr[2]['ok'] === null
+pruefe($spaet['vorbei'] && !$spaet['det']['geht'] && $spaet['det']['pulver'] === 0.0, 'heute nach 13:30: vorbei, kein Pulver');
+pruefe(schnee_tag_geht(['neu72' => 30, 'hs' => 5, 'wolken' => 10, 'kamm' => 90]) === [true, null] && schnee_kamm_stark(['kamm' => 90.0]) && !schnee_kamm_stark(['kamm' => 20.0]),
+       'Wind am Kamm und wenig Schneehöhe schließen nichts aus, starker Wind nur als Hinweis');
+pruefe(schnee_tag_geht(['neu72' => 30, 'hs' => 50, 'wolken' => 75, 'kamm' => 10])[1] === 'zu bewölkt'
+       && schnee_tag_geht(['neu72' => 30, 'hs' => 50, 'wolken' => SCHNEE_WOLKIG, 'kamm' => 10])[0], 'schöner Tag = höchstens teils sonnig wie das Symbol');
+$kr = schnee_kriterien(['neu72' => 7.0, 'hs' => 7.0, 'wolken' => 100.0, 'kamm' => null]);
+$kr2 = schnee_kriterien(['neu72' => 13.0, 'hs' => 7.0, 'wolken' => null, 'kamm' => null]);
+pruefe(count($kr) === 2 && $kr[0]['ok'] === false && $kr[0]['wert'] === '7 cm' && $kr[1]['ok'] === false && $kr2[0]['ok'] === true && $kr2[1]['ok'] === null
        && array_column(array_filter($kr, fn($c) => $c['ok'] === false), 'grund') === ['zu wenig Neuschnee', 'zu bewölkt'],
        'Regeln einzeln: alle Gründe, unbekannt bleibt offen');
+$sortiert = schnee_sortieren([
+    ['region' => ['id' => 'nebel'], 'km' => 50, 'pulver_max' => 0.0, 'neu_summe' => 40.0],
+    ['region' => ['id' => 'wenig'], 'km' => 50, 'pulver_max' => 12.0, 'neu_summe' => 12.0],
+    ['region' => ['id' => 'viel'], 'km' => 300, 'pulver_max' => 30.0, 'neu_summe' => 30.0],
+], 'summe');
+pruefe(array_column(array_column($sortiert, 'region'), 'id') === ['viel', 'wenig', 'nebel'], 'Rangliste: 30 cm bei Sonne vor 12 cm bei Sonne vor 40 cm im Nebel');
 pruefe(schneefarbe(0) === 'rgb(128, 146, 156)' && schneefarbe(10) === 'rgb(52, 120, 222)' && schneefarbe(500) === schneefarbe(80)
        && schneefarbe_hell(1.0) && !schneefarbe_hell(20.0), 'Neuschnee-Farbskala');
 
@@ -230,6 +238,10 @@ pruefe(str_contains($html, '<details class="karte landkarte" id="landkarte" open
 pruefe(str_contains($html, 'class="windfeld schneefeld schneeraster"') && str_contains($html, 'Neuschnee auf 2.000 m') && str_contains($html, 'id="feldKnopf"'),
        'Karte mit Neuschnee-Raster und Schalter');
 pruefe(str_contains($html, 'class="teilen" hidden') && str_contains($html, 'Abfahrt bis'), 'gute Tage: Teilen und Abfahrt');
+pruefe(!str_contains($html, 'name="sport"') && !str_contains($html, 'sport=') && str_contains($html, 'Pulvertag:') && str_contains($html, '<b>Pulvertag</b>'),
+       'keine Sportart mehr: kein Schalter, keine Links mit sport=, gute Tage heißen Pulvertag');
+[, $hs] = holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t1);
+pruefe(str_contains($hs, '✓ Pulvertag') && str_contains($hs, 'Wind am Kamm') && str_contains($hs, '>Schneehöhe<'), 'Stundenseite: Urteil Pulvertag, Schneehöhe und Wind am Kamm als Kennzahl');
 pruefe(!preg_match('/\d+ %(?! Wolken)/u', strip_tags(preg_replace('#<details class="leise klein erklaerung">.*?</details>#s', '', $html))), 'keine Prozent-Chance mehr auf der Seite');
 pruefe(str_contains($html, 'Zahl: Neuschnee in cm'), 'Karte: Zahl ist Neuschnee in cm');
 pruefe(preg_match('#id="r-schnee-a".*?Schneehöhe gemessen heute .*?Gutalm <span class="leise">2.450 m</span> <b>42 cm</b>.*?\(24 h \+5\)#s', $html) === 1 && !str_contains($html, 'Fehlerkopf')

@@ -1,7 +1,7 @@
 <?php
 /**
  * Wohinfahrma - Stunden einer Schnee-Region (seit 8.11.2026)
- *   schnee_stunden.php?region=<id>&sport=freeride|skitour&tag=YYYY-MM-DD
+ *   schnee_stunden.php?region=<id>&tag=YYYY-MM-DD   (sport= seit 9.11.2026 ohne Wirkung)
  *
  * Zeigt die 72 Stunden bis SCHNEE_MORGEN Uhr des Tages und den Tag selbst:
  * Neuschnee je Stunde (Balken), Schneefallgrenze und Nullgradgrenze gegen Tour- und
@@ -79,8 +79,6 @@ foreach ($schnee['regionen'] as $r) {
 if (!$region) {
     fehlerseite('Diese Region gibt es nicht.');
 }
-$sportId = isset($_GET['sport']) && isset(SCHNEE_SPORTARTEN[$_GET['sport']]) ? (string)$_GET['sport'] : 'freeride';
-$sport = SCHNEE_SPORTARTEN[$sportId];
 $tzSeite = new DateTimeZone(TZ_SEITE);
 $heute = new DateTimeImmutable('today', $tzSeite);
 $tage = [];
@@ -90,14 +88,14 @@ for ($i = 0; $i <= 6; $i++) {
 $dataDir = rtrim($cfg['data_dir'], '/');
 $stand = daten_laden($dataDir, ['schnee_vorhersage', 'schnee_ensemble'], nur: [$region['id']]);
 $daten = ['vorhersage' => $stand['schnee_vorhersage'][$region['id']] ?? null, 'ensemble' => $stand['schnee_ensemble'][$region['id']] ?? null];
-$bew = schnee_region_bewerten($region, $daten, $sport, $tage);
+$bew = schnee_region_bewerten($region, $daten, $tage);
 
-// Tag: gewaehlt, sonst der erste passende, sonst der mit dem meisten Neuschnee (24 h)
+// Tag: gewaehlt, sonst der beste Pulvertag, sonst der mit dem meisten Neuschnee (24 h)
 $tag = in_array($_GET['tag'] ?? '', $tage, true) ? $_GET['tag'] : null;
 if ($tag === null) {
     $best = -2.0;
     foreach ($bew as $t => $d) {
-        $w = $d['vorbei'] ? -1.5 : ($d['det']['geht'] ? 1000.0 : (float)($d['det']['neu24'] ?? -1.0));
+        $w = $d['vorbei'] ? -1.5 : ($d['det']['geht'] ? 1000.0 + $d['det']['pulver'] : (float)($d['det']['neu24'] ?? -1.0));
         if ($w > $best) {
             $best = $w;
             $tag = $t;
@@ -125,8 +123,8 @@ for ($k = 3; $k >= 0; $k--) {
 
 function link_mit(array $aenderung): string
 {
-    global $region, $sportId, $tag;
-    return 'schnee_stunden.php?' . http_build_query(array_merge(['region' => $region['id'], 'sport' => $sportId, 'tag' => $tag], $aenderung));
+    global $region, $tag;
+    return 'schnee_stunden.php?' . http_build_query(array_merge(['region' => $region['id'], 'tag' => $tag], $aenderung));
 }
 
 /**
@@ -260,14 +258,14 @@ $jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
 <body>
 <main class="seite">
 <header class="kopf">
-  <a href="schnee.php?sport=<?= h($sportId) ?>" class="logozeile" style="text-decoration:none;color:inherit">
+  <a href="schnee.php" class="logozeile" style="text-decoration:none;color:inherit">
     <svg class="logo" viewBox="0 0 100 100" width="40" height="40" aria-hidden="true"><path class="logo-marke" d="M50 7C31.2 7 17 21.6 17 40.5C17 64 50 93 50 93S83 64 83 40.5C83 21.6 68.8 7 50 7Z"/><path class="logo-fahne" d="M31 36H57a7 7 0 1 0 -7 -7M31 48H65a7 7 0 1 1 -7 7"/></svg>
     <div>
       <h1 class="marke">Wohin<span>fahrma</span></h1>
       <p class="leise klein">← zur Schnee-Rangliste</p>
     </div>
   </a>
-  <div class="rechts klein leise"><?= h($sport['name']) ?><br>Tour ab <?= zahl((float)$region['hoehe_tour']) ?> m</div>
+  <div class="rechts klein leise">Tour ab <?= zahl((float)$region['hoehe_tour']) ?> m</div>
 </header>
 
 <nav class="sortierung klein" aria-label="Tag">
@@ -282,13 +280,13 @@ $jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
   <?php if (!$daten['vorhersage'] && !$daten['ensemble']): ?>
     <p class="leise">Für diese Region gibt es gerade keine Vorhersagedaten.</p>
   <?php else:
-      $kriterien = schnee_kriterien($k, $sport);
+      $kriterien = schnee_kriterien($k);
       $fehlt = array_column(array_filter($kriterien, fn($c) => $c['ok'] === false), 'grund');
   ?>
   <p class="urteil <?= $b['vorbei'] ? 'vorbei' : ($k['geht'] ? 'passt' : 'nein') ?>">
     <?php if ($b['vorbei']): ?><b>Heute vorbei</b> <span class="leise">– das Tourenfenster bis <?= SCHNEE_TAG[1] ?> Uhr ist zu kurz.</span>
-    <?php elseif ($k['geht']): ?><b>✓ Passt für <?= h($sport['name']) ?></b>
-    <?php else: ?><b>Passt nicht für <?= h($sport['name']) ?></b><?= $fehlt ? ': ' . h(implode(', ', $fehlt)) : ($k['grund'] ? ': ' . h($k['grund']) : '') ?>
+    <?php elseif ($k['geht']): ?><b>✓ Pulvertag</b>
+    <?php else: ?><b>Kein Pulvertag</b><?= $fehlt ? ': ' . h(implode(', ', $fehlt)) : ($k['grund'] ? ': ' . h($k['grund']) : '') ?>
     <?php endif ?></p>
   <ul class="kriterien klein">
     <?php foreach ($kriterien as $c): ?>
@@ -299,8 +297,9 @@ $jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
     <div class="kz"><span class="t">Neuschnee 24 h</span><span class="w"><?= h(cm($k['neu24'])) ?></span><span class="u"<?= $e && $e['neu24_p10'] !== null ? ' title="80 % der 51 Ensemble-Läufe, Mitte ' . h(cm($e['neu24_p50'])) . '"' : '' ?>><?= $e && $e['neu24_p10'] !== null ? (round($e['neu24_p10']) == round($e['neu24_p90']) ? 'Ensemble einig' : 'Spanne ' . h(zahl(round($e['neu24_p10']))) . '–' . h(cm($e['neu24_p90']))) : 'bis ' . SCHNEE_MORGEN . ' Uhr' ?></span></div>
     <div class="kz"><span class="t">Schneefallgrenze</span><span class="w"><?= h(meter($k['grenze'])) ?></span><span class="u"><?= $k['grenze'] === null ? 'kein Niederschlag' : 'tiefste in 72 h' ?></span></div>
     <div class="kz"><span class="t">Nullgrad</span><span class="w"><?= h(meter($k['nullgrad'])) ?></span><span class="u">höchste am Tag</span></div>
-    <?php if (!isset($sport['hoehe_min'])): ?><div class="kz"><span class="t">Schneehöhe</span><span class="w"><?= h(cm($k['hs'])) ?></span><span class="u">Modell, grob</span></div><?php endif ?>
+    <div class="kz"><span class="t">Schneehöhe</span><span class="w"><?= h(cm($k['hs'])) ?></span><span class="u">Modell, grob</span></div>
     <div class="kz"><span class="t">Himmel</span><span class="w"><?= h(schnee_himmel($k['wolken']) ?? '?') ?></span><span class="u"><?= SCHNEE_TAG[0] ?>–<?= SCHNEE_TAG[1] ?> Uhr</span></div>
+    <div class="kz"><span class="t">Wind am Kamm<?= $k['kamm_stark'] ? ' 💨' : '' ?></span><span class="w"><?= $k['kamm'] === null ? '?' : zahl($k['kamm']) ?></span><span class="u">km/h, 700 hPa</span></div>
     <div class="kz"><span class="t">Böen im Tal</span><span class="w"><?= $k['boe'] === null ? '?' : zahl($k['boe']) ?></span><span class="u">km/h, höchste</span></div>
   </div>
   <?= $tag === $heute->format('Y-m-d') ? stationen_html(stationen_region($region, stationen_laden($dataDir)), $schnee['messnetze'], $tzSeite, $heute) : '' ?>

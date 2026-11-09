@@ -1,13 +1,14 @@
 <?php
 /**
  * Schnee-Modus (seit 8.11.2026): Wo liegt in den naechsten Tagen frischer Schnee,
- * und wo wird es schoen? Fuer Freerider und Skitourengeher, nur Alpen.
+ * und wo wird es schoen? Fuer Freerider und Skitourengeher, nur Alpen. Seit 9.11.2026
+ * ohne Unterscheidung der Sportarten: eine Regel (SCHNEE_REGEL) fuer alle.
  *
  * Braucht bewertung.php (Zeitreihen, Tagesfenster, Entfernung) und regionen.php.
  *
  * BEWERTUNG je Region und Tag (nicht je Stunde):
  *   Neuschnee  angezeigt je Tag: Summe der 24 h bis SCHNEE_MORGEN Uhr Ortszeit (wie die
- *              Messung am Morgen; die Tage lassen sich addieren). Die Regel fuer Freeride
+ *              Messung am Morgen; die Tage lassen sich addieren). Die Regel (Pulvertag)
  *              nutzt die 72 h bis SCHNEE_MORGEN Uhr (Pulver vom Vortag zaehlt). Je Stunde:
  *              liegt die Schneefallgrenze unter der Tourhoehe, zaehlt der Niederschlag
  *              als Schnee (1 mm = SCHNEE_CM_JE_MM cm, wie Open-Meteo), sonst nichts.
@@ -20,8 +21,12 @@
  *   Spanne     Neuschnee (24 h) im ECMWF-Ensemble, 10. bis 90. Perzentil der Laeufe.
  *              Seit 9.11.2026 statt einer Chance in Prozent angezeigt: Die Prozent
  *              fassten mehrere Schwellen zusammen und sagten nicht, was fehlt.
- *   Rangliste  passende Tage (Modellmittel), dann Neuschnee im Zeitraum.
- * Schwellen der Sportarten sind Startwerte ohne Quelle (SCHNEE_SPORTARTEN).
+ *   Pulvertag  schoener Tag (hoechstens teils sonnig, wie das Symbol ⛅) mit Neuschnee
+ *              in 72 h ab SCHNEE_REGEL['neu_min']. Schneehoehe und Wind am Kamm schliessen
+ *              nichts aus, sie stehen nur dabei (Wind ab SCHNEE_KAMM_HINWEIS als Hinweis).
+ *   Rangliste  bester Pulvertag (Neuschnee 72 h an einem schoenen Tag), dann Neuschnee
+ *              im Zeitraum.
+ * Die Schwellen sind Startwerte ohne Quelle (SCHNEE_REGEL, SCHNEE_KAMM_HINWEIS).
  *
  * Die Lawinenlage geht NICHT ein (siehe lawine.php).
  *
@@ -43,11 +48,14 @@ const SCHNEE_MIN_STUNDEN_24 = 20;     // so viele der 24 Stunden muessen Werte h
 const SCHNEE_SONNIG = 25;             // % Bewoelkung: bis hier "sonnig"
 const SCHNEE_WOLKIG = 60;             // % Bewoelkung: bis hier "teils sonnig"
 
-/** Startwerte ohne Quelle (Konzept 8.11.2026); leicht zu aendern */
-const SCHNEE_SPORTARTEN = [
-    'freeride' => ['name' => 'Freeride', 'gruppe' => 'schnee', 'neu_min' => 15, 'wolken_max' => 40, 'kamm_max' => 30],
-    'skitour'  => ['name' => 'Skitour', 'gruppe' => 'schnee', 'hoehe_min' => 30, 'wolken_max' => 50, 'kamm_max' => 40],
-];
+/**
+ * Pulvertag (seit 9.11.2026, vorher zwei Sportarten Freeride und Skitour mit eigenen
+ * Schwellen): schoener Tag nach Neuschnee. Startwerte ohne Quelle, leicht zu aendern.
+ * neu_min: Neuschnee in 72 h, dieselbe Grenze wie das mittlere Blau (schnee_klasse()).
+ * wolken_max: Grenze "teils sonnig" (SCHNEE_WOLKIG), also wie das Wettersymbol.
+ */
+const SCHNEE_REGEL = ['name' => 'Pulvertag', 'neu_min' => 10, 'wolken_max' => SCHNEE_WOLKIG];
+const SCHNEE_KAMM_HINWEIS = 50;       // km/h in 700 hPa: ab hier Hinweis "Wind am Kamm" (Startwert ohne Quelle)
 
 const SCHNEE_FORMATE = ['json', 'xml'];
 
@@ -361,60 +369,41 @@ function schnee_kennwerte(array $st, string $tag, array $fenster): array
     ];
 }
 
-/** Geht der Tag fuer die Sportart? Rueckgabe [geht, grund|null] */
-function schnee_tag_geht(array $k, array $sport): array
+/** Ist der Tag ein Pulvertag? Rueckgabe [geht, grund|null] */
+function schnee_tag_geht(array $k, array $regel = SCHNEE_REGEL): array
 {
-    if (isset($sport['neu_min'])) {
-        if ($k['neu72'] === null) {
-            return [false, 'Neuschnee unbekannt'];
-        }
-        if ($k['neu72'] < $sport['neu_min']) {
-            return [false, 'zu wenig Neuschnee'];
-        }
+    if ($k['neu72'] === null) {
+        return [false, 'Neuschnee unbekannt'];
     }
-    if (isset($sport['hoehe_min'])) {
-        if ($k['hs'] === null) {
-            return [false, 'Schneehöhe unbekannt'];
-        }
-        if ($k['hs'] < $sport['hoehe_min']) {
-            return [false, 'zu wenig Schnee'];
-        }
+    if ($k['neu72'] < $regel['neu_min']) {
+        return [false, 'zu wenig Neuschnee'];
     }
-    if (isset($sport['wolken_max']) && $k['wolken'] !== null && $k['wolken'] > $sport['wolken_max']) {
+    if ($k['wolken'] !== null && $k['wolken'] > $regel['wolken_max']) {
         return [false, 'zu bewölkt'];
-    }
-    if (isset($sport['kamm_max']) && $k['kamm'] !== null && $k['kamm'] > $sport['kamm_max']) {
-        return [false, 'zu viel Wind am Kamm'];
     }
     return [true, null];
 }
 
+/** Wind am Kamm so stark, dass er als Hinweis dabeisteht (schliesst nichts aus) */
+function schnee_kamm_stark(array $k): bool
+{
+    return ($k['kamm'] ?? null) !== null && $k['kamm'] >= SCHNEE_KAMM_HINWEIS;
+}
+
 /**
- * Alle Regeln der Sportart einzeln, fuer die Stundenseite (seit 9.11.2026): damit man sieht,
- * was fehlt und wie viel, nicht nur den ersten Grund wie schnee_tag_geht().
+ * Beide Regeln des Pulvertags einzeln, fuer die Stundenseite (seit 9.11.2026): damit man
+ * sieht, was fehlt und wie viel, nicht nur den ersten Grund wie schnee_tag_geht().
  * Rueckgabe Liste von ['name', 'wert' (Text), 'soll' (Text), 'grund' (wenn nicht ok), 'ok' true|false|null (unbekannt)]
  */
-function schnee_kriterien(array $k, array $sport): array
+function schnee_kriterien(array $k, array $regel = SCHNEE_REGEL): array
 {
     $z = fn(?float $v) => $v === null ? '?' : number_format(round($v), 0, ',', '.');
-    $out = [];
-    if (isset($sport['neu_min'])) {
-        $out[] = ['name' => 'Neuschnee 72 h', 'wert' => $z($k['neu72']) . ' cm', 'soll' => 'ab ' . $sport['neu_min'] . ' cm', 'grund' => 'zu wenig Neuschnee',
-                  'ok' => $k['neu72'] === null ? null : $k['neu72'] >= $sport['neu_min']];
-    }
-    if (isset($sport['hoehe_min'])) {
-        $out[] = ['name' => 'Schneehöhe (Modell)', 'wert' => $z($k['hs']) . ' cm', 'soll' => 'ab ' . $sport['hoehe_min'] . ' cm', 'grund' => 'zu wenig Schnee',
-                  'ok' => $k['hs'] === null ? null : $k['hs'] >= $sport['hoehe_min']];
-    }
-    if (isset($sport['wolken_max'])) {
-        $out[] = ['name' => 'Wolken ' . SCHNEE_TAG[0] . '–' . SCHNEE_TAG[1] . ' Uhr', 'wert' => $z($k['wolken']) . ' %', 'soll' => 'bis ' . $sport['wolken_max'] . ' %', 'grund' => 'zu bewölkt',
-                  'ok' => $k['wolken'] === null ? null : $k['wolken'] <= $sport['wolken_max']];
-    }
-    if (isset($sport['kamm_max'])) {
-        $out[] = ['name' => 'Wind am Kamm', 'wert' => $z($k['kamm']) . ' km/h', 'soll' => 'bis ' . $sport['kamm_max'] . ' km/h', 'grund' => 'zu viel Wind am Kamm',
-                  'ok' => $k['kamm'] === null ? null : $k['kamm'] <= $sport['kamm_max']];
-    }
-    return $out;
+    return [
+        ['name' => 'Neuschnee 72 h', 'wert' => $z($k['neu72']) . ' cm', 'soll' => 'ab ' . $regel['neu_min'] . ' cm', 'grund' => 'zu wenig Neuschnee',
+         'ok' => $k['neu72'] === null ? null : $k['neu72'] >= $regel['neu_min']],
+        ['name' => 'Wolken ' . SCHNEE_TAG[0] . '–' . SCHNEE_TAG[1] . ' Uhr', 'wert' => $z($k['wolken']) . ' %', 'soll' => 'bis ' . $regel['wolken_max'] . ' % (⛅)', 'grund' => 'zu bewölkt',
+         'ok' => $k['wolken'] === null ? null : $k['wolken'] <= $regel['wolken_max']],
+    ];
 }
 
 /** Perzentil (0..1) einer Liste, linear zwischen den Werten; null bei leerer Liste */
@@ -431,7 +420,7 @@ function schnee_perzentil(array $w, float $p): ?float
 }
 
 /**
- * Farbe eines Tages in der Blau-Skala: s-go = passt (Modellmittel), sonst nach dem
+ * Farbe eines Tages in der Blau-Skala: s-go = Pulvertag (Modellmittel), sonst nach dem
  * Neuschnee (24 h): s-maybe ab 10 cm, s-no ab 3 cm, sonst nix
  */
 function schnee_klasse(array $d): string
@@ -458,10 +447,10 @@ function schnee_himmel(?float $wolken): ?string
 /**
  * Bewertung einer Schnee-Region fuer $tage.
  * $daten: ['vorhersage' => eintrag|null, 'ensemble' => eintrag|null]
- * Rueckgabe [tag => ['fenster', 'rest', 'vorbei', 'offen', 'det' => kennwerte + geht/grund,
+ * Rueckgabe [tag => ['fenster', 'rest', 'vorbei', 'offen', 'det' => kennwerte + geht/grund/pulver/kamm_stark,
  *            'ens' => ['chance' (nur noch intern), 'laeufe', 'neu24_p10', 'neu24_p50', 'neu24_p90'] | null]]
  */
-function schnee_region_bewerten(array $region, array $daten, array $sport, array $tage, ?DateTimeImmutable $jetzt = null): array
+function schnee_region_bewerten(array $region, array $daten, array $tage, ?DateTimeImmutable $jetzt = null): array
 {
     $jetzt ??= new DateTimeImmutable('now');
     $tz = new DateTimeZone($region['zeitzone']);
@@ -471,7 +460,7 @@ function schnee_region_bewerten(array $region, array $daten, array $sport, array
     foreach ($tage as $tag) {
         [$fenster, $rest, $vorbei] = restfenster(SCHNEE_TAG, $tag, $tz, $jetzt);
         $k = schnee_kennwerte($st, $tag, $fenster);
-        [$geht, $grund] = schnee_tag_geht($k, $sport);
+        [$geht, $grund] = schnee_tag_geht($k);
         $offen = $k['stunden'] === 0 && !$vorbei;
         $ens = null;
         if ($laeufe && !$vorbei) {
@@ -484,7 +473,7 @@ function schnee_region_bewerten(array $region, array $daten, array $sport, array
                     continue;
                 }
                 $n++;
-                $gut += schnee_tag_geht($kl, $sport)[0] ? 1 : 0;
+                $gut += schnee_tag_geht($kl)[0] ? 1 : 0;
                 if ($kl['neu24'] !== null) {
                     $neu[] = $kl['neu24'];
                 }
@@ -503,6 +492,9 @@ function schnee_region_bewerten(array $region, array $daten, array $sport, array
             'vorbei'  => $vorbei,
             'offen'   => $offen && $ens === null,
             'det'     => $k + ['geht' => $geht && !$vorbei && !$offen, 'grund' => $vorbei ? 'vorbei' : $grund,
+                               // Pulver: Neuschnee 72 h an einem Pulvertag, sonst 0 (fuer die Rangliste)
+                               'pulver' => $geht && !$vorbei && !$offen ? (float)$k['neu72'] : 0.0,
+                               'kamm_stark' => schnee_kamm_stark($k),
                                'von' => $fenster[0], 'bis' => $fenster[1]],
             'ens'     => $ens,
         ];
@@ -516,9 +508,9 @@ function schnee_region_bewerten(array $region, array $daten, array $sport, array
 
 /**
  * Schnee-Regionen im Umkreis (Luftlinie; die Seite filtert danach nach Strasse),
- * bewertet fuer $tage, sortiert nach passenden Tagen, dann Neuschnee im Zeitraum.
+ * bewertet fuer $tage, sortiert nach dem besten Pulvertag, dann Neuschnee im Zeitraum.
  */
-function schnee_rangliste(array $regionen, array $stand, array $sport, array $heim, float $radiusKm, array $tage, ?DateTimeImmutable $jetzt = null): array
+function schnee_rangliste(array $regionen, array $stand, array $heim, float $radiusKm, array $tage, ?DateTimeImmutable $jetzt = null): array
 {
     $liste = [];
     foreach ($regionen as $r) {
@@ -530,22 +522,25 @@ function schnee_rangliste(array $regionen, array $stand, array $sport, array $he
         if (!$daten['vorhersage'] && !$daten['ensemble']) {
             continue;
         }
-        $proTag = schnee_region_bewerten($r, $daten, $sport, $tage, $jetzt);
+        $proTag = schnee_region_bewerten($r, $daten, $tage, $jetzt);
         $det = 0;
         $neu = 0.0;
+        $pulver = 0.0;
         foreach ($proTag as $t) {
             $det += $t['det']['geht'] ? 1 : 0;
             $neu += (float)($t['det']['neu24'] ?? 0);
+            $pulver = max($pulver, $t['det']['pulver']);
         }
         $liste[] = ['region' => $r, 'km' => round($km), 'tage' => $proTag,
-                    'tage_modellmittel' => $det, 'neu_summe' => round($neu, 1)];
+                    'tage_modellmittel' => $det, 'pulver_max' => round($pulver, 1), 'neu_summe' => round($neu, 1)];
     }
     return schnee_sortieren($liste, 'summe');
 }
 
 /**
- * 'summe' (passende Tage, dann Neuschnee im Zeitraum), ein Tag (passt, dann Neuschnee
- * 72 h und 24 h) oder 'km' (Fahrzeit)
+ * 'summe' (bester Pulvertag, dann Neuschnee im Zeitraum), ein Tag (Pulver, dann Neuschnee
+ * 72 h und 24 h) oder 'km' (Fahrzeit). Pulver = Neuschnee 72 h an einem Pulvertag: 30 cm
+ * bei Sonne gehen vor 12 cm bei Sonne, beide vor 40 cm im Nebel.
  */
 function schnee_sortieren(array $liste, string $nach): array
 {
@@ -557,10 +552,10 @@ function schnee_sortieren(array $liste, string $nach): array
     $tag = $liste && isset($liste[0]['tage'][$nach]) ? $nach : null;
     $s = function (array $e) use ($tag): array {
         if ($tag === null) {
-            return [$e['tage_modellmittel'], $e['neu_summe'], -$e['km']];
+            return [$e['pulver_max'], $e['neu_summe'], -$e['km']];
         }
         $t = $e['tage'][$tag];
-        return [$t['det']['geht'] ? 1 : 0, $t['det']['neu72'] ?? 0, $t['det']['neu24'] ?? 0, -$e['km']];
+        return [$t['det']['pulver'], $t['det']['neu72'] ?? 0, $t['det']['neu24'] ?? 0, -$e['km']];
     };
     usort($liste, fn($a, $b) => $s($b) <=> $s($a));
     return $liste;
@@ -568,7 +563,7 @@ function schnee_sortieren(array $liste, string $nach): array
 
 /**
  * Wert fuer die Landkarte: Neuschnee (24 h) am Tag oder Summe im Zeitraum, ob ein Tag
- * passt, Klasse in der Blau-Skala und Rang fuer die Reihenfolge (gute oben)
+ * ein Pulvertag ist, Klasse in der Blau-Skala und Rang fuer die Reihenfolge (gute oben)
  */
 function schnee_karte_wert(array $e, ?string $tag): array
 {
@@ -583,19 +578,16 @@ function schnee_karte_wert(array $e, ?string $tag): array
         if (($d['det']['neu24'] ?? null) !== null) {
             $neu = ($neu ?? 0.0) + $d['det']['neu24'];
         }
-        // Ziel beim Antippen: erster passender Tag, sonst der mit dem meisten Neuschnee
-        $wert = ($d['det']['geht'] ? 1000 : 0) + (float)($d['det']['neu24'] ?? 0);
-        if ($d['det']['geht'] && !$geht) {
-            $besterTag = $t;
-            $bestNeu = $wert;
-        } elseif (!$geht && $wert > $bestNeu) {
+        // Ziel beim Antippen: bester Pulvertag, sonst der mit dem meisten Neuschnee
+        $wert = $d['det']['geht'] ? 1000 + $d['det']['pulver'] : (float)($d['det']['neu24'] ?? 0);
+        if ($wert > $bestNeu) {
             $besterTag = $t;
             $bestNeu = $wert;
         }
         $geht = $geht || $d['det']['geht'];
     }
     $klasse = $geht ? 's-go' : ($neu === null ? 'leer' : ($neu >= 10 ? 's-maybe' : ($neu >= 3 ? 's-no' : 'nix')));
-    return ['rang' => ($geht ? 1000 : 0) + ($neu ?? -1), 'neu' => $neu === null ? null : round($neu, 1),
+    return ['rang' => $geht ? 1000 + $bestNeu : ($neu ?? -1), 'neu' => $neu === null ? null : round($neu, 1),
             'geht' => $geht, 'tag' => $besterTag, 'klasse' => $klasse];
 }
 

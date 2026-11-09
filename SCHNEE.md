@@ -12,8 +12,8 @@ Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnst
 
 | Baustein | Status |
 |---|---|
-| Seite `server/web/schnee.php` | Sportart (Freeride, Skitour), Umkreis 100–800 km Straße, Standort, Sortierung (alle Tage, ein Tag, Fahrzeit), Ansichten Liste (Heute – Übermorgen, Tag 3 – 7) und Woche, Karte mit Punkten in einer Neuschnee-Farbskala (seit 9.11.2026: grau, hellblau, blau, violett, magenta ab 50 cm, `SCHNEESKALA` in `lib/karte.php`, mit weichem Farbfeld je Region und Legende; Zahl: Neuschnee im Zeitraum bzw. am gewählten Tag in cm; Ring = passt) und Männchen (ohne Animation), Kacheln mit allem auf einen Blick: Wetter (☀ ⛅ ☁, ❄ bei Schneefall am Tag), Neuschnee je Tag (24 h bis 8 Uhr, seit 9.11.2026), Schneehöhe, LWS, darunter klein die Spanne aus dem Ensemble; Wind und Gründe im Tooltip und auf der Stundenseite. Darunter nur für gute Tage Abfahrt, Details und Teilen; Lawinenlage einklappbar, geteilte Ansicht `?region=…&nach=…`. `noindex` |
-| Stundenseite `server/web/schnee_stunden.php` | Seit 9.11.2026 neu aufgebaut (vorher Textblock, Bergsilhouette, vier Höhenlinien; unübersichtlich): oben das Urteil „Passt (nicht) für …“ mit allen fehlenden Gründen, darunter jede Regel der Sportart einzeln mit Wert und Schwelle (`schnee_kriterien()`), dann Kennzahlen als Kacheln (Neuschnee 24 h mit Spanne des Ensembles, Schneefallgrenze, Nullgrad, Schneehöhe, Himmel, Böen). Ein Diagramm mit einer Zeitachse: Niederschlag je Stunde auf Tourhöhe, blau als Schnee, grau als Regen, in Abschnitten von 8 bis 8 Uhr mit der Summe darüber (wie die Tagesknöpfe), Strich „jetzt“; darunter nur die Schneefallgrenze gegen Tour- und Talhöhe. Lawinenlage mit Expositionsrose |
+| Seite `server/web/schnee.php` | Umkreis 100–800 km Straße, Standort, Sortierung (alle Tage, ein Tag, Fahrzeit), Ansichten Liste (Heute – Übermorgen, Tag 3 – 7) und Woche, Karte mit Punkten in einer Neuschnee-Farbskala (seit 9.11.2026: grau, hellblau, blau, violett, magenta ab 50 cm, `SCHNEESKALA` in `lib/karte.php`, mit weichem Farbfeld je Region und Legende; Zahl: Neuschnee im Zeitraum bzw. am gewählten Tag in cm; Ring = Pulvertag) und Männchen (ohne Animation), Kacheln mit allem auf einen Blick: Wetter (☀ ⛅ ☁, ❄ bei Schneefall am Tag), Neuschnee je Tag (24 h bis 8 Uhr, seit 9.11.2026), Schneehöhe, LWS, darunter klein die Spanne aus dem Ensemble; Wind und Gründe im Tooltip und auf der Stundenseite. Darunter nur für gute Tage Abfahrt, Details und Teilen; Lawinenlage einklappbar, geteilte Ansicht `?region=…&nach=…`. `noindex` |
+| Stundenseite `server/web/schnee_stunden.php` | Seit 9.11.2026 neu aufgebaut (vorher Textblock, Bergsilhouette, vier Höhenlinien; unübersichtlich): oben das Urteil „(Kein) Pulvertag“ mit allen fehlenden Gründen, darunter beide Regeln einzeln mit Wert und Schwelle (`schnee_kriterien()`), dann Kennzahlen als Kacheln (Neuschnee 24 h mit Spanne des Ensembles, Schneefallgrenze, Nullgrad, Schneehöhe, Himmel, Wind am Kamm, Böen). Ein Diagramm mit einer Zeitachse: Niederschlag je Stunde auf Tourhöhe, blau als Schnee, grau als Regen, in Abschnitten von 8 bis 8 Uhr mit der Summe darüber (wie die Tagesknöpfe), Strich „jetzt“; darunter nur die Schneefallgrenze gegen Tour- und Talhöhe. Lawinenlage mit Expositionsrose |
 | Schalter Wind · Schnee | im Kopf beider Seiten; es sind zwei Seiten, nicht ein Formular. Die Wind-Seite merkt sich ihre Wahl wie bisher, die Schnee-Seite merkt sich nichts im Browser |
 | Katalog `daten/schneeregionen.json` | 9 Regionen ab Inning: Werdenfels, Allgäu/Oberstdorf, Kühtai/Sellrain, Stubai, Zillertal/Tux, Arlberg, Ötztal/Obergurgl, Ahrntal, Oberengadin. Seit 9.11.2026 dazu Kitzbüheler Alpen, Osttirol (Kals, Matrei), Gastein/Rauris (Salzburg), Nassfeld/Karnische Alpen (Kärnten), Schladminger Tauern/Sölktäler (Steiermark), danach Salzburg aufgeteilt (Obertauern, Lungau, Saalbach/Glemmtal, Hochkönig zusätzlich zu Gastein/Rauris): 18 Regionen; Mikroregion-IDs aus der Tiroler Stationsdatei bzw. aus EAWS-Berichten vom April 2026. Punkte, Tour- und Talhöhen geschätzt. Prüfung `schneeregionen_pruefen()` |
 | Bewertung `server/web/lib/schnee.php` | siehe „Bewertung“ |
@@ -63,25 +63,32 @@ Seit 9.11.2026. Im Katalog `messnetze` (`{id: {art, name, kurz, abruf, url, lize
   - **LWD Salzburg, Kärnten, Steiermark:** eigene Stationsnetze auf ihren Seiten, aber keine offene Schnittstelle gefunden; anfragen wie bei der Lawinenlage.
 - **Nebenbei:** Die Stationen nennen die EAWS-Mikroregion; daraus ließen sich die `eaws`-IDs der Tiroler Regionen eintragen (z. B. Stubai AT-07-22, Gurgl AT-07-21, Tux AT-07-15).
 
-## Sportarten
+## Pulvertag (eine Regel für alle)
 
-| Sportart | Was zählt (Startwerte ohne Quelle, `SCHNEE_SPORTARTEN`) |
+Seit 9.11.2026 keine Sportarten mehr. Vorher gab es Freeride (Neuschnee 72 h ≥ 15 cm, Bewölkung ≤ 40 %, Wind am Kamm ≤ 30 km/h) und Skitour (Schneehöhe im Modell ≥ 30 cm, Bewölkung ≤ 50 %, Wind am Kamm ≤ 40 km/h). Beide Schwellensätze waren ohne Quelle gesetzt; die Skitour-Regel hing an der Modell-Schneehöhe, dem unsichersten Wert. Der Unterschied war nur eine Gewichtung derselben Daten.
+
+| Regel (`SCHNEE_REGEL`, Startwerte ohne Quelle) | Wert |
 |---|---|
-| Freeride | Neuschnee 72 h ≥ 15 cm, Bewölkung ≤ 40 %, Wind am Kamm ≤ 30 km/h |
-| Skitour | Schneehöhe (Modell) ≥ 30 cm, Bewölkung ≤ 50 %, Wind am Kamm ≤ 40 km/h |
+| Neuschnee 72 h bis 8 Uhr | ab 10 cm (dieselbe Grenze wie das mittlere Blau) |
+| Bewölkung 8–15 Uhr | bis 60 % = höchstens „teils sonnig“, also wie das Symbol ⛅ (`SCHNEE_WOLKIG`) |
+
+- **Schneehöhe** und **Wind am Kamm** schließen nichts aus. Die Schneehöhe steht in Kachel und Stundenseite (Modell) und darunter die Messstationen; ob es für eine Tour reicht, beurteilt man selbst.
+- **Wind am Kamm** ab 50 km/h in 700 hPa (`SCHNEE_KAMM_HINWEIS`, Startwert ohne Quelle): 💨 in der Kachel und auf der Stundenseite, „viel Wind am Kamm“ in Details und Teilen-Text.
+- Der Parameter `sport=` in alten Links wird ignoriert.
 
 ## Bewertung
 
 Je Region und Tag:
 
 - **Neuschnee je Tag** (angezeigt, seit 9.11.2026): Summe der 24 h bis 8 Uhr Ortszeit, wie die Messung am Morgen. Die Tage lassen sich addieren (vorher zeigte jede Kachel die 72 h; wer addierte, zählte denselben Schnee bis zu dreimal). Fehlen mehr als 4 der 24 Stunden, ist er unbekannt.
-- **Neuschnee 72 h** (für die Regel bei Freeride, damit der schöne Tag nach dem Schneefall zählt): Summe der letzten 72 h bis 8 Uhr Ortszeit. Je Stunde zählt der Niederschlag als Schnee (1 mm = 0,7 cm, wie Open-Meteo), wenn die Schneefallgrenze unter der Tourhöhe liegt. Schneefallgrenze = `snowfall_height`, sonst Nullgradgrenze − 300 m, sonst Temperatur auf Tourhöhe ≤ 1 °C. Ohne Niederschlag zählt `snowfall`. Fehlen mehr als 12 der 72 Stunden, ist der Neuschnee unbekannt.
+- **Neuschnee 72 h** (für die Regel Pulvertag, damit der schöne Tag nach dem Schneefall zählt): Summe der letzten 72 h bis 8 Uhr Ortszeit. Je Stunde zählt der Niederschlag als Schnee (1 mm = 0,7 cm, wie Open-Meteo), wenn die Schneefallgrenze unter der Tourhöhe liegt. Schneefallgrenze = `snowfall_height`, sonst Nullgradgrenze − 300 m, sonst Temperatur auf Tourhöhe ≤ 1 °C. Ohne Niederschlag zählt `snowfall`. Fehlen mehr als 12 der 72 Stunden, ist der Neuschnee unbekannt.
 - **Wetter am Tag** (8–15 Uhr): mittlere Bewölkung, Wind in 700 hPa (km/h), höchste Nullgradgrenze, Neuschnee am Tag, Böen im Tal.
 - **Schneehöhe:** Modellwert `snow_depth` um 8 Uhr, angezeigt als „(Modell)“.
 - **Spanne:** Neuschnee je Tag in den 51 Läufen des ECMWF-Ensembles, 10. bis 90. Perzentil (Kachel „14–22 cm“, Stundenseite mit Mitte). Bis 9.11.2026 stand dort eine Chance in Prozent (Anteil der Läufe, an denen der Tag passt). Abgeschafft auf Wunsch: Sie fasste mehrere Schwellen zusammen, sagte nicht, was fehlt, und 14 cm bei Sonne zählten als 0 %. Intern wird sie noch gerechnet (`ens.chance`), aber nirgends gezeigt.
-- **Farbe** (`schnee_klasse()`): kräftiges Blau = passt nach Modellmittel; sonst nach dem Neuschnee des Tages, ab 10 cm und ab 3 cm heller.
+- **Farbe** (`schnee_klasse()`): kräftiges Blau = Pulvertag nach Modellmittel; sonst nach dem Neuschnee des Tages, ab 10 cm und ab 3 cm heller.
 - **Heute** nach 13:30 Uhr Ortszeit „vorbei“ (weniger als 2 Stunden Fenster), wie im Wind-Modus.
-- **Rangliste:** passende Tage (Modellmittel), dann Neuschnee im Zeitraum (Summe je Tag), dann näher. Ein einzelner Tag: passt, dann Neuschnee 72 h, dann 24 h.
+- **Pulver** je Tag: Neuschnee 72 h, wenn der Tag ein Pulvertag ist, sonst 0.
+- **Rangliste** (seit 9.11.2026): bester Pulvertag im Zeitraum (`pulver_max`), dann Neuschnee im Zeitraum (Summe je Tag), dann näher. 30 cm bei Sonne vor 12 cm bei Sonne, beide vor 40 cm im Nebel. Vorher zählte die Anzahl passender Tage. Ein einzelner Tag: Pulver, dann Neuschnee 72 h, dann 24 h. Die Karte (Rang der Punkte, Ziel beim Antippen) und die Stundenseite (Tag ohne Auswahl) nehmen ebenfalls den besten Pulvertag.
 
 Abgerufen wird auf **Tourhöhe** (`elevation` je Ort) und mit `past_days=3`. Modelle: `icon_d2,icon_eu,ecmwf_ifs,gfs_seamless` (`schnee_modelle` in `config.php` nur für den Cronjob).
 
@@ -144,7 +151,7 @@ Für die Rechnung nur Stufe und strukturierte Felder; Texte der Berichte nicht k
 
 1. Erster echter Lauf (siehe oben), danach Mikroregion-IDs eintragen
 2. Antworten der Warndienste: Bayern, Tirol freigeben
-3. Schwellen und Tourhöhen aus eigener Erfahrung anpassen
+3. Schwellen (`SCHNEE_REGEL`, `SCHNEE_KAMM_HINWEIS`) und Tourhöhen aus eigener Erfahrung anpassen
 4. Weitere Messstationen (SLF nach Rückfrage)
 5. Verlauf über die Abrufe, Animation des Männchens wie im Wind-Modus
 6. Karte: Alpen-Ausschnitt feiner, Mikroregionen als Polygone (EAWS-Regionen, Lizenz im Repo prüfen)
