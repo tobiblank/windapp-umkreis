@@ -117,7 +117,7 @@ Der Sammler holt je Dienst heute und morgen. HTTP 404 heißt „noch kein Berich
 | Bayern | `static.lawinen-warnung.eu/bulletins/{datum}/{datum}_DE-BY_de_CAAMLv6.xml` (Struktur an echter Datei vom 20.12.2025 gesehen) | offen | – |
 | Salzburg, Kärnten, Steiermark (seit 9.11.2026) | `static.avalanche.report/eaws_bulletins/{datum}/{datum}-AT-05.json` (bzw. AT-02, AT-06), EAWS-Sammlung, Format wie CAAML ohne Versionsangabe; ob `lawine_lesen()` es liest, ungeprüft | offen | – |
 
-Anfragen an LWD Tirol und LWD Bayern laufen; nach Antwort nur `freigegeben` ergänzen (`AT-07` bzw. `DE-BY`). Anmeldung beim SLF (data@slf.ch, Verteiler „Avalanche Bulletin“) empfohlen.
+Anfragen an LWD Tirol und LWD Bayern laufen; nach Antwort nur `freigegeben` ergänzen (`AT-07` bzw. `DE-BY`). Beim SLF im Verteiler „Avalanche Bulletin“ angemeldet (info@dablank.de, bestätigt am 9.11.2026, Vorgang DATA-2406). Antworten von LWD Tirol und LWD Bayern stehen aus (angefragt 8.11.2026).
 
 ### Mikroregionen
 
