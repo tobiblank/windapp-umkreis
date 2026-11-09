@@ -44,6 +44,22 @@ if (preg_match('#^/simulations/1d/point/simstrat/([a-z0-9]+)/\d{12}/\d{12}/[\d.]
                       'variables' => ['T' => ['data' => $werte, 'unit' => 'degC', 'description' => 'Temperature']]]);
     exit;
 }
+// Wetterstationen Tirol (seit 9.11.2026), Aufbau wie die echte Datei vom 9.11.2026:
+// sta-gut plausibel, sta-fehler mit negativer Schneehoehe (Messfehler), sta-sprung mit
+// unplausibler Aenderung in 24 h, sta-andere nicht im Katalog; sta-fehlt gibt es nicht.
+if ($pfad === '/lawine/produkte/ogd.geojson') {
+    header('Content-Type: application/json');
+    $zeit = (new DateTimeImmutable('@' . (intdiv(time(), 3600) * 3600)))->setTimezone(new DateTimeZone('Europe/Vienna'))->format('c');
+    $st = fn($plot, $name, $lon, $lat, $h, $p) => ['id' => $plot, 'type' => 'Feature', 'geometry' => ['type' => 'Point', 'coordinates' => [$lon, $lat, $h]],
+        'properties' => $p + ['plot' => $plot, 'name' => $name, 'date' => $zeit, 'operator' => 'LWD Tirol', 'LWD-Region' => 'AT-07-22 Stubaier Alpen Mitte']];
+    echo json_encode(['type' => 'FeatureCollection', 'features' => [
+        $st('sta-gut', 'Gutalm', 11.0, 47.2, 2450.0, ['HS' => 42.3, 'HSD24' => 5.2, 'HSD72' => 12.0, 'LT' => -3.1]),
+        $st('sta-fehler', 'Fehlerkopf', 11.01, 47.21, 2500.0, ['HS' => -1.3, 'HSD24' => -5.8]),
+        $st('sta-sprung', 'Sprungjoch', 11.02, 47.22, 2300.0, ['HS' => 10.0, 'HSD24' => -23.0 * 10]),
+        $st('sta-andere', 'Anderswo', 12.0, 47.0, 1800.0, ['HS' => 5.0]),
+    ]]);
+    exit;
+}
 // Lageberichte (seit 8.11.2026)
 $jetztTs = time();
 $gueltig = ['startTime' => gmdate('Y-m-d\TH:i:s\Z', $jetztTs - 86400), 'endTime' => gmdate('Y-m-d\TH:i:s\Z', $jetztTs + 2 * 86400)];

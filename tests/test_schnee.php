@@ -77,6 +77,17 @@ pruefe(count($sStand['schnee_vorhersage']['schnee-a']['hourly']['time']) === 24 
 $lagen = lawine_laden("$tmp/schnee");
 $euIds = array_merge(...array_map(fn($b) => array_column($b['regionen'], 0), $lagen['euregio']['bulletins'] ?? []));
 pruefe($euIds === ['IT-32-BZ-08-01'], 'Euregio: nur Südtirol gespeichert, Tirol nicht');
+$mess = stationen_laden("$tmp/schnee");
+pruefe(array_keys($mess['tirol']['stationen'] ?? []) === ['sta-gut', 'sta-fehler', 'sta-sprung'] && str_contains($ausText, 'stationen/tirol: ok, 3 von 4 Stationen') && str_contains($ausText, 'fehlen: sta-fehlt'),
+       'Stationen: nur die aus dem Katalog gespeichert, fehlende im Bericht, kein Fehler');
+$sKatA = schnee_katalog_laden(__DIR__ . '/schneeregionen_test.json')['regionen'][0];
+$werte = stationen_region($sKatA, $mess);
+pruefe(count($werte) === 2 && $werte[0]['wert']['name'] === 'Gutalm' && $werte[0]['wert']['hs'] == 42.3 && $werte[0]['wert']['hsd24'] == 5.2 && $werte[0]['wert']['hoehe'] === 2450
+       && $werte[1]['wert']['name'] === 'Sprungjoch' && $werte[1]['wert']['hsd24'] === null,
+       'Stationen: negative Schneehöhe fällt weg, unplausible Änderung in 24 h wird leer');
+pruefe(stationen_wert($mess['tirol']['stationen']['sta-gut'], time() + 4 * 86400) === null && stationen_wert($mess['tirol']['stationen']['sta-gut'], time() + 13 * 3600)['alt'],
+       'Stationen: nach 12 h mit Zeit, nach 72 h nicht mehr angezeigt');
+pruefe(stationen_pruefen(['messnetze' => ['x' => ['name' => 'X']], 'regionen' => [['id' => 'r', 'stationen' => ['y' => []]]]]) !== [], 'Katalog: fehlerhafte Messnetze und Stationen werden gemeldet');
 exec($sCmd("$tmp/schnee_nur", '--nur lawine'), $ausN, $rcN);
 pruefe($rcN === 0 && is_dir("$tmp/schnee_nur/lawine") && !is_dir("$tmp/schnee_nur/vorhersage") && !is_dir("$tmp/schnee_nur/schnee_ensemble"), '--nur lawine: nur der Lagebericht');
 
@@ -183,11 +194,16 @@ pruefe(str_contains($html, '<details class="karte landkarte" id="landkarte" open
 pruefe(str_contains($html, 'class="teilen" hidden') && str_contains($html, 'Abfahrt bis'), 'gute Tage: Teilen und Abfahrt');
 pruefe(!preg_match('/\d+ %(?! Wolken)/u', strip_tags(preg_replace('#<details class="leise klein erklaerung">.*?</details>#s', '', $html))), 'keine Prozent-Chance mehr auf der Seite');
 pruefe(str_contains($html, 'Zahl: Neuschnee in cm'), 'Karte: Zahl ist Neuschnee in cm');
+pruefe(preg_match('#id="r-schnee-a".*?Schneehöhe gemessen heute .*?Gutalm <span class="leise">2.450 m</span> <b>42 cm</b>.*?\(24 h \+5\)#s', $html) === 1 && !str_contains($html, 'Fehlerkopf')
+       && str_contains($html, 'Messwerte: <a href="https://lawinen.report/weather/stations"'), 'Liste: gemessene Schneehöhe mit Änderung, Messfehler ausgeblendet, Quelle im Fuß');
 [, $html] = holen($wPort, "schnee.php?region=schnee-a&nach=$t1");
 pruefe(str_contains($html, 'Geteilte Vorhersage') && !str_contains($html, 'id="r-schnee-b"') && !str_contains($html, 'id="wahl"'), 'geteilte Vorhersage: nur diese Region, ohne Auswahl');
 [, $html] = holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t1);
 pruefe(str_contains($html, 'class="s-schnee"') && str_contains($html, 'class="s-sfg"') && str_contains($html, 'class="lw lw3"') && str_contains($html, 'Ensemble: Mitte'),
        'Stundenseite: Schneebalken, Schneefallgrenze, Lawinenlage, Streuung des Ensembles');
+[, $html] = holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t0);
+pruefe(str_contains($html, 'Schneehöhe gemessen') && str_contains($html, 'Sprungjoch'), 'Stundenseite heute: gemessene Schneehöhe');
+pruefe(!str_contains(holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t1)[1], 'Schneehöhe gemessen'), 'Stundenseite morgen: keine Messung');
 [$code] = holen($wPort, 'schnee_stunden.php?region=gibtsnicht');
 pruefe($code === 404, 'Stundenseite: unbekannte Region 404');
 [, $html] = holen($wPort, 'index.php?km=1000');

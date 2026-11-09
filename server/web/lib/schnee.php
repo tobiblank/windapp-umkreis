@@ -30,6 +30,8 @@
  * liefern; ob das Ensemble past_days, snow_depth und freezing_level_height liefert.
  */
 
+require_once __DIR__ . '/stationen.php';
+
 const SCHNEE_TAG = [8, 15];           // Ortsstunden [ab, bis): Wetter am Tourtag
 const SCHNEE_MORGEN = 8;              // Neuschnee zaehlt bis zu dieser Ortsstunde
 const SCHNEE_STUNDEN_NEU = 72;
@@ -72,6 +74,7 @@ function schnee_katalog_laden(string $datei): array
         $d['regionen'][$i]['typ'] = 'schnee';
     }
     $d['lawinendienste'] ??= [];
+    $d['messnetze'] ??= [];
     return $d;
 }
 
@@ -168,7 +171,7 @@ function schneeregionen_pruefen(array $d): array
             }
         }
     }
-    return $f;
+    return array_merge($f, stationen_pruefen($d));
 }
 
 /** Beginnt $id mit einem der Praefixe? (wie lawine_praefix, ohne lawine.php zu brauchen) */

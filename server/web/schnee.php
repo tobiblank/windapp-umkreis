@@ -136,6 +136,8 @@ $liste = $geteilt
     ? schnee_rangliste([$geteilt], $stand, $sport, $heim, INF, $tage, $jetzt)
     : schnee_rangliste($regionen, $stand, $sport, $heim, (float)$km, $tage, $jetzt);
 $lagen = lawine_laden($dataDir);
+$messungen = stationen_laden($dataDir);
+$messnetze = $schnee['messnetze'];
 
 $nach = (string)($_GET['nach'] ?? 'summe');
 if ($nach !== 'km' && !in_array($nach, $tage, true)) {
@@ -596,6 +598,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
     <?php if (!$guteTage || $offene): ?>
       <p class="klein leise"><?= $guteTage ? '' : 'Kein passender Tag in diesem Zeitraum.' ?><?= $offene ? ' Für ' . h(implode(', ', array_map(fn($x) => tag_kurz($x, $heute), $offene))) . ' gibt es noch keine Vorhersage.' : '' ?></p>
     <?php endif ?>
+    <?= $ansicht === 'bald' ? stationen_html(stationen_region($r, $messungen), $messnetze, $tzSeite, $heute) : '' ?>
     <?= lawine_html($r, $lageVon[$r['id']] ?? [], $dienste, $tage) ?>
     <?php if (!empty($r['links'])): ?>
       <p class="links klein">Genauer:
@@ -612,6 +615,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
     Ohne Freigabe nur ein Link: <?php $i = 0; foreach (array_diff_key($dienste, $quellen) as $d): ?><?= $i++ ? ', ' : '' ?><a href="<?= h($d['url_bericht']) ?>" rel="noopener"><?= h($d['kurz']) ?></a><?php endforeach ?><?= $i ? '' : '–' ?>.</p>
   <?php if ($fahrzeiten): ?><p>Fahrzeiten ab <?= h($fahrzeiten['start']['name'] ?? 'Startort') ?>: © <a href="https://openrouteservice.org/">openrouteservice.org</a> by HeiGIT, Kartendaten © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende.</p><?php endif ?>
   <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0)</p>
+  <?php foreach (array_intersect_key($messnetze, $messungen) as $n): ?><p>Messwerte: <a href="<?= h($n['url']) ?>" rel="noopener"><?= h($n['name']) ?></a> (<?= h($n['lizenz']) ?>), Rohdaten, ungeprüft.</p><?php endforeach ?>
   <?= design_schalter() ?>
   <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
 </footer>

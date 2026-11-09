@@ -58,7 +58,7 @@ jobs:
         run: |
           set +e
           nur=""
-          if [ "${{ github.event.schedule }}" = "40 7 * * *" ]; then nur="--nur lawine,schnee_vorhersage"; fi
+          if [ "${{ github.event.schedule }}" = "40 7 * * *" ]; then nur="--nur lawine,schnee_vorhersage,stationen"; fi
           php server/sammler.php --action daten/regionen.json ausgabe --schnee daten/schneeregionen.json $nur --debug
           echo "rc=$?" >> "$GITHUB_OUTPUT"
 

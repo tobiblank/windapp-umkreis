@@ -26,7 +26,19 @@ Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnst
 | Helfer `server/lawine_regionen.php` | `php server/lawine_regionen.php <data_dir> [suchtext]` listet regionID und Name aus den gesammelten Berichten |
 | Tests | `tests/test_schnee.php` (am Ende von `test.php`): Katalog, Neuschnee je Stunde, CAAML JSON/XML, Sammler mit Freigabe und 404, Bewertung, Lage je Region, Fahrzeiten, Seiten |
 
-Nicht gebaut: Verlauf über die Abrufe, Animation des Männchens, Mikroregionen als Polygone auf der Karte, feinere Alpen-Karte, Messstationen für die Schneehöhe, Roadtrip.
+| Messstationen (seit 9.11.2026) | `lib/stationen.php`, Sammler-Quelle `stationen` (stündlich als Cronjob, in der Action bei jedem Lauf, auch um 7:40 UTC). Gemessene Schneehöhe und ihre Änderung in 24 h je Region unter den Kacheln (nur „Heute – Übermorgen“) und auf der Stundenseite für heute, siehe „Messstationen“ |
+
+Nicht gebaut: Verlauf über die Abrufe, Animation des Männchens, Mikroregionen als Polygone auf der Karte, feinere Alpen-Karte, Roadtrip.
+
+## Messstationen
+
+Seit 9.11.2026. Im Katalog `messnetze` (`{id: {name, kurz, abruf, url, lizenz}}`, `abruf` = GeoJSON aller Stationen) und je Region `stationen` (`{netz: [plot-id, …]}`, Reihenfolge = Anzeige). Der Sammler holt je Netz eine Datei und speichert nur die genannten Stationen.
+
+- **Tirol** (`tirol`): Datensatz „Wetterstationsdaten Tirol“ (Land Tirol, LWD und Hydrographischer Dienst Tirol) auf data.gv.at, CC BY 4.0, stündlich. Felder an der Datei vom 9.11.2026 11:00 Uhr gesehen: 221 Stationen, 120 mit Schneehöhe; je Station `plot`, `name`, `LWD-Region` (EAWS-Mikroregion, z. B. „AT-07-22 Stubaier Alpen Mitte“), `date`, `HS` (Schneehöhe cm), `HSD24`/`HSD48`/`HSD72` (Änderung der Schneehöhe, mit Setzung, also kein Neuschnee), `LT`, Höhe als dritte Koordinate. **Die Abruf-URL ist geschätzt** (`wiski.tirol.gv.at/lawine/produkte/ogd.geojson`), beim ersten Lauf prüfen.
+- **Gewählt** am 9.11.2026 nach Nähe zum Vorhersagepunkt und Höhe nahe der Tourhöhe: Kühtai/Sellrain Gossenkölle, Lampsenspitze, Breiter Grieskogel; Stubai Schöckbichl, Eissee (Stubaier Gletscher), Dresdner Hütte; Zillertal/Tux Tuxerjoch, Wandspitze, Lämmerbichlalm; Arlberg Ulmerhütte, Gampberg, Kapall; Ötztal/Gurgl Rosskar, Sonnbergalm. Franz-Senn-Hütte bewusst nicht (meldete −1,3 cm).
+- **Plausibilität** (`stationen_wert()`): Schneehöhe unter −0,5 cm oder über 15 m fällt weg, leicht negativ zählt als 0; Änderung über 150 cm in 24 h wird leer (gesehen: −23 cm bei 0 cm Schnee); älter als 12 h mit Zeit, älter als 72 h nicht mehr.
+- **Ohne Stationen:** Werdenfels und Allgäu (Lawinenwarndienst Bayern ohne offene Schnittstelle gefunden), Ahrntal (Südtiroler Webdienst mit Sensor `HS`, Lizenz für diesen Dienst nicht bestätigt), Oberengadin (SLF IMIS frei, laut Bedingungen aber nicht zur Speisung fremder Informationssysteme; vorher beim SLF fragen).
+- **Nebenbei:** Die Stationen nennen die EAWS-Mikroregion; daraus ließen sich die `eaws`-IDs der Tiroler Regionen eintragen (z. B. Stubai AT-07-22, Gurgl AT-07-21, Tux AT-07-15).
 
 ## Sportarten
 
@@ -97,7 +109,7 @@ Nur Bayern hat echte IDs: Werdenfels `DE-BY-30` („Werdenfelser Alpen“), Allg
 | Lagebericht Euregio | Albina, `static.avalanche.report` | Südtirol, Trentino CC BY; Tirol, Kärnten offen | teils |
 | Lagebericht Bayern | `static.lawinen-warnung.eu`, CAAML v6 XML | offen | Feed gefunden |
 | Übrige Länder, AINEVA, Frankreich | – | offen bzw. eingeschränkt | später |
-| Schneehöhe Stationen | Tirol: LWD/HD Tirol über data.gv.at (JSON, stündlich, CC BY 4.0, Schlagwort Schneehöhe; Feldnamen ungeprüft). Schweiz: SLF IMIS `measurement-api.slf.ch` (CC BY 4.0; laut SLF-Bedingungen aber „nicht für die Speisung von Informationssystemen“, vorher beim SLF nachfragen). Südtirol: `geoservices.buergernetz.bz.it/services/meteo/v1/` (`stations`, `sensors?station_code=…&sensor_code=HS`; Lizenz für diesen Dienst nicht bestätigt, andere Meteo-Datensätze CC BY). Bayern: keine offene Schnittstelle gefunden. GeoSphere SNOWGRID (CC BY 4.0) ist ein Modell | Stand 9.11.2026 | nicht eingebaut |
+| Schneehöhe Stationen | Tirol: LWD/HD Tirol über data.gv.at (GeoJSON, stündlich, CC BY 4.0), seit 9.11.2026 eingebaut. Schweiz: SLF IMIS `measurement-api.slf.ch` (CC BY 4.0; laut SLF-Bedingungen aber „nicht für die Speisung von Informationssystemen“, vorher beim SLF nachfragen). Südtirol: `geoservices.buergernetz.bz.it/services/meteo/v1/` (`stations`, `sensors?station_code=…&sensor_code=HS`; Lizenz für diesen Dienst nicht bestätigt, andere Meteo-Datensätze CC BY). Bayern: keine offene Schnittstelle gefunden. GeoSphere SNOWGRID (CC BY 4.0) ist ein Modell | Stand 9.11.2026 | Tirol eingebaut, übrige nicht |
 | Schnee und Wetter | Open-Meteo | CC BY 4.0 | Variablen dokumentiert, Verhalten im Gebirge ungeprüft |
 
 Für die Rechnung nur Stufe und strukturierte Felder; Texte der Berichte nicht kürzen oder umschreiben, sondern verlinken.
@@ -107,7 +119,7 @@ Für die Rechnung nur Stufe und strukturierte Felder; Texte der Berichte nicht k
 1. Erster echter Lauf (siehe oben), danach Mikroregion-IDs eintragen
 2. Antworten der Warndienste: Bayern, Tirol freigeben
 3. Schwellen und Tourhöhen aus eigener Erfahrung anpassen
-4. Messstationen für die Schneehöhe (SLF, GeoSphere)
+4. Weitere Messstationen (Südtirol nach Klärung der Lizenz, SLF nach Rückfrage)
 5. Verlauf über die Abrufe, Animation des Männchens wie im Wind-Modus
 6. Karte: Alpen-Ausschnitt feiner, Mikroregionen als Polygone (EAWS-Regionen, Lizenz im Repo prüfen)
 7. Slogan für beide Modi

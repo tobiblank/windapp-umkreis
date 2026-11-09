@@ -1,26 +1,147 @@
 {
   "_hinweis": "Testkatalog Schnee-Modus. Breiten passen zu fake_openmeteo.php (47,2 = A mit Neuschnee, 46,3 = B mit Regen, 47,6 = ohne Schneewerte).",
   "lawinendienste": {
-    "slf": {"name": "SLF Test", "kurz": "SLF", "url_bericht": "https://www.slf.ch/", "abruf": "https://aws.slf.ch/api/bulletin/caaml/de/json",
-            "format": "json", "lizenz": "CC BY 4.0", "praefixe": ["CH-"], "freigegeben": ["CH-"]},
-    "euregio": {"name": "Euregio Test", "kurz": "Lawinen.report", "url_bericht": "https://lawinen.report",
-                "abruf": "https://static.avalanche.report/bulletins/{datum}/{datum}_EUREGIO_de_CAAMLv6.json",
-                "format": "json", "lizenz": "teils", "praefixe": ["AT-07", "IT-32-BZ"], "freigegeben": ["IT-32-BZ"]},
-    "bayern": {"name": "LWD Bayern Test", "kurz": "LWD Bayern", "url_bericht": "https://www.lawinenwarndienst.bayern.de",
-               "abruf": "https://static.lawinen-warnung.eu/bulletins/{datum}/{datum}_DE-BY_de_CAAMLv6.xml",
-               "format": "xml", "lizenz": "Test", "praefixe": ["DE-BY"], "freigegeben": ["DE-BY"]},
-    "gesperrt": {"name": "Gesperrt Test", "kurz": "Gesperrt", "url_bericht": "https://example.org/bericht",
-                 "abruf": "https://static.lawinen-warnung.eu/bulletins/{datum}/{datum}_XX_de_CAAMLv6.xml",
-                 "format": "xml", "lizenz": "ungeklärt", "praefixe": ["XX-"], "freigegeben": []}
+    "slf": {
+      "name": "SLF Test",
+      "kurz": "SLF",
+      "url_bericht": "https://www.slf.ch/",
+      "abruf": "https://aws.slf.ch/api/bulletin/caaml/de/json",
+      "format": "json",
+      "lizenz": "CC BY 4.0",
+      "praefixe": [
+        "CH-"
+      ],
+      "freigegeben": [
+        "CH-"
+      ]
+    },
+    "euregio": {
+      "name": "Euregio Test",
+      "kurz": "Lawinen.report",
+      "url_bericht": "https://lawinen.report",
+      "abruf": "https://static.avalanche.report/bulletins/{datum}/{datum}_EUREGIO_de_CAAMLv6.json",
+      "format": "json",
+      "lizenz": "teils",
+      "praefixe": [
+        "AT-07",
+        "IT-32-BZ"
+      ],
+      "freigegeben": [
+        "IT-32-BZ"
+      ]
+    },
+    "bayern": {
+      "name": "LWD Bayern Test",
+      "kurz": "LWD Bayern",
+      "url_bericht": "https://www.lawinenwarndienst.bayern.de",
+      "abruf": "https://static.lawinen-warnung.eu/bulletins/{datum}/{datum}_DE-BY_de_CAAMLv6.xml",
+      "format": "xml",
+      "lizenz": "Test",
+      "praefixe": [
+        "DE-BY"
+      ],
+      "freigegeben": [
+        "DE-BY"
+      ]
+    },
+    "gesperrt": {
+      "name": "Gesperrt Test",
+      "kurz": "Gesperrt",
+      "url_bericht": "https://example.org/bericht",
+      "abruf": "https://static.lawinen-warnung.eu/bulletins/{datum}/{datum}_XX_de_CAAMLv6.xml",
+      "format": "xml",
+      "lizenz": "ungeklärt",
+      "praefixe": [
+        "XX-"
+      ],
+      "freigegeben": []
+    }
+  },
+  "messnetze": {
+    "tirol": {
+      "name": "Wetterstationen Tirol Test",
+      "kurz": "LWD Tirol",
+      "abruf": "https://wiski.tirol.gv.at/lawine/produkte/ogd.geojson",
+      "url": "https://lawinen.report/weather/stations",
+      "lizenz": "CC BY 4.0"
+    }
   },
   "regionen": [
-    {"id": "schnee-a", "name": "Schneeregion A", "land": "CH", "punkt": [47.2, 11.0], "hoehe_tour": 2400, "hoehe_tal": 1900,
-     "zeitzone": "Europe/Vienna", "anfahrt": [47.21, 11.02], "warndienst": "slf", "eaws_namen": ["Oberengadin"]},
-    {"id": "schnee-b", "name": "Schneeregion B", "land": "DE", "punkt": [46.3, 11.5], "hoehe_tour": 2000, "hoehe_tal": 1000,
-     "zeitzone": "Europe/Rome", "warndienst": "bayern", "eaws": ["DE-BY-30"]},
-    {"id": "schnee-c", "name": "Schneeregion C", "land": "IT", "punkt": [47.6, 11.4], "hoehe_tour": 2200, "hoehe_tal": 900,
-     "zeitzone": "Europe/Rome", "warndienst": "euregio", "eaws_namen": ["Ahrntal"]},
-    {"id": "schnee-d", "name": "Schneeregion D", "land": "AT", "punkt": [47.205, 12.0], "hoehe_tour": 2400, "hoehe_tal": 1200,
-     "zeitzone": "Europe/Vienna", "warndienst": "gesperrt", "eaws": ["XX-1"]}
+    {
+      "id": "schnee-a",
+      "name": "Schneeregion A",
+      "land": "CH",
+      "punkt": [
+        47.2,
+        11.0
+      ],
+      "hoehe_tour": 2400,
+      "hoehe_tal": 1900,
+      "zeitzone": "Europe/Vienna",
+      "anfahrt": [
+        47.21,
+        11.02
+      ],
+      "warndienst": "slf",
+      "eaws_namen": [
+        "Oberengadin"
+      ],
+      "stationen": {
+        "tirol": [
+          "sta-gut",
+          "sta-fehler",
+          "sta-sprung",
+          "sta-fehlt"
+        ]
+      }
+    },
+    {
+      "id": "schnee-b",
+      "name": "Schneeregion B",
+      "land": "DE",
+      "punkt": [
+        46.3,
+        11.5
+      ],
+      "hoehe_tour": 2000,
+      "hoehe_tal": 1000,
+      "zeitzone": "Europe/Rome",
+      "warndienst": "bayern",
+      "eaws": [
+        "DE-BY-30"
+      ]
+    },
+    {
+      "id": "schnee-c",
+      "name": "Schneeregion C",
+      "land": "IT",
+      "punkt": [
+        47.6,
+        11.4
+      ],
+      "hoehe_tour": 2200,
+      "hoehe_tal": 900,
+      "zeitzone": "Europe/Rome",
+      "warndienst": "euregio",
+      "eaws_namen": [
+        "Ahrntal"
+      ]
+    },
+    {
+      "id": "schnee-d",
+      "name": "Schneeregion D",
+      "land": "AT",
+      "punkt": [
+        47.205,
+        12.0
+      ],
+      "hoehe_tour": 2400,
+      "hoehe_tal": 1200,
+      "zeitzone": "Europe/Vienna",
+      "warndienst": "gesperrt",
+      "eaws": [
+        "XX-1"
+      ]
+    }
   ]
 }

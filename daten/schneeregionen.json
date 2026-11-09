@@ -35,6 +35,16 @@
       "hinweis": "Datei und Regions-IDs am 8.11.2026 an 2025-12-20_DE-BY_de_CAAMLv6.xml gesehen (CAAML v6, XML). Lizenz offen, Anfrage an den LWD Bayern läuft; bis dahin nur Link."
     }
   },
+  "messnetze": {
+    "tirol": {
+      "name": "Wetterstationen Tirol (LWD Tirol, Hydrographischer Dienst Tirol)",
+      "kurz": "LWD Tirol",
+      "abruf": "https://wiski.tirol.gv.at/lawine/produkte/ogd.geojson",
+      "url": "https://lawinen.report/weather/stations",
+      "lizenz": "Land Tirol, CC BY 4.0",
+      "hinweis": "Datensatz „Wetterstationsdaten Tirol“ auf data.gv.at (bb43170b-30fb-48aa-893f-51c60d27056f), CC BY 4.0, stündlich. Felder an der Datei vom 9.11.2026 11:00 gesehen (von Tobias heruntergeladen). Die Abruf-URL ist von Claude geschätzt, nicht aus der Distribution abgelesen: beim ersten Lauf prüfen."
+    }
+  },
   "regionen": [
     {
       "id": "werdenfels",
@@ -64,6 +74,7 @@
     },
     {
       "id": "kuehtai-sellrain",
+      "stationen": {"tirol": ["gossenkoelle", "lampsenspitze", "breiter_grieskogel"]},
       "name": "Kühtai / Sellrain",
       "land": "AT",
       "punkt": [47.2, 11.03],
@@ -78,6 +89,7 @@
     },
     {
       "id": "stubai",
+      "stationen": {"tirol": ["schoeckbichl", "stubaiergletscher", "dresdnerhuette"]},
       "name": "Stubai",
       "land": "AT",
       "punkt": [47.06, 11.2],
@@ -92,6 +104,7 @@
     },
     {
       "id": "zillertal-tux",
+      "stationen": {"tirol": ["tuxerjoch", "wandspitze", "laemmerbichlalm"]},
       "name": "Zillertal / Tux",
       "land": "AT",
       "punkt": [47.13, 11.7],
@@ -106,6 +119,7 @@
     },
     {
       "id": "arlberg",
+      "stationen": {"tirol": ["ulmerhuette", "gampberg", "kapall"]},
       "name": "Arlberg / St. Anton",
       "land": "AT",
       "punkt": [47.14, 10.22],
@@ -120,6 +134,7 @@
     },
     {
       "id": "oetztal-gurgl",
+      "stationen": {"tirol": ["rosskar", "obergurgl_sonn"]},
       "name": "Ötztal / Obergurgl",
       "land": "AT",
       "punkt": [46.84, 11.0],

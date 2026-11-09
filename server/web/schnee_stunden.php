@@ -263,6 +263,7 @@ $e = $b['ens'];
       $k['nullgrad'] !== null ? 'Nullgrad bis ' . meter($k['nullgrad']) : null,
       $k['hs'] !== null ? 'Schneehöhe ≈ ' . cm($k['hs']) . ' (Modell)' : null,
   ]))) ?></p>
+  <?= $tag === $heute->format('Y-m-d') ? stationen_html(stationen_region($region, stationen_laden($dataDir)), $schnee['messnetze'], $tzSeite, $heute) : '' ?>
   <p class="klein leise welle-titel">Oben: Neuschnee je Stunde auf Tourhöhe. Unten: Schneefallgrenze (durchgezogen), Nullgradgrenze (gestrichelt), Tourhöhe und Talort (gepunktet) vor einem Berg zur Orientierung. Grau: Tourenfenster.</p>
   <?= schnee_svg($reihe, $region, $tag, $b['fenster']) ?>
   <?php endif ?>
@@ -285,7 +286,8 @@ $e = $b['ens'];
 </section>
 
 <footer class="fuss klein leise">
-  <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0), Mittel mehrerer Modelle auf Tourhöhe, Chance aus dem ECMWF-Ensemble. Rohwerte, nicht kalibriert.</p>
+  <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0), Mittel mehrerer Modelle auf Tourhöhe, Spanne aus dem ECMWF-Ensemble. Rohwerte, nicht kalibriert.</p>
+  <?php if (!empty($region['stationen'])): foreach (array_intersect_key($schnee['messnetze'], $region['stationen']) as $n): ?><p>Messwerte: <a href="<?= h($n['url']) ?>" rel="noopener"><?= h($n['name']) ?></a> (<?= h($n['lizenz']) ?>), Rohdaten, ungeprüft.</p><?php endforeach; endif ?>
   <?= design_schalter() ?>
   <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
 </footer>

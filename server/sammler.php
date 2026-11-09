@@ -142,6 +142,8 @@ function quellen(array $katalog, string $modelle, ?array $schnee = null, string 
  * UNGEPRUEFT: welche Modelle snowfall_height liefern (sonst null, das Mittel nimmt
  * die uebrigen), ob das Ensemble past_days, snow_depth und freezing_level_height kennt.
  * lawine: Lageberichte der freigegebenen Warndienste, heute und morgen (lawine.php).
+ * stationen (seit 9.11.2026): Messwerte der Stationen, die der Katalog nennt, je
+ * Messnetz ein Abruf (lib/stationen.php).
  */
 function quellen_schnee(array $schnee, string $modelle): array
 {
@@ -167,6 +169,13 @@ function quellen_schnee(array $schnee, string $modelle): array
             'regionen' => array_map(fn($id) => ['id' => $id, 'typ' => 'lawine'], array_keys($dienste)),
             'art'      => 'lawine',
             'dienste'  => $dienste,
+        ],
+        'stationen' => [
+            'every'    => 60,
+            'regionen' => array_map(fn($id) => ['id' => $id, 'typ' => 'stationen'], array_keys(stationen_benoetigt($schnee))),
+            'art'      => 'stationen',
+            'netze'    => array_intersect_key($schnee['messnetze'] ?? [], stationen_benoetigt($schnee)),
+            'ids'      => stationen_benoetigt($schnee),
         ],
     ];
 }
@@ -415,7 +424,7 @@ function abruf(string $url, int $timeout, string $wo, array &$bericht): array
 /** Nur fuer die Tests: Open-Meteo und Alplakes durch einen lokalen Ersatz tauschen */
 function test_url(string $url, ?string $ersatz): string
 {
-    return $ersatz ? preg_replace('#^https://(?:[a-z-]+\.open-meteo\.com|alplakes-api\.eawag\.ch|aws\.slf\.ch|static\.avalanche\.report|static\.lawinen-warnung\.eu)#', $ersatz, $url) : $url;
+    return $ersatz ? preg_replace('#^https://(?:[a-z-]+\.open-meteo\.com|alplakes-api\.eawag\.ch|aws\.slf\.ch|static\.avalanche\.report|static\.lawinen-warnung\.eu|wiski\.tirol\.gv\.at)#', $ersatz, $url) : $url;
 }
 
 /**
@@ -465,6 +474,37 @@ function lawine_abrufen(string $id, array $dienst, ?string $ersatz, int $timeout
         $zeile['err'] = implode(' | ', $fehler);
     }
     return [$zeile, $fehler ? implode(' | ', $fehler) : null];
+}
+
+/**
+ * Stationen eines Messnetzes (seit 9.11.2026): ein Abruf, gespeichert werden nur die
+ * Stationen, die der Katalog nennt. Fehlt eine davon in der Antwort, steht das im
+ * Bericht, ist aber kein Fehler (Station kann ausfallen).
+ * Rueckgabe [zeile fuer die Datei, fehler|null]
+ */
+function stationen_abrufen(string $netz, array $info, array $ids, ?string $ersatz, int $timeout, array &$bericht): array
+{
+    $r = abruf(test_url($info['abruf'], $ersatz), $timeout, "stationen/$netz", $bericht);
+    $fehler = null;
+    $st = null;
+    if ($r['http'] >= 200 && $r['http'] < 300) {
+        $st = stationen_filtern($r['body'], $ids);
+        if ($st === null) {
+            $fehler = 'Antwort ist kein GeoJSON mit features: ' . substr(preg_replace('/\s+/', ' ', $r['body']), 0, 150);
+        } else {
+            $fehlen = array_diff($ids, array_keys($st));
+            $bericht[] = sprintf('stationen/%s: ok, %d von %d Stationen, %d KB, %d ms', $netz, count($st), count($ids), $r['bytes'] / 1024, $r['ms'])
+                       . ($fehlen ? ' (fehlen: ' . implode(', ', $fehlen) . ')' : '');
+        }
+    } else {
+        $fehler = "http={$r['http']} " . ($r['err'] !== '' ? $r['err'] : substr(preg_replace('/\s+/', ' ', $r['body']), 0, 150));
+    }
+    $zeile = ['ts' => gmdate('Y-m-d\TH:i:s\Z'), 'source' => 'stationen', 'ok' => $fehler === null, 'http' => $r['http'], 'ms' => $r['ms'],
+              'netz' => $netz, 'regionen' => [$netz], 'stationen' => $st ?? []];
+    if ($fehler !== null) {
+        $zeile['err'] = $fehler;
+    }
+    return [$zeile, $fehler];
 }
 
 /** Koordinaten mehrerer Regionen als Open-Meteo-Parameter */
@@ -691,7 +731,21 @@ foreach (quellen($KATALOG, $MODELLE, $SCHNEE, $SCHNEE_MODELLE) as $name => $q) {
         }
     }
 
-    foreach (in_array($q['art'] ?? '', ['alplakes', 'lawine'], true) ? [] : teile($q['regionen'], $TEIL_GROESSE) as $teilNr => [$teil, $zusatz]) {
+    if (($q['art'] ?? '') === 'stationen') {
+        foreach ($q['netze'] as $netz => $info) {
+            [$zeile, $f] = stationen_abrufen($netz, $info, $q['ids'][$netz] ?? [], $ersatz, $TIMEOUT, $bericht);
+            if (!anhaengen($DATA_DIR, $name, $zeile, $LAUF)) {
+                $probleme[] = "$name: Schreiben in $DATA_DIR fehlgeschlagen";
+                $alleOk = false;
+            }
+            if ($f !== null) {
+                $bericht[] = "$name/$netz: FEHLER $f";
+                $alleOk = false;
+            }
+        }
+    }
+
+    foreach (in_array($q['art'] ?? '', ['alplakes', 'lawine', 'stationen'], true) ? [] : teile($q['regionen'], $TEIL_GROESSE) as $teilNr => [$teil, $zusatz]) {
         $ids = array_column($teil, 'id');
         $url = test_url($q['basis'] . '?' . koordinaten($teil) . '&' . $q['query'] . $zusatz, $ersatz);
         // Open-Meteo zaehlt je Minute (ein Ort und ein Ensemble-Abruf wiegen mehrfach).
