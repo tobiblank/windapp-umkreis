@@ -228,13 +228,17 @@ function cm(?float $c): string
     return $c === null ? '?' : zahl(round($c)) . ' cm';
 }
 
-/** ☀ / ⛅ / ☁ nach der Bewoelkung im Fenster, null ohne Wert */
+/**
+ * ☀ / ⛅ / ☁ nach der Bewoelkung im Fenster, null ohne Wert. ☀, ☁ und ❄ sind von Haus
+ * aus Textzeichen (schwarz in der Schriftfarbe); erst das Variantenzeichen U+FE0F macht
+ * sie zum farbigen Emoji wie ⛅.
+ */
 function himmel_symbol(?float $wolken, bool $schneit = false): ?string
 {
     if ($schneit) {
-        return '❄';
+        return "❄\u{FE0F}";
     }
-    return match (schnee_himmel($wolken)) { 'sonnig' => '☀', 'teils sonnig' => '⛅', 'bewölkt' => '☁', default => null };
+    return match (schnee_himmel($wolken)) { 'sonnig' => "☀\u{FE0F}", 'teils sonnig' => '⛅', 'bewölkt' => "☁\u{FE0F}", default => null };
 }
 
 /** Tooltip der Kachel: alles, was dort keinen Platz hat */
