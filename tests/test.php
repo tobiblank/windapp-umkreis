@@ -904,8 +904,10 @@ pruefe(str_contains($html, 'id="design"') && str_contains($html, 'data-design="d
 pruefe(!str_contains($html, 'class="leise klein fahrzeit"') && !str_contains($html, 'class="abfahrt"'), 'geteilte Vorhersage: ohne Fahrzeit und Abfahrt');
 [$code, $html] = holen($sitePort, 'index.php?anreise=flug');
 pruefe($code === 200 && ohne_php_meldung($html) && substr_count($html, 'class="karte region') === 1 && str_contains($html, 'id="r-testsee-druck"')
-       && str_contains($html, 'Flug: Testflughafen (TST)') && str_contains($html, '≈ 20 min Transfer'),
-       'Flugziele: nur Regionen mit Anreise Flug, ohne Umkreis, mit Flughafen und Transfer');
+       && str_contains($html, 'Flug: Testflughafen (TST)') && str_contains($html, '≈ 20 min Transfer · ≈ ') && preg_match('/≈ \d+,\d t CO₂/', $html)
+       && str_contains($html, 'km allein im Auto') && str_contains($html, 'CO₂ der Flüge:'),
+       'Flugziele: nur Regionen mit Anreise Flug, ohne Umkreis, mit Flughafen, Transfer und CO₂ hin und zurück');
+pruefe(abs(flug_co2_t(1000) - 0.276) < 0.001 && abs(flug_als_auto_km(0.2296) - 1000) < 1, 'CO₂ eines Flugs: 1.000 km Luftlinie ≈ 0,28 t hin und zurück');
 pruefe(!str_contains($html, 'name="km"><') && !str_contains($html, 'class="umkreis"') && !str_contains($html, 'class="abfahrt"')
        && !str_contains($html, 'id="standort"') && str_contains($html, 'ansicht=woche&amp;anreise=flug') && str_contains($html, '>Transfer</option>'),
        'Flugziele: kein Umkreis, kein Standort, keine Abfahrt, Links behalten die Anreise');

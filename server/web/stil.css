@@ -169,6 +169,9 @@ a.tag:active { filter: brightness(.94); }
 .landkarte .flugzeug .leitwerk, .landkarte .flugzeug .fluegel { fill: var(--akzent); }
 .landkarte .flugzeug .fahrwerk { stroke: var(--text); stroke-width: 1.2px; }
 .landkarte .flugzeug .fahrer { fill: var(--akzent); }
+.landkarte .co2spur { pointer-events: none; }
+.landkarte .co2spur circle { fill: var(--leise); }
+.landkarte .co2spur text { fill: var(--karte); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-weight: 700; text-anchor: middle; }
 .landkarte .blick { fill: none; stroke: var(--akzent); stroke-width: 1.5px; stroke-dasharray: 2 3; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
 .landkarte .windstriche line { stroke: var(--text); stroke-width: 1.5px; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
 .landkarte .ankunft { pointer-events: none; }

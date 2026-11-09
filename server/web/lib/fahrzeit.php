@@ -181,3 +181,33 @@ function abfahrt(string $tag, int $ab, int $bis, DateTimeZone $tzRegion, int $mi
     }
     return ['art' => 'zu_spaet', 'zeit' => null];
 }
+
+// ===================================================================
+// CO2 EINES FLUGS (seit 9.11.2026)
+// ===================================================================
+//
+// Nuechterne Zahl an jedem Flugziel: Hin- und Rueckflug pro Person, Economy, als
+// Treibhausgase mit Nicht-CO2-Effekten (Kondensstreifen, Stickoxide). Grob: Luftlinie
+// vom Standort zum Vorhersagepunkt (der Flughafen liegt nah dabei) mal zwei, plus Umweg.
+// Faktor: UK DESNZ/DEFRA GHG Conversion Factors 2025, Flug Kurzstrecke (bis 3.700 km,
+// alle Flugziele des Katalogs), Durchschnitt aller Klassen, mit Strahlungsantrieb (rund
+// x 1,7), 0,128 kg CO2e je Personenkilometer; DEFRA rechnet 8 % Umweg auf die
+// Grosskreisdistanz. Zum Vergleich der Pkw nach UBA (TREMOD 6.71B, 2024): 164 g CO2e
+// je Personenkilometer bei 1,4 Personen, also rund 230 g je Kilometer allein im Auto.
+// Das UBA rechnet fuer Inlandsfluege mit 290 g/Pkm (Nicht-CO2-Faktor 1,5); Kurzstrecken
+// sind je km teurer, darum fuer die laengeren Flugziele der DEFRA-Wert.
+const FLUG_CO2_KG_PKM = 0.128;
+const FLUG_UMWEG = 1.08;
+const PKW_ALLEIN_CO2_KG_KM = 0.164 * 1.4;
+
+/** Hin und zurueck pro Person in Tonnen CO2e, aus der Luftlinie in km */
+function flug_co2_t(float $luftKm): float
+{
+    return 2 * $luftKm * FLUG_UMWEG * FLUG_CO2_KG_PKM / 1000;
+}
+
+/** So viele km allein im Auto entsprechen dieser Menge */
+function flug_als_auto_km(float $tonnen): float
+{
+    return $tonnen * 1000 / PKW_ALLEIN_CO2_KG_KM;
+}

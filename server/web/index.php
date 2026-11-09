@@ -435,12 +435,13 @@ function fahrzeit_mit_wort(array $f): string
     return fahrzeit_text($f) . ($f['min'] !== null ? ' Fahrt' : '');
 }
 
-/** "412 km Straße" (genau), "≈ 480 km Straße" (geschaetzt), "380 km Luftlinie" (kein Landweg); Flugziel: "≈ 25 min Transfer" */
+/** "412 km Straße" (genau), "≈ 480 km Straße" (geschaetzt), "380 km Luftlinie" (kein Landweg); Flugziel: "≈ 25 min Transfer · ≈ 0,4 t CO₂" */
 function km_text(array $e): string
 {
     $f = $e['fahrt'];
     if (isset($f['flug'])) {
-        return $f['min'] !== null ? '≈ ' . fahrzeit_text($f) . ' Transfer' : '';   // Transfer ist immer geschaetzt
+        // Transfer ist immer geschaetzt; CO2 hin und zurueck seit 9.11.2026 (flug_co2_t)
+        return ($f['min'] !== null ? '≈ ' . fahrzeit_text($f) . ' Transfer · ' : '') . '≈ ' . zahl(flug_co2_t((float)$e['km']), 1) . ' t CO₂';
     }
     if ($f['km'] === null) {
         return zahl((float)$e['km']) . ' km Luftlinie';
@@ -454,7 +455,10 @@ function fahrzeit_titel(array $e): string
     $f = $e['fahrt'];
     $luft = 'Luftlinie ' . zahl((float)$e['km']) . ' km';
     if (isset($f['flug'])) {
-        return 'Flugziel. Flughafen und Transfer zum Spot geschätzt; Flugzeiten und Preise sind nicht berücksichtigt.';
+        $t = flug_co2_t((float)$e['km']);
+        return 'Flugziel. Flughafen und Transfer zum Spot geschätzt; Flugzeiten und Preise sind nicht berücksichtigt. '
+             . 'Hin- und Rückflug pro Person ≈ ' . zahl($t, 2) . ' t CO₂-Äquivalente mit Kondensstreifen und anderen Nicht-CO₂-Effekten, '
+             . 'so viel wie ≈ ' . zahl(round(flug_als_auto_km($t), -2)) . ' km allein im Auto. Grob aus ' . zahl((float)$e['km']) . ' km Luftlinie, siehe Fuß der Seite.';
     }
     if ($f['min'] === null) {
         return 'Vom Startort aus keine Route auf der Straße (Insel?). ' . $luft;
@@ -913,6 +917,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
 <footer class="fuss klein leise">
   <p><b>Regel</b> heißt: Die Windlage ist aus Druckdifferenzen und Grundströmung abgeleitet (nach lokalen Vorhersageseiten wie kitewetter.at), die Stärke ist ein geschätzter typischer Wert.</p>
   <p><b>Rohwerte, nicht kalibriert.</b> Modelle unterschätzen lokale Thermik oft (Seen mit „Thermik“ markiert, dort lieber die verlinkte lokale Vorhersage ansehen); Böen und Gewitter prüft nur das Modellmittel. Umkreis nach Straßen-km mit dem Auto (ohne Landweg: Luftlinie zum Vorhersagepunkt); Fahrzeit ohne Verkehr und Pausen, „≈“ heißt aus der Luftlinie geschätzt. Flugziele (Anreise „Flug“): ohne Umkreis, mit geschätztem Transfer vom Flughafen.</p>
+  <?php if ($flug): ?><p><b>CO₂ der Flüge:</b> Hin- und Rückflug pro Person, Treibhausgase mit Nicht-CO₂-Effekten (Kondensstreifen, Stickoxide), grob aus der Luftlinie ab <?= $eigenerOrt ? 'deinem Standort' : 'Inning' ?> mal zwei plus 8 % Umweg und <?= zahl(FLUG_CO2_KG_PKM * 1000) ?> g je Personenkilometer (<a href="https://www.gov.uk/government/collections/government-conversion-factors-for-company-reporting">UK-Regierung, Umrechnungsfaktoren 2025</a>, Kurzstrecke, mit Strahlungsantrieb). Zum Vergleich ein Auto, allein gefahren: rund <?= zahl(PKW_ALLEIN_CO2_KG_KM * 1000) ?> g je km (<a href="https://www.umweltbundesamt.de/themen/verkehr/emissionsdaten">Umweltbundesamt</a>, 2024: 164 g je Personenkilometer bei 1,4 Personen). Eine Schätzung; Flugzeugtyp, Route und Auslastung ändern sie deutlich.</p><?php endif ?>
   <?php if ($fahrzeiten): ?><p>Fahrzeiten ab <?= h($fahrzeiten['start']['name'] ?? 'Startort') ?>: © <a href="https://openrouteservice.org/">openrouteservice.org</a> by HeiGIT, Kartendaten © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende.</p><?php endif ?>
   <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0) · Wassertemperatur der Seen: <a href="https://www.alplakes.eawag.ch/">Alplakes, Eawag</a> (CC BY 4.0) · Für Stegen genauer: <a href="https://ammerseewind.de">ammerseewind.de</a></p>
   <?= design_schalter() ?>

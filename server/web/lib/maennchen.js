@@ -12,7 +12,8 @@
 // spielt alles neu ab, dann mit Ton: Jubelpfiff beim Juchhu, Doppelhupe beim Einsteigen,
 // Motor waehrend der Fahrt. Bei Flugzielen (seit 9.11.2026) ein Flugzeug statt des Busses: hoher
 // Bogen, die Nase folgt der Bahn, es wird unterwegs etwas groesser (hoch oben), Duesenrauschen
-// statt Hupe und Motor
+// statt Hupe und Motor; statt der gestrichelten Spur bleiben kleine graue „CO₂“-Wölkchen
+// hinter dem Flugzeug stehen, auch nach der Landung
 // (Web Audio, ohne Datei; seit 8.11.2026). Beim Laden bleibt es stumm, weil Browser Ton erst
 // nach einem Antippen erlauben und eine Wetterseite nicht von selbst brummen soll. Schalter
 // "Ton" im Fuss, gemerkt in wohinfahrma_ton (Standard an). Zeiten in ms, Laengen in Einheiten
@@ -50,6 +51,22 @@
     } else { A = null; }
   }
   var fahrt = !!A;
+  // CO2-Woelkchen entlang der Flugbahn (seit 9.11.2026), erscheinen, wenn das Flugzeug vorbei ist
+  var woelkchen = [];
+  if (fahrt && flieger) {
+    var co2 = document.createElementNS(NS, 'g');
+    co2.setAttribute('class', 'co2spur');
+    bus.parentNode.insertBefore(co2, bus);
+    for (var i = 0; i < 9; i++) {
+      var f = 0.07 + i * 0.1, uf = 1 - f, g = document.createElementNS(NS, 'g');
+      var wx = uf * uf * A[0] + 2 * uf * f * C[0] + f * f * B[0], wy = uf * uf * A[1] + 2 * uf * f * C[1] + f * f * B[1] - 1.6 * U;
+      g.innerHTML = '<circle cx="-0.55" cy="0.1" r="0.6"/><circle cx="0.5" cy="0.1" r="0.6"/><circle cx="0" cy="-0.25" r="0.75"/>'
+                  + '<text x="0" y="0.3" font-size="0.62">CO₂</text>';
+      g.setAttribute('opacity', 0);
+      co2.appendChild(g);
+      woelkchen.push({ g: g, f: f, x: wx, y: wy });
+    }
+  }
   // Ankunft: ueber dem Zielpunkt
   var wedel = [], sack = [], flocken = [], art = ankunft ? ankunft.dataset.art : null;
   if (ankunft) {
@@ -258,7 +275,12 @@
       bus.setAttribute('transform', 'translate(' + px + ' ' + (py + hop) + ')' + dreh + ' scale(' + (dir * U * gr) + ' ' + (U * gr) + ')');
       bus.setAttribute('opacity', busOp);
       fahrer.setAttribute('opacity', t > 5700 && t < 9400 ? 1 : 0);   // das Maennchen sitzt am Steuer
-      spur.setAttribute('opacity', faehrt ? 0.6 : t >= 7900 && t < 8500 ? 0.6 * (1 - seg(t, 7900, 8500)) : 0);
+      spur.setAttribute('opacity', flieger ? 0 : faehrt ? 0.6 : t >= 7900 && t < 8500 ? 0.6 * (1 - seg(t, 7900, 8500)) : 0);
+      woelkchen.forEach(function (w) {   // bleiben stehen, steigen ein wenig und werden groesser
+        var a = cl((fa - w.f) * 6);
+        w.g.setAttribute('opacity', (0.85 * a).toFixed(2));
+        w.g.setAttribute('transform', 'translate(' + w.x.toFixed(2) + ' ' + (w.y - 0.5 * U * a).toFixed(2) + ') scale(' + (U * (0.8 + 0.35 * a)).toFixed(3) + ')');
+      });
       spur.style.strokeDashoffset = -t / 40;
       weht(t, 1 - seg(t, 9400, 9800));
     }
