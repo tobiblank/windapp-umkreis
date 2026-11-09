@@ -424,7 +424,7 @@ function abruf(string $url, int $timeout, string $wo, array &$bericht): array
 /** Nur fuer die Tests: Open-Meteo und Alplakes durch einen lokalen Ersatz tauschen */
 function test_url(string $url, ?string $ersatz): string
 {
-    return $ersatz ? preg_replace('#^https://(?:[a-z-]+\.open-meteo\.com|alplakes-api\.eawag\.ch|aws\.slf\.ch|static\.avalanche\.report|static\.lawinen-warnung\.eu|wiski\.tirol\.gv\.at)#', $ersatz, $url) : $url;
+    return $ersatz ? preg_replace('#^https://(?:[a-z-]+\.open-meteo\.com|alplakes-api\.eawag\.ch|aws\.slf\.ch|static\.avalanche\.report|static\.lawinen-warnung\.eu|wiski\.tirol\.gv\.at|dataset\.api\.hub\.geosphere\.at|data\.geo\.admin\.ch)#', $ersatz, $url) : $url;
 }
 
 /**
@@ -484,10 +484,28 @@ function lawine_abrufen(string $id, array $dienst, ?string $ersatz, int $timeout
  */
 function stationen_abrufen(string $netz, array $info, array $ids, ?string $ersatz, int $timeout, array &$bericht): array
 {
-    $r = abruf(test_url($info['abruf'], $ersatz), $timeout, "stationen/$netz", $bericht);
+    $art = $info['art'] ?? 'lwd-geojson';
+    if ($art === 'meteoswiss') {
+        return stationen_meteoswiss($netz, $info, $ids, $ersatz, $timeout, $bericht);
+    }
+    $url = $info['abruf'];
+    if ($art === 'geosphere') {
+        $url .= '?' . http_build_query(['parameters' => 'SCHNEE', 'station_ids' => implode(',', $ids),
+                    'start' => gmdate('Y-m-d\TH:i', time() - STATION_STUNDEN_ZURUECK * 3600), 'end' => gmdate('Y-m-d\TH:i')]);
+    }
+    $r = abruf(test_url($url, $ersatz), $timeout, "stationen/$netz", $bericht);
     $fehler = null;
     $st = null;
-    if ($r['http'] >= 200 && $r['http'] < 300) {
+    if ($r['http'] >= 200 && $r['http'] < 300 && $art === 'geosphere') {
+        $st = geosphere_lesen($r['body'], $info['stationen'] ?? []);
+        if ($st === null) {
+            $fehler = 'Antwort ist keine Stationszeitreihe (timestamps, features): ' . substr(preg_replace('/\s+/', ' ', $r['body']), 0, 150);
+        } else {
+            $fehlen = array_diff($ids, array_keys($st));
+            $bericht[] = sprintf('stationen/%s: ok, %d von %d Stationen mit Schneehöhe, %d KB, %d ms', $netz, count($st), count($ids), $r['bytes'] / 1024, $r['ms'])
+                       . ($fehlen ? ' (ohne Wert: ' . implode(', ', $fehlen) . ')' : '');
+        }
+    } elseif ($r['http'] >= 200 && $r['http'] < 300) {
         $st = stationen_filtern($r['body'], $ids);
         if ($st === null) {
             $fehler = 'Antwort ist kein GeoJSON mit features: ' . substr(preg_replace('/\s+/', ' ', $r['body']), 0, 150);
@@ -505,6 +523,39 @@ function stationen_abrufen(string $netz, array $info, array $ids, ?string $ersat
         $zeile['err'] = $fehler;
     }
     return [$zeile, $fehler];
+}
+
+/** MeteoSwiss: eine CSV je Station; eine fehlende Datei oder Spalte ist kein Fehler des Netzes */
+function stationen_meteoswiss(string $netz, array $info, array $ids, ?string $ersatz, int $timeout, array &$bericht): array
+{
+    $st = [];
+    $fehler = [];
+    $leer = [];
+    $ms = 0;
+    foreach ($ids as $id) {
+        $r = abruf(test_url(str_replace('{id}', strtolower($id), $info['abruf']), $ersatz), $timeout, "stationen/$netz/$id", $bericht);
+        $ms += $r['ms'];
+        if ($r['http'] < 200 || $r['http'] >= 300) {
+            $fehler[] = "$id: http={$r['http']} " . ($r['err'] !== '' ? $r['err'] : substr(preg_replace('/\s+/', ' ', $r['body']), 0, 100));
+            continue;
+        }
+        $e = meteoswiss_lesen(function_exists('mb_convert_encoding') ? mb_convert_encoding($r['body'], 'UTF-8', 'Windows-1252') : $r['body'], $id, $info['stationen'][$id] ?? []);
+        if ($e === null) {
+            $fehler[] = "$id: keine CSV mit reference_timestamp";
+        } elseif ($e === ['leer']) {
+            $leer[] = $id;
+        } else {
+            $st[$id] = $e;
+        }
+    }
+    $bericht[] = sprintf('stationen/%s: %d von %d Stationen mit Schneehöhe, %d ms', $netz, count($st), count($ids), $ms) . ($leer ? ' (ohne Wert: ' . implode(', ', $leer) . ')' : '');
+    $ok = !$fehler || $st;
+    $zeile = ['ts' => gmdate('Y-m-d\TH:i:s\Z'), 'source' => 'stationen', 'ok' => $ok, 'http' => $ok ? 200 : 0, 'ms' => $ms,
+              'netz' => $netz, 'regionen' => [$netz], 'stationen' => $st];
+    if ($fehler) {
+        $zeile['err'] = implode(' | ', $fehler);
+    }
+    return [$zeile, $fehler ? implode(' | ', $fehler) : null];
 }
 
 /** Koordinaten mehrerer Regionen als Open-Meteo-Parameter */

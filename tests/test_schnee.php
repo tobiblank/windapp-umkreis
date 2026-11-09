@@ -85,6 +85,15 @@ $werte = stationen_region($sKatA, $mess);
 pruefe(count($werte) === 2 && $werte[0]['wert']['name'] === 'Gutalm' && $werte[0]['wert']['hs'] == 42.3 && $werte[0]['wert']['hsd24'] == 5.2 && $werte[0]['wert']['hoehe'] === 2450
        && $werte[1]['wert']['name'] === 'Sprungjoch' && $werte[1]['wert']['hsd24'] === null,
        'Stationen: negative Schneehöhe fällt weg, unplausible Änderung in 24 h wird leer');
+$geo = $mess['geosphere']['stationen'] ?? [];
+pruefe(array_map('strval', array_keys($geo)) === ['111'] && $geo['111']['hs'] == 42.0 && abs($geo['111']['hsd24'] - 12.0) < 0.2 && $geo['111']['name'] === 'Hundertelf' && $geo['111']['hoehe'] === 2100
+       && str_contains($ausText, 'stationen/geosphere: ok, 1 von 2 Stationen mit Schneehöhe') && str_contains($ausText, 'ohne Wert: 222'),
+       'GeoSphere: letzter vorhandener Wert (letzter leer), Änderung gegen 24 h vorher, Station ohne Werte fehlt ohne Fehler');
+$chm = $mess['meteoswiss']['stationen'] ?? [];
+pruefe(array_keys($chm) === ['xaa'] && $chm['xaa']['hs'] == 55.0 && $chm['xaa']['hsd24'] == 5.0 && str_contains($ausText, 'stationen/meteoswiss: 1 von 2 Stationen mit Schneehöhe') && str_contains($ausText, 'ohne Wert: xbb'),
+       'MeteoSwiss: CSV je Station, htoauts0, Station ohne Spalte fehlt ohne Fehler');
+pruefe(stationen_aus_reihe([1000 => 5.0, 1000 + 86400 => 8.0]) === [8.0, 3.0, gmdate('Y-m-d\TH:i:s\Z', 1000 + 86400)] && stationen_aus_reihe([5 => null]) === null
+       && stationen_aus_reihe([0 => 5.0, 7200 => 6.0])[1] === null, 'Zeitreihe: Änderung nur mit Wert rund 24 h vorher');
 pruefe(stationen_wert($mess['tirol']['stationen']['sta-gut'], time() + 4 * 86400) === null && stationen_wert($mess['tirol']['stationen']['sta-gut'], time() + 13 * 3600)['alt'],
        'Stationen: nach 12 h mit Zeit, nach 72 h nicht mehr angezeigt');
 pruefe(stationen_pruefen(['messnetze' => ['x' => ['name' => 'X']], 'regionen' => [['id' => 'r', 'stationen' => ['y' => []]]]]) !== [], 'Katalog: fehlerhafte Messnetze und Stationen werden gemeldet');

@@ -64,6 +64,42 @@
       "abruf": "https://wiski.tirol.gv.at/lawine/produkte/ogd.geojson",
       "url": "https://lawinen.report/weather/stations",
       "lizenz": "CC BY 4.0"
+    },
+    "geosphere": {
+      "art": "geosphere",
+      "name": "GeoSphere Test",
+      "kurz": "GeoSphere",
+      "abruf": "https://dataset.api.hub.geosphere.at/v1/station/historical/tawes-v1-10min",
+      "url": "https://data.hub.geosphere.at/dataset/tawes-v1-10min",
+      "lizenz": "CC BY 4.0",
+      "stationen": {
+        "111": {
+          "name": "Hundertelf",
+          "hoehe": 2100
+        },
+        "222": {
+          "name": "Leerstation",
+          "hoehe": 1500
+        }
+      }
+    },
+    "meteoswiss": {
+      "art": "meteoswiss",
+      "name": "MeteoSchweiz Test",
+      "kurz": "MeteoSchweiz",
+      "abruf": "https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/{id}/ogd-smn_{id}_t_now.csv",
+      "url": "https://www.meteoschweiz.admin.ch/",
+      "lizenz": "Quelle: MeteoSchweiz",
+      "stationen": {
+        "xaa": {
+          "name": "Ixa",
+          "hoehe": 1800
+        },
+        "xbb": {
+          "name": "Ixb",
+          "hoehe": 1700
+        }
+      }
     }
   },
   "regionen": [
@@ -109,7 +145,17 @@
       "warndienst": "bayern",
       "eaws": [
         "DE-BY-30"
-      ]
+      ],
+      "stationen": {
+        "geosphere": [
+          "111",
+          "222"
+        ],
+        "meteoswiss": [
+          "xaa",
+          "xbb"
+        ]
+      }
     },
     {
       "id": "schnee-c",

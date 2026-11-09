@@ -60,6 +60,39 @@ if ($pfad === '/lawine/produkte/ogd.geojson') {
     ]]);
     exit;
 }
+// GeoSphere Data Hub (seit 9.11.2026): Zeitreihe SCHNEE alle 10 Minuten, Station 111
+// steigt in 24 h von 30 auf 42 cm, letzter Wert leer (wie oft beim echten Dienst);
+// Station 222 ohne Schneehoehe (alles null)
+if ($pfad === '/v1/station/historical/tawes-v1-10min') {
+    header('Content-Type: application/json');
+    $ende = intdiv(time(), 600) * 600;
+    $ts = [];
+    for ($t = $ende - 26 * 3600; $t <= $ende; $t += 600) {
+        $ts[] = gmdate('Y-m-d\TH:i+00:00', $t);
+    }
+    $n = count($ts);
+    $a = [];
+    foreach ($ts as $i => $_) {
+        $a[] = $i === $n - 1 ? null : round(30 + 12 * max(0, $i - ($n - 1 - 144)) / 143, 1);
+    }
+    echo json_encode(['media_type' => 'application/json', 'type' => 'FeatureCollection', 'version' => 'v1', 'timestamps' => $ts, 'features' => [
+        ['type' => 'Feature', 'geometry' => ['type' => 'Point', 'coordinates' => [13.0, 47.1]], 'properties' => ['station' => '111', 'parameters' => ['SCHNEE' => ['name' => 'Schneehöhe', 'unit' => 'cm', 'data' => $a]]]],
+        ['type' => 'Feature', 'geometry' => ['type' => 'Point', 'coordinates' => [13.1, 47.2]], 'properties' => ['station' => '222', 'parameters' => ['SCHNEE' => ['name' => 'Schneehöhe', 'unit' => 'cm', 'data' => array_fill(0, $n, null)]]]],
+    ]]);
+    exit;
+}
+// MeteoSwiss SwissMetNet (seit 9.11.2026): CSV je Station; xaa mit Schneehoehe 55 cm,
+// xbb ohne Spalte htoauts0
+if (preg_match('#^/ch\.meteoschweiz\.ogd-smn/([a-z]+)/ogd-smn_\1_t_now\.csv$#', $pfad, $m)) {
+    header('Content-Type: text/csv; charset=windows-1252');
+    $ende = intdiv(time(), 600) * 600;
+    $mit = $m[1] === 'xaa';
+    echo "station_abbr;reference_timestamp;tre200s0" . ($mit ? ';htoauts0' : '') . "\r\n";
+    for ($t = $ende - 24 * 3600; $t <= $ende; $t += 600) {
+        echo strtoupper($m[1]) . ';' . gmdate('d.m.Y H:i', $t) . ';-2.1' . ($mit ? ';' . ($t < $ende - 12 * 3600 ? '50.0' : '55.0') : '') . "\r\n";
+    }
+    exit;
+}
 // Lageberichte (seit 8.11.2026)
 $jetztTs = time();
 $gueltig = ['startTime' => gmdate('Y-m-d\TH:i:s\Z', $jetztTs - 86400), 'endTime' => gmdate('Y-m-d\TH:i:s\Z', $jetztTs + 2 * 86400)];

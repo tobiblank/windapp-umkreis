@@ -4,8 +4,15 @@
  * dem Modellwert.
  *
  * Katalog (daten/schneeregionen.json):
- *   messnetze  {id: {name, kurz, abruf, url, lizenz}}  abruf = GeoJSON aller Stationen
- *   regionen[].stationen  {netz-id: [plot-id, ...]}    in dieser Reihenfolge angezeigt
+ *   messnetze  {id: {art, name, kurz, abruf, url, lizenz, stationen?}}
+ *     art  lwd-geojson (Standard): abruf = GeoJSON aller Stationen mit Namen und Werten
+ *          geosphere: GeoSphere Austria Data Hub, abruf = Endpunkt der Zeitreihe,
+ *                     ein Abruf fuer alle Stationen, Parameter SCHNEE (cm)
+ *          meteoswiss: SwissMetNet, abruf mit {id} = Kuerzel klein, eine CSV je Station
+ *                     (10-Minuten-Werte seit gestern 12 UTC), Spalte htoauts0 (cm)
+ *     stationen  bei geosphere und meteoswiss: {id: {name, hoehe}} aus den Stationslisten,
+ *                weil die Antwort keine Namen enthaelt
+ *   regionen[].stationen  {netz-id: [station-id, ...]}  in dieser Reihenfolge angezeigt
  *
  * Erstes Netz: Wetterstationen Tirol (LWD Tirol und Hydrographischer Dienst Tirol,
  * Land Tirol, data.gv.at, CC BY 4.0, stuendlich). Felder je Station (properties),
@@ -74,6 +81,108 @@ function stationen_filtern(string $body, array $ids): ?array
         ];
     }
     return $out;
+}
+
+const STATION_ARTEN = ['lwd-geojson', 'geosphere', 'meteoswiss'];
+const STATION_STUNDEN_ZURUECK = 26; // Zeitreihe: so weit zurueck, fuer die Aenderung in 24 h
+
+/**
+ * Aus einer Zeitreihe (UTC-Zeitstempel => Wert oder null) der letzte Wert und die
+ * Aenderung gegenueber dem Wert rund 24 h davor (+-40 min), sonst null.
+ * Rueckgabe [hs, hsd24, zeit ISO] oder null ohne Wert.
+ */
+function stationen_aus_reihe(array $reihe): ?array
+{
+    $werte = array_filter($reihe, fn($v) => $v !== null && is_numeric($v));
+    if (!$werte) {
+        return null;
+    }
+    ksort($werte);
+    $letzt = array_key_last($werte);
+    $hs = (float)$werte[$letzt];
+    $ziel = $letzt - 86400;
+    $vorher = null;
+    $abstand = 2400;
+    foreach ($werte as $ts => $v) {
+        if (abs($ts - $ziel) <= $abstand) {
+            $abstand = abs($ts - $ziel);
+            $vorher = (float)$v;
+        }
+    }
+    return [$hs, $vorher === null ? null : round($hs - $vorher, 1), gmdate('Y-m-d\TH:i:s\Z', $letzt)];
+}
+
+/** Eintrag im Format von stationen_filtern() aus Name/Hoehe des Katalogs und einer Zeitreihe */
+function stationen_eintrag(string $id, array $meta, ?array $wert, string $betreiber): ?array
+{
+    if ($wert === null) {
+        return null;
+    }
+    [$hs, $hsd, $zeit] = $wert;
+    return ['name' => (string)($meta['name'] ?? $id), 'lat' => null, 'lon' => null, 'hoehe' => isset($meta['hoehe']) ? (int)$meta['hoehe'] : null,
+            'hs' => $hs, 'hsd24' => $hsd, 'hsd72' => null, 'lt' => null, 'zeit' => $zeit, 'region' => null, 'betreiber' => $betreiber];
+}
+
+/**
+ * GeoSphere Data Hub, Stationszeitreihe als JSON: {timestamps: [ISO], features: [
+ *   {properties: {station: "11344", parameters: {SCHNEE: {data: [...]}}}}]}.
+ * Rueckgabe [id => eintrag] (Stationen ohne Wert fehlen) oder null, wenn das Format nicht passt.
+ */
+function geosphere_lesen(string $body, array $meta): ?array
+{
+    $d = json_decode($body, true);
+    if (!is_array($d) || !is_array($d['timestamps'] ?? null) || !is_array($d['features'] ?? null)) {
+        return null;
+    }
+    $zeiten = array_map(fn($z) => strtotime((string)$z), $d['timestamps']);
+    $out = [];
+    foreach ($d['features'] as $f) {
+        $id = (string)($f['properties']['station'] ?? '');
+        $daten = $f['properties']['parameters']['SCHNEE']['data'] ?? null;
+        if ($id === '' || !is_array($daten)) {
+            continue;
+        }
+        $reihe = [];
+        foreach ($daten as $i => $v) {
+            if (($zeiten[$i] ?? false) !== false) {
+                $reihe[$zeiten[$i]] = $v;
+            }
+        }
+        $e = stationen_eintrag($id, $meta[$id] ?? [], stationen_aus_reihe($reihe), 'GeoSphere Austria');
+        if ($e) {
+            $out[$id] = $e;
+        }
+    }
+    return $out;
+}
+
+/**
+ * MeteoSwiss SwissMetNet, CSV einer Station (Semikolon, Windows-1252, Zeit
+ * "dd.mm.yyyy HH:MM" in UTC am Ende des Intervalls), Spalte htoauts0.
+ * Rueckgabe eintrag, ['leer'] ohne Schneehoehe oder null, wenn das Format nicht passt.
+ */
+function meteoswiss_lesen(string $body, string $id, array $meta): ?array
+{
+    $zeilen = preg_split('/\r?\n/', trim($body));
+    $kopf = str_getcsv(array_shift($zeilen) ?? '', ';', '"', '');
+    $iz = array_search('reference_timestamp', $kopf, true);
+    $iw = array_search('htoauts0', $kopf, true);
+    if ($iz === false) {
+        return null;
+    }
+    if ($iw === false) {
+        return ['leer'];
+    }
+    $reihe = [];
+    foreach ($zeilen as $z) {
+        $c = str_getcsv($z, ';', '"', '');
+        $d = DateTimeImmutable::createFromFormat('d.m.Y H:i', (string)($c[$iz] ?? ''), new DateTimeZone('UTC'));
+        if ($d) {
+            $v = trim((string)($c[$iw] ?? ''));
+            $reihe[$d->getTimestamp()] = $v === '' ? null : (float)$v;
+        }
+    }
+    return stationen_eintrag($id, $meta, stationen_aus_reihe($reihe), 'MeteoSchweiz') ?? ['leer'];
 }
 
 /** Neueste gelungene Zeile je Netz: [netz => ['ts' => ..., 'stationen' => [...]]] */
@@ -173,6 +282,16 @@ function stationen_pruefen(array $d): array
                 $f[] = "$w: $k muss mit https:// beginnen";
             }
         }
+        $art = $n['art'] ?? 'lwd-geojson';
+        if (!in_array($art, STATION_ARTEN, true)) {
+            $f[] = "$w: art muss " . implode(', ', STATION_ARTEN) . ' sein';
+        }
+        if ($art === 'meteoswiss' && !str_contains((string)($n['abruf'] ?? ''), '{id}')) {
+            $f[] = "$w: abruf braucht {id}";
+        }
+        if ($art !== 'lwd-geojson' && !is_array($n['stationen'] ?? null)) {
+            $f[] = "$w: stationen {id: {name, hoehe}} fehlt";
+        }
     }
     foreach ($d['regionen'] ?? [] as $i => $r) {
         if (!isset($r['stationen'])) {
@@ -189,6 +308,10 @@ function stationen_pruefen(array $d): array
             }
             if (!is_array($ids) || !array_is_list($ids) || !$ids || array_filter($ids, fn($x) => !is_string($x) || $x === '')) {
                 $f[] = "$wo: stationen.$netz muss eine nicht leere Liste von Kennungen sein";
+            } elseif (isset($netze[$netz]['stationen']) && is_array($netze[$netz]['stationen'])) {
+                foreach (array_diff($ids, array_keys($netze[$netz]['stationen'])) as $x) {
+                    $f[] = "$wo: Station $x fehlt in messnetze.$netz.stationen";
+                }
             }
         }
     }
