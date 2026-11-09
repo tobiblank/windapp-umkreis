@@ -60,7 +60,7 @@ foreach ($baum as $p) {
 echo 'Namen: ' . count($namen) . "\n";
 
 // Polygone der benoetigten Praefixe
-$praefixe = ['AT-07', 'AT-08', 'DE-BY', 'IT-32-BZ', 'IT-25', 'CH'];
+$praefixe = ['AT-07', 'AT-08', 'DE-BY', 'IT-32-BZ', 'IT-25-SO-LI', 'IT-25', 'CH'];
 $flaechen = [];
 foreach ($baum as $p) {
     foreach ($praefixe as $pr) {
@@ -127,12 +127,21 @@ foreach ($regionen as $r) {
         $id = $wo($p[0], $p[1]);
         $treffer[] = "$was=" . ($id ? $id . ' ' . ($namen[$id] ?? '?') : '-');
     }
-    printf("%-20s jetzt %s %s\n    %s\n", $r['id'], json_encode($r['eaws']), json_encode($r['eaws_namen'] ?? null), implode("\n    ", $treffer));
+    $h = json_decode((string)holen('https://api.open-meteo.com/v1/elevation?' . http_build_query([
+        'latitude' => $pkt['punkt'][0] . ',' . $pkt['anfahrt'][0], 'longitude' => $pkt['punkt'][1] . ',' . $pkt['anfahrt'][1]])), true)['elevation'] ?? [];
+    printf("%-20s jetzt %s %s  Hoehe Punkt %s m, Anfahrt %s m (Katalog Tal %d, Tour %d)\n    %s\n", $r['id'], json_encode($r['eaws']), json_encode($r['eaws_namen'] ?? null),
+           json_encode($h[0] ?? null), json_encode($h[1] ?? null), $r['hoehe_tal'], $r['hoehe_tour'], implode("\n    ", $treffer));
+}
+
+foreach ($flaechen as $id => $g) {
+    if (str_starts_with($id, 'IT-25-SO')) {
+        echo "Flaeche $id " . ($namen[$id] ?? '?') . "\n";
+    }
 }
 
 // Berichte in der EAWS-Sammlung (letzter Winter)
-foreach (['IT-25', 'DE-BY', 'AT-07', 'AT-08', 'IT-32-BZ'] as $pr) {
-    foreach (['2026-02-15', '2026-03-15'] as $tag) {
+foreach (['IT-25-SO-LI', 'IT-25'] as $pr) {
+    foreach (['2026-02-15'] as $tag) {
         $b = holen("https://static.avalanche.report/eaws_bulletins/$tag/$tag-$pr.json");
         echo "Sammlung $tag $pr: " . ($b === null ? 'fehlt' : strlen($b) . ' Bytes, ' . substr(preg_replace('/\s+/', ' ', $b), 0, 300)) . "\n";
     }
