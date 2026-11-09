@@ -1,0 +1,31 @@
+name: Seite ansehen
+
+# Von Hand starten (seit 9.11.2026): ruft eine Seite von wohinfahrma.de ab und zeigt die
+# Zeilen, die zum Muster passen (zum Pruefen nach einem Deploy, ohne Browser).
+# Aendert nichts.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pfad:
+        description: "Pfad, z. B. schnee.php"
+        default: "schnee.php"
+      muster:
+        description: "grep -E Muster"
+        default: "Schneehöhe|Messwerte|Modellwerte"
+
+permissions:
+  contents: read
+
+jobs:
+  ansehen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Abrufen
+        env:
+          PFAD: ${{ inputs.pfad }}
+          MUSTER: ${{ inputs.muster }}
+        run: |
+          curl -sS --max-time 60 "https://wohinfahrma.de/$PFAD" -o seite.html -w 'http=%{http_code} %{size_download} Bytes\n'
+          sed -e 's/<\/p>/<\/p>\n/g' seite.html | grep -E "$MUSTER" | sed -e 's/<[^>]*>//g' -e 's/^[[:space:]]*//' | head -80
