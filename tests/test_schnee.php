@@ -66,7 +66,7 @@ $sCmd = fn(string $ziel, string $extra = '') => 'UMKREIS_TEST_URL=' . escapeshel
 exec($sCmd("$tmp/schnee"), $ausS, $rcS);
 $ausText = implode("\n", $ausS);
 pruefe($rcS === 0 && !str_contains($ausText, 'FEHLER'), 'Action-Lauf mit --schnee ohne Fehler' . ($rcS ? ': ' . substr($ausText, -400) : ''));
-foreach (['schnee_vorhersage', 'schnee_ensemble', 'lawine', 'vorhersage'] as $q) {
+foreach (['schnee_vorhersage', 'schnee_ensemble', 'schnee_raster', 'lawine', 'vorhersage'] as $q) {
     pruefe(count(glob("$tmp/schnee/$q/" . gmdate('Y-m-d') . '_*.ndjson.gz')) === 1, "$q: eine gezippte Datei für den Lauf");
 }
 pruefe(str_contains($ausText, 'lawine/euregio: ') && str_contains($ausText, 'noch kein Bericht (404)') && !str_contains($ausText, 'lawine/gesperrt'),
@@ -74,6 +74,16 @@ pruefe(str_contains($ausText, 'lawine/euregio: ') && str_contains($ausText, 'noc
 $sStand = daten_laden("$tmp/schnee", ['schnee_vorhersage', 'schnee_ensemble']);
 pruefe(($sStand['schnee_vorhersage']['schnee-a']['test_elevation'] ?? null) === '2400,2000,2200,2400', 'Vorhersage auf Tourhöhe angefragt (elevation je Ort)');
 pruefe(count($sStand['schnee_vorhersage']['schnee-a']['hourly']['time']) === 24 * 11, '3 Tage zurück (past_days) und 8 voraus');
+$rs = schnee_raster_laden("$tmp/schnee");
+$rp = schnee_raster_punkte();
+$west = $rs['zellen']['r47.25_10.00'] ?? null;
+$ost = $rs['zellen']['r47.25_13.00'] ?? null;
+$gestern = gmdate('Y-m-d', time() - 86400);
+pruefe($rs && count($rs['zellen']) === count($rp) && count($rp) > 200 && count($rp) < 400 && $west && $ost
+       && ($west['neu'][gmdate('Y-m-d')] ?? 0) > 10 && ($ost['neu'][gmdate('Y-m-d')] ?? -1) == 0 && !isset($west['hourly']) && !isset($west['neu'][$gestern]),
+       'Neuschnee-Raster: alle Punkte, nur Tageswerte gespeichert, Schnee nur unter der Schneefallgrenze');
+pruefe(schnee_im_umriss(47.27, 11.39) && schnee_im_umriss(46.5, 9.84) && !schnee_im_umriss(48.14, 11.58) && !schnee_im_umriss(45.46, 9.19),
+       'Alpenumriss: Innsbruck und Engadin drin, München und Mailand nicht');
 $lagen = lawine_laden("$tmp/schnee");
 $euIds = array_merge(...array_map(fn($b) => array_column($b['regionen'], 0), $lagen['euregio']['bulletins'] ?? []));
 pruefe($euIds === ['IT-32-BZ-08-01'], 'Euregio: nur Südtirol gespeichert, Tirol nicht');
@@ -217,6 +227,8 @@ pruefe(preg_match('#id="r-schnee-d".*?Lawinenlage: <a href="https://example.org/
        'nicht freigegebener Dienst: nur Link, keine Stufe');
 pruefe(str_contains($html, '<nav class="modus" aria-label="Modus"><a href="./">Wind</a><a href="schnee.php" aria-current="page">Schnee</a>'), 'Schalter Wind · Schnee');
 pruefe(str_contains($html, '<details class="karte landkarte" id="landkarte" open>') && str_contains($html, 'class="punkt s-go"'), 'Karte mit blauen Punkten');
+pruefe(str_contains($html, 'class="windfeld schneefeld schneeraster"') && str_contains($html, 'Neuschnee auf 2.000 m') && str_contains($html, 'id="feldKnopf"'),
+       'Karte mit Neuschnee-Raster und Schalter');
 pruefe(str_contains($html, 'class="teilen" hidden') && str_contains($html, 'Abfahrt bis'), 'gute Tage: Teilen und Abfahrt');
 pruefe(!preg_match('/\d+ %(?! Wolken)/u', strip_tags(preg_replace('#<details class="leise klein erklaerung">.*?</details>#s', '', $html))), 'keine Prozent-Chance mehr auf der Seite');
 pruefe(str_contains($html, 'Zahl: Neuschnee in cm'), 'Karte: Zahl ist Neuschnee in cm');

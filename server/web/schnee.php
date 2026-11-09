@@ -464,6 +464,24 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
     [$vx, $vy, $vw, $vh] = karte_ausschnitt(array_merge([$heimXY], array_column($punkte, 'xy')));
     $rp = $vw / 42;
     $namen = karte_namen(array_map(fn($p) => ['xy' => $p['xy'], 'name' => $p['e']['region']['name'], 'rang' => $p['wert']['rang']], $punkte), $rp, [$vx, $vy, $vw, $vh]);
+    // Neuschnee-Raster (seit 9.11.2026): Zellen mit eigenem Modellwert, Tage wie bei den Punkten
+    // (am gewaehlten Tag oder Summe im Zeitraum; heute nicht mehr, wenn das Tourenfenster vorbei ist)
+    $raster = schnee_raster_laden($dataDir);
+    $rasterTage = $kartenTag ? [$kartenTag] : array_values(array_filter($tage, fn($t) => !array_filter($liste, fn($e) => !empty($e['tage'][$t]['vorbei']))));
+    $zellen = [];
+    foreach ($raster['zellen'] ?? [] as $z) {
+        $w = array_intersect_key($z['neu'], array_flip($rasterTage));
+        if (!$w) {
+            continue;
+        }
+        $h = SCHNEE_RASTER_SCHRITT / 2;
+        $a = karte_punkt($z['latitude'] + $h, $z['longitude'] - $h);
+        $b = karte_punkt($z['latitude'] - $h, $z['longitude'] + $h);
+        if ($b[0] < $vx || $a[0] > $vx + $vw || $b[1] < $vy || $a[1] > $vy + $vh) {
+            continue;
+        }
+        $zellen[] = ['a' => $a, 'b' => $b, 'neu' => array_sum($w), 'z' => $z];
+    }
     $u = $rp * 0.7;
 ?>
 <details class="karte landkarte" id="landkarte" open>
@@ -473,12 +491,21 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
     <use href="karte.svg#land" class="land"/>
     <?php // Farbfeld (seit 9.11.2026): weicher Fleck je Region in der Farbe ihres Neuschnees,
           // wie das Windfeld im Wind-Modus; bewusst kein Feld zwischen den Regionen. ?>
+    <?php if ($zellen): // Raster: jede Zelle mit ihrem eigenen Wert, leicht weichgezeichnet ?>
+    <defs><filter id="weich" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="<?= round(($zellen[0]['b'][0] - $zellen[0]['a'][0]) * 0.35, 2) ?>"/></filter></defs>
+    <g class="windfeld schneefeld schneeraster" filter="url(#weich)">
+      <?php foreach ($zellen as $c): if ($c['neu'] < 0.5) { continue; } ?>
+      <rect x="<?= round($c['a'][0], 2) ?>" y="<?= round($c['a'][1], 2) ?>" width="<?= round($c['b'][0] - $c['a'][0] + 0.05, 2) ?>" height="<?= round($c['b'][1] - $c['a'][1] + 0.05, 2) ?>" style="fill: <?= schneefarbe((float)$c['neu']) ?>"/>
+      <?php endforeach ?>
+    </g>
+    <?php else: // ohne Raster: weicher Fleck je Region in der Farbe ihres Neuschnees ?>
     <defs><filter id="weich" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="<?= round($rp * 0.9, 2) ?>"/></filter></defs>
     <g class="windfeld schneefeld" filter="url(#weich)">
       <?php foreach ($punkte as $p): if (($p['wert']['neu'] ?? 0) < 0.5) { continue; } ?>
       <circle cx="<?= round($p['xy'][0], 1) ?>" cy="<?= round($p['xy'][1], 1) ?>" r="<?= round($rp * 2.4, 2) ?>" style="fill: <?= schneefarbe((float)$p['wert']['neu']) ?>"/>
       <?php endforeach ?>
     </g>
+    <?php endif ?>
     <circle class="umkreis" cx="<?= round($heimXY[0], 1) ?>" cy="<?= round($heimXY[1], 1) ?>" r="<?= round(karte_km((float)$km, $heim[0]), 1) ?>"/>
     <?php foreach ($punkte as $nr => $p):
         $r = $p['e']['region'];
@@ -508,7 +535,10 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
     </g>
   </svg>
   <?= schneeskala_legende() ?>
-  <p class="leise klein landkarte-fuss">Farbe und Zahl: Neuschnee in cm<?= $kartenTag ? ' (24 h bis ' . SCHNEE_MORGEN . ' Uhr)' : ', alle Tage im Zeitraum zusammen' ?>. Ring: <?= $kartenTag ? 'der Tag passt' : 'ein Tag passt' ?>. Punkt antippen: Stunden der Region. Kreis: <?= zahl($km) ?> km Luftlinie; der Umkreis zählt die Straße. Karte: Natural Earth.</p>
+  <?php if ($zellen): $rts = new DateTimeImmutable($raster['ts']); ?>
+  <p class="leise klein landkarte-fuss">Fläche: Neuschnee auf <?= zahl(SCHNEE_RASTER_HOEHE) ?> m<?= $kartenTag ? '' : ' im Zeitraum' ?>, Raster rund 25 km, ein Modell, Stand <?= h(tag_kurz($rts->setTimezone($tzSeite)->format('Y-m-d'), $heute)) ?> <?= $rts->setTimezone($tzSeite)->format('G:i') ?> Uhr. Grob: Täler und einzelne Kämme verschwimmen. <button type="button" class="textknopf" id="feldKnopf" aria-pressed="true" hidden>Fläche ein/aus</button></p>
+  <?php endif ?>
+  <p class="leise klein landkarte-fuss">Punkte, Farbe und Zahl: Neuschnee in cm auf Tourhöhe der Region<?= $kartenTag ? ' (24 h bis ' . SCHNEE_MORGEN . ' Uhr)' : ', alle Tage im Zeitraum zusammen' ?>. Ring: <?= $kartenTag ? 'der Tag passt' : 'ein Tag passt' ?>. Punkt antippen: Stunden der Region. Kreis: <?= zahl($km) ?> km Luftlinie; der Umkreis zählt die Straße. Karte: Natural Earth.</p>
 </details>
 <?php endif ?>
 
@@ -637,6 +667,25 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
 </main>
 
 <script>
+// Neuschnee-Flaeche der Karte an oder aus (seit 9.11.2026), Standard an, gemerkt (wie index.php)
+(function () {
+  var k = document.getElementById('landkarte'), knopf = document.getElementById('feldKnopf');
+  if (!k || !knopf) { return; }
+  var SCHLUESSEL = 'wohinfahrma_schneefeld';
+  function setzen(an) {
+    k.classList.toggle('ohne-feld', !an);
+    knopf.setAttribute('aria-pressed', an ? 'true' : 'false');
+  }
+  var an = true;
+  try { an = localStorage.getItem(SCHLUESSEL) !== 'aus'; } catch (e) {}
+  setzen(an);
+  knopf.hidden = false;
+  knopf.addEventListener('click', function () {
+    an = !an;
+    setzen(an);
+    try { localStorage.setItem(SCHLUESSEL, an ? 'an' : 'aus'); } catch (e) {}
+  });
+})();
 // Teilen: Web Share (Handy) oder in die Zwischenablage; ohne beides bleibt der Knopf verborgen (wie index.php)
 (function () {
   var kannKopieren = !!(navigator.clipboard && window.isSecureContext);

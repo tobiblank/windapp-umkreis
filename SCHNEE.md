@@ -30,6 +30,17 @@ Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnst
 
 Nicht gebaut: Verlauf über die Abrufe, Animation des Männchens, Mikroregionen als Polygone auf der Karte, feinere Alpen-Karte, Roadtrip.
 
+## Neuschnee-Raster (Karte)
+
+Seit 9.11.2026. Die Karte zeigt den Neuschnee nicht nur an den Regionen, sondern als Fläche über die Alpen.
+
+- **Gitter:** 0,25° (rund 25 km), nur Punkte im groben Alpenumriss `SCHNEE_RASTER_UMRISS` (`lib/schnee.php`, von Hand nach dem Alpenbogen gezogen, nicht die Grenze der Alpenkonvention): 294 Punkte von den Seealpen bis zum Wienerwald.
+- **Abruf:** Sammler-Quelle `schnee_raster`, Open-Meteo `forecast` ohne `models` (best_match), nur `precipitation, snowfall, snowfall_height, freezing_level_height`, `past_days=1`, 8 Tage, `elevation` 2.000 m. Drei Abrufe zu je 100 Orten, vor jedem eine Minute Pause (Minutenlimit), in den Läufen um 5:25 und 17:25 UTC, nicht um 7:40. Der Lauf dauert dadurch rund drei Minuten länger (`timeout-minutes` 30).
+- **Gespeichert** wird je Punkt nur der Neuschnee je Tag (24 h bis 8 Uhr MEZ) auf 2.000 m, mit derselben Rechnung wie bei den Regionen (`schnee_raster_eintrag()`), wenige KB je Lauf. Die Seite liest das mit `schnee_raster_laden()`, höchstens 36 Stunden alt.
+- **Karte:** je Zelle ein Rechteck in der Neuschnee-Farbe, leicht weichgezeichnet; Summe im Zeitraum oder der gewählte Tag, wie bei den Punkten. Die Punkte behalten ihren Wert auf Tourhöhe. Schalter „Fläche ein/aus“ (`wohinfahrma_schneefeld`). Ohne Raster wie vorher ein weicher Fleck je Region.
+- **Grenzen:** 25 km sind in den Alpen grob, Täler und einzelne Kämme verschwimmen; ein Modell statt des Mittels. Feste Höhe statt Gelände, sonst zeigen Täler Regen und Kämme Schnee.
+- **Kontingent:** Zählt Open-Meteo jeden Ort einzeln (vermutet, nicht geprüft), sind das rund 600 Aufrufe am Tag zusätzlich.
+
 ## Messstationen
 
 Seit 9.11.2026. Im Katalog `messnetze` (`{id: {art, name, kurz, abruf, url, lizenz, stationen?}}`; `art` = `lwd-geojson` (Standard, eine Datei aller Stationen), `geosphere`, `meteoswiss`, `suedtirol`, `snowgrid`) und je Region `stationen` (`{netz: [id, …]}`, Reihenfolge = Anzeige). Der Sammler holt je Netz einen Abruf (MeteoSchweiz und Südtirol: einen je Station) und speichert nur die genannten Stationen.
@@ -106,6 +117,8 @@ Anfragen an LWD Tirol und LWD Bayern laufen; nach Antwort nur `freigegeben` erg�
 Echte IDs haben Bayern und seit 9.11.2026 die fünf neuen österreichischen Regionen (Tirol aus `LWD-Region` der Stationsdatei, Salzburg, Kärnten, Steiermark aus `static.avalanche.report/eaws_bulletins/<datum>/<datum>-AT-0x.json`). Bayern: Werdenfels `DE-BY-30` („Werdenfelser Alpen“), Allgäu `DE-BY-12` („Allgäuer Alpen Mitte“, ob Oberstdorf ganz darin liegt, ungeprüft). Alle anderen über `eaws_namen` (geschätzt). Nach dem ersten Lauf mit `php server/lawine_regionen.php <data_dir> Engadin` die IDs nachsehen und als `eaws` eintragen.
 
 ## Beim ersten echten Lauf prüfen
+
+0. Seit 9.11.2026: `schnee_raster/0` bis `/2` grün? Liefert best_match `snowfall_height` im ganzen Alpenraum, und kommen keine HTTP 429?
 
 1. Action „Sammeln“ von Hand starten, Ausgabe von `--debug` ansehen: `schnee_vorhersage`, `schnee_ensemble`, `lawine/slf`, `lawine/euregio` grün?
 2. Nimmt Open-Meteo `elevation` als Liste je Ort an? Liefern die Modelle `snowfall_height`, das Ensemble `snow_depth`, `freezing_level_height` und `past_days`? Wenn eine Variable einen Fehler auslöst, aus der Abfrage in `quellen_schnee()` nehmen.

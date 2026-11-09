@@ -389,3 +389,4 @@ details.lawine[open] summary { margin-bottom: 6px; }
 .schnee-bild .s-sfgtext { fill: var(--akzent); }
 .schnee-bild .s-jetzt { stroke: var(--maybe); stroke-width: 1.2; stroke-dasharray: 2 2; }
 .schnee-bild .s-jetzttext { fill: var(--maybe); }
+.landkarte.ohne-feld .schneeskala { display: block; }

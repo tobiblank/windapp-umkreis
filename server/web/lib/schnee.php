@@ -598,3 +598,117 @@ function schnee_karte_wert(array $e, ?string $tag): array
     return ['rang' => ($geht ? 1000 : 0) + ($neu ?? -1), 'neu' => $neu === null ? null : round($neu, 1),
             'geht' => $geht, 'tag' => $besterTag, 'klasse' => $klasse];
 }
+
+// ===================================================================
+// NEUSCHNEE-RASTER FUER DIE KARTE (seit 9.11.2026)
+// ===================================================================
+//
+// Ein Gitter ueber die Alpen (SCHNEE_RASTER_SCHRITT Grad, rund 25 km), je Punkt eine
+// Vorhersage von Open-Meteo (best_match, ohne Ensemble). Der Sammler rechnet daraus
+// sofort den Neuschnee je Tag (24 h bis SCHNEE_MORGEN Uhr) auf SCHNEE_RASTER_HOEHE
+// und speichert nur diese Zahlen, damit die Seite nichts entpacken muss.
+// Feste Hoehe statt Gelaende: sonst zeigen Taeler Regen und Kaemme Schnee, und das Bild
+// wird fleckig. Nur Punkte im groben Alpenumriss (SCHNEE_RASTER_UMRISS, von Hand nach
+// dem Alpenbogen gezogen, nicht die amtliche Grenze der Alpenkonvention): ueber dem
+// Flachland waere "Neuschnee auf 2.000 m" ohne Sinn.
+
+const SCHNEE_RASTER_SCHRITT = 0.25;
+const SCHNEE_RASTER_HOEHE = 2000;
+const SCHNEE_RASTER_TZ = 'Europe/Berlin';    // alle Alpenlaender MEZ
+const SCHNEE_RASTER_MAX_ALTER_H = 36;         // aelter: nicht mehr zeigen
+const SCHNEE_RASTER_TEIL = 100;               // Punkte je Abruf
+/** [Breite, Laenge], im Uhrzeigersinn ab Genf; grob, etwa 10-20 km genau */
+const SCHNEE_RASTER_UMRISS = [
+    [46.25, 6.10], [46.40, 6.75], [46.75, 7.55], [47.00, 8.25], [47.15, 8.90], [47.30, 9.50],
+    [47.55, 10.20], [47.65, 11.10], [47.72, 11.70], [47.78, 12.20], [47.85, 13.00], [47.92, 13.80],
+    [47.90, 14.50], [47.95, 15.40], [48.15, 16.05], [47.75, 16.30], [47.20, 15.70], [46.95, 15.20],
+    [46.55, 15.40], [46.20, 14.40], [46.05, 13.40], [45.85, 12.30], [45.70, 11.30], [45.55, 10.60],
+    [45.70, 9.60], [45.80, 9.00], [45.75, 8.40], [45.55, 7.85], [45.10, 7.30], [44.40, 7.45],
+    [44.00, 7.65], [43.80, 7.25], [43.90, 6.40], [44.50, 5.75], [45.20, 5.60], [45.90, 5.95],
+];
+
+/** Liegt der Punkt im Polygon? (Strahlverfahren, Breite/Laenge als ebene Koordinaten) */
+function schnee_im_umriss(float $lat, float $lon, array $poly = SCHNEE_RASTER_UMRISS): bool
+{
+    $innen = false;
+    $n = count($poly);
+    for ($i = 0, $j = $n - 1; $i < $n; $j = $i++) {
+        [$yi, $xi] = $poly[$i];
+        [$yj, $xj] = $poly[$j];
+        if (($yi > $lat) !== ($yj > $lat) && $lon < ($xj - $xi) * ($lat - $yi) / ($yj - $yi) + $xi) {
+            $innen = !$innen;
+        }
+    }
+    return $innen;
+}
+
+/** Gitterpunkte im Umriss als Pseudo-Regionen fuer den Sammler (typ "raster") */
+function schnee_raster_punkte(): array
+{
+    $lats = array_column(SCHNEE_RASTER_UMRISS, 0);
+    $lons = array_column(SCHNEE_RASTER_UMRISS, 1);
+    $s = SCHNEE_RASTER_SCHRITT;
+    $out = [];
+    for ($lat = ceil(min($lats) / $s) * $s; $lat <= max($lats); $lat += $s) {
+        for ($lon = ceil(min($lons) / $s) * $s; $lon <= max($lons); $lon += $s) {
+            if (schnee_im_umriss($lat, $lon)) {
+                $out[] = ['id' => sprintf('r%.2f_%.2f', $lat, $lon), 'typ' => 'raster', 'punkt' => [round($lat, 2), round($lon, 2)],
+                          'hoehe_tour' => SCHNEE_RASTER_HOEHE];
+            }
+        }
+    }
+    return $out;
+}
+
+/**
+ * Eintrag von Open-Meteo -> Neuschnee je Tag auf SCHNEE_RASTER_HOEHE.
+ * Rueckgabe ['latitude', 'longitude' (angefragt), 'neu' => [YYYY-MM-DD => cm]] (Tage ohne genug Stunden fehlen)
+ */
+function schnee_raster_eintrag(array $e, array $punkt): array
+{
+    $st = schnee_stunden($e, new DateTimeZone(SCHNEE_RASTER_TZ), SCHNEE_RASTER_HOEHE);
+    $neu = [];
+    foreach (array_keys($st) as $tag) {
+        $v = schnee_kennwerte($st, $tag, SCHNEE_TAG)['neu24'];
+        if ($v !== null) {
+            $neu[$tag] = round($v, 1);
+        }
+    }
+    return ['latitude' => $punkt[0], 'longitude' => $punkt[1], 'neu' => $neu];
+}
+
+/**
+ * Neuester Raster-Stand: ['ts' => neuester Zeitstempel, 'zellen' => [id => eintrag]] oder null.
+ * Klein (wenige hundert Punkte mit je 9 Zahlen), deshalb ganze Zeilen entpacken.
+ */
+function schnee_raster_laden(string $dataDir, ?int $jetzt = null): ?array
+{
+    $jetzt ??= time();
+    $dateien = [];
+    foreach ([gmdate('Y-m-d', $jetzt), gmdate('Y-m-d', $jetzt - 86400)] as $d) {
+        $dateien = array_merge($dateien, glob("$dataDir/schnee_raster/$d.ndjson") ?: [], glob("$dataDir/schnee_raster/{$d}_*.ndjson.gz") ?: []);
+    }
+    rsort($dateien);
+    $zellen = [];
+    $ts = null;
+    foreach ($dateien as $f) {
+        $txt = (string)@file_get_contents($f);
+        if (str_ends_with($f, '.gz')) {
+            $txt = (string)@gzdecode($txt);
+        }
+        $zeilen = array_reverse(array_values(array_filter(array_map('trim', explode("\n", $txt)))));
+        foreach ($zeilen as $z) {
+            $j = json_decode($z, true);
+            if (!is_array($j) || empty($j['ok']) || !isset($j['regionen'], $j['payload']) || strtotime((string)$j['ts']) < $jetzt - 3600 * SCHNEE_RASTER_MAX_ALTER_H) {
+                continue;
+            }
+            foreach ($j['regionen'] as $k => $id) {
+                if (!isset($zellen[$id]) && isset($j['payload'][$k]['neu'])) {
+                    $zellen[$id] = $j['payload'][$k];
+                    $ts = max($ts ?? '', (string)$j['ts']);
+                }
+            }
+        }
+    }
+    return $zellen ? ['ts' => $ts, 'zellen' => $zellen] : null;
+}

@@ -80,6 +80,7 @@ $j = array_search('--nur', $argv ?? [], true);
 $NUR = $j !== false && isset($argv[$j + 1]) ? array_filter(explode(',', $argv[$j + 1])) : null;
 
 require $WEB_DIR . '/lib/regionen.php';
+require_once $WEB_DIR . '/lib/bewertung.php';   // Stundenmittel fuer das Neuschnee-Raster (seit 9.11.2026)
 require $WEB_DIR . '/lib/schnee.php';
 require $WEB_DIR . '/lib/lawine.php';
 
@@ -163,6 +164,16 @@ function quellen_schnee(array $schnee, string $modelle): array
             'basis'    => 'https://ensemble-api.open-meteo.com/v1/ensemble',
             'query'    => 'hourly=precipitation,snowfall,freezing_level_height,temperature_2m,cloud_cover,snow_depth'
                         . '&models=ecmwf_ifs025&past_days=3&forecast_days=8&timezone=UTC',
+        ],
+        // Neuschnee-Raster fuer die Karte (seit 9.11.2026): rund 300 Gitterpunkte, ein Modell
+        // (best_match), nur die Groessen fuer Neuschnee; gespeichert wird je Punkt nur der
+        // Neuschnee je Tag (schnee_raster_eintrag()). past_days=1 fuer die 24 h bis heute 8 Uhr.
+        'schnee_raster' => [
+            'every'    => 360,
+            'regionen' => schnee_raster_punkte(),
+            'basis'    => 'https://api.open-meteo.com/v1/forecast',
+            'query'    => 'hourly=precipitation,snowfall,snowfall_height,freezing_level_height&past_days=1&forecast_days=8&timezone=UTC',
+            'teil'     => SCHNEE_RASTER_TEIL,
         ],
         'lawine' => [
             'every'    => 360,
@@ -352,7 +363,7 @@ function alplakes_eintrag(string $body, array $region): ?array
 function teile(array $regionen, int $groesse): array
 {
     $out = [];
-    foreach (['see' => '', 'meer' => '&cell_selection=sea', 'druck' => '', 'schnee' => ''] as $typ => $zusatz) {
+    foreach (['see' => '', 'meer' => '&cell_selection=sea', 'druck' => '', 'schnee' => '', 'raster' => ''] as $typ => $zusatz) {
         $gruppe = array_values(array_filter($regionen, fn($r) => $r['typ'] === $typ));
         foreach (array_chunk($gruppe, $groesse) as $teil) {
             $out[] = [$teil, $zusatz];
@@ -812,14 +823,16 @@ foreach (quellen($KATALOG, $MODELLE, $SCHNEE, $SCHNEE_MODELLE) as $name => $q) {
         }
     }
 
-    foreach (in_array($q['art'] ?? '', ['alplakes', 'lawine', 'stationen'], true) ? [] : teile($q['regionen'], $TEIL_GROESSE) as $teilNr => [$teil, $zusatz]) {
+    foreach (in_array($q['art'] ?? '', ['alplakes', 'lawine', 'stationen'], true) ? [] : teile($q['regionen'], $q['teil'] ?? $TEIL_GROESSE) as $teilNr => [$teil, $zusatz]) {
         $ids = array_column($teil, 'id');
         $url = test_url($q['basis'] . '?' . koordinaten($teil) . '&' . $q['query'] . $zusatz, $ersatz);
         // Open-Meteo zaehlt je Minute (ein Ort und ein Ensemble-Abruf wiegen mehrfach).
         // Am 8.11.2026 (52 Regionen) gingen ensemble/0 und /1 durch, /2 bekam HTTP 429.
         // Deshalb vor jedem weiteren Ensemble-Teil eine Minute Pause.
         // Seit 8.11.2026 auch vor dem Schnee-Ensemble, das nach dem Wind-Ensemble im selben Lauf kommt
-        if (($teilNr > 0 && str_ends_with($name, 'ensemble')) || ($teilNr === 0 && $name === 'schnee_ensemble' && $NUR === null)) {
+        // Seit 9.11.2026 auch vor jedem Teil des Neuschnee-Rasters (je 100 Orte, jeder Ort zaehlt einzeln)
+        if (($teilNr > 0 && str_ends_with($name, 'ensemble')) || ($teilNr === 0 && $name === 'schnee_ensemble' && $NUR === null)
+            || $name === 'schnee_raster') {
             $pause = umkreis_wartezeit('UMKREIS_PAUSE_ENSEMBLE', 61);
             $bericht[] = "$name/$teilNr: Pause $pause s (Minutenlimit)";
             sleep($pause);
@@ -839,6 +852,9 @@ foreach (quellen($KATALOG, $MODELLE, $SCHNEE, $SCHNEE_MODELLE) as $name => $q) {
 
         $liste = ($r['http'] >= 200 && $r['http'] < 300) ? antwort_liste($r['body'], count($teil)) : null;
         $ok = $liste !== null;
+        if ($ok && $name === 'schnee_raster') {
+            $liste = array_map(fn($e, $p) => schnee_raster_eintrag($e, $p['punkt']), $liste, $teil);
+        }
 
         $zeile = [
             'ts'       => gmdate('Y-m-d\TH:i:s\Z'),

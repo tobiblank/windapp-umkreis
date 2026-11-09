@@ -9,6 +9,8 @@ name: Sammeln
 # Berichte kommen meist um 17 Uhr fuer den Folgetag und gegen 8 Uhr als Update;
 # deshalb ein dritter, kleiner Lauf um 7:40 UTC (8:40 Uhr im Winter) nur fuer
 # lawine und schnee_vorhersage.
+# Seit 9.11.2026 zusaetzlich das Neuschnee-Raster fuer die Karte (schnee_raster, rund
+# 300 Punkte in drei Abrufen mit je einer Minute Pause); deshalb 30 statt 20 Minuten.
 #
 # Damit braucht die App keinen Cronjob auf Hetzner, und die Abrufe kommen von
 # GitHub, nicht vom Server von ammerseewind.de (eigenes Open-Meteo-Kontingent).
@@ -44,7 +46,7 @@ concurrency:
 jobs:
   sammeln:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
 
