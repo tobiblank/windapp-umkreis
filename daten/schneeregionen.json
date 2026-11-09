@@ -505,6 +505,20 @@
       "warndienst": "lombardia",
       "eaws": ["IT-25-SO-LI"],
       "hinweis": "Lombardei. Livigno ist eine eigene EAWS-Mikroregion (IT-25-SO-LI); Bericht in der EAWS-Sammlung unter IT-25. Keine passende Station gefunden (nächste: Samedan, Schleis im Vinschgau)."
+    },
+    {
+      "id": "sulden",
+      "name": "Sulden / Ortler",
+      "land": "IT",
+      "punkt": [46.51, 10.6],
+      "hoehe_tour": 2900,
+      "hoehe_tal": 1900,
+      "zeitzone": "Europe/Rome",
+      "anfahrt": [46.519, 10.588],
+      "warndienst": "euregio",
+      "eaws": ["IT-32-BZ-14"],
+      "stationen": {"suedtirol": ["06090SF"]},
+      "hinweis": "Südtirol. Punkt um Sulden geschätzt."
     }
   ]
 }
