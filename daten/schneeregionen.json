@@ -33,6 +33,39 @@
       "praefixe": ["DE-BY"],
       "freigegeben": [],
       "hinweis": "Datei und Regions-IDs am 8.11.2026 an 2025-12-20_DE-BY_de_CAAMLv6.xml gesehen (CAAML v6, XML). Lizenz offen, Anfrage an den LWD Bayern läuft; bis dahin nur Link."
+    },
+    "salzburg": {
+      "name": "Lawinenwarndienst Salzburg",
+      "kurz": "LWD Salzburg",
+      "url_bericht": "https://lawine.salzburg.at",
+      "abruf": "https://static.avalanche.report/eaws_bulletins/{datum}/{datum}-AT-05.json",
+      "format": "json",
+      "lizenz": "ungeklärt",
+      "praefixe": ["AT-05"],
+      "freigegeben": [],
+      "hinweis": "Regions-IDs und Website am 9.11.2026 an static.avalanche.report/eaws_bulletins/2026-04-04/2026-04-04-AT-05.json gesehen (EAWS-Sammlung, Format wie CAAML, Version nicht angegeben; ob lawine_lesen() es liest, ungeprüft). Lizenz offen, bis dahin nur Link; wird ohne Freigabe nie abgerufen."
+    },
+    "kaernten": {
+      "name": "Lawinenwarndienst Kärnten",
+      "kurz": "LWD Kärnten",
+      "url_bericht": "https://lawinenwarndienst.ktn.gv.at",
+      "abruf": "https://static.avalanche.report/eaws_bulletins/{datum}/{datum}-AT-02.json",
+      "format": "json",
+      "lizenz": "ungeklärt",
+      "praefixe": ["AT-02"],
+      "freigegeben": [],
+      "hinweis": "Regions-IDs und Website am 9.11.2026 an 2026-04-04-AT-02.json der EAWS-Sammlung gesehen. Lizenz offen, bis dahin nur Link."
+    },
+    "steiermark": {
+      "name": "Lawinenwarndienst Steiermark",
+      "kurz": "LWD Steiermark",
+      "url_bericht": "https://www.lawine-steiermark.at",
+      "abruf": "https://static.avalanche.report/eaws_bulletins/{datum}/{datum}-AT-06.json",
+      "format": "json",
+      "lizenz": "ungeklärt",
+      "praefixe": ["AT-06"],
+      "freigegeben": [],
+      "hinweis": "Regions-IDs und Website am 9.11.2026 an 2026-04-06-AT-06.json der EAWS-Sammlung gesehen. Lizenz offen, bis dahin nur Link."
     }
   },
   "messnetze": {
@@ -174,6 +207,73 @@
       "eaws": [],
       "eaws_namen": ["Oberengadin"],
       "hinweis": "SLF-Warnregion-ID offen, bis dahin Zuordnung über den Namen."
+    },
+    {
+      "id": "kitzbueheler-alpen",
+      "name": "Kitzbüheler Alpen",
+      "land": "AT",
+      "punkt": [47.38, 12.33],
+      "hoehe_tour": 1900,
+      "hoehe_tal": 800,
+      "zeitzone": "Europe/Vienna",
+      "anfahrt": [47.375, 12.292],
+      "warndienst": "euregio",
+      "eaws": ["AT-07-17", "AT-07-18"],
+      "stationen": {"tirol": ["kleinerbeil", "kitzbuehler_horn", "hochhoerndl"]},
+      "hinweis": "Grasberge zwischen Wildschönau, Kelchsau, Spertental und Kitzbühel; Punkt im Raum Aschau/Kelchsau geschätzt, Anfahrt Aschau im Spertental ungefähr. Mikroregionen und Stationen aus der Tiroler Stationsdatei vom 9.11.2026 (Brixental AT-07-17-01, Wildschönau AT-07-17-02, Wildseeloder AT-07-18). Salzburger Seite (Glemmtal, Saalbach) gehört zum LWD Salzburg (AT-05-14) und fehlt."
+    },
+    {
+      "id": "osttirol-kals",
+      "name": "Osttirol (Kals, Matrei)",
+      "land": "AT",
+      "punkt": [47.02, 12.62],
+      "hoehe_tour": 2500,
+      "hoehe_tal": 1300,
+      "zeitzone": "Europe/Vienna",
+      "anfahrt": [47.004, 12.645],
+      "warndienst": "euregio",
+      "eaws": ["AT-07-26", "AT-07-24"],
+      "stationen": {"tirol": ["figol", "goldriedkessel", "eselruecken"]},
+      "hinweis": "Südseite des Alpenhauptkamms, bekommt bei Südstau Schnee, wenn Nordtirol leer ausgeht. Punkt bei Kals geschätzt. Mikroregionen Glocknergruppe Süd/Goldried (AT-07-26) und Venedigergruppe Süd (AT-07-24) aus der Stationsdatei; Lienzer Dolomiten und Karnische Alpen Osttirol (AT-07-29) wären eine eigene Region."
+    },
+    {
+      "id": "gastein-rauris",
+      "name": "Gastein / Rauris (Salzburg)",
+      "land": "AT",
+      "punkt": [47.09, 13.03],
+      "hoehe_tour": 2300,
+      "hoehe_tal": 1100,
+      "zeitzone": "Europe/Vienna",
+      "anfahrt": [47.077, 13.056],
+      "warndienst": "salzburg",
+      "eaws": ["AT-05-09", "AT-05-05"],
+      "hinweis": "Für das Salzburger Land stellvertretend die Hohen Tauern um Sportgastein und Kolm-Saigurn (Goldberggruppe Nord AT-05-09 und Zentral AT-05-05, IDs aus dem EAWS-Bericht vom 4.4.2026). Punkt und Anfahrt (Sportgastein) geschätzt. Andere Salzburger Gebiete mit eigenem Wetter: Obertauern/Radstädter Tauern (AT-05-04), Glemmtal/Saalbach (AT-05-14), Lofer/Leogang (AT-05-18). Keine offenen Stationen gefunden."
+    },
+    {
+      "id": "nassfeld",
+      "name": "Nassfeld / Karnische Alpen (Kärnten)",
+      "land": "AT",
+      "punkt": [46.56, 13.28],
+      "hoehe_tour": 1900,
+      "hoehe_tal": 600,
+      "zeitzone": "Europe/Vienna",
+      "anfahrt": [46.565, 13.278],
+      "warndienst": "kaernten",
+      "eaws": ["AT-02-15-02"],
+      "hinweis": "Südstau-Gebiet an der Grenze zu Italien, oft viel Schnee bei Südlagen. Mikroregion Karnische Alpen Nassfeld (AT-02-15-02, aus dem EAWS-Bericht vom 4.4.2026). Punkt am Nassfeldpass geschätzt, Talort Tröpolach (Gailtal). Keine offenen Stationen gefunden."
+    },
+    {
+      "id": "soelktaeler",
+      "name": "Schladminger Tauern / Sölktäler (Steiermark)",
+      "land": "AT",
+      "punkt": [47.29, 13.95],
+      "hoehe_tour": 2200,
+      "hoehe_tal": 900,
+      "zeitzone": "Europe/Vienna",
+      "anfahrt": [47.312, 14.044],
+      "warndienst": "steiermark",
+      "eaws": ["AT-06-04-01", "AT-06-04-02"],
+      "hinweis": "Skitourengebiet der Niederen Tauern; Punkt zwischen Untertal und Sölktal geschätzt, Anfahrt St. Nikolai im Sölktal ungefähr. Mikroregionen Schladminger Tauern Nord und Süd (AT-06-04-01, AT-06-04-02, aus dem EAWS-Bericht vom 6.4.2026); die Sölktäler reichen in die Wölzer Tauern (AT-06-05). Keine offenen Stationen gefunden."
     }
   ]
 }

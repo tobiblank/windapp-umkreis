@@ -15,7 +15,7 @@ Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnst
 | Seite `server/web/schnee.php` | Sportart (Freeride, Skitour), Umkreis 100–800 km Straße, Standort, Sortierung (alle Tage, ein Tag, Fahrzeit), Ansichten Liste (Heute – Übermorgen, Tag 3 – 7) und Woche, Karte mit blauen Punkten (Zahl: Neuschnee im Zeitraum bzw. am gewählten Tag in cm) und Männchen (ohne Animation), Kacheln mit allem auf einen Blick: Wetter (☀ ⛅ ☁, ❄ bei Schneefall am Tag), Neuschnee je Tag (24 h bis 8 Uhr, seit 9.11.2026), Schneehöhe, LWS, darunter klein die Spanne aus dem Ensemble; Wind und Gründe im Tooltip und auf der Stundenseite. Darunter nur für gute Tage Abfahrt, Details und Teilen; Lawinenlage einklappbar, geteilte Ansicht `?region=…&nach=…`. `noindex` |
 | Stundenseite `server/web/schnee_stunden.php` | Neuschnee je Stunde (72 h bis 8 Uhr und der Tag), Schneefallgrenze und Nullgradgrenze gegen Tour- und Talhöhe vor einer Bergsilhouette (feste Form, kein echtes Gelände), Wetter im Fenster, Neuschnee 24 h mit Spanne des Ensembles und 72 h, Tagesknöpfe mit Neuschnee je Tag (✓ = passt), Lawinenlage mit Expositionsrose |
 | Schalter Wind · Schnee | im Kopf beider Seiten; es sind zwei Seiten, nicht ein Formular. Die Wind-Seite merkt sich ihre Wahl wie bisher, die Schnee-Seite merkt sich nichts im Browser |
-| Katalog `daten/schneeregionen.json` | 9 Regionen ab Inning: Werdenfels, Allgäu/Oberstdorf, Kühtai/Sellrain, Stubai, Zillertal/Tux, Arlberg, Ötztal/Obergurgl, Ahrntal, Oberengadin. Punkte, Tour- und Talhöhen geschätzt. Prüfung `schneeregionen_pruefen()` |
+| Katalog `daten/schneeregionen.json` | 9 Regionen ab Inning: Werdenfels, Allgäu/Oberstdorf, Kühtai/Sellrain, Stubai, Zillertal/Tux, Arlberg, Ötztal/Obergurgl, Ahrntal, Oberengadin. Seit 9.11.2026 dazu Kitzbüheler Alpen, Osttirol (Kals, Matrei), Gastein/Rauris (Salzburg), Nassfeld/Karnische Alpen (Kärnten), Schladminger Tauern/Sölktäler (Steiermark): 14 Regionen; Mikroregion-IDs aus der Tiroler Stationsdatei bzw. aus EAWS-Berichten vom April 2026. Punkte, Tour- und Talhöhen geschätzt. Prüfung `schneeregionen_pruefen()` |
 | Bewertung `server/web/lib/schnee.php` | siehe „Bewertung“ |
 | Lagebericht `server/web/lib/lawine.php` | liest CAAML v6 als JSON und XML, je Mikroregion Stufe (auch über/unter Höhengrenze), Probleme mit Expositionen und Höhe |
 | Sammler | Quellen `schnee_vorhersage`, `schnee_ensemble`, `lawine` mit `--schnee <katalog>`; `--nur a,b` für einzelne Quellen |
@@ -85,12 +85,13 @@ Der Sammler holt je Dienst heute und morgen. HTTP 404 heißt „noch kein Berich
 | SLF | `aws.slf.ch/api/bulletin/caaml/de/json` (laut API-Seite: gerade gültiger Bericht, CAAML v6) | CC BY 4.0, Quellenangabe mit Link | `CH-` |
 | Euregio | `static.avalanche.report/bulletins/{datum}/{datum}_EUREGIO_de_CAAMLv6.json` (Schema aus dem Verzeichnis von 2019; Host für 2026 ungeprüft) | Südtirol CC BY, Trentino CC BY 4.0; Tirol, Kärnten offen | `IT-32-BZ`, `IT-32-TN` |
 | Bayern | `static.lawinen-warnung.eu/bulletins/{datum}/{datum}_DE-BY_de_CAAMLv6.xml` (Struktur an echter Datei vom 20.12.2025 gesehen) | offen | – |
+| Salzburg, Kärnten, Steiermark (seit 9.11.2026) | `static.avalanche.report/eaws_bulletins/{datum}/{datum}-AT-05.json` (bzw. AT-02, AT-06), EAWS-Sammlung, Format wie CAAML ohne Versionsangabe; ob `lawine_lesen()` es liest, ungeprüft | offen | – |
 
 Anfragen an LWD Tirol und LWD Bayern laufen; nach Antwort nur `freigegeben` ergänzen (`AT-07` bzw. `DE-BY`). Anmeldung beim SLF (data@slf.ch, Verteiler „Avalanche Bulletin“) empfohlen.
 
 ### Mikroregionen
 
-Nur Bayern hat echte IDs: Werdenfels `DE-BY-30` („Werdenfelser Alpen“), Allgäu `DE-BY-12` („Allgäuer Alpen Mitte“, ob Oberstdorf ganz darin liegt, ungeprüft). Alle anderen über `eaws_namen` (geschätzt). Nach dem ersten Lauf mit `php server/lawine_regionen.php <data_dir> Engadin` die IDs nachsehen und als `eaws` eintragen.
+Echte IDs haben Bayern und seit 9.11.2026 die fünf neuen österreichischen Regionen (Tirol aus `LWD-Region` der Stationsdatei, Salzburg, Kärnten, Steiermark aus `static.avalanche.report/eaws_bulletins/<datum>/<datum>-AT-0x.json`). Bayern: Werdenfels `DE-BY-30` („Werdenfelser Alpen“), Allgäu `DE-BY-12` („Allgäuer Alpen Mitte“, ob Oberstdorf ganz darin liegt, ungeprüft). Alle anderen über `eaws_namen` (geschätzt). Nach dem ersten Lauf mit `php server/lawine_regionen.php <data_dir> Engadin` die IDs nachsehen und als `eaws` eintragen.
 
 ## Beim ersten echten Lauf prüfen
 
