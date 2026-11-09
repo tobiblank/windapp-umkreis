@@ -109,6 +109,58 @@ foreach ($chNah as $id => $m) {
     }
 }
 
+// --- Suedtirol (Landeswetterdienst, CC0) ----------------------------------------
+const BZ_BASIS = 'https://geoservices.buergernetz.bz.it/services/meteo/v1/';
+$bz = json_decode((string)holen(BZ_BASIS . 'stations?coord_sys=EPSG:4326'), true);
+$bzNah = [];
+foreach ($bz['features'] ?? [] as $f) {
+    $p = $f['properties'] ?? [];
+    $c = $f['geometry']['coordinates'] ?? [];
+    $lat = $p['LAT'] ?? $c[1] ?? null;
+    $lon = $p['LONG'] ?? $c[0] ?? null;
+    if (!is_numeric($lat) || !is_numeric($lon)) {
+        continue;
+    }
+    $bzNah[(string)$p['SCODE']] = ['name' => (string)($p['NAME_D'] ?? $p['SCODE']), 'hoehe' => (int)($p['ALT'] ?? 0), 'lat' => (float)$lat, 'lon' => (float)$lon];
+}
+echo 'Suedtirol: ' . count($bzNah) . ' Stationen; Beispiel: ' . json_encode(array_slice($bz['features'] ?? [], 0, 1), JSON_UNESCAPED_UNICODE) . "\n";
+$bzNah = in_der_naehe($bzNah, array_filter($regionen, fn($r) => $r['warndienst'] === 'euregio'), $km);
+foreach ($bzNah as $id => $m) {
+    $s = json_decode((string)holen(BZ_BASIS . 'sensors?' . http_build_query(['station_code' => $id, 'sensor_code' => 'HS'])), true);
+    $hs = null;
+    $zeit = null;
+    foreach (is_array($s) ? $s : [] as $x) {
+        if (($x['TYPE'] ?? '') === 'HS' && is_numeric($x['VALUE'] ?? null)) {
+            $hs = (float)$x['VALUE'];
+            $zeit = (string)($x['DATE'] ?? '');
+        }
+    }
+    if ($hs !== null) {
+        $werte["suedtirol:$id"] = ['netz' => 'suedtirol', 'id' => $id, 'name' => $m['name'], 'hoehe' => $m['hoehe'],
+                                   'lat' => $m['lat'], 'lon' => $m['lon'], 'hs' => $hs, 'hsd24' => null, 'zeit' => $zeit];
+    }
+}
+echo 'Suedtirol: ' . count($bzNah) . ' in der Naehe, davon mit HS: ' . count(array_filter($werte, fn($w) => $w['netz'] === 'suedtirol')) . "\n";
+
+// --- SNOWGRID (GeoSphere, 1 km, taeglich) -------------------------------------------
+$sgMeta = holen('https://dataset.api.hub.geosphere.at/v1/timeseries/historical/snowgrid_cl-v2-1d-1km/metadata');
+echo "SNOWGRID Metadaten: " . substr((string)$sgMeta, 0, 1500) . "\n";
+$sgPar = [];
+foreach (json_decode((string)$sgMeta, true)['parameters'] ?? [] as $par) {
+    $sgPar[] = $par['name'];
+}
+foreach ($regionen as $r) {
+    if (($r['land'] ?? '') !== 'AT') {
+        continue;
+    }
+    $url = 'https://dataset.api.hub.geosphere.at/v1/timeseries/historical/snowgrid_cl-v2-1d-1km?' . http_build_query([
+        'parameters' => implode(',', $sgPar), 'lat_lon' => $r['punkt'][0] . ',' . $r['punkt'][1],
+        'start' => gmdate('Y-m-d', time() - 4 * 86400), 'end' => gmdate('Y-m-d')]);
+    $body = holen($url);
+    echo "SNOWGRID {$r['id']}: " . substr(preg_replace('/\s+/', ' ', (string)$body), 0, 700) . "\n";
+    usleep(300000);
+}
+
 // --- je Region ---------------------------------------------------------------
 $ergebnis = [];
 foreach ($regionen as $r) {
