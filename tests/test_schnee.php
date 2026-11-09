@@ -94,10 +94,22 @@ foreach ($sRl as $e) {
 }
 [$t0, $t1, $t2, $t3] = $sTage;
 $a1 = $sBy['schnee-a']['tage'][$t1] ?? null;
-pruefe($a1 && $a1['det']['neu72'] > 22 && $a1['det']['neu72'] < 32 && $a1['det']['geht'] && $a1['ens']['chance'] == 1,
-       'Region A morgen: rund 25 cm Neuschnee aus gestern, sonnig, alle Läufe passen (' . ($a1['det']['neu72'] ?? '?') . ' cm)');
-$a2 = $sBy['schnee-a']['tage'][$t2]['ens']['chance'] ?? null;
-pruefe($a2 !== null && $a2 > 0 && $a2 < 1, 'Region A übermorgen: nur ein Teil des Schnees noch in 72 h, Chance zwischen 0 und 100 % (' . $a2 . ')');
+pruefe($a1 && $a1['det']['neu72'] > 22 && $a1['det']['neu72'] < 32 && $a1['det']['geht'],
+       'Region A morgen: rund 25 cm Neuschnee in 72 h, sonnig, passt (' . ($a1['det']['neu72'] ?? '?') . ' cm)');
+$aT = $sBy['schnee-a']['tage'];
+$summe24 = ($aT[$t1]['det']['neu24'] ?? 0) + ($aT[$t2]['det']['neu24'] ?? 0) + ($aT[$t3]['det']['neu24'] ?? 0);
+pruefe(($aT[$t3]['det']['neu72'] ?? null) !== null && abs($summe24 - $aT[$t3]['det']['neu72']) < 0.2,
+       'Neuschnee je Tag (24 h bis 8 Uhr) addiert sich zu den 72 h (' . $summe24 . ' / ' . ($aT[$t3]['det']['neu72'] ?? '?') . ' cm)');
+pruefe(($aT[$t0]['det']['neu24'] ?? 0) > 10 && ($aT[$t1]['det']['neu24'] ?? 1) < 1,
+       'Region A: Schnee von gestern ab 8 Uhr steht heute (' . ($aT[$t0]['det']['neu24'] ?? '?') . ' cm), morgen nichts Neues, die 72 h zählen ihn weiter');
+$sp = $aT[$t1]['ens'] ?? null;
+pruefe($sp && $sp['neu24_p10'] !== null && $sp['neu24_p10'] <= $sp['neu24_p50'] && $sp['neu24_p50'] <= $sp['neu24_p90'], 'Ensemble: Spanne des Neuschnees (10./50./90. Perzentil)');
+pruefe(schnee_klasse($aT[$t1]) === 's-go' && schnee_klasse(['det' => ['geht' => false, 'neu24' => 12.0]]) === 's-maybe'
+       && schnee_klasse(['det' => ['geht' => false, 'neu24' => 4.0]]) === 's-no' && schnee_klasse(['det' => ['geht' => false, 'neu24' => 0.0]]) === 'nix',
+       'Blau-Skala: passt, sonst nach Neuschnee');
+$kw = schnee_karte_wert($sBy['schnee-a'], null);
+pruefe($kw['geht'] && $kw['klasse'] === 's-go' && abs($kw['neu'] - array_sum(array_map(fn($d) => (float)($d['det']['neu24'] ?? 0), array_filter($aT, fn($d) => !$d['vorbei'] && !$d['offen'])))) < 0.2,
+       'Karte: Summe des Neuschnees im Zeitraum, kräftiges Blau, wenn ein Tag passt');
 pruefe(($sBy['schnee-a']['tage'][$t3]['det']['grund'] ?? '') === 'zu wenig Neuschnee', 'Region A in drei Tagen: zu wenig Neuschnee');
 pruefe(($sBy['schnee-b']['tage'][$t1]['det']['neu72'] ?? null) == 0.0 && $sBy['schnee-b']['tage'][$t1]['det']['grenze'] == 2800, 'Region B: Regen über der Tourhöhe zählt nicht');
 pruefe(array_key_first($sBy) === 'schnee-a' || array_key_first($sBy) === 'schnee-d', 'Rangliste: Regionen mit Neuschnee vorn');
@@ -169,6 +181,8 @@ pruefe(preg_match('#id="r-schnee-d".*?Lawinenlage: <a href="https://example.org/
 pruefe(str_contains($html, '<nav class="modus" aria-label="Modus"><a href="./">Wind</a><a href="schnee.php" aria-current="page">Schnee</a>'), 'Schalter Wind · Schnee');
 pruefe(str_contains($html, '<details class="karte landkarte" id="landkarte" open>') && str_contains($html, 'class="punkt s-go"'), 'Karte mit blauen Punkten');
 pruefe(str_contains($html, 'class="teilen" hidden') && str_contains($html, 'Abfahrt bis'), 'gute Tage: Teilen und Abfahrt');
+pruefe(!preg_match('/\d+ %(?! Wolken)/u', strip_tags(preg_replace('#<details class="leise klein erklaerung">.*?</details>#s', '', $html))), 'keine Prozent-Chance mehr auf der Seite');
+pruefe(str_contains($html, 'Zahl: Neuschnee in cm'), 'Karte: Zahl ist Neuschnee in cm');
 [, $html] = holen($wPort, "schnee.php?region=schnee-a&nach=$t1");
 pruefe(str_contains($html, 'Geteilte Vorhersage') && !str_contains($html, 'id="r-schnee-b"') && !str_contains($html, 'id="wahl"'), 'geteilte Vorhersage: nur diese Region, ohne Auswahl');
 [, $html] = holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t1);

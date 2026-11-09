@@ -6,14 +6,14 @@ Zweiter Modus in Wohinfahrma für Skitourengeher und Freerider, nur Alpen: Wo li
 
 ## Grundsatz Lawine
 
-Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnstufe geht **nicht** in Prozent, Sortierung oder Farbe der Bewertung ein. Sie steht als eigenes Abzeichen in den offiziellen EAWS-Farben daneben (Kachel „LWS 3“, im Lawinenblock und auf der Stundenseite „Gefahrenstufe 3“ wie im Bericht), mit Link zum Bericht und Ausgabezeit, nur für Tage mit gültigem Bericht (meist heute und morgen). Keine eigene Hochrechnung. Die Bewertung nutzt deshalb eine **Blau-Skala** statt Grün/Gelb/Rot. Fester Hinweis oben auf der Seite, je Region, im Teilen-Text, auf der Stundenseite und im Impressum: „Die Lawinenlage stammt vom Warndienst. Sie ersetzt keine Beurteilung vor Ort. Wohinfahrma bewertet nur Schnee und Wetter.“
+Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnstufe geht **nicht** in Sortierung oder Farbe der Bewertung ein. Sie steht als eigenes Abzeichen in den offiziellen EAWS-Farben daneben (Kachel „LWS 3“, im Lawinenblock und auf der Stundenseite „Gefahrenstufe 3“ wie im Bericht), mit Link zum Bericht und Ausgabezeit, nur für Tage mit gültigem Bericht (meist heute und morgen). Keine eigene Hochrechnung. Die Bewertung nutzt deshalb eine **Blau-Skala** statt Grün/Gelb/Rot. Fester Hinweis oben auf der Seite, je Region, im Teilen-Text, auf der Stundenseite und im Impressum: „Die Lawinenlage stammt vom Warndienst. Sie ersetzt keine Beurteilung vor Ort. Wohinfahrma bewertet nur Schnee und Wetter.“
 
 ## Stand
 
 | Baustein | Status |
 |---|---|
-| Seite `server/web/schnee.php` | Sportart (Freeride, Skitour), Umkreis 100–800 km Straße, Standort, Sortierung (alle Tage, ein Tag, Fahrzeit), Ansichten Liste (Heute – Übermorgen, Tag 3 – 7) und Woche, Karte mit blauen Punkten und Männchen (ohne Animation), Kacheln mit allem auf einen Blick: Wetter (☀ ⛅ ☁, ❄ bei Schneefall am Tag), Neuschnee 72 h, Schneehöhe, LWS, darunter klein die Chance; Wind und Gründe im Tooltip und auf der Stundenseite. Darunter nur für gute Tage Abfahrt, Details und Teilen; Lawinenlage einklappbar, geteilte Ansicht `?region=…&nach=…`. `noindex` |
-| Stundenseite `server/web/schnee_stunden.php` | Neuschnee je Stunde (72 h bis 8 Uhr und der Tag), Schneefallgrenze und Nullgradgrenze gegen Tour- und Talhöhe vor einer Bergsilhouette (feste Form, kein echtes Gelände), Wetter im Fenster, Streuung des Ensembles, Lawinenlage mit Expositionsrose |
+| Seite `server/web/schnee.php` | Sportart (Freeride, Skitour), Umkreis 100–800 km Straße, Standort, Sortierung (alle Tage, ein Tag, Fahrzeit), Ansichten Liste (Heute – Übermorgen, Tag 3 – 7) und Woche, Karte mit blauen Punkten (Zahl: Neuschnee im Zeitraum bzw. am gewählten Tag in cm) und Männchen (ohne Animation), Kacheln mit allem auf einen Blick: Wetter (☀ ⛅ ☁, ❄ bei Schneefall am Tag), Neuschnee je Tag (24 h bis 8 Uhr, seit 9.11.2026), Schneehöhe, LWS, darunter klein die Spanne aus dem Ensemble; Wind und Gründe im Tooltip und auf der Stundenseite. Darunter nur für gute Tage Abfahrt, Details und Teilen; Lawinenlage einklappbar, geteilte Ansicht `?region=…&nach=…`. `noindex` |
+| Stundenseite `server/web/schnee_stunden.php` | Neuschnee je Stunde (72 h bis 8 Uhr und der Tag), Schneefallgrenze und Nullgradgrenze gegen Tour- und Talhöhe vor einer Bergsilhouette (feste Form, kein echtes Gelände), Wetter im Fenster, Neuschnee 24 h mit Spanne des Ensembles und 72 h, Tagesknöpfe mit Neuschnee je Tag (✓ = passt), Lawinenlage mit Expositionsrose |
 | Schalter Wind · Schnee | im Kopf beider Seiten; es sind zwei Seiten, nicht ein Formular. Die Wind-Seite merkt sich ihre Wahl wie bisher, die Schnee-Seite merkt sich nichts im Browser |
 | Katalog `daten/schneeregionen.json` | 9 Regionen ab Inning: Werdenfels, Allgäu/Oberstdorf, Kühtai/Sellrain, Stubai, Zillertal/Tux, Arlberg, Ötztal/Obergurgl, Ahrntal, Oberengadin. Punkte, Tour- und Talhöhen geschätzt. Prüfung `schneeregionen_pruefen()` |
 | Bewertung `server/web/lib/schnee.php` | siehe „Bewertung“ |
@@ -39,12 +39,14 @@ Nicht gebaut: Verlauf über die Abrufe, Animation des Männchens, Mikroregionen 
 
 Je Region und Tag:
 
-- **Neuschnee:** Summe der letzten 72 h bis 8 Uhr Ortszeit. Je Stunde zählt der Niederschlag als Schnee (1 mm = 0,7 cm, wie Open-Meteo), wenn die Schneefallgrenze unter der Tourhöhe liegt. Schneefallgrenze = `snowfall_height`, sonst Nullgradgrenze − 300 m, sonst Temperatur auf Tourhöhe ≤ 1 °C. Ohne Niederschlag zählt `snowfall`. Fehlen mehr als 12 der 72 Stunden, ist der Neuschnee unbekannt.
+- **Neuschnee je Tag** (angezeigt, seit 9.11.2026): Summe der 24 h bis 8 Uhr Ortszeit, wie die Messung am Morgen. Die Tage lassen sich addieren (vorher zeigte jede Kachel die 72 h; wer addierte, zählte denselben Schnee bis zu dreimal). Fehlen mehr als 4 der 24 Stunden, ist er unbekannt.
+- **Neuschnee 72 h** (für die Regel bei Freeride, damit der schöne Tag nach dem Schneefall zählt): Summe der letzten 72 h bis 8 Uhr Ortszeit. Je Stunde zählt der Niederschlag als Schnee (1 mm = 0,7 cm, wie Open-Meteo), wenn die Schneefallgrenze unter der Tourhöhe liegt. Schneefallgrenze = `snowfall_height`, sonst Nullgradgrenze − 300 m, sonst Temperatur auf Tourhöhe ≤ 1 °C. Ohne Niederschlag zählt `snowfall`. Fehlen mehr als 12 der 72 Stunden, ist der Neuschnee unbekannt.
 - **Wetter am Tag** (8–15 Uhr): mittlere Bewölkung, Wind in 700 hPa (km/h), höchste Nullgradgrenze, Neuschnee am Tag, Böen im Tal.
 - **Schneehöhe:** Modellwert `snow_depth` um 8 Uhr, angezeigt als „(Modell)“.
-- **Chance:** Anteil der 51 Läufe des ECMWF-Ensembles, an denen der Tag nach denselben Regeln passt, ohne Wind am Kamm.
+- **Spanne:** Neuschnee je Tag in den 51 Läufen des ECMWF-Ensembles, 10. bis 90. Perzentil (Kachel „14–22 cm“, Stundenseite mit Mitte). Bis 9.11.2026 stand dort eine Chance in Prozent (Anteil der Läufe, an denen der Tag passt). Abgeschafft auf Wunsch: Sie fasste mehrere Schwellen zusammen, sagte nicht, was fehlt, und 14 cm bei Sonne zählten als 0 %. Intern wird sie noch gerechnet (`ens.chance`), aber nirgends gezeigt.
+- **Farbe** (`schnee_klasse()`): kräftiges Blau = passt nach Modellmittel; sonst nach dem Neuschnee des Tages, ab 10 cm und ab 3 cm heller.
 - **Heute** nach 13:30 Uhr Ortszeit „vorbei“ (weniger als 2 Stunden Fenster), wie im Wind-Modus.
-- **Rangliste:** erwartete gute Tage (Summe der Chancen), dann Tage nach Modellmittel, dann Neuschnee.
+- **Rangliste:** passende Tage (Modellmittel), dann Neuschnee im Zeitraum (Summe je Tag), dann näher. Ein einzelner Tag: passt, dann Neuschnee 72 h, dann 24 h.
 
 Abgerufen wird auf **Tourhöhe** (`elevation` je Ort) und mit `past_days=3`. Modelle: `icon_d2,icon_eu,ecmwf_ifs,gfs_seamless` (`schnee_modelle` in `config.php` nur für den Cronjob).
 
@@ -95,7 +97,7 @@ Nur Bayern hat echte IDs: Werdenfels `DE-BY-30` („Werdenfelser Alpen“), Allg
 | Lagebericht Euregio | Albina, `static.avalanche.report` | Südtirol, Trentino CC BY; Tirol, Kärnten offen | teils |
 | Lagebericht Bayern | `static.lawinen-warnung.eu`, CAAML v6 XML | offen | Feed gefunden |
 | Übrige Länder, AINEVA, Frankreich | – | offen bzw. eingeschränkt | später |
-| Schneehöhe Stationen | SLF `measurement-api.slf.ch` (CC BY 4.0), GeoSphere SNOWGRID (CC BY 4.0) | | nicht eingebaut |
+| Schneehöhe Stationen | Tirol: LWD/HD Tirol über data.gv.at (JSON, stündlich, CC BY 4.0, Schlagwort Schneehöhe; Feldnamen ungeprüft). Schweiz: SLF IMIS `measurement-api.slf.ch` (CC BY 4.0; laut SLF-Bedingungen aber „nicht für die Speisung von Informationssystemen“, vorher beim SLF nachfragen). Südtirol: `geoservices.buergernetz.bz.it/services/meteo/v1/` (`stations`, `sensors?station_code=…&sensor_code=HS`; Lizenz für diesen Dienst nicht bestätigt, andere Meteo-Datensätze CC BY). Bayern: keine offene Schnittstelle gefunden. GeoSphere SNOWGRID (CC BY 4.0) ist ein Modell | Stand 9.11.2026 | nicht eingebaut |
 | Schnee und Wetter | Open-Meteo | CC BY 4.0 | Variablen dokumentiert, Verhalten im Gebirge ungeprüft |
 
 Für die Rechnung nur Stufe und strukturierte Felder; Texte der Berichte nicht kürzen oder umschreiben, sondern verlinken.

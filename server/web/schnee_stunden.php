@@ -92,12 +92,12 @@ $stand = daten_laden($dataDir, ['schnee_vorhersage', 'schnee_ensemble'], nur: [$
 $daten = ['vorhersage' => $stand['schnee_vorhersage'][$region['id']] ?? null, 'ensemble' => $stand['schnee_ensemble'][$region['id']] ?? null];
 $bew = schnee_region_bewerten($region, $daten, $sport, $tage);
 
-// Tag: gewaehlt, sonst der beste (hoechste Chance, sonst Modellmittel)
+// Tag: gewaehlt, sonst der erste passende, sonst der mit dem meisten Neuschnee (24 h)
 $tag = in_array($_GET['tag'] ?? '', $tage, true) ? $_GET['tag'] : null;
 if ($tag === null) {
     $best = -2.0;
     foreach ($bew as $t => $d) {
-        $w = $d['vorbei'] ? -1.5 : ($d['ens']['chance'] ?? ($d['det']['geht'] ? 0.5 : -1.0));
+        $w = $d['vorbei'] ? -1.5 : ($d['det']['geht'] ? 1000.0 : (float)($d['det']['neu24'] ?? -1.0));
         if ($w > $best) {
             $best = $w;
             $tag = $t;
@@ -107,14 +107,6 @@ if ($tag === null) {
 $b = $bew[$tag];
 $tz = new DateTimeZone($region['zeitzone']);
 $st = schnee_stunden($daten['vorhersage'], $tz, (int)$region['hoehe_tour']);
-$laeufe = schnee_ensemble_laeufe($daten['ensemble'], $tz, (int)$region['hoehe_tour']);
-$neuEns = [];
-foreach ($laeufe as $lauf) {
-    $k = schnee_kennwerte($lauf, $tag, $b['fenster']);
-    if ($k['neu72'] !== null) {
-        $neuEns[] = $k['neu72'];
-    }
-}
 $dienste = $schnee['lawinendienste'];
 $lage = lawine_freigegeben($region, $dienste) ? lawine_lage($region, lawine_laden($dataDir), $tag) : null;
 $dienst = $dienste[$region['warndienst']];
@@ -221,8 +213,7 @@ function schnee_svg(array $reihe, array $region, string $tag, array $fenster): s
 }
 
 $k = $b['det'];
-$c = $b['ens']['chance'] ?? null;
-sort($neuEns);
+$e = $b['ens'];
 ?>
 <!doctype html>
 <html lang="de">
@@ -249,20 +240,21 @@ sort($neuEns);
 </header>
 
 <nav class="sortierung klein" aria-label="Tag">
-  <?php foreach ($tage as $t): $d = $bew[$t]; $ct = $d['ens']['chance'] ?? null; ?>
-    <a href="<?= h(link_mit(['tag' => $t])) ?>"<?= $t === $tag ? ' aria-current="true"' : '' ?>><?= h(tag_kurz($t, $heute)) ?><?= $d['vorbei'] ? '' : ($ct !== null ? ' ' . zahl(100 * $ct) . ' %' : ($d['det']['geht'] ? ' ja' : '')) ?></a>
+  <?php foreach ($tage as $t): $d = $bew[$t]; ?>
+    <a href="<?= h(link_mit(['tag' => $t])) ?>"<?= $t === $tag ? ' aria-current="true"' : '' ?>><?= h(tag_kurz($t, $heute)) ?><?= $d['vorbei'] || $d['offen'] || $d['det']['neu24'] === null ? '' : ' ' . h(cm($d['det']['neu24'])) ?><?= !$d['vorbei'] && $d['det']['geht'] ? ' ✓' : '' ?></a>
   <?php endforeach ?>
 </nav>
 
 <section class="karte stunden-region">
   <div class="region-kopf"><h2><?= h($region['name']) ?></h2>
-    <span class="leise klein fahrzeit"><?= $c === null ? '' : zahl(100 * $c) . ' % Chance' ?><span class="km"><?= h(tag_kurz($tag, $heute)) ?></span></span></div>
+    <span class="leise klein fahrzeit"><?= $k['geht'] ? 'passt' : '' ?><span class="km"><?= h(tag_kurz($tag, $heute)) ?></span></span></div>
   <?php if (!$daten['vorhersage'] && !$daten['ensemble']): ?>
     <p class="leise">Für diese Region gibt es gerade keine Vorhersagedaten.</p>
   <?php else: ?>
   <p class="klein"><?= $b['vorbei'] ? 'Für heute ist das Tourenfenster vorbei.' : ($k['geht'] ? 'Passt für ' . h($sport['name']) . ' nach Modellmittel.' : '<span class="leise">Modellmittel: ' . h($k['grund']) . '.</span>') ?></p>
-  <p class="klein">Neuschnee 72 h bis <?= SCHNEE_MORGEN ?> Uhr: <b><?= h(cm($k['neu72'])) ?></b>
-    <?php if ($neuEns): ?><span class="leise">(Ensemble: Mitte <?= h(cm($neuEns[intdiv(count($neuEns), 2)])) ?>, 80 % der Läufe <?= h(cm(perzentil($neuEns, 0.1))) ?>–<?= h(cm(perzentil($neuEns, 0.9))) ?>)</span><?php endif ?>
+  <p class="klein">Neuschnee 24 h bis <?= SCHNEE_MORGEN ?> Uhr: <b><?= h(cm($k['neu24'])) ?></b>
+    <?php if ($e && $e['neu24_p10'] !== null): ?><span class="leise">(Ensemble: Mitte <?= h(cm($e['neu24_p50'])) ?>, 80 % der Läufe <?= h(cm($e['neu24_p10'])) ?>–<?= h(cm($e['neu24_p90'])) ?>)</span><?php endif ?>
+    · 72 h: <?= h(cm($k['neu72'])) ?>
     <?php if ($k['grenze'] !== null): ?> · Schneefallgrenze bis <?= h(meter($k['grenze'])) ?><?php endif ?></p>
   <p class="klein leise"><?= SCHNEE_TAG[0] ?>–<?= SCHNEE_TAG[1] ?> Uhr: <?= h(implode(' · ', array_filter([
       $k['wolken'] !== null ? schnee_himmel($k['wolken']) . ' (' . zahl($k['wolken']) . ' % Wolken)' : null,
