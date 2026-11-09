@@ -717,7 +717,8 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
         // Am Ziel weht bei der Ankunft etwas: Palme am Meer im Sueden, sonst ein Windsack
         $palme = $ziel && ($ziel['e']['region']['typ'] ?? '') === 'meer' && (float)$ziel['e']['region']['punkt'][0] < ANKUNFT_PALME_BIS_BREITE;
     ?>
-    <?= maennchen_svg($heimXY, $rp, $ziel['xy'] ?? null, $palme ? 'palme' : 'sack', $eigenerOrt ? 'Dein Standort' : 'Inning am Ammersee', $flug) ?>
+    <?= maennchen_svg($heimXY, $rp, $ziel['xy'] ?? null, $palme ? 'palme' : 'sack', $eigenerOrt ? 'Dein Standort' : 'Inning am Ammersee', $flug,
+                      $flug && $ziel ? '≈ ' . zahl(flug_co2_t((float)$ziel['e']['km']), 1) . ' t CO₂ hin und zurück' : null) ?>
   </svg>
   <button type="button" class="feldknopf" id="feldKnopf" aria-pressed="true" hidden>Farbfeld Windstärke</button>
   <?= windskala_legende() ?>

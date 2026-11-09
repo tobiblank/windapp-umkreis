@@ -911,7 +911,7 @@ pruefe(abs(flug_co2_t(1000) - 0.276) < 0.001 && abs(flug_als_auto_km(0.2296) - 1
 pruefe(!str_contains($html, 'name="km"><') && !str_contains($html, 'class="umkreis"') && !str_contains($html, 'class="abfahrt"')
        && !str_contains($html, 'id="standort"') && str_contains($html, 'ansicht=woche&amp;anreise=flug') && str_contains($html, '>Transfer</option>'),
        'Flugziele: kein Umkreis, kein Standort, keine Abfahrt, Links behalten die Anreise');
-pruefe(str_contains($html, 'id="heim"') && (!str_contains($html, 'id="heimBus"') || str_contains($html, 'data-art="flugzeug"')) && !str_contains($html, '<rect class="dach"'),
+pruefe(str_contains($html, 'id="heim"') && (!str_contains($html, 'id="heimBus"') || str_contains($html, 'data-art="flugzeug"') && preg_match('/id="heimZieltext"[^>]*>≈ \d+,\d t CO₂ hin und zurück</', $html)) && !str_contains($html, '<rect class="dach"'),
        'Flugziele: Männchen am Standort, mit Ziel ein Flugzeug statt des Busses');
 if (getenv('UMKREIS_SEITE_OFFEN')) {   // zum Ansehen im Browser: Seite eine Weile offen lassen
     file_put_contents(getenv('UMKREIS_SEITE_OFFEN'), (string)$sitePort);

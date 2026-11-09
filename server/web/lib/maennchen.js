@@ -13,7 +13,8 @@
 // Motor waehrend der Fahrt. Bei Flugzielen (seit 9.11.2026) ein Flugzeug statt des Busses: hoher
 // Bogen, die Nase folgt der Bahn, es wird unterwegs etwas groesser (hoch oben), Duesenrauschen
 // statt Hupe und Motor; statt der gestrichelten Spur bleiben kleine graue „CO₂“-Wölkchen
-// hinter dem Flugzeug stehen, auch nach der Landung
+// hinter dem Flugzeug stehen und verwehen nach der Landung; unter dem Ziel steht dann, wie viel
+// CO₂ der Flug hin und zurueck kostet (bleibt, auch in der Endpose)
 // (Web Audio, ohne Datei; seit 8.11.2026). Beim Laden bleibt es stumm, weil Browser Ton erst
 // nach einem Antippen erlauben und eine Wetterseite nicht von selbst brummen soll. Schalter
 // "Ton" im Fuss, gemerkt in wohinfahrma_ton (Standard an). Zeiten in ms, Laengen in Einheiten
@@ -29,7 +30,7 @@
   var kopf = el('heimKopf'), armL = el('heimArmL'), armR = el('heimArmR'), ober = el('heimOber'),
       unter = el('heimUnter'), zeig = el('heimZeig'), bus = el('heimBus'), spur = el('heimSpur'),
       puls = el('heimPuls'), fahrer = el('heimFahrer'), blick = el('heimBlick'), ankunft = el('heimAnkunft'),
-      juchhu = el('heimJuchhu');
+      juchhu = el('heimJuchhu'), zieltext = el('heimZieltext');
   var ARM = 1.4, SX = 0.62, SY = -2.2, ELLE = [1.05, -2.55];
   var dir = ziel && ziel[0] < X ? -1 : 1;
   var flieger = !!(bus && bus.dataset.art === 'flugzeug');
@@ -51,6 +52,15 @@
     } else { A = null; }
   }
   var fahrt = !!A;
+  if (zieltext && svg.viewBox && zieltext.getBBox) {   // Text unter dem Ziel ganz im Bild halten
+    try {
+      var vbz = svg.viewBox.baseVal, bb = zieltext.getBBox(), rand = RP * 0.4, schieb = 0;
+      if (bb.x < vbz.x + rand) { schieb = vbz.x + rand - bb.x; }
+      if (bb.x + bb.width > vbz.x + vbz.width - rand) { schieb = vbz.x + vbz.width - rand - bb.x - bb.width; }
+      if (schieb) { zieltext.setAttribute('x', (+zieltext.getAttribute('x') + schieb).toFixed(2)); }
+      if (bb.y + bb.height > vbz.y + vbz.height) { zieltext.setAttribute('y', (ziel[1] - RP * 4.6).toFixed(2)); }
+    } catch (e) {}
+  }
   // CO2-Woelkchen entlang der Flugbahn (seit 9.11.2026), erscheinen, wenn das Flugzeug vorbei ist
   var woelkchen = [];
   if (fahrt && flieger) {
@@ -277,13 +287,15 @@
       bus.setAttribute('opacity', busOp);
       fahrer.setAttribute('opacity', t > 5700 && t < 9400 ? 1 : 0);   // das Maennchen sitzt am Steuer
       spur.setAttribute('opacity', flieger ? 0 : faehrt ? 0.6 : t >= 7900 && t < 8500 ? 0.6 * (1 - seg(t, 7900, 8500)) : 0);
-      woelkchen.forEach(function (w) {   // bleiben stehen, steigen ein wenig und werden groesser
+      var weg = seg(t, 8400, 9900);   // verwehen nach der Landung, in der Endpose weg
+      woelkchen.forEach(function (w) {   // bleiben kurz stehen, steigen ein wenig und werden groesser
         var a = cl((fa - w.f) * 5);
-        w.g.setAttribute('opacity', (0.85 * a).toFixed(2));
+        w.g.setAttribute('opacity', (0.85 * a * (1 - weg)).toFixed(2));
         w.g.setAttribute('transform', 'translate(' + w.x.toFixed(2) + ' ' + (w.y - 0.5 * U * a).toFixed(2) + ') scale(' + (U * (1.3 + 0.5 * a)).toFixed(3) + ')');
       });
       spur.style.strokeDashoffset = -t / 40;
       weht(t, 1 - seg(t, 9400, 9800));
+      if (zieltext) { zieltext.setAttribute('opacity', seg(t, 8200, 8700).toFixed(2)); }
     }
     if (puls) {
       puls.setAttribute('r', (RP * (1 + 1.8 * ring)).toFixed(2));

@@ -291,8 +291,9 @@ function karte_wert(array $eintrag, ?string $tag): array
  * Schnee, Flocken; der Bus hat dann Ski auf dem Dach). Ohne Ziel nur das Maennchen.
  * $flugzeug (seit 9.11.2026, Flugziele im Wind-Modus): statt des Busses ein Flugzeug, das im
  * hohen Bogen hinfliegt; gleiche ids, damit das Skript es wie den Bus bewegt.
+ * $zielText: steht nach der Ankunft unter dem Ziel und bleibt (Flug: CO2 hin und zurueck).
  */
-function maennchen_svg(array $heimXY, float $rp, ?array $ziel, string $ankunft, string $titel, bool $flugzeug = false): string
+function maennchen_svg(array $heimXY, float $rp, ?array $ziel, string $ankunft, string $titel, bool $flugzeug = false, ?string $zielText = null): string
 {
     $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     $u = $rp * 0.7;
@@ -349,6 +350,10 @@ function maennchen_svg(array $heimXY, float $rp, ?array $ziel, string $ankunft, 
                 $o .= '<polygon class="' . ($i % 2 ? 'hell' : 'rot') . '" points="0,0"/>';
             }
             $o .= '</g></g>';
+        }
+        if ($zielText !== null) {
+            $o .= "\n" . '<text class="zieltext" id="heimZieltext" x="' . $zx . '" y="' . round($zy + $rp * 2.7, 2) . '" font-size="' . round($rp * 1.05, 2)
+                . '" stroke-width="' . round($rp * 0.35, 2) . '" opacity="0">' . $h($zielText) . '</text>';
         }
         $o .= "\n" . '<g class="juchhu" id="heimJuchhu" opacity="0"><path d="M0,0L0.9,-1H4.2Q4.6,-1 4.6,-1.4V-2.6Q4.6,-3 4.2,-3H-0.4Q-0.8,-3 -0.8,-2.6V-1.4Q-0.8,-1 -0.4,-1H0.25Z"/><text x="1.9" y="-1.58" font-size="1.2">Juchhu!</text></g>' . "\n";
     }
