@@ -1,0 +1,36 @@
+name: Stationen suchen
+
+# Von Hand starten (seit 9.11.2026): sucht bei GeoSphere Austria und MeteoSchweiz
+# Stationen mit Schneehoehe im Umkreis der Schnee-Regionen (tools/stationen_suchen.php).
+# Ergebnis im Log und als Artefakt kandidaten.json; die Auswahl traegt man danach
+# von Hand in daten/schneeregionen.json ein. Aendert nichts im Repo oder auf dem Server.
+
+on:
+  workflow_dispatch:
+    inputs:
+      km:
+        description: "Umkreis um den Vorhersagepunkt in km"
+        default: "35"
+
+permissions:
+  contents: read
+
+jobs:
+  suchen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          coverage: none
+
+      - name: Suchen
+        run: php tools/stationen_suchen.php daten/schneeregionen.json kandidaten.json "${{ inputs.km }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kandidaten
+          path: kandidaten.json
