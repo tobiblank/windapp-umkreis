@@ -93,6 +93,38 @@ if (preg_match('#^/ch\.meteoschweiz\.ogd-smn/([a-z]+)/ogd-smn_\1_t_now\.csv$#', 
     }
     exit;
 }
+// Landeswetterdienst Suedtirol (seit 9.11.2026): Zeitreihe HS je Station, neueste zuerst,
+// Ortszeit mit Kuerzel. bz1 steigt in 24 h von 20 auf 26 cm, bz2 zeigt -2 cm (aper),
+// bz3 liefert nichts
+if ($pfad === '/services/meteo/v1/timeseries') {
+    header('Content-Type: application/json');
+    $id = (string)($_GET['station_code'] ?? '');
+    $tz = new DateTimeZone('Europe/Rome');
+    $ende = intdiv(time(), 600) * 600;
+    $out = [];
+    for ($t = $ende; $t >= $ende - 26 * 3600 && $id !== 'bz3'; $t -= 600) {
+        $z = (new DateTimeImmutable('@' . $t))->setTimezone($tz);
+        $out[] = ['DATE' => $z->format('Y-m-d\TH:i:s') . $z->format('T'), 'VALUE' => $id === 'bz1' ? ($t > $ende - 24 * 3600 - 300 ? round(20 + 6 * (1 - ($ende - $t) / 86400), 1) : 20.0) : -2.0];
+    }
+    echo json_encode($out);
+    exit;
+}
+// SNOWGRID-CL (seit 9.11.2026): Tageswerte in m bis gestern, ein Feature je lat_lon (in
+// der Reihenfolge); erster Punkt 10, 12, 15, 18 cm, alle weiteren null (ausserhalb)
+if ($pfad === '/v1/timeseries/historical/snowgrid_cl-v2-1d-1km') {
+    header('Content-Type: application/json');
+    preg_match_all('/(?:^|&)lat_lon=([^&]*)/', (string)($_SERVER['QUERY_STRING'] ?? ''), $mm);
+    $gestern = intdiv(time(), 86400) * 86400 - 86400;
+    $ts = array_map(fn($i) => gmdate('Y-m-d\T00:00+00:00', $gestern - (3 - $i) * 86400), range(0, 3));
+    $f = [];
+    foreach ($mm[1] as $i => $ll) {
+        [$la, $lo] = array_map('floatval', explode(',', urldecode($ll)));
+        $f[] = ['type' => 'Feature', 'geometry' => ['type' => 'Point', 'coordinates' => [$lo, $la]],
+                'properties' => ['parameters' => ['snow_depth' => ['name' => 'total snow depth', 'unit' => 'm', 'data' => $i === 0 ? [0.1, 0.12, 0.15, 0.18] : [null, null, null, null]]]]];
+    }
+    echo json_encode(['media_type' => 'application/json', 'type' => 'FeatureCollection', 'version' => 'v1', 'timestamps' => $ts, 'features' => $f]);
+    exit;
+}
 // Lageberichte (seit 8.11.2026)
 $jetztTs = time();
 $gueltig = ['startTime' => gmdate('Y-m-d\TH:i:s\Z', $jetztTs - 86400), 'endTime' => gmdate('Y-m-d\TH:i:s\Z', $jetztTs + 2 * 86400)];

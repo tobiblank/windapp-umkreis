@@ -8,12 +8,8 @@
       "abruf": "https://aws.slf.ch/api/bulletin/caaml/de/json",
       "format": "json",
       "lizenz": "CC BY 4.0",
-      "praefixe": [
-        "CH-"
-      ],
-      "freigegeben": [
-        "CH-"
-      ]
+      "praefixe": ["CH-"],
+      "freigegeben": ["CH-"]
     },
     "euregio": {
       "name": "Euregio Test",
@@ -22,13 +18,8 @@
       "abruf": "https://static.avalanche.report/bulletins/{datum}/{datum}_EUREGIO_de_CAAMLv6.json",
       "format": "json",
       "lizenz": "teils",
-      "praefixe": [
-        "AT-07",
-        "IT-32-BZ"
-      ],
-      "freigegeben": [
-        "IT-32-BZ"
-      ]
+      "praefixe": ["AT-07", "IT-32-BZ"],
+      "freigegeben": ["IT-32-BZ"]
     },
     "bayern": {
       "name": "LWD Bayern Test",
@@ -37,12 +28,8 @@
       "abruf": "https://static.lawinen-warnung.eu/bulletins/{datum}/{datum}_DE-BY_de_CAAMLv6.xml",
       "format": "xml",
       "lizenz": "Test",
-      "praefixe": [
-        "DE-BY"
-      ],
-      "freigegeben": [
-        "DE-BY"
-      ]
+      "praefixe": ["DE-BY"],
+      "freigegeben": ["DE-BY"]
     },
     "gesperrt": {
       "name": "Gesperrt Test",
@@ -51,9 +38,7 @@
       "abruf": "https://static.lawinen-warnung.eu/bulletins/{datum}/{datum}_XX_de_CAAMLv6.xml",
       "format": "xml",
       "lizenz": "ungeklärt",
-      "praefixe": [
-        "XX-"
-      ],
+      "praefixe": ["XX-"],
       "freigegeben": []
     }
   },
@@ -72,16 +57,7 @@
       "abruf": "https://dataset.api.hub.geosphere.at/v1/station/historical/tawes-v1-10min",
       "url": "https://data.hub.geosphere.at/dataset/tawes-v1-10min",
       "lizenz": "CC BY 4.0",
-      "stationen": {
-        "111": {
-          "name": "Hundertelf",
-          "hoehe": 2100
-        },
-        "222": {
-          "name": "Leerstation",
-          "hoehe": 1500
-        }
-      }
+      "stationen": {"111": {"name": "Hundertelf", "hoehe": 2100}, "222": {"name": "Leerstation", "hoehe": 1500}}
     },
     "meteoswiss": {
       "art": "meteoswiss",
@@ -90,16 +66,25 @@
       "abruf": "https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/{id}/ogd-smn_{id}_t_now.csv",
       "url": "https://www.meteoschweiz.admin.ch/",
       "lizenz": "Quelle: MeteoSchweiz",
-      "stationen": {
-        "xaa": {
-          "name": "Ixa",
-          "hoehe": 1800
-        },
-        "xbb": {
-          "name": "Ixb",
-          "hoehe": 1700
-        }
-      }
+      "stationen": {"xaa": {"name": "Ixa", "hoehe": 1800}, "xbb": {"name": "Ixb", "hoehe": 1700}}
+    },
+    "suedtirol": {
+      "art": "suedtirol",
+      "name": "Wetter Südtirol Test",
+      "kurz": "Wetter Südtirol",
+      "abruf": "https://geoservices.buergernetz.bz.it/services/meteo/v1/timeseries?station_code={id}&sensor_code=HS",
+      "url": "https://wetter.provinz.bz.it/",
+      "lizenz": "CC0",
+      "stationen": {"bz1": {"name": "Bezett eins", "hoehe": 2450}, "bz2": {"name": "Bezett zwei", "hoehe": 2000}, "bz3": {"name": "Bezett drei", "hoehe": 2100}}
+    },
+    "snowgrid": {
+      "art": "snowgrid",
+      "name": "SNOWGRID Test",
+      "kurz": "SNOWGRID",
+      "abruf": "https://dataset.api.hub.geosphere.at/v1/timeseries/historical/snowgrid_cl-v2-1d-1km",
+      "url": "https://data.hub.geosphere.at/dataset/snowgrid_cl-v2-1d-1km",
+      "lizenz": "CC BY 4.0",
+      "stationen": {"d-tour": {"name": "D, Tourhöhe", "hoehe": 2350, "lat": 47.21, "lon": 12.01}, "d-mitte": {"name": "D, mittlere Höhe", "hoehe": 1700, "lat": 47.2, "lon": 12.0}}
     }
   },
   "regionen": [
@@ -107,87 +92,50 @@
       "id": "schnee-a",
       "name": "Schneeregion A",
       "land": "CH",
-      "punkt": [
-        47.2,
-        11.0
-      ],
+      "punkt": [47.2, 11.0],
       "hoehe_tour": 2400,
       "hoehe_tal": 1900,
       "zeitzone": "Europe/Vienna",
-      "anfahrt": [
-        47.21,
-        11.02
-      ],
+      "anfahrt": [47.21, 11.02],
       "warndienst": "slf",
-      "eaws_namen": [
-        "Oberengadin"
-      ],
-      "stationen": {
-        "tirol": [
-          "sta-gut",
-          "sta-fehler",
-          "sta-sprung",
-          "sta-fehlt"
-        ]
-      }
+      "eaws_namen": ["Oberengadin"],
+      "stationen": {"tirol": ["sta-gut", "sta-fehler", "sta-sprung", "sta-fehlt"]}
     },
     {
       "id": "schnee-b",
       "name": "Schneeregion B",
       "land": "DE",
-      "punkt": [
-        46.3,
-        11.5
-      ],
+      "punkt": [46.3, 11.5],
       "hoehe_tour": 2000,
       "hoehe_tal": 1000,
       "zeitzone": "Europe/Rome",
       "warndienst": "bayern",
-      "eaws": [
-        "DE-BY-30"
-      ],
-      "stationen": {
-        "geosphere": [
-          "111",
-          "222"
-        ],
-        "meteoswiss": [
-          "xaa",
-          "xbb"
-        ]
-      }
+      "eaws": ["DE-BY-30"],
+      "stationen": {"geosphere": ["111", "222"], "meteoswiss": ["xaa", "xbb"]}
     },
     {
       "id": "schnee-c",
       "name": "Schneeregion C",
       "land": "IT",
-      "punkt": [
-        47.6,
-        11.4
-      ],
+      "punkt": [47.6, 11.4],
       "hoehe_tour": 2200,
       "hoehe_tal": 900,
       "zeitzone": "Europe/Rome",
       "warndienst": "euregio",
-      "eaws_namen": [
-        "Ahrntal"
-      ]
+      "eaws_namen": ["Ahrntal"],
+      "stationen": {"suedtirol": ["bz1", "bz2", "bz3"]}
     },
     {
       "id": "schnee-d",
       "name": "Schneeregion D",
       "land": "AT",
-      "punkt": [
-        47.205,
-        12.0
-      ],
+      "punkt": [47.205, 12.0],
       "hoehe_tour": 2400,
       "hoehe_tal": 1200,
       "zeitzone": "Europe/Vienna",
       "warndienst": "gesperrt",
-      "eaws": [
-        "XX-1"
-      ]
+      "eaws": ["XX-1"],
+      "stationen": {"snowgrid": ["d-tour", "d-mitte"]}
     }
   ]
 }

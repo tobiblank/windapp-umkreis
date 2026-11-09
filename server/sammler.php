@@ -424,7 +424,7 @@ function abruf(string $url, int $timeout, string $wo, array &$bericht): array
 /** Nur fuer die Tests: Open-Meteo und Alplakes durch einen lokalen Ersatz tauschen */
 function test_url(string $url, ?string $ersatz): string
 {
-    return $ersatz ? preg_replace('#^https://(?:[a-z-]+\.open-meteo\.com|alplakes-api\.eawag\.ch|aws\.slf\.ch|static\.avalanche\.report|static\.lawinen-warnung\.eu|wiski\.tirol\.gv\.at|dataset\.api\.hub\.geosphere\.at|data\.geo\.admin\.ch)#', $ersatz, $url) : $url;
+    return $ersatz ? preg_replace('#^https://(?:[a-z-]+\.open-meteo\.com|alplakes-api\.eawag\.ch|aws\.slf\.ch|static\.avalanche\.report|static\.lawinen-warnung\.eu|wiski\.tirol\.gv\.at|dataset\.api\.hub\.geosphere\.at|data\.geo\.admin\.ch|geoservices\.buergernetz\.bz\.it)#', $ersatz, $url) : $url;
 }
 
 /**
@@ -485,18 +485,29 @@ function lawine_abrufen(string $id, array $dienst, ?string $ersatz, int $timeout
 function stationen_abrufen(string $netz, array $info, array $ids, ?string $ersatz, int $timeout, array &$bericht): array
 {
     $art = $info['art'] ?? 'lwd-geojson';
-    if ($art === 'meteoswiss') {
-        return stationen_meteoswiss($netz, $info, $ids, $ersatz, $timeout, $bericht);
+    if (in_array($art, STATION_EINZELN, true)) {
+        return stationen_einzeln($netz, $info, $ids, $ersatz, $timeout, $bericht);
     }
     $url = $info['abruf'];
-    if ($art === 'geosphere') {
+    if ($art === 'snowgrid') {
+        $url = snowgrid_url($info, $ids, time());
+    } elseif ($art === 'geosphere') {
         $url .= '?' . http_build_query(['parameters' => 'SCHNEE', 'station_ids' => implode(',', $ids),
                     'start' => gmdate('Y-m-d\TH:i', time() - STATION_STUNDEN_ZURUECK * 3600), 'end' => gmdate('Y-m-d\TH:i')]);
     }
     $r = abruf(test_url($url, $ersatz), $timeout, "stationen/$netz", $bericht);
     $fehler = null;
     $st = null;
-    if ($r['http'] >= 200 && $r['http'] < 300 && $art === 'geosphere') {
+    if ($r['http'] >= 200 && $r['http'] < 300 && $art === 'snowgrid') {
+        $st = snowgrid_lesen($r['body'], $ids, $info['stationen'] ?? []);
+        if ($st === null) {
+            $fehler = 'Antwort ist keine SNOWGRID-Zeitreihe mit ' . count($ids) . ' Punkten: ' . substr(preg_replace('/\s+/', ' ', $r['body']), 0, 150);
+        } else {
+            $fehlen = array_diff($ids, array_keys($st));
+            $bericht[] = sprintf('stationen/%s: ok, %d von %d Punkten mit Wert, %d KB, %d ms', $netz, count($st), count($ids), $r['bytes'] / 1024, $r['ms'])
+                       . ($fehlen ? ' (ohne Wert: ' . implode(', ', $fehlen) . ')' : '');
+        }
+    } elseif ($r['http'] >= 200 && $r['http'] < 300 && $art === 'geosphere') {
         $st = geosphere_lesen($r['body'], $info['stationen'] ?? []);
         if ($st === null) {
             $fehler = 'Antwort ist keine Stationszeitreihe (timestamps, features): ' . substr(preg_replace('/\s+/', ' ', $r['body']), 0, 150);
@@ -525,23 +536,28 @@ function stationen_abrufen(string $netz, array $info, array $ids, ?string $ersat
     return [$zeile, $fehler];
 }
 
-/** MeteoSwiss: eine CSV je Station; eine fehlende Datei oder Spalte ist kein Fehler des Netzes */
-function stationen_meteoswiss(string $netz, array $info, array $ids, ?string $ersatz, int $timeout, array &$bericht): array
+/**
+ * MeteoSwiss (CSV) und Suedtirol (JSON): ein Abruf je Station; eine fehlende Datei
+ * oder Spalte ist kein Fehler des Netzes
+ */
+function stationen_einzeln(string $netz, array $info, array $ids, ?string $ersatz, int $timeout, array &$bericht): array
 {
     $st = [];
     $fehler = [];
     $leer = [];
     $ms = 0;
     foreach ($ids as $id) {
-        $r = abruf(test_url(str_replace('{id}', strtolower($id), $info['abruf']), $ersatz), $timeout, "stationen/$netz/$id", $bericht);
+        $r = abruf(test_url(stationen_url_einzeln($info, $id, time()), $ersatz), $timeout, "stationen/$netz/$id", $bericht);
         $ms += $r['ms'];
         if ($r['http'] < 200 || $r['http'] >= 300) {
             $fehler[] = "$id: http={$r['http']} " . ($r['err'] !== '' ? $r['err'] : substr(preg_replace('/\s+/', ' ', $r['body']), 0, 100));
             continue;
         }
-        $e = meteoswiss_lesen(function_exists('mb_convert_encoding') ? mb_convert_encoding($r['body'], 'UTF-8', 'Windows-1252') : $r['body'], $id, $info['stationen'][$id] ?? []);
+        $e = ($info['art'] ?? '') === 'suedtirol'
+            ? suedtirol_lesen($r['body'], $id, $info['stationen'][$id] ?? [])
+            : meteoswiss_lesen(function_exists('mb_convert_encoding') ? mb_convert_encoding($r['body'], 'UTF-8', 'Windows-1252') : $r['body'], $id, $info['stationen'][$id] ?? []);
         if ($e === null) {
-            $fehler[] = "$id: keine CSV mit reference_timestamp";
+            $fehler[] = "$id: Antwort hat nicht das erwartete Format";
         } elseif ($e === ['leer']) {
             $leer[] = $id;
         } else {

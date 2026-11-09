@@ -10,7 +10,16 @@
  *                     ein Abruf fuer alle Stationen, Parameter SCHNEE (cm)
  *          meteoswiss: SwissMetNet, abruf mit {id} = Kuerzel klein, eine CSV je Station
  *                     (10-Minuten-Werte seit gestern 12 UTC), Spalte htoauts0 (cm)
- *     stationen  bei geosphere und meteoswiss: {id: {name, hoehe}} aus den Stationslisten,
+ *          suedtirol: Landeswetterdienst Suedtirol (CC0), abruf mit {id} = SCODE, eine
+ *                     Zeitreihe je Station (10 Minuten, date_from/date_to in Ortszeit
+ *                     YmdHi), Sensor HS (cm); Antwort [{DATE: "2026-11-09T12:30:00CET", VALUE}]
+ *          snowgrid: SNOWGRID-CL von GeoSphere Austria (CC BY 4.0), Schneehoehe aus einem
+ *                     Schneedeckenmodell im 1-km-Raster, taeglich, Stand gestern; nur
+ *                     Oesterreich. Ein Abruf mit mehreren lat_lon; die "Stationen" sind
+ *                     Punkte {id: {name, hoehe, lat, lon}} (Hoehe aus dem Gelaendemodell,
+ *                     gewaehlt mit tools/snowgrid_punkte.php). Kein Messwert: die Anzeige
+ *                     trennt ihn als Modell ab.
+ *     stationen  ausser bei lwd-geojson: {id: {name, hoehe}} aus den Stationslisten,
  *                weil die Antwort keine Namen enthaelt
  *   regionen[].stationen  {netz-id: [station-id, ...]}  in dieser Reihenfolge angezeigt
  *
@@ -30,6 +39,8 @@ const STATION_HSD_MAX = 150;     // cm: groessere Aenderung in 24 h ist ein Mess
 const STATION_ALT_STUNDEN = 12;  // aelter: Wert mit Zeit anzeigen
 const STATION_ZU_ALT_STUNDEN = 72; // aelter: nicht mehr anzeigen
 const STATIONEN_SUCHTAGE = 3;    // so viele UTC-Tage zurueck nach Dateien suchen
+const MODELL_ZU_ALT_STUNDEN = 100; // SNOWGRID (Tageswert, Stand gestern 0 UTC): aelter nicht anzeigen
+const SUEDTIROL_HS_NULL = -5.0;  // cm: Suedtiroler Pegel zeigen auf aperem Boden oft -1 bis -3 cm
 
 /** Netz-Ids und Plot-Ids, die der Katalog braucht: [netz => [plot, ...]] */
 function stationen_benoetigt(array $schnee): array
@@ -83,7 +94,8 @@ function stationen_filtern(string $body, array $ids): ?array
     return $out;
 }
 
-const STATION_ARTEN = ['lwd-geojson', 'geosphere', 'meteoswiss'];
+const STATION_ARTEN = ['lwd-geojson', 'geosphere', 'meteoswiss', 'suedtirol', 'snowgrid'];
+const STATION_EINZELN = ['meteoswiss', 'suedtirol']; // ein Abruf je Station, abruf mit {id}
 const STATION_STUNDEN_ZURUECK = 26; // Zeitreihe: so weit zurueck, fuer die Aenderung in 24 h
 
 /**
@@ -185,6 +197,86 @@ function meteoswiss_lesen(string $body, string $id, array $meta): ?array
     return stationen_eintrag($id, $meta, stationen_aus_reihe($reihe), 'MeteoSchweiz') ?? ['leer'];
 }
 
+/**
+ * Landeswetterdienst Suedtirol, Zeitreihe einer Station als JSON-Liste
+ * [{DATE: "2026-11-09T12:30:00CET", VALUE: 8.4}, ...] (neueste zuerst, Ortszeit mit
+ * Kuerzel). Leicht negative Werte (bis SUEDTIROL_HS_NULL) gelten als 0 cm.
+ * Rueckgabe eintrag, ['leer'] ohne Wert oder null, wenn das Format nicht passt.
+ */
+function suedtirol_lesen(string $body, string $id, array $meta): ?array
+{
+    $d = json_decode($body, true);
+    if (!is_array($d) || !array_is_list($d)) {
+        return null;
+    }
+    $reihe = [];
+    foreach ($d as $x) {
+        $ts = is_string($x['DATE'] ?? null) ? strtotime($x['DATE']) : false;
+        $v = $x['VALUE'] ?? null;
+        if ($ts === false || !is_numeric($v)) {
+            continue;
+        }
+        $v = (float)$v;
+        $reihe[$ts] = $v < SUEDTIROL_HS_NULL ? null : max(0.0, $v);
+    }
+    return stationen_eintrag($id, $meta, stationen_aus_reihe($reihe), 'Landeswetterdienst Südtirol') ?? ['leer'];
+}
+
+/** Abruf-URL einer Station bei Netzen mit einem Abruf je Station */
+function stationen_url_einzeln(array $info, string $id, int $jetzt): string
+{
+    $art = $info['art'] ?? '';
+    if ($art === 'meteoswiss') {
+        return str_replace('{id}', strtolower($id), $info['abruf']);
+    }
+    $tz = new DateTimeZone('Europe/Rome');
+    $bis = (new DateTimeImmutable('@' . $jetzt))->setTimezone($tz);
+    return str_replace('{id}', rawurlencode($id), $info['abruf']) . (str_contains($info['abruf'], '?') ? '&' : '?')
+         . http_build_query(['date_from' => $bis->modify('-' . STATION_STUNDEN_ZURUECK . ' hours')->format('YmdHi'), 'date_to' => $bis->format('YmdHi')]);
+}
+
+/** SNOWGRID: Abruf-URL fuer alle Punkte (Tageswerte der letzten 4 Tage) */
+function snowgrid_url(array $info, array $ids, int $jetzt): string
+{
+    $q = http_build_query(['parameters' => 'snow_depth', 'start' => gmdate('Y-m-d', $jetzt - 4 * 86400), 'end' => gmdate('Y-m-d', $jetzt)]);
+    foreach ($ids as $id) {
+        $p = $info['stationen'][$id] ?? [];
+        $q .= '&lat_lon=' . (float)($p['lat'] ?? 0) . ',' . (float)($p['lon'] ?? 0);
+    }
+    return $info['abruf'] . '?' . $q;
+}
+
+/**
+ * SNOWGRID-Antwort {timestamps: [ISO], features: [{properties: {parameters: {snow_depth:
+ * {unit: "m", data: [...]}}}}]}, Features in der Reihenfolge der lat_lon. Meter in cm.
+ * Rueckgabe [id => eintrag mit modell=true] (Punkte ohne Wert fehlen, ausserhalb
+ * Oesterreichs kommen nulls) oder null, wenn das Format nicht passt.
+ */
+function snowgrid_lesen(string $body, array $ids, array $meta): ?array
+{
+    $d = json_decode($body, true);
+    if (!is_array($d) || !is_array($d['timestamps'] ?? null) || !is_array($d['features'] ?? null) || count($d['features']) !== count($ids)) {
+        return null;
+    }
+    $zeiten = array_map(fn($z) => strtotime((string)$z), $d['timestamps']);
+    $out = [];
+    foreach (array_values($ids) as $i => $id) {
+        $p = $d['features'][$i]['properties']['parameters']['snow_depth'] ?? [];
+        $faktor = ($p['unit'] ?? 'm') === 'm' ? 100.0 : 1.0;
+        $reihe = [];
+        foreach (is_array($p['data'] ?? null) ? $p['data'] : [] as $j => $v) {
+            if (($zeiten[$j] ?? false) !== false) {
+                $reihe[$zeiten[$j]] = is_numeric($v) ? round((float)$v * $faktor, 1) : null;
+            }
+        }
+        $e = stationen_eintrag($id, $meta[$id] ?? [], stationen_aus_reihe($reihe), 'GeoSphere Austria (SNOWGRID)');
+        if ($e) {
+            $out[$id] = $e + ['modell' => true];
+        }
+    }
+    return $out;
+}
+
 /** Neueste gelungene Zeile je Netz: [netz => ['ts' => ..., 'stationen' => [...]]] */
 function stationen_laden(string $dataDir, ?int $jetzt = null): array
 {
@@ -227,7 +319,8 @@ function stationen_wert(array $s, int $jetzt): ?array
             $zeit = null;
         }
     }
-    if ($zeit === null || $jetzt - $zeit->getTimestamp() > STATION_ZU_ALT_STUNDEN * 3600) {
+    $modell = !empty($s['modell']);
+    if ($zeit === null || $jetzt - $zeit->getTimestamp() > ($modell ? MODELL_ZU_ALT_STUNDEN : STATION_ZU_ALT_STUNDEN) * 3600) {
         return null;
     }
     $hs = $s['hs'] ?? null;
@@ -239,7 +332,7 @@ function stationen_wert(array $s, int $jetzt): ?array
         $hsd = null;
     }
     return ['name' => $s['name'], 'hoehe' => $s['hoehe'], 'hs' => max(0.0, $hs), 'hsd24' => $hsd,
-            'zeit' => $zeit, 'alt' => $jetzt - $zeit->getTimestamp() > STATION_ALT_STUNDEN * 3600];
+            'zeit' => $zeit, 'alt' => !$modell && $jetzt - $zeit->getTimestamp() > STATION_ALT_STUNDEN * 3600, 'modell' => $modell];
 }
 
 /** Stationen einer Region mit Anzeigewert: [['netz' => id, 'wert' => [...]], ...] in Katalog-Reihenfolge */
@@ -286,11 +379,18 @@ function stationen_pruefen(array $d): array
         if (!in_array($art, STATION_ARTEN, true)) {
             $f[] = "$w: art muss " . implode(', ', STATION_ARTEN) . ' sein';
         }
-        if ($art === 'meteoswiss' && !str_contains((string)($n['abruf'] ?? ''), '{id}')) {
+        if (in_array($art, STATION_EINZELN, true) && !str_contains((string)($n['abruf'] ?? ''), '{id}')) {
             $f[] = "$w: abruf braucht {id}";
         }
         if ($art !== 'lwd-geojson' && !is_array($n['stationen'] ?? null)) {
             $f[] = "$w: stationen {id: {name, hoehe}} fehlt";
+        }
+        if ($art === 'snowgrid') {
+            foreach (is_array($n['stationen'] ?? null) ? $n['stationen'] : [] as $pid => $p) {
+                if (!is_numeric($p['lat'] ?? null) || !is_numeric($p['lon'] ?? null) || !is_numeric($p['hoehe'] ?? null)) {
+                    $f[] = "$w: Punkt $pid braucht lat, lon und hoehe";
+                }
+            }
         }
     }
     foreach ($d['regionen'] ?? [] as $i => $r) {
@@ -324,22 +424,45 @@ function stationen_pruefen(array $d): array
  */
 function stationen_html(array $liste, array $netze, DateTimeZone $tz, DateTimeImmutable $heute): string
 {
-    if (!$liste) {
-        return '';
-    }
+    $modell = array_values(array_filter($liste, fn($s) => !empty($s['wert']['modell'])));
+    $liste = array_values(array_filter($liste, fn($s) => empty($s['wert']['modell'])));
     $e = fn(string $s) => htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     $zahl = fn(float $v) => number_format($v, 0, ',', '.');
-    $wann = function (DateTimeImmutable $z) use ($tz, $heute): string {
+    $tage = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    $wann = function (DateTimeImmutable $z) use ($tz, $heute, $tage): string {
         $z = $z->setTimezone($tz);
-        $tage = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
         return ($z->format('Y-m-d') === $heute->format('Y-m-d') ? 'heute' : $tage[(int)$z->format('w')] . ' ' . $z->format('j.n.')) . ' ' . $z->format('G:i');
     };
+    $aenderung = function (?float $d, string $was) use ($zahl): string {
+        return $d === null ? '' : ' <span class="leise" title="Änderung der Schneehöhe ' . $was . ', mit Setzung; kein Neuschnee">('
+             . ($was === 'in 24 Stunden' ? '24 h ' : 'Vortag ') . (round($d) > 0 ? '+' : (round($d) < 0 ? '−' : '±')) . $zahl(abs(round($d))) . ')</span>';
+    };
+    $modellZeile = '';
+    if ($modell) {
+        // Tageswert mit Zeitstempel 0 UTC: das Datum des Tages, nicht die Uhrzeit
+        $tag = max(array_map(fn($s) => $s['wert']['zeit']->getTimestamp(), $modell));
+        $tagText = $tage[(int)gmdate('w', $tag)] . ' ' . gmdate('j.n.', $tag);
+        $teile = [];
+        foreach ($modell as $s) {
+            $w = $s['wert'];
+            $teile[] = '<span title="' . $e($w['name'] . ', Modellpunkt ' . ($w['hoehe'] !== null ? $zahl($w['hoehe']) . ' m' : '')) . '">'
+                     . ($w['hoehe'] !== null ? $zahl($w['hoehe']) . ' m' : $e($w['name'])) . ' <b>' . $zahl(round($w['hs'])) . ' cm</b>'
+                     . $aenderung($w['hsd24'], 'zum Vortag') . '</span>';
+        }
+        $n = $netze[$modell[0]['netz']] ?? [];
+        $q = $n['kurz'] ?? $modell[0]['netz'];
+        $modellZeile = '<p class="klein messung"><span class="leise">Schneehöhe im Modell, Stand ' . $e($tagText) . ' ('
+                     . (isset($n['url']) ? '<a href="' . $e($n['url']) . '" rel="noopener">' . $e($q) . ' ↗</a>' : $e($q))
+                     . '):</span> ' . implode(' · ', $teile) . '</p>';
+    }
+    if (!$liste) {
+        return $modellZeile;
+    }
     $neueste = max(array_map(fn($s) => $s['wert']['zeit']->getTimestamp(), $liste));
     $teile = [];
     foreach ($liste as $s) {
         $w = $s['wert'];
-        $d = $w['hsd24'];
-        $aend = $d === null ? '' : ' <span class="leise" title="Änderung der Schneehöhe in 24 Stunden, mit Setzung; kein Neuschnee">(24 h ' . (round($d) > 0 ? '+' : (round($d) < 0 ? '−' : '±')) . $zahl(abs(round($d))) . ')</span>';
+        $aend = $aenderung($w['hsd24'], 'in 24 Stunden');
         $teile[] = '<span title="' . $e($w['name'] . ', ' . ($w['hoehe'] !== null ? $zahl($w['hoehe']) . ' m, ' : '') . 'gemessen ' . $wann($w['zeit'])) . '">'
                  . $e($w['name']) . ($w['hoehe'] !== null ? ' <span class="leise">' . $zahl($w['hoehe']) . ' m</span>' : '')
                  . ' <b>' . $zahl(round($w['hs'])) . ' cm</b>' . $aend
@@ -349,5 +472,5 @@ function stationen_html(array $liste, array $netze, DateTimeZone $tz, DateTimeIm
     $link = array_values(array_filter(array_map(fn($s) => $netze[$s['netz']]['url'] ?? null, $liste)))[0] ?? null;
     return '<p class="klein messung"><span class="leise">Schneehöhe gemessen ' . $e($wann((new DateTimeImmutable('@' . $neueste)))) . ' ('
          . ($link ? '<a href="' . $e($link) . '" rel="noopener">' . $e(implode(', ', $quellen)) . ' ↗</a>' : $e(implode(', ', $quellen)))
-         . '):</span> ' . implode(' · ', $teile) . '</p>';
+         . '):</span> ' . implode(' · ', $teile) . '</p>' . $modellZeile;
 }

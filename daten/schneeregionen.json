@@ -96,6 +96,26 @@
       "lizenz": "Quelle: MeteoSchweiz (Open Data)",
       "hinweis": "Spalte htoauts0 (Schneehöhe automatisch, cm, 10 Minuten); Dateiname nach openpaul.github.io (Beispiel brz) und der Doku von MeteoSchweiz (now = seit gestern 12 UTC, Zeit UTC, Semikolon, Windows-1252). Stationen aus ogd-smn_meta_stations.csv vom 9.11.2026; am 9.11.2026 meldete nur Samedan eine Schneehöhe (Segl-Maria und Bernina nicht).",
       "stationen": {"sam": {"name": "Samedan", "hoehe": 1709}}
+    },
+    "suedtirol": {
+      "art": "suedtirol",
+      "name": "Landeswetterdienst Südtirol (Hydrographisches Amt)",
+      "kurz": "Wetter Südtirol",
+      "abruf": "https://geoservices.buergernetz.bz.it/services/meteo/v1/timeseries?station_code={id}&sensor_code=HS",
+      "url": "https://wetter.provinz.bz.it/",
+      "lizenz": "Autonome Provinz Bozen – Südtirol, CC0",
+      "hinweis": "Open-Data-Dienst des Landes (meteo/v1, CC0). Stationsliste stations?coord_sys=EPSG:4326 (229 Stationen, SCODE/NAME_D/ALT/LAT/LONG), Zeitreihe timeseries?station_code&sensor_code=HS&date_from&date_to (YmdHi, Ortszeit), Antwort [{DATE, VALUE}] mit DATE wie 2026-11-09T12:30:00CET. Am 9.11.2026 über die Actions „Stationen suchen“ und „SNOWGRID-Punkte suchen“ geprüft. Auf aperem Boden oft −1 bis −3 cm: bis −5 cm als 0 gewertet.",
+      "stationen": {"54100SF": {"name": "Rein, Tristenboden", "hoehe": 2450}, "53200SF": {"name": "Weißenbach, Fadner Alm", "hoehe": 2155}, "50360SF": {"name": "Prettau, Merbalm", "hoehe": 2006}}
+    },
+    "snowgrid": {
+      "art": "snowgrid",
+      "name": "GeoSphere Austria, SNOWGRID-CL (Schneedeckenmodell, 1 km)",
+      "kurz": "SNOWGRID",
+      "abruf": "https://dataset.api.hub.geosphere.at/v1/timeseries/historical/snowgrid_cl-v2-1d-1km",
+      "url": "https://data.hub.geosphere.at/dataset/snowgrid_cl-v2-1d-1km",
+      "lizenz": "GeoSphere Austria, CC BY 4.0",
+      "hinweis": "Kein Messwert: Schneehöhe (snow_depth, m) aus dem Schneedeckenmodell SNOWGRID-CL, Tageswert, am 9.11.2026 bis 8.11. verfügbar; nur Österreich (außerhalb null, auch am Nassfeld südlich der Grenze). Mehrere lat_lon in einem Abruf, Features in derselben Reihenfolge. Punkte am 9.11.2026 mit tools/snowgrid_punkte.php gewählt: je Region ein Punkt in Tourhöhe und einer in mittlerer Höhe (Höhe aus dem Copernicus-DEM über Open-Meteo, ±100 m), nächst dem Vorhersagepunkt. Kühtai nur Tourhöhe (Tal schon 1.950 m).",
+      "stationen": {"kuehtai-sellrain-tour": {"name": "Kühtai / Sellrain, Tourhöhe", "hoehe": 2338, "lat": 47.1899, "lon": 11.0234}, "stubai-tour": {"name": "Stubai, Tourhöhe", "hoehe": 2351, "lat": 47.0499, "lon": 11.1938}, "stubai-mitte": {"name": "Stubai, mittlere Höhe", "hoehe": 1708, "lat": 47.0499, "lon": 11.2498}, "zillertal-tux-tour": {"name": "Zillertal / Tux, Tourhöhe", "hoehe": 2296, "lat": 47.1199, "lon": 11.7216}, "zillertal-tux-mitte": {"name": "Zillertal / Tux, mittlere Höhe", "hoehe": 1895, "lat": 47.1399, "lon": 11.6936}, "arlberg-tour": {"name": "Arlberg / St. Anton, Tourhöhe", "hoehe": 2397, "lat": 47.1519, "lon": 10.2081}, "arlberg-mitte": {"name": "Arlberg / St. Anton, mittlere Höhe", "hoehe": 1883, "lat": 47.1369, "lon": 10.2081}, "oetztal-gurgl-tour": {"name": "Ötztal / Obergurgl, Tourhöhe", "hoehe": 2786, "lat": 46.8519, "lon": 10.989}, "oetztal-gurgl-mitte": {"name": "Ötztal / Obergurgl, mittlere Höhe", "hoehe": 2309, "lat": 46.8369, "lon": 10.989}, "kitzbueheler-alpen-tour": {"name": "Kitzbüheler Alpen, Tourhöhe", "hoehe": 1844, "lat": 47.3769, "lon": 12.2753}, "kitzbueheler-alpen-mitte": {"name": "Kitzbüheler Alpen, mittlere Höhe", "hoehe": 1430, "lat": 47.3619, "lon": 12.3173}, "osttirol-kals-tour": {"name": "Osttirol (Kals, Matrei), Tourhöhe", "hoehe": 2415, "lat": 47.0199, "lon": 12.5999}, "osttirol-kals-mitte": {"name": "Osttirol (Kals, Matrei), mittlere Höhe", "hoehe": 1930, "lat": 47.0099, "lon": 12.6139}, "gastein-rauris-tour": {"name": "Gastein / Rauris (Salzburg), Tourhöhe", "hoehe": 2227, "lat": 47.1019, "lon": 13.0392}, "gastein-rauris-mitte": {"name": "Gastein / Rauris (Salzburg), mittlere Höhe", "hoehe": 1607, "lat": 47.0869, "lon": 12.9762}, "nassfeld-tour": {"name": "Nassfeld / Karnische Alpen (Kärnten), Tourhöhe", "hoehe": 1802, "lat": 46.5569, "lon": 13.2488}, "nassfeld-mitte": {"name": "Nassfeld / Karnische Alpen (Kärnten), mittlere Höhe", "hoehe": 1221, "lat": 46.5869, "lon": 13.2908}, "soelktaeler-tour": {"name": "Schladminger Tauern / Sölktäler (Steiermark), Tourhöhe", "hoehe": 2153, "lat": 47.2799, "lon": 13.9572}, "soelktaeler-mitte": {"name": "Schladminger Tauern / Sölktäler (Steiermark), mittlere Höhe", "hoehe": 1593, "lat": 47.2899, "lon": 13.9432}, "obertauern-tour": {"name": "Obertauern / Radstädter Tauern (Salzburg), Tourhöhe", "hoehe": 2169, "lat": 47.2399, "lon": 13.5533}, "obertauern-mitte": {"name": "Obertauern / Radstädter Tauern (Salzburg), mittlere Höhe", "hoehe": 1658, "lat": 47.2499, "lon": 13.5393}, "lungau-tour": {"name": "Lungau (Weißeck, Riedingtal, Salzburg), Tourhöhe", "hoehe": 2289, "lat": 47.1499, "lon": 13.4575}, "lungau-mitte": {"name": "Lungau (Weißeck, Riedingtal, Salzburg), mittlere Höhe", "hoehe": 1800, "lat": 47.1599, "lon": 13.4575}, "saalbach-glemmtal-tour": {"name": "Saalbach / Glemmtal (Salzburg), Tourhöhe", "hoehe": 1960, "lat": 47.3499, "lon": 12.621}, "saalbach-glemmtal-mitte": {"name": "Saalbach / Glemmtal (Salzburg), mittlere Höhe", "hoehe": 1460, "lat": 47.3499, "lon": 12.593}, "hochkoenig-tour": {"name": "Hochkönig / Dienten (Salzburg), Tourhöhe", "hoehe": 2092, "lat": 47.4199, "lon": 13.0269}, "hochkoenig-mitte": {"name": "Hochkönig / Dienten (Salzburg), mittlere Höhe", "hoehe": 1548, "lat": 47.3999, "lon": 13.0409}}
     }
   },
   "regionen": [
@@ -129,7 +149,7 @@
     },
     {
       "id": "kuehtai-sellrain",
-      "stationen": {"tirol": ["gossenkoelle", "lampsenspitze", "breiter_grieskogel"]},
+      "stationen": {"tirol": ["gossenkoelle", "lampsenspitze", "breiter_grieskogel"], "snowgrid": ["kuehtai-sellrain-tour"]},
       "name": "Kühtai / Sellrain",
       "land": "AT",
       "punkt": [47.2, 11.03],
@@ -144,7 +164,7 @@
     },
     {
       "id": "stubai",
-      "stationen": {"tirol": ["schoeckbichl", "stubaiergletscher", "dresdnerhuette"]},
+      "stationen": {"tirol": ["schoeckbichl", "stubaiergletscher", "dresdnerhuette"], "snowgrid": ["stubai-tour", "stubai-mitte"]},
       "name": "Stubai",
       "land": "AT",
       "punkt": [47.06, 11.2],
@@ -159,7 +179,7 @@
     },
     {
       "id": "zillertal-tux",
-      "stationen": {"tirol": ["tuxerjoch", "wandspitze", "laemmerbichlalm"]},
+      "stationen": {"tirol": ["tuxerjoch", "wandspitze", "laemmerbichlalm"], "snowgrid": ["zillertal-tux-tour", "zillertal-tux-mitte"]},
       "name": "Zillertal / Tux",
       "land": "AT",
       "punkt": [47.13, 11.7],
@@ -174,7 +194,7 @@
     },
     {
       "id": "arlberg",
-      "stationen": {"tirol": ["ulmerhuette", "gampberg", "kapall"]},
+      "stationen": {"tirol": ["ulmerhuette", "gampberg", "kapall"], "snowgrid": ["arlberg-tour", "arlberg-mitte"]},
       "name": "Arlberg / St. Anton",
       "land": "AT",
       "punkt": [47.14, 10.22],
@@ -189,7 +209,7 @@
     },
     {
       "id": "oetztal-gurgl",
-      "stationen": {"tirol": ["rosskar", "obergurgl_sonn"], "geosphere": ["11316"]},
+      "stationen": {"tirol": ["rosskar", "obergurgl_sonn"], "geosphere": ["11316"], "snowgrid": ["oetztal-gurgl-tour", "oetztal-gurgl-mitte"]},
       "name": "Ötztal / Obergurgl",
       "land": "AT",
       "punkt": [46.84, 11.0],
@@ -214,6 +234,7 @@
       "warndienst": "euregio",
       "eaws": [],
       "eaws_namen": ["Ahrntal", "Tauferer"],
+      "stationen": {"suedtirol": ["54100SF", "53200SF", "50360SF"]},
       "hinweis": "Südtirol (IT-32-BZ, freigegeben). Mikroregion-ID offen, bis dahin Zuordnung über den Namen."
     },
     {
@@ -242,7 +263,7 @@
       "anfahrt": [47.375, 12.292],
       "warndienst": "euregio",
       "eaws": ["AT-07-17", "AT-07-18"],
-      "stationen": {"tirol": ["kleinerbeil", "kitzbuehler_horn", "hochhoerndl"]},
+      "stationen": {"tirol": ["kleinerbeil", "kitzbuehler_horn", "hochhoerndl"], "snowgrid": ["kitzbueheler-alpen-tour", "kitzbueheler-alpen-mitte"]},
       "hinweis": "Grasberge zwischen Wildschönau, Kelchsau, Spertental und Kitzbühel; Punkt im Raum Aschau/Kelchsau geschätzt, Anfahrt Aschau im Spertental ungefähr. Mikroregionen und Stationen aus der Tiroler Stationsdatei vom 9.11.2026 (Brixental AT-07-17-01, Wildschönau AT-07-17-02, Wildseeloder AT-07-18). Salzburger Seite (Glemmtal, Saalbach) gehört zum LWD Salzburg (AT-05-14) und fehlt."
     },
     {
@@ -256,12 +277,12 @@
       "anfahrt": [47.004, 12.645],
       "warndienst": "euregio",
       "eaws": ["AT-07-26", "AT-07-24"],
-      "stationen": {"tirol": ["figol", "goldriedkessel", "eselruecken"]},
+      "stationen": {"tirol": ["figol", "goldriedkessel", "eselruecken"], "snowgrid": ["osttirol-kals-tour", "osttirol-kals-mitte"]},
       "hinweis": "Südseite des Alpenhauptkamms, bekommt bei Südstau Schnee, wenn Nordtirol leer ausgeht. Punkt bei Kals geschätzt. Mikroregionen Glocknergruppe Süd/Goldried (AT-07-26) und Venedigergruppe Süd (AT-07-24) aus der Stationsdatei; Lienzer Dolomiten und Karnische Alpen Osttirol (AT-07-29) wären eine eigene Region."
     },
     {
       "id": "gastein-rauris",
-      "stationen": {"geosphere": ["11343", "11260"]},
+      "stationen": {"geosphere": ["11343", "11260"], "snowgrid": ["gastein-rauris-tour", "gastein-rauris-mitte"]},
       "name": "Gastein / Rauris (Salzburg)",
       "land": "AT",
       "punkt": [47.09, 13.03],
@@ -275,7 +296,7 @@
     },
     {
       "id": "nassfeld",
-      "stationen": {"geosphere": ["11259"]},
+      "stationen": {"geosphere": ["11259"], "snowgrid": ["nassfeld-tour", "nassfeld-mitte"]},
       "name": "Nassfeld / Karnische Alpen (Kärnten)",
       "land": "AT",
       "punkt": [46.56, 13.28],
@@ -289,7 +310,7 @@
     },
     {
       "id": "soelktaeler",
-      "stationen": {"geosphere": ["11268", "11351"]},
+      "stationen": {"geosphere": ["11268", "11351"], "snowgrid": ["soelktaeler-tour", "soelktaeler-mitte"]},
       "name": "Schladminger Tauern / Sölktäler (Steiermark)",
       "land": "AT",
       "punkt": [47.29, 13.95],
@@ -303,7 +324,7 @@
     },
     {
       "id": "obertauern",
-      "stationen": {"geosphere": ["11349", "8989078"]},
+      "stationen": {"geosphere": ["11349", "8989078"], "snowgrid": ["obertauern-tour", "obertauern-mitte"]},
       "name": "Obertauern / Radstädter Tauern (Salzburg)",
       "land": "AT",
       "punkt": [47.25, 13.56],
@@ -317,7 +338,7 @@
     },
     {
       "id": "lungau",
-      "stationen": {"geosphere": ["8989078", "11349", "11148"]},
+      "stationen": {"geosphere": ["8989078", "11349", "11148"], "snowgrid": ["lungau-tour", "lungau-mitte"]},
       "name": "Lungau (Weißeck, Riedingtal, Salzburg)",
       "land": "AT",
       "punkt": [47.16, 13.45],
@@ -331,7 +352,7 @@
     },
     {
       "id": "saalbach-glemmtal",
-      "stationen": {"geosphere": ["11366", "8989044"]},
+      "stationen": {"geosphere": ["11366", "8989044"], "snowgrid": ["saalbach-glemmtal-tour", "saalbach-glemmtal-mitte"]},
       "name": "Saalbach / Glemmtal (Salzburg)",
       "land": "AT",
       "punkt": [47.37, 12.6],
@@ -354,7 +375,8 @@
       "anfahrt": [47.383, 13.004],
       "warndienst": "salzburg",
       "eaws": ["AT-05-13", "AT-05-17"],
-      "hinweis": "Nordstau am Hochkönig, Grasberge um Dienten. Mikroregionen Dientner Grasberge (AT-05-13) und Steinernes Meer, Hochkönig, Hagengebirge, Göllstock (AT-05-17) aus dem EAWS-Bericht vom 4.4.2026. Punkt und Anfahrt (Dienten) geschätzt."
+      "hinweis": "Nordstau am Hochkönig, Grasberge um Dienten. Mikroregionen Dientner Grasberge (AT-05-13) und Steinernes Meer, Hochkönig, Hagengebirge, Göllstock (AT-05-17) aus dem EAWS-Bericht vom 4.4.2026. Punkt und Anfahrt (Dienten) geschätzt.",
+      "stationen": {"snowgrid": ["hochkoenig-tour", "hochkoenig-mitte"]}
     }
   ]
 }

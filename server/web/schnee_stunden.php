@@ -287,7 +287,7 @@ $e = $b['ens'];
 
 <footer class="fuss klein leise">
   <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0), Mittel mehrerer Modelle auf Tourhöhe, Spanne aus dem ECMWF-Ensemble. Rohwerte, nicht kalibriert.</p>
-  <?php if (!empty($region['stationen'])): foreach (array_intersect_key($schnee['messnetze'], $region['stationen']) as $n): ?><p>Messwerte: <a href="<?= h($n['url']) ?>" rel="noopener"><?= h($n['name']) ?></a> (<?= h($n['lizenz']) ?>), Rohdaten, ungeprüft.</p><?php endforeach; endif ?>
+  <?php if (!empty($region['stationen'])): foreach (array_intersect_key($schnee['messnetze'], $region['stationen']) as $n): ?><p><?= ($n['art'] ?? '') === 'snowgrid' ? 'Modellwerte' : 'Messwerte' ?>: <a href="<?= h($n['url']) ?>" rel="noopener"><?= h($n['name']) ?></a> (<?= h($n['lizenz']) ?>), <?= ($n['art'] ?? '') === 'snowgrid' ? 'Tageswert vom Vortag, kein Messwert' : 'Rohdaten, ungeprüft' ?>.</p><?php endforeach; endif ?>
   <?= design_schalter() ?>
   <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
 </footer>

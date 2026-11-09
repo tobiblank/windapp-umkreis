@@ -92,6 +92,17 @@ pruefe(array_map('strval', array_keys($geo)) === ['111'] && $geo['111']['hs'] ==
 $chm = $mess['meteoswiss']['stationen'] ?? [];
 pruefe(array_keys($chm) === ['xaa'] && $chm['xaa']['hs'] == 55.0 && $chm['xaa']['hsd24'] == 5.0 && str_contains($ausText, 'stationen/meteoswiss: 1 von 2 Stationen mit Schneehöhe') && str_contains($ausText, 'ohne Wert: xbb'),
        'MeteoSwiss: CSV je Station, htoauts0, Station ohne Spalte fehlt ohne Fehler');
+$bzm = $mess['suedtirol']['stationen'] ?? [];
+pruefe(array_keys($bzm) === ['bz1', 'bz2'] && $bzm['bz1']['hs'] == 26.0 && abs($bzm['bz1']['hsd24'] - 6.0) < 0.2 && $bzm['bz2']['hs'] == 0.0 && $bzm['bz1']['name'] === 'Bezett eins'
+       && str_contains($ausText, 'stationen/suedtirol: 2 von 3 Stationen mit Schneehöhe') && str_contains($ausText, 'ohne Wert: bz3'),
+       'Südtirol: Zeitreihe je Station (Ortszeit mit Kürzel), leicht negativ = 0 cm, Station ohne Werte fehlt ohne Fehler');
+$sgm = $mess['snowgrid']['stationen'] ?? [];
+pruefe(array_keys($sgm) === ['d-tour'] && $sgm['d-tour']['hs'] == 18.0 && $sgm['d-tour']['hsd24'] == 3.0 && !empty($sgm['d-tour']['modell'])
+       && str_contains($ausText, 'stationen/snowgrid: ok, 1 von 2 Punkten mit Wert') && str_contains($ausText, 'ohne Wert: d-mitte'),
+       'SNOWGRID: ein Abruf für alle Punkte, m in cm, Änderung zum Vortag, Punkt ohne Wert fehlt');
+$sgw = stationen_wert($sgm['d-tour'], time() + 50 * 3600);
+pruefe($sgw && $sgw['modell'] && !$sgw['alt'] && stationen_wert($sgm['d-tour'], time() + 4 * 86400) === null, 'SNOWGRID: Tageswert gilt länger als ein Messwert, ohne Zeitangabe');
+pruefe(snowgrid_lesen('{"timestamps":[],"features":[{}]}', ['a', 'b'], []) === null && suedtirol_lesen('{"x":1}', 'a', []) === null, 'SNOWGRID/Südtirol: falsches Format wird erkannt');
 pruefe(stationen_aus_reihe([1000 => 5.0, 1000 + 86400 => 8.0]) === [8.0, 3.0, gmdate('Y-m-d\TH:i:s\Z', 1000 + 86400)] && stationen_aus_reihe([5 => null]) === null
        && stationen_aus_reihe([0 => 5.0, 7200 => 6.0])[1] === null, 'Zeitreihe: Änderung nur mit Wert rund 24 h vorher');
 pruefe(stationen_wert($mess['tirol']['stationen']['sta-gut'], time() + 4 * 86400) === null && stationen_wert($mess['tirol']['stationen']['sta-gut'], time() + 13 * 3600)['alt'],
@@ -205,6 +216,11 @@ pruefe(!preg_match('/\d+ %(?! Wolken)/u', strip_tags(preg_replace('#<details cla
 pruefe(str_contains($html, 'Zahl: Neuschnee in cm'), 'Karte: Zahl ist Neuschnee in cm');
 pruefe(preg_match('#id="r-schnee-a".*?Schneehöhe gemessen heute .*?Gutalm <span class="leise">2.450 m</span> <b>42 cm</b>.*?\(24 h \+5\)#s', $html) === 1 && !str_contains($html, 'Fehlerkopf')
        && str_contains($html, 'Messwerte: <a href="https://lawinen.report/weather/stations"'), 'Liste: gemessene Schneehöhe mit Änderung, Messfehler ausgeblendet, Quelle im Fuß');
+pruefe(preg_match('#id="r-schnee-d".*?Schneehöhe im Modell, Stand \w\w \d+\.\d+\. \(<a href="https://data.hub.geosphere.at/dataset/snowgrid_cl-v2-1d-1km"[^>]*>SNOWGRID ↗</a>\):</span> <span[^>]*>2.350 m <b>18 cm</b>.*?\(Vortag \+3\)#s', $html) === 1
+       && !preg_match('#id="r-schnee-d".*?Schneehöhe gemessen#s', explode('id="r-schnee-a"', $html)[0] . 'x') && str_contains($html, 'Modellwerte: <a href="https://data.hub.geosphere.at/dataset/snowgrid_cl-v2-1d-1km"'),
+       'Liste: SNOWGRID als Modellwert abgesetzt, nicht als Messung');
+pruefe(preg_match('#id="r-schnee-c".*?Schneehöhe gemessen heute .*?Bezett eins <span class="leise">2.450 m</span> <b>26 cm</b>.*?\(24 h \+6\).*?Bezett zwei <span class="leise">2.000 m</span> <b>0 cm</b>#s', $html) === 1,
+       'Liste: Südtiroler Stationen');
 [, $html] = holen($wPort, "schnee.php?region=schnee-a&nach=$t1");
 pruefe(str_contains($html, 'Geteilte Vorhersage') && !str_contains($html, 'id="r-schnee-b"') && !str_contains($html, 'id="wahl"'), 'geteilte Vorhersage: nur diese Region, ohne Auswahl');
 [, $html] = holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t1);
