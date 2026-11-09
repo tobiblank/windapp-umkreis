@@ -1,0 +1,30 @@
+name: EAWS-Regionen zuordnen
+
+# Von Hand starten (seit 9.11.2026): sagt je Schnee-Region, in welcher Lawinen-Warnregion
+# (EAWS-Mikroregion) sie liegt (tools/eaws_zuordnen.php). Ergebnis im Log.
+# Aendert nichts im Repo oder auf dem Server.
+
+on:
+  workflow_dispatch:
+    inputs:
+      nur:
+        description: "Nur diese Regionen (Komma), leer = alle"
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  zuordnen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          coverage: none
+
+      - name: Zuordnen
+        run: php tools/eaws_zuordnen.php daten/schneeregionen.json "${{ inputs.nur }}"

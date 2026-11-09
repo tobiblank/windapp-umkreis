@@ -2,10 +2,10 @@
 /**
  * Messstationen fuer den Schnee-Modus suchen (seit 9.11.2026), zum Auswaehlen von Hand.
  *
- *   php tools/stationen_suchen.php daten/schneeregionen.json [kandidaten.json] [km]
+ *   php tools/stationen_suchen.php daten/schneeregionen.json [kandidaten.json] [km] [region,region]
  *
- * Fragt fuer alle aktiven Stationen von GeoSphere Austria (TAWES) und MeteoSchweiz
- * (SwissMetNet) im Umkreis von km (Standard 35) um einen Vorhersagepunkt die
+ * Fragt fuer alle aktiven Stationen von GeoSphere Austria (TAWES), MeteoSchweiz
+ * (SwissMetNet), LWD Tirol und Landeswetterdienst Suedtirol im Umkreis von km (Standard 35) um einen Vorhersagepunkt die
  * Schneehoehe der letzten 26 Stunden ab und listet je Schnee-Region die Stationen mit
  * Wert: Entfernung, Hoehe, letzte Schneehoehe, Aenderung in 24 h. Stationen ganz ohne
  * Wert haben vermutlich keinen Schneepegel. Laeuft als GitHub Action
@@ -28,11 +28,15 @@ const TEIL = 40;
 $katalog = $argv[1] ?? null;
 $aus = $argv[2] ?? null;
 $km = (float)($argv[3] ?? 35);
+$nur = array_filter(explode(',', (string)($argv[4] ?? '')));
 if (!$katalog) {
     fwrite(STDERR, "Aufruf: php tools/stationen_suchen.php <schneeregionen.json> [kandidaten.json] [km]\n");
     exit(2);
 }
 $regionen = schnee_katalog_laden($katalog)['regionen'];
+if ($nur) {
+    $regionen = array_values(array_filter($regionen, fn($r) => in_array($r['id'], $nur, true)));
+}
 
 function holen(string $url): ?string
 {
@@ -109,6 +113,23 @@ foreach ($chNah as $id => $m) {
     }
 }
 
+// --- LWD Tirol (eine GeoJSON-Datei aller Stationen) --------------------------------
+$ti = holen('https://wiski.tirol.gv.at/lawine/produkte/ogd.geojson');
+$tiAlle = [];
+foreach (json_decode((string)$ti, true)['features'] ?? [] as $f) {
+    $id = $f['properties']['plot'] ?? null;
+    if (is_string($id)) {
+        $tiAlle[$id] = true;
+    }
+}
+foreach (stationen_filtern((string)$ti, array_keys($tiAlle)) ?? [] as $id => $s) {
+    if ($s['hs'] !== null && $s['lat'] !== null) {
+        $werte["tirol:$id"] = ['netz' => 'tirol', 'id' => $id, 'name' => $s['name'], 'hoehe' => (int)$s['hoehe'],
+                               'lat' => $s['lat'], 'lon' => $s['lon'], 'hs' => $s['hs'], 'hsd24' => $s['hsd24'], 'zeit' => (string)$s['zeit']];
+    }
+}
+echo 'LWD Tirol: ' . count($tiAlle) . ' Stationen, mit HS: ' . count(array_filter($werte, fn($w) => $w['netz'] === 'tirol')) . "\n";
+
 // --- Suedtirol (Landeswetterdienst, CC0) ----------------------------------------
 const BZ_BASIS = 'https://geoservices.buergernetz.bz.it/services/meteo/v1/';
 $bz = json_decode((string)holen(BZ_BASIS . 'stations?coord_sys=EPSG:4326'), true);
@@ -124,42 +145,17 @@ foreach ($bz['features'] ?? [] as $f) {
     $bzNah[(string)$p['SCODE']] = ['name' => (string)($p['NAME_D'] ?? $p['SCODE']), 'hoehe' => (int)($p['ALT'] ?? 0), 'lat' => (float)$lat, 'lon' => (float)$lon];
 }
 echo 'Suedtirol: ' . count($bzNah) . ' Stationen; Beispiel: ' . json_encode(array_slice($bz['features'] ?? [], 0, 1), JSON_UNESCAPED_UNICODE) . "\n";
-$bzNah = in_der_naehe($bzNah, array_filter($regionen, fn($r) => $r['warndienst'] === 'euregio'), $km);
+$bzNah = in_der_naehe($bzNah, $regionen, $km);
 foreach ($bzNah as $id => $m) {
-    $s = json_decode((string)holen(BZ_BASIS . 'sensors?' . http_build_query(['station_code' => $id, 'sensor_code' => 'HS'])), true);
-    $hs = null;
-    $zeit = null;
-    foreach (is_array($s) ? $s : [] as $x) {
-        if (($x['TYPE'] ?? '') === 'HS' && is_numeric($x['VALUE'] ?? null)) {
-            $hs = (float)$x['VALUE'];
-            $zeit = (string)($x['DATE'] ?? '');
-        }
+    $body = holen(stationen_url_einzeln(['art' => 'suedtirol', 'abruf' => BZ_BASIS . 'timeseries?station_code={id}&sensor_code=HS'], (string)$id, time()));
+    $e = $body === null ? null : suedtirol_lesen($body, (string)$id, $m);
+    if (is_array($e) && $e !== ['leer']) {
+        $werte["suedtirol:$id"] = ['netz' => 'suedtirol', 'id' => (string)$id, 'name' => $m['name'], 'hoehe' => $m['hoehe'],
+                                   'lat' => $m['lat'], 'lon' => $m['lon'], 'hs' => $e['hs'], 'hsd24' => $e['hsd24'], 'zeit' => $e['zeit']];
     }
-    if ($hs !== null) {
-        $werte["suedtirol:$id"] = ['netz' => 'suedtirol', 'id' => $id, 'name' => $m['name'], 'hoehe' => $m['hoehe'],
-                                   'lat' => $m['lat'], 'lon' => $m['lon'], 'hs' => $hs, 'hsd24' => null, 'zeit' => $zeit];
-    }
+    usleep(200000);
 }
 echo 'Suedtirol: ' . count($bzNah) . ' in der Naehe, davon mit HS: ' . count(array_filter($werte, fn($w) => $w['netz'] === 'suedtirol')) . "\n";
-
-// --- SNOWGRID (GeoSphere, 1 km, taeglich) -------------------------------------------
-$sgMeta = holen('https://dataset.api.hub.geosphere.at/v1/timeseries/historical/snowgrid_cl-v2-1d-1km/metadata');
-echo "SNOWGRID Metadaten: " . substr((string)$sgMeta, 0, 1500) . "\n";
-$sgPar = [];
-foreach (json_decode((string)$sgMeta, true)['parameters'] ?? [] as $par) {
-    $sgPar[] = $par['name'];
-}
-foreach ($regionen as $r) {
-    if (($r['land'] ?? '') !== 'AT') {
-        continue;
-    }
-    $url = 'https://dataset.api.hub.geosphere.at/v1/timeseries/historical/snowgrid_cl-v2-1d-1km?' . http_build_query([
-        'parameters' => implode(',', $sgPar), 'lat_lon' => $r['punkt'][0] . ',' . $r['punkt'][1],
-        'start' => gmdate('Y-m-d', time() - 4 * 86400), 'end' => gmdate('Y-m-d')]);
-    $body = holen($url);
-    echo "SNOWGRID {$r['id']}: " . substr(preg_replace('/\s+/', ' ', (string)$body), 0, 700) . "\n";
-    usleep(300000);
-}
 
 // --- je Region ---------------------------------------------------------------
 $ergebnis = [];

@@ -11,6 +11,9 @@ on:
       km:
         description: "Umkreis um den Vorhersagepunkt in km"
         default: "35"
+      nur:
+        description: "Nur diese Regionen (Komma), leer = alle"
+        default: ""
 
 permissions:
   contents: read
@@ -28,7 +31,7 @@ jobs:
           coverage: none
 
       - name: Suchen
-        run: php tools/stationen_suchen.php daten/schneeregionen.json kandidaten.json "${{ inputs.km }}"
+        run: php tools/stationen_suchen.php daten/schneeregionen.json kandidaten.json "${{ inputs.km }}" "${{ inputs.nur }}"
 
       - uses: actions/upload-artifact@v4
         with:
