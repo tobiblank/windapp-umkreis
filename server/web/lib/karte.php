@@ -277,3 +277,85 @@ function karte_wert(array $eintrag, ?string $tag): array
     }
     return $best;
 }
+
+// ===================================================================
+// MAENNCHEN AM STANDORT (seit 8.11.2026, fuer beide Modi seit 9.11.2026)
+// ===================================================================
+
+/**
+ * Standort als Maennchen mit allem, was die Animation braucht (Skript lib/maennchen.js):
+ * Bus mit Fahrer und Spur, Puls am Ziel, Blicklinie, Ankunft am Ziel, Sprechblase.
+ * Steht ueber den Punkten mit den Fuessen am Ort. Geometrie in Einheiten von 0,7 x $rp
+ * (Kopf oben bei -3,65), die Gruppe skaliert. Ohne JavaScript steht es still da.
+ * $ankunft: 'palme' (Meer im Sueden), 'sack' (Windsack), 'ski' (Schnee-Modus: Ski im
+ * Schnee, Flocken; der Bus hat dann Ski auf dem Dach). Ohne Ziel nur das Maennchen.
+ */
+function maennchen_svg(array $heimXY, float $rp, ?array $ziel, string $ankunft, string $titel): string
+{
+    $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $u = $rp * 0.7;
+    $hx = round($heimXY[0], 1);
+    $hy = round($heimXY[1], 1);
+    $arm = fn(string $id, float $x, float $grad) => '<rect class="arm" id="' . $id . '" x="-0.15" y="0" width="0.3" height="1.4" rx="0.15" transform="translate(' . $x . ' -2.2) rotate(' . $grad . ')"/>';
+    $o = '';
+    if ($ziel) {
+        $zx = round($ziel[0], 1);
+        $zy = round($ziel[1], 1);
+        $o .= '<path class="busspur" id="heimSpur" d="" opacity="0"/>' . "\n"
+            . '<circle class="puls" id="heimPuls" cx="' . $zx . '" cy="' . $zy . '" r="' . round($rp, 2) . '" opacity="0"/>' . "\n"
+            . '<g class="bus" id="heimBus" opacity="0">'
+            . ($ankunft === 'ski' ? '<rect class="skier" x="-2.6" y="-4.32" width="3.9" height="0.26" rx="0.13"/>' : '')
+            . '<rect class="dach" x="-2.2" y="-4" width="3.2" height="0.6" rx="0.25"/>'
+            . '<path class="wagen" d="M-2.8,-0.8V-2.9Q-2.8,-3.3 -2.4,-3.3H1.5L2.8,-1.9V-0.8Z"/>'
+            . '<path class="fenster" d="M1.65,-3.05L2.5,-2H1.65Z"/>'
+            . '<rect class="fenster" x="-2.35" y="-2.95" width="1.2" height="0.8" rx="0.2"/>'
+            . '<rect class="fenster" x="-0.85" y="-2.95" width="1.4" height="0.8" rx="0.2"/>'
+            . '<circle class="rad" cx="-1.6" cy="-0.7" r="0.62"/><circle class="nabe" cx="-1.6" cy="-0.7" r="0.22"/>'
+            . '<circle class="rad" cx="1.6" cy="-0.7" r="0.62"/><circle class="nabe" cx="1.6" cy="-0.7" r="0.22"/>'
+            . '<circle class="fahrer" id="heimFahrer" cx="0" cy="-2.5" r="0.3" opacity="0"/></g>' . "\n"
+            . '<path class="blick" id="heimBlick" d="" opacity="0"/>' . "\n";
+        if ($ankunft === 'palme') {
+            $o .= '<g class="ankunft palme" id="heimAnkunft" data-art="palme" opacity="0"><path class="stamm" d="M0,0Q0.4,-2 0.15,-4"/><g id="heimWedel">';
+            foreach ([-165, -125, -80, -40, -5] as $w) {
+                $o .= '<path class="wedel" data-w="' . $w . '" d="M0,0Q1.1,-0.7 2.3,0.4"/>';
+            }
+            $o .= '</g></g>';
+        } elseif ($ankunft === 'ski') {
+            // Zwei Ski ueber Kreuz im Schneehaufen, ringsum fallen Flocken (Skript)
+            $o .= '<g class="ankunft ski" id="heimAnkunft" data-art="ski" opacity="0"><g id="heimSki">'
+                . '<rect class="brett" x="-0.28" y="-4.4" width="0.56" height="4.4" rx="0.28" transform="translate(-0.75 0) rotate(15)"/>'
+                . '<rect class="brett" x="-0.28" y="-4.4" width="0.56" height="4.4" rx="0.28" transform="translate(0.75 0) rotate(-15)"/></g>'
+                . '<path class="hang" d="M-2.3,0.15Q-1.2,-1.2 0,-1.05Q1.2,-1.2 2.3,0.15Z"/><g id="heimFlocken">';
+            for ($i = 0; $i < 7; $i++) {
+                $o .= '<circle class="flocke" r="0.32" opacity="0"/>';
+            }
+            $o .= '</g></g>';
+        } else {
+            $o .= '<g class="ankunft windsack" id="heimAnkunft" data-art="sack" opacity="0"><line class="mast" x1="0" y1="0" x2="0" y2="-4.2"/><g id="heimSack">';
+            for ($i = 0; $i < 4; $i++) {
+                $o .= '<polygon class="' . ($i % 2 ? 'hell' : 'rot') . '" points="0,0"/>';
+            }
+            $o .= '</g></g>';
+        }
+        $o .= "\n" . '<g class="juchhu" id="heimJuchhu" opacity="0"><path d="M0,0L0.9,-1H4.2Q4.6,-1 4.6,-1.4V-2.6Q4.6,-3 4.2,-3H-0.4Q-0.8,-3 -0.8,-2.6V-1.4Q-0.8,-1 -0.4,-1H0.25Z"/><text x="1.9" y="-1.58" font-size="1.2">Juchhu!</text></g>' . "\n";
+    }
+    $o .= '<g class="heim" id="heim" transform="translate(' . $hx . ' ' . $hy . ') scale(' . round($u, 3) . ')"'
+        . "\n" . '   data-x="' . $hx . '" data-y="' . $hy . '" data-u="' . round($u, 3) . '" data-rp="' . round($rp, 3) . '"'
+        . ($ziel ? ' data-wohin="' . round($ziel[0], 1) . ',' . round($ziel[1], 1) . '"' : '') . ">\n"
+        . '  <title>' . $h($titel) . ($ziel ? ' · antippen: wohin fahr ma?' : '') . "</title>\n"
+        . '  ' . $arm('heimArmL', -0.62, 12) . "\n"
+        . '  ' . $arm('heimArmR', 0.62, -12) . "\n"
+        . '  <rect class="arm" id="heimOber" x="-0.15" y="0" width="0.3" height="0.55" rx="0.15" opacity="0"/>' . "\n"
+        . '  <rect class="arm" id="heimUnter" x="-0.15" y="0" width="0.3" height="0.85" rx="0.15" opacity="0"/>' . "\n"
+        . '  <rect class="arm" id="heimZeig" x="-0.15" y="0" width="0.3" height="1.4" rx="0.15" opacity="0"/>' . "\n"
+        . '  <path d="M-0.75,-2.35H0.75V-1.1H0.55V0H0.13V-1H-0.13V0H-0.55V-1.1H-0.75Z"/>' . "\n"
+        . '  <circle id="heimKopf" cx="0" cy="-3.25" r="0.4"/>' . "\n"
+        . '</g>';
+    return $o;
+}
+
+/** Schalter "Ton beim Antippen des Maennchens" fuer den Fuss (das Skript zeigt ihn, wenn es ein Ziel gibt) */
+function maennchen_ton_schalter(): string
+{
+    return '<div class="design" id="ton" role="group" aria-label="Ton" hidden><span>Ton beim Antippen des Männchens</span><button type="button" data-ton="an" aria-pressed="false">An</button><button type="button" data-ton="aus" aria-pressed="false">Aus</button></div>';
+}

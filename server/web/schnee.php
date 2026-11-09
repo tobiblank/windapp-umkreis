@@ -512,24 +512,30 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
     ?>
     <a href="<?= h(stunden_link($r, $p['wert']['tag'])) ?>" class="punkt <?= $klasse ?>">
       <title><?= h($titel) ?></title>
-      <circle cx="<?= round($p['xy'][0], 1) ?>" cy="<?= round($p['xy'][1], 1) ?>" r="<?= round($rk, 2) ?>"<?= $fuellung ?>/>
+      <circle cx="<?= round($p['xy'][0], 1) ?>" cy="<?= round($p['xy'][1], 1) ?>" r="<?= round($rk, 2) ?>"<?= $fuellung ?><?php if ($p['wert']['geht']): ?> data-schneit="<?= round($p['xy'][0], 1) ?>,<?= round($p['xy'][1], 1) ?>,<?= round((float)$n) ?>"<?php endif ?>/>
       <?php if ($zahl): ?><text class="zahl<?= $dunkel ?>" x="<?= round($p['xy'][0], 1) ?>" y="<?= round($p['xy'][1] + $rp * 0.36, 2) ?>" font-size="<?= round($rp * 1.05, 2) ?>"><?= zahl(round($n)) ?></text><?php endif ?>
       <?php if (isset($namen[$nr])): $rechts = $namen[$nr] === 'rechts'; ?><text class="name<?= $rechts ? '' : ' links' ?>" x="<?= round($p['xy'][0] + ($rechts ? 1 : -1) * $rp * 1.3, 2) ?>" y="<?= round($p['xy'][1] + $rp * 0.35, 2) ?>" font-size="<?= round($rp, 2) ?>" stroke-width="<?= round($rp * 0.3, 2) ?>"><?= h($r['name']) ?></text><?php endif ?>
     </a>
     <?php endforeach ?>
-    <g class="heim" transform="translate(<?= round($heimXY[0], 1) ?> <?= round($heimXY[1], 1) ?>) scale(<?= round($u, 3) ?>)">
-      <title><?= $eigenerOrt ? 'Dein Standort' : 'Inning am Ammersee' ?></title>
-      <rect class="arm" x="-0.15" y="0" width="0.3" height="1.4" rx="0.15" transform="translate(-0.62 -2.2) rotate(12)"/>
-      <rect class="arm" x="-0.15" y="0" width="0.3" height="1.4" rx="0.15" transform="translate(0.62 -2.2) rotate(-12)"/>
-      <path d="M-0.75,-2.35H0.75V-1.1H0.55V0H0.13V-1H-0.13V0H-0.55V-1.1H-0.75Z"/>
-      <circle cx="0" cy="-3.25" r="0.4"/>
-    </g>
+    <?php
+        // Maennchen (Animation seit 9.11.2026 wie im Wind-Modus, lib/maennchen.js): zeigt auf die
+        // beste Region mit Pulvertag (bei "alle Tage" die mit dem meisten Neuschnee am besten
+        // Pulvertag, sonst am gewaehlten Tag), steigt in den Bus mit Ski auf dem Dach und faehrt
+        // hin; am Ziel stecken Ski im Schnee. Ohne Pulvertag: umsehen und Schultern zucken.
+        $ziel = null;
+        foreach ($punkte as $p) {
+            if ($p['wert']['geht'] && (!$ziel || $p['wert']['rang'] > $ziel['wert']['rang'])) {
+                $ziel = $p;
+            }
+        }
+    ?>
+    <?= maennchen_svg($heimXY, $rp, $ziel['xy'] ?? null, 'ski', $eigenerOrt ? 'Dein Standort' : 'Inning am Ammersee') ?>
   </svg>
   <?= schneeskala_legende() ?>
   <?php if ($zellen): $rts = new DateTimeImmutable($raster['ts']); ?>
   <p class="leise klein landkarte-fuss">Fläche: Neuschnee auf <?= zahl(SCHNEE_RASTER_HOEHE) ?> m<?= $kartenTag ? '' : ' im Zeitraum' ?>, Raster rund 25 km, ein Modell, Stand <?= h(tag_kurz($rts->setTimezone($tzSeite)->format('Y-m-d'), $heute)) ?> <?= $rts->setTimezone($tzSeite)->format('G:i') ?> Uhr. Grob: Täler und einzelne Kämme verschwimmen. <button type="button" class="textknopf" id="feldKnopf" aria-pressed="true" hidden>Fläche ein/aus</button></p>
   <?php endif ?>
-  <p class="leise klein landkarte-fuss">Punkte, Farbe und Zahl: Neuschnee in cm auf Tourhöhe der Region<?= $kartenTag ? ' (24 h bis ' . SCHNEE_MORGEN . ' Uhr)' : ', alle Tage im Zeitraum zusammen' ?>. Ring: <?= $kartenTag ? 'Pulvertag' : 'mindestens ein Pulvertag' ?>. Punkt antippen: Stunden der Region. Kreis: <?= zahl($km) ?> km Luftlinie; der Umkreis zählt die Straße. Karte: Natural Earth.</p>
+  <p class="leise klein landkarte-fuss">Punkte, Farbe und Zahl: Neuschnee in cm auf Tourhöhe der Region<?= $kartenTag ? ' (24 h bis ' . SCHNEE_MORGEN . ' Uhr)' : ', alle Tage im Zeitraum zusammen' ?>. Ring: <?= $kartenTag ? 'Pulvertag' : 'mindestens ein Pulvertag' ?>. Männchen: <?= $eigenerOrt ? 'dein Standort' : 'Inning' ?>, antippen: wohin fahr ma? Punkt antippen: Stunden der Region. Kreis: <?= zahl($km) ?> km Luftlinie; der Umkreis zählt die Straße. Karte: Natural Earth.</p>
 </details>
 <?php endif ?>
 
@@ -653,11 +659,13 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
   <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0)</p>
   <?php foreach (array_intersect_key($messnetze, $messungen) as $n): ?><p><?= ($n['art'] ?? '') === 'snowgrid' ? 'Modellwerte' : 'Messwerte' ?>: <a href="<?= h($n['url']) ?>" rel="noopener"><?= h($n['name']) ?></a> (<?= h($n['lizenz']) ?>), <?= ($n['art'] ?? '') === 'snowgrid' ? 'Tageswert vom Vortag, kein Messwert' : 'Rohdaten, ungeprüft' ?>.</p><?php endforeach ?>
   <?= design_schalter() ?>
+  <?= maennchen_ton_schalter() ?>
   <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>
 </footer>
 </main>
 
 <script>
+<?php readfile(__DIR__ . '/lib/maennchen.js') ?>
 // Neuschnee-Flaeche der Karte an oder aus (seit 9.11.2026), Standard an, gemerkt (wie index.php)
 (function () {
   var k = document.getElementById('landkarte'), knopf = document.getElementById('feldKnopf');

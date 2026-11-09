@@ -175,6 +175,11 @@ a.tag:active { filter: brightness(.94); }
 .landkarte .windsack .mast { stroke: var(--leise); stroke-width: 0.28; stroke-linecap: round; }
 .landkarte .windsack .rot { fill: #e2574c; }
 .landkarte .windsack .hell { fill: #ffffff; }
+/* Schnee-Modus (seit 9.11.2026): Ski auf dem Busdach, Ski im Schnee am Ziel, Flocken */
+.landkarte .bus .skier { fill: #e2574c; }
+.landkarte .ski .brett { fill: #e2574c; stroke: var(--text); stroke-width: 0.1; }
+.landkarte .ski .hang { fill: #ffffff; stroke: var(--leise); stroke-width: 0.1; }
+.landkarte .ski .flocke, .landkarte .schneeflocken circle { fill: #ffffff; stroke: var(--leise); stroke-width: 0.8px; vector-effect: non-scaling-stroke; pointer-events: none; }
 .landkarte .punkt circle { fill: var(--nix); stroke: var(--karte); stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
 .landkarte .punkt.go circle { fill: var(--go); }
 .landkarte .punkt.maybe circle { fill: var(--maybe); }

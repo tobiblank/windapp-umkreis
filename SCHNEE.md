@@ -12,7 +12,7 @@ Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnst
 
 | Baustein | Status |
 |---|---|
-| Seite `server/web/schnee.php` | Umkreis 100–800 km Straße, Standort, Sortierung (alle Tage, ein Tag, Fahrzeit), Ansichten Liste (Heute – Übermorgen, Tag 3 – 7) und Woche, Karte mit Punkten in einer Neuschnee-Farbskala (seit 9.11.2026: grau, hellblau, blau, violett, magenta ab 50 cm, `SCHNEESKALA` in `lib/karte.php`, mit weichem Farbfeld je Region und Legende; Zahl: Neuschnee im Zeitraum bzw. am gewählten Tag in cm; Ring = Pulvertag) und Männchen (ohne Animation), Kacheln mit allem auf einen Blick: Wetter (☀ ⛅ ☁, ❄ bei Schneefall am Tag), Neuschnee je Tag (24 h bis 8 Uhr, seit 9.11.2026), Schneehöhe, LWS, darunter klein die Spanne aus dem Ensemble; Wind und Gründe im Tooltip und auf der Stundenseite. Darunter nur für gute Tage Abfahrt, Details und Teilen; Lawinenlage einklappbar, geteilte Ansicht `?region=…&nach=…`. `noindex` |
+| Seite `server/web/schnee.php` | Umkreis 100–800 km Straße, Standort, Sortierung (alle Tage, ein Tag, Fahrzeit), Ansichten Liste (Heute – Übermorgen, Tag 3 – 7) und Woche, Karte mit Punkten in einer Neuschnee-Farbskala (seit 9.11.2026: grau, hellblau, blau, violett, magenta ab 50 cm, `SCHNEESKALA` in `lib/karte.php`, mit weichem Farbfeld je Region und Legende; Zahl: Neuschnee im Zeitraum bzw. am gewählten Tag in cm; Ring = Pulvertag) und Männchen (seit 9.11.2026 animiert wie im Wind-Modus: zeigt auf die beste Region mit Pulvertag, Juchhu, fährt im Bus mit Ski auf dem Dach hin, am Ziel stecken Ski im Schnee und es schneit; an Regionen mit Pulvertag fallen Flocken, mehr bei mehr Neuschnee; ohne Pulvertag Schulterzucken), Kacheln mit allem auf einen Blick: Wetter (☀ ⛅ ☁, ❄ bei Schneefall am Tag), Neuschnee je Tag (24 h bis 8 Uhr, seit 9.11.2026), Schneehöhe, LWS, darunter klein die Spanne aus dem Ensemble; Wind und Gründe im Tooltip und auf der Stundenseite. Darunter nur für gute Tage Abfahrt, Details und Teilen; Lawinenlage einklappbar, geteilte Ansicht `?region=…&nach=…`. `noindex` |
 | Stundenseite `server/web/schnee_stunden.php` | Seit 9.11.2026 neu aufgebaut (vorher Textblock, Bergsilhouette, vier Höhenlinien; unübersichtlich): oben das Urteil „(Kein) Pulvertag“ mit allen fehlenden Gründen, darunter beide Regeln einzeln mit Wert und Schwelle (`schnee_kriterien()`), dann Kennzahlen als Kacheln (Neuschnee 24 h mit Spanne des Ensembles, Schneefallgrenze, Nullgrad, Schneehöhe, Himmel, Wind am Kamm, Böen). Ein Diagramm mit einer Zeitachse: Niederschlag je Stunde auf Tourhöhe, blau als Schnee, grau als Regen, in Abschnitten von 8 bis 8 Uhr mit der Summe darüber (wie die Tagesknöpfe), Strich „jetzt“; darunter nur die Schneefallgrenze gegen Tour- und Talhöhe. Lawinenlage mit Expositionsrose |
 | Schalter Wind · Schnee | im Kopf beider Seiten; es sind zwei Seiten, nicht ein Formular. Die Wind-Seite merkt sich ihre Wahl wie bisher, die Schnee-Seite merkt sich nichts im Browser |
 | Katalog `daten/schneeregionen.json` | 9 Regionen ab Inning: Werdenfels, Allgäu/Oberstdorf, Kühtai/Sellrain, Stubai, Zillertal/Tux, Arlberg, Ötztal/Obergurgl, Ahrntal, Oberengadin. Seit 9.11.2026 dazu Kitzbüheler Alpen, Osttirol (Kals, Matrei), Gastein/Rauris (Salzburg), Nassfeld/Karnische Alpen (Kärnten), Schladminger Tauern/Sölktäler (Steiermark), danach Salzburg aufgeteilt (Obertauern, Lungau, Saalbach/Glemmtal, Hochkönig zusätzlich zu Gastein/Rauris): 18 Regionen; danach Lechtaler Alpen, Lenggries/Isarwinkel, Spitzingsee, Berchtesgadener Alpen, Sterzing/Wipptal, Martelltal, Brixen, Pustertal (Antholz, Gsies), Livigno, Sulden: 28 Regionen; Mikroregion-IDs aus der Tiroler Stationsdatei bzw. aus EAWS-Berichten vom April 2026. Punkte, Tour- und Talhöhen geschätzt. Prüfung `schneeregionen_pruefen()` |
@@ -28,7 +28,7 @@ Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnst
 
 | Messstationen (seit 9.11.2026) | `lib/stationen.php`, Sammler-Quelle `stationen` (stündlich als Cronjob, in der Action bei jedem Lauf, auch um 7:40 UTC). Gemessene Schneehöhe und ihre Änderung in 24 h je Region unter den Kacheln (nur „Heute – Übermorgen“) und auf der Stundenseite für heute, siehe „Messstationen“ |
 
-Nicht gebaut: Verlauf über die Abrufe, Animation des Männchens, Mikroregionen als Polygone auf der Karte, feinere Alpen-Karte, Roadtrip.
+Nicht gebaut: Verlauf über die Abrufe, Mikroregionen als Polygone auf der Karte, feinere Alpen-Karte, Roadtrip.
 
 ## Neuschnee-Raster (Karte)
 
@@ -153,6 +153,6 @@ Für die Rechnung nur Stufe und strukturierte Felder; Texte der Berichte nicht k
 2. Antworten der Warndienste: Bayern, Tirol freigeben
 3. Schwellen (`SCHNEE_REGEL`, `SCHNEE_KAMM_HINWEIS`) und Tourhöhen aus eigener Erfahrung anpassen
 4. Weitere Messstationen (SLF nach Rückfrage)
-5. Verlauf über die Abrufe, Animation des Männchens wie im Wind-Modus
+5. Verlauf über die Abrufe
 6. Karte: Alpen-Ausschnitt feiner, Mikroregionen als Polygone (EAWS-Regionen, Lizenz im Repo prüfen)
 7. Slogan für beide Modi

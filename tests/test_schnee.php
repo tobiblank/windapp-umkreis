@@ -229,6 +229,14 @@ foreach (['schnee.php', 'schnee.php?km=800', 'schnee.php?km=800&ansicht=reise', 
 [, $html] = holen($wPort, 'schnee.php?km=800');
 pruefe(str_contains($html, 'id="r-schnee-a"') && str_contains($html, 'class="tag s-go') && !preg_match('/class="tag (go|maybe|no)\b/', $html),
        'Kacheln in der Blau-Skala, nie Grün/Gelb/Rot');
+pruefe(str_contains($html, 'id="heimBus"') && str_contains($html, 'data-art="ski"') && str_contains($html, 'class="skier"') && str_contains($html, "getElementById('heim')")
+       && preg_match('/class="heim" id="heim"[^>]* data-wohin="[\d.]+,[\d.]+"/', $html) && preg_match('/data-schneit="[\d.]+,[\d.]+,\d+"/', $html)
+       && str_contains($html, 'id="ton"') && strrpos($html, 'class="heim"') > strrpos($html, 'class="punkt '),
+       'Karte: Männchen mit Ziel (Pulvertag), Bus mit Ski auf dem Dach, Ski am Ziel, Flocken an guten Regionen, Ton-Schalter');
+if (getenv('UMKREIS_SEITE_OFFEN')) {   // zum Ansehen im Browser: Seite eine Weile offen lassen
+    file_put_contents(getenv('UMKREIS_SEITE_OFFEN'), (string)$wPort);
+    sleep(90);
+}
 pruefe(str_contains($html, 'class="lw lw3"') && str_contains($html, 'class="lw lw2"') && str_contains($html, 'Zuordnung über den Namen'), 'Lawinen-Abzeichen in EAWS-Farben, Hinweis auf Namenszuordnung');
 pruefe(substr_count($html, 'ersetzt keine Beurteilung vor Ort') >= 3 && str_contains($html, '<p class="karte klein haftung">'), 'Haftungshinweis oben, je Region und im Fuß');
 pruefe(preg_match('#id="r-schnee-d".*?Lawinenlage: <a href="https://example.org/bericht"#s', $html) === 1 && !preg_match('#id="r-schnee-d".*?class="lw lw#s', explode('id="r-schnee-a"', $html)[0] ?? ''),
