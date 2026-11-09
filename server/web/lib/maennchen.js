@@ -10,7 +10,9 @@
 // Startet, sobald die Karte sichtbar ist; Scrollen, Antippen der Karte oder eine Taste beenden
 // sofort in der Endpose. Bei "Bewegung reduzieren" gleich die Endpose. Antippen des Maennchens
 // spielt alles neu ab, dann mit Ton: Jubelpfiff beim Juchhu, Doppelhupe beim Einsteigen,
-// Motor waehrend der Fahrt
+// Motor waehrend der Fahrt. Bei Flugzielen (seit 9.11.2026) ein Flugzeug statt des Busses: hoher
+// Bogen, die Nase folgt der Bahn, es wird unterwegs etwas groesser (hoch oben), Duesenrauschen
+// statt Hupe und Motor
 // (Web Audio, ohne Datei; seit 8.11.2026). Beim Laden bleibt es stumm, weil Browser Ton erst
 // nach einem Antippen erlauben und eine Wetterseite nicht von selbst brummen soll. Schalter
 // "Ton" im Fuss, gemerkt in wohinfahrma_ton (Standard an). Zeiten in ms, Laengen in Einheiten
@@ -29,6 +31,8 @@
       juchhu = el('heimJuchhu');
   var ARM = 1.4, SX = 0.62, SY = -2.2, ELLE = [1.05, -2.55];
   var dir = ziel && ziel[0] < X ? -1 : 1;
+  var flieger = !!(bus && bus.dataset.art === 'flugzeug');
+  var fahrwerk = flieger ? bus.querySelectorAll('.fahrwerk, .rad') : [];
   // Fahrt im Bogen vom Maennchen zum Ziel, der Bus parkt neben dem Punkt. Nur die Entfernung
   // zaehlt: bis 8.11.2026 abends musste das Ziel auch seitlich weit genug weg sein, dann fuhr
   // der Bus zu Zielen fast genau im Sueden (Adria ab Inning) nie los.
@@ -40,7 +44,8 @@
     if (d > 6 * U) {
       var nx = -dy / d, ny = dx / d;
       if (ny > 0) { nx = -nx; ny = -ny; }   // Bogen nach oben
-      C = [(A[0] + B[0]) / 2 + nx * d * 0.2, (A[1] + B[1]) / 2 + ny * d * 0.2];
+      var bogen = flieger ? 0.35 : 0.2;
+      C = [(A[0] + B[0]) / 2 + nx * d * bogen, (A[1] + B[1]) / 2 + ny * d * bogen];
       spur.setAttribute('d', 'M' + A + 'Q' + C + ' ' + B);
     } else { A = null; }
   }
@@ -239,8 +244,18 @@
     if (fahrt) {
       var u = 1 - fa, px = u * u * A[0] + 2 * u * fa * C[0] + fa * fa * B[0], py = u * u * A[1] + 2 * u * fa * C[1] + fa * fa * B[1];
       var faehrt = t > 5800 && t < 7900;
-      var hop = faehrt ? -Math.abs(Math.sin(t / 85)) * 0.25 * U : 0;
-      bus.setAttribute('transform', 'translate(' + px + ' ' + (py + hop) + ') scale(' + (dir * U) + ' ' + U + ')');
+      var hop = faehrt && !flieger ? -Math.abs(Math.sin(t / 85)) * 0.25 * U : 0;
+      var dreh = '', gr = 1;
+      if (flieger && faehrt) {   // Nase entlang der Bahn, am Start und bei der Landung waagrecht
+        var tx = 2 * u * (C[0] - A[0]) + 2 * fa * (B[0] - C[0]), ty = 2 * u * (C[1] - A[1]) + 2 * fa * (B[1] - C[1]);
+        var w = (dir > 0 ? Math.atan2(ty, tx) : Math.atan2(-ty, -tx)) * 180 / Math.PI;
+        dreh = ' rotate(' + (w * Math.min(1, fa * 6, (1 - fa) * 6)).toFixed(1) + ')';
+        gr = 1 + 0.35 * Math.sin(Math.PI * fa);
+      }
+      Array.prototype.forEach.call(fahrwerk, function (e) {   // Fahrwerk in der Luft eingezogen
+        e.setAttribute('opacity', faehrt && fa > 0.12 && fa < 0.88 ? 0 : 1);
+      });
+      bus.setAttribute('transform', 'translate(' + px + ' ' + (py + hop) + ')' + dreh + ' scale(' + (dir * U * gr) + ' ' + (U * gr) + ')');
       bus.setAttribute('opacity', busOp);
       fahrer.setAttribute('opacity', t > 5700 && t < 9400 ? 1 : 0);   // das Maennchen sitzt am Steuer
       spur.setAttribute('opacity', faehrt ? 0.6 : t >= 7900 && t < 8500 ? 0.6 * (1 - seg(t, 7900, 8500)) : 0);
@@ -317,6 +332,18 @@
     g.gain.setValueAtTime(0.5, t0 + dauer - 0.6); g.gain.linearRampToValueAtTime(0, t0 + dauer + 0.15);
     [o, o2, lfo].forEach(function (n) { n.start(t0); n.stop(t0 + dauer + 0.25); knoten.push(n); });
   }
+  function duese(t0, dauer) {   // Duesenrauschen: gefiltertes Rauschen, schwillt beim Start an
+    var n = Math.floor(ctx.sampleRate * (dauer + 0.5)), buf = ctx.createBuffer(1, n, ctx.sampleRate), d = buf.getChannelData(0);
+    for (var i = 0; i < n; i++) { d[i] = Math.random() * 2 - 1; }
+    var q = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    q.buffer = buf; f.type = 'bandpass'; f.Q.value = 0.8;
+    q.connect(f); f.connect(g); g.connect(master);
+    f.frequency.setValueAtTime(350, t0); f.frequency.exponentialRampToValueAtTime(1400, t0 + dauer * 0.35);
+    f.frequency.exponentialRampToValueAtTime(500, t0 + dauer);
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(0.9, t0 + dauer * 0.3);
+    g.gain.setValueAtTime(0.9, t0 + dauer * 0.55); g.gain.linearRampToValueAtTime(0, t0 + dauer + 0.3);
+    q.start(t0); q.stop(t0 + dauer + 0.4); knoten.push(q);
+  }
   function tonStart() {   // im Antippen aufrufen, sonst erlaubt der Browser keinen Ton
     if (!tonAn || !ziel) { return; }
     var AC = window.AudioContext || window.webkitAudioContext;
@@ -327,7 +354,9 @@
       master = ctx.createGain(); master.gain.value = 0.2; master.connect(ctx.destination);
       var t0 = ctx.currentTime;
       pfiff(t0 + 4.0);            // Juchhu
-      if (fahrt) {
+      if (fahrt && flieger) {
+        duese(t0 + 5.6, 2.4);     // Flug 5800 bis 7900 ms
+      } else if (fahrt) {
         hupe(t0 + 5.35);          // beim Einsteigen
         motor(t0 + 5.75, 2.25);   // Fahrt 5800 bis 7900 ms
       }

@@ -644,7 +644,8 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     }
     // Schlechte zuerst zeichnen, gute liegen oben
     usort($punkte, fn($a, $b) => ($a['wert']['chance'] ?? ($a['wert']['geht'] ? 1 : -1)) <=> ($b['wert']['chance'] ?? ($b['wert']['geht'] ? 1 : -1)));
-    [$vx, $vy, $vw, $vh] = karte_ausschnitt(array_merge($flug ? [] : [$heimXY], array_column($punkte, 'xy')));
+    // Standort immer im Ausschnitt (bei Flugzielen seit 9.11.2026 auch, fuers Flugzeug)
+    [$vx, $vy, $vw, $vh] = karte_ausschnitt(array_merge([$heimXY], array_column($punkte, 'xy')));
     $rp = $vw / 42;   // Punktgroesse folgt dem Ausschnitt, auf dem Handy rund 9 px
     // Wind je Punkt am gezeigten Tag (Pfeil und Farbfeld)
     foreach ($punkte as $i => $p) {
@@ -696,8 +697,8 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
       <?php if (isset($namen[$nr])): $rechts = $namen[$nr] === 'rechts'; ?><text class="name<?= $rechts ? '' : ' links' ?>" x="<?= round($p['xy'][0] + ($rechts ? 1 : -1) * $rp * 1.3, 2) ?>" y="<?= round($p['xy'][1] + $rp * 0.35, 2) ?>" font-size="<?= round($rp, 2) ?>" stroke-width="<?= round($rp * 0.3, 2) ?>"><?= h($r['name']) ?></text><?php endif ?>
     </a>
     <?php endforeach ?>
-    <?php if (!$flug):
-        // Ziel des Maennchens: die Region mit der hoechsten Chance auf der Karte, wenn sie gut ist
+    <?php
+        // Ziel des Maennchens (bei Flugzielen seit 9.11.2026 mit Flugzeug statt Bus): die Region mit der hoechsten Chance auf der Karte, wenn sie gut ist
         // wie beim Teilen (ab 40 %, ohne Ensemble ein Fenster nach Modellmittel). Ohne Ensemble
         // zaehlt sie wie 50 % (wie im Roadtrip); bis 8.11.2026 abends wie 100 %, dann zeigte das
         // Maennchen dorthin statt zur Region mit der groessten Zahl.
@@ -712,12 +713,11 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
         // Am Ziel weht bei der Ankunft etwas: Palme am Meer im Sueden, sonst ein Windsack
         $palme = $ziel && ($ziel['e']['region']['typ'] ?? '') === 'meer' && (float)$ziel['e']['region']['punkt'][0] < ANKUNFT_PALME_BIS_BREITE;
     ?>
-    <?= maennchen_svg($heimXY, $rp, $ziel['xy'] ?? null, $palme ? 'palme' : 'sack', $eigenerOrt ? 'Dein Standort' : 'Inning am Ammersee') ?>
-    <?php endif ?>
+    <?= maennchen_svg($heimXY, $rp, $ziel['xy'] ?? null, $palme ? 'palme' : 'sack', $eigenerOrt ? 'Dein Standort' : 'Inning am Ammersee', $flug) ?>
   </svg>
   <button type="button" class="feldknopf" id="feldKnopf" aria-pressed="true" hidden>Farbfeld Windstärke</button>
   <?= windskala_legende() ?>
-  <p class="leise klein landkarte-fuss">Farbfeld: mittlerer Wind an der Region (am guten Tag im Fenster, sonst im Tagesmittel), nicht dazwischen. Spitze am Punkt: wohin der Wind weht (am guten Tag im Fenster, sonst im Tagesmittel, ab <?= KARTE_PFEIL_AB_KN ?> kn). <?= $flug ? '' : 'Männchen: ' . ($eigenerOrt ? 'dein Standort' : 'Inning') . '. ' ?>Punkt antippen: Stunden der Region<?= $kartenTag ? '' : ' am besten Tag' ?>.<?= $flug ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße, darum fehlen manche Ziele innerhalb des Kreises.' ?> Karte: Natural Earth.</p>
+  <p class="leise klein landkarte-fuss">Farbfeld: mittlerer Wind an der Region (am guten Tag im Fenster, sonst im Tagesmittel), nicht dazwischen. Spitze am Punkt: wohin der Wind weht (am guten Tag im Fenster, sonst im Tagesmittel, ab <?= KARTE_PFEIL_AB_KN ?> kn). <?= 'Männchen: ' . ($eigenerOrt ? 'dein Standort' : 'Inning') . ($flug ? ', fliegt zum besten Ziel' : '') . '. ' ?>Punkt antippen: Stunden der Region<?= $kartenTag ? '' : ' am besten Tag' ?>.<?= $flug ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße, darum fehlen manche Ziele innerhalb des Kreises.' ?> Karte: Natural Earth.</p>
 </details>
 <?php endif ?>
 

@@ -289,8 +289,10 @@ function karte_wert(array $eintrag, ?string $tag): array
  * (Kopf oben bei -3,65), die Gruppe skaliert. Ohne JavaScript steht es still da.
  * $ankunft: 'palme' (Meer im Sueden), 'sack' (Windsack), 'ski' (Schnee-Modus: Ski im
  * Schnee, Flocken; der Bus hat dann Ski auf dem Dach). Ohne Ziel nur das Maennchen.
+ * $flugzeug (seit 9.11.2026, Flugziele im Wind-Modus): statt des Busses ein Flugzeug, das im
+ * hohen Bogen hinfliegt; gleiche ids, damit das Skript es wie den Bus bewegt.
  */
-function maennchen_svg(array $heimXY, float $rp, ?array $ziel, string $ankunft, string $titel): string
+function maennchen_svg(array $heimXY, float $rp, ?array $ziel, string $ankunft, string $titel, bool $flugzeug = false): string
 {
     $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     $u = $rp * 0.7;
@@ -303,7 +305,18 @@ function maennchen_svg(array $heimXY, float $rp, ?array $ziel, string $ankunft, 
         $zy = round($ziel[1], 1);
         $o .= '<path class="busspur" id="heimSpur" d="" opacity="0"/>' . "\n"
             . '<circle class="puls" id="heimPuls" cx="' . $zx . '" cy="' . $zy . '" r="' . round($rp, 2) . '" opacity="0"/>' . "\n"
-            . '<g class="bus" id="heimBus" opacity="0">'
+            . ($flugzeug
+               // Seitenansicht, Nase nach rechts, Raeder auf y = 0 wie beim Bus
+               ? '<g class="bus flugzeug" id="heimBus" data-art="flugzeug" opacity="0">'
+                 . '<path class="leitwerk" d="M-2.55,-1.75L-3.05,-3.55H-2.35L-1.35,-1.75Z"/>'
+                 . '<path class="wagen" d="M-3.05,-1.45Q-3.05,-2.05 -2.45,-2.05H1.9Q3.25,-2.05 3.4,-1.35Q3.25,-0.75 2.2,-0.75H-2.45Q-3.05,-0.75 -3.05,-1.45Z"/>'
+                 . '<path class="fluegel" d="M-0.85,-1.3L0.65,-1.3L-0.55,0.15H-1.25Z"/>'
+                 . '<path class="fenster" d="M2.35,-1.9Q3.05,-1.85 3.15,-1.45H2.35Z"/>'
+                 . '<circle class="fenster" cx="-1.7" cy="-1.55" r="0.17"/><circle class="fenster" cx="-1.05" cy="-1.55" r="0.17"/><circle class="fenster" cx="0.95" cy="-1.55" r="0.17"/><circle class="fenster" cx="1.6" cy="-1.55" r="0.17"/>'
+                 . '<line class="fahrwerk" x1="1.7" y1="-0.75" x2="1.7" y2="-0.3"/><line class="fahrwerk" x1="-0.9" y1="-0.75" x2="-0.9" y2="-0.3"/>'
+                 . '<circle class="rad" cx="1.7" cy="-0.22" r="0.22"/><circle class="rad" cx="-0.9" cy="-0.22" r="0.22"/>'
+                 . '<circle class="fahrer" id="heimFahrer" cx="2.55" cy="-1.55" r="0.25" opacity="0"/></g>' . "\n"
+               : '<g class="bus" id="heimBus" opacity="0">'
             . ($ankunft === 'ski' ? '<rect class="skier" x="-2.6" y="-4.32" width="3.9" height="0.26" rx="0.13"/>' : '')
             . '<rect class="dach" x="-2.2" y="-4" width="3.2" height="0.6" rx="0.25"/>'
             . '<path class="wagen" d="M-2.8,-0.8V-2.9Q-2.8,-3.3 -2.4,-3.3H1.5L2.8,-1.9V-0.8Z"/>'
@@ -312,7 +325,7 @@ function maennchen_svg(array $heimXY, float $rp, ?array $ziel, string $ankunft, 
             . '<rect class="fenster" x="-0.85" y="-2.95" width="1.4" height="0.8" rx="0.2"/>'
             . '<circle class="rad" cx="-1.6" cy="-0.7" r="0.62"/><circle class="nabe" cx="-1.6" cy="-0.7" r="0.22"/>'
             . '<circle class="rad" cx="1.6" cy="-0.7" r="0.62"/><circle class="nabe" cx="1.6" cy="-0.7" r="0.22"/>'
-            . '<circle class="fahrer" id="heimFahrer" cx="0" cy="-2.5" r="0.3" opacity="0"/></g>' . "\n"
+            . '<circle class="fahrer" id="heimFahrer" cx="0" cy="-2.5" r="0.3" opacity="0"/></g>' . "\n")
             . '<path class="blick" id="heimBlick" d="" opacity="0"/>' . "\n";
         if ($ankunft === 'palme') {
             $o .= '<g class="ankunft palme" id="heimAnkunft" data-art="palme" opacity="0"><path class="stamm" d="M0,0Q0.4,-2 0.15,-4"/><g id="heimWedel">';

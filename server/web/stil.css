@@ -164,6 +164,11 @@ a.tag:active { filter: brightness(.94); }
 .landkarte .busspur { fill: none; stroke: var(--akzent); stroke-width: 1.5px; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; }
 .landkarte .puls { fill: none; stroke: var(--go); stroke-width: 2px; vector-effect: non-scaling-stroke; }
 .landkarte .bus .fahrer { fill: var(--akzent); stroke: none; }
+/* Flugzeug fuer Flugziele (seit 9.11.2026) */
+.landkarte .flugzeug .wagen { fill: #ffffff; stroke: var(--leise); stroke-width: 1px; paint-order: normal; }
+.landkarte .flugzeug .leitwerk, .landkarte .flugzeug .fluegel { fill: var(--akzent); }
+.landkarte .flugzeug .fahrwerk { stroke: var(--text); stroke-width: 1.2px; }
+.landkarte .flugzeug .fahrer { fill: var(--akzent); }
 .landkarte .blick { fill: none; stroke: var(--akzent); stroke-width: 1.5px; stroke-dasharray: 2 3; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
 .landkarte .windstriche line { stroke: var(--text); stroke-width: 1.5px; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }
 .landkarte .ankunft { pointer-events: none; }

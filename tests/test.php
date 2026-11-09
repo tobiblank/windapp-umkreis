@@ -909,6 +909,12 @@ pruefe($code === 200 && ohne_php_meldung($html) && substr_count($html, 'class="k
 pruefe(!str_contains($html, 'name="km"><') && !str_contains($html, 'class="umkreis"') && !str_contains($html, 'class="abfahrt"')
        && !str_contains($html, 'id="standort"') && str_contains($html, 'ansicht=woche&amp;anreise=flug') && str_contains($html, '>Transfer</option>'),
        'Flugziele: kein Umkreis, kein Standort, keine Abfahrt, Links behalten die Anreise');
+pruefe(str_contains($html, 'id="heim"') && (!str_contains($html, 'id="heimBus"') || str_contains($html, 'data-art="flugzeug"')) && !str_contains($html, '<rect class="dach"'),
+       'Flugziele: Männchen am Standort, mit Ziel ein Flugzeug statt des Busses');
+if (getenv('UMKREIS_SEITE_OFFEN')) {   // zum Ansehen im Browser: Seite eine Weile offen lassen
+    file_put_contents(getenv('UMKREIS_SEITE_OFFEN'), (string)$sitePort);
+    sleep(90);
+}
 [, $html] = holen($sitePort, 'index.php?km=100&ort=46.6,30.0');
 pruefe(str_contains($html, 'id="r-testsee-druck"') && !str_contains($html, 'Testflughafen'), 'Anreise Auto: Region mit Auto und Flug bleibt mit Fahrzeit');
 [$code, $html] = holen($sitePort, 'index.php?km=1000&ansicht=roadtrip');
