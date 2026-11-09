@@ -84,8 +84,8 @@
       "abruf": "https://dataset.api.hub.geosphere.at/v1/station/historical/tawes-v1-10min",
       "url": "https://data.hub.geosphere.at/dataset/tawes-v1-10min",
       "lizenz": "GeoSphere Austria, CC BY 4.0",
-      "hinweis": "Parameter SCHNEE (Gesamtschneehöhe aus Schneepegelmessung, cm, 10 Minuten, Rohdaten) laut Metadaten vom 9.11.2026 (von Tobias heruntergeladen, 288 Stationen). Stationen nach Nähe gewählt; ob jede eine Schneehöhe misst, zeigt erst der Abruf. Endpunkt der Zeitreihe (historical) aus der API-Doku, Antwortformat geschätzt: beim ersten Lauf prüfen.",
-      "stationen": {"11344": {"name": "Kolm-Saigurn", "hoehe": 1626}, "11343": {"name": "Sonnblick", "hoehe": 3109}, "11372": {"name": "Bad Gastein", "hoehe": 1092}, "11149": {"name": "Obertauern", "hoehe": 1772}, "11349": {"name": "Katschberg", "hoehe": 1635}, "8989078": {"name": "Kölnbreinsperre", "hoehe": 1916}, "11148": {"name": "St. Michael im Lungau", "hoehe": 1052}, "11340": {"name": "Schmittenhöhe", "hoehe": 1956}, "11366": {"name": "Saalbach", "hoehe": 975}, "11265": {"name": "Villacher Alpe", "hoehe": 2117}, "11259": {"name": "Hermagor", "hoehe": 562}, "11351": {"name": "Ramsau am Dachstein", "hoehe": 1207}, "11359": {"name": "Gröbming", "hoehe": 766}, "11187": {"name": "Mittelberg (Kleinwalsertal)", "hoehe": 1204}, "11308": {"name": "Warth", "hoehe": 1478}}
+      "hinweis": "Parameter SCHNEE (Gesamtschneehöhe aus Schneepegelmessung, cm, 10 Minuten, Rohdaten) laut Metadaten vom 9.11.2026 (von Tobias heruntergeladen, 288 Stationen). Stationen am 9.11.2026 mit tools/stationen_suchen.php gewählt (Action „Stationen suchen“): nur Stationen, die eine Schneehöhe melden; ohne Schneepegel waren u. a. Kolm-Saigurn, Bad Gastein, Obertauern, Schmittenhöhe, Villacher Alpe, Gröbming. Endpunkt der Zeitreihe (historical) aus der API-Doku, Antwortformat geschätzt: beim ersten Lauf prüfen.",
+      "stationen": {"11187": {"name": "Mittelberg (Kleinwalsertal)", "hoehe": 1204}, "11308": {"name": "Warth", "hoehe": 1478}, "11111": {"name": "Tannheim", "hoehe": 1100}, "11316": {"name": "Pitztaler Gletscher", "hoehe": 2864}, "11343": {"name": "Sonnblick", "hoehe": 3109}, "11260": {"name": "Mallnitz", "hoehe": 1197}, "11259": {"name": "Hermagor", "hoehe": 562}, "11268": {"name": "Dachstein (Schladminger Gletscher)", "hoehe": 2520}, "11351": {"name": "Ramsau am Dachstein", "hoehe": 1207}, "11349": {"name": "Katschberg", "hoehe": 1635}, "8989078": {"name": "Kölnbreinsperre", "hoehe": 1916}, "11148": {"name": "St. Michael im Lungau", "hoehe": 1052}, "11366": {"name": "Saalbach", "hoehe": 975}, "8989044": {"name": "Hahnenkamm (Kitzbühel)", "hoehe": 1667}}
     },
     "meteoswiss": {
       "art": "meteoswiss",
@@ -94,8 +94,8 @@
       "abruf": "https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/{id}/ogd-smn_{id}_t_now.csv",
       "url": "https://www.meteoschweiz.admin.ch/service-und-publikationen/applikationen/messwerte-und-messnetze.html",
       "lizenz": "Quelle: MeteoSchweiz (Open Data)",
-      "hinweis": "Spalte htoauts0 (Schneehöhe automatisch, cm, 10 Minuten); Dateiname nach openpaul.github.io (Beispiel brz) und der Doku von MeteoSchweiz (now = seit gestern 12 UTC, Zeit UTC, Semikolon, Windows-1252). Stationen aus ogd-smn_meta_stations.csv vom 9.11.2026; ob sie Schneehöhe messen, zeigt erst der Abruf.",
-      "stationen": {"sia": {"name": "Segl-Maria", "hoehe": 1804}, "sam": {"name": "Samedan", "hoehe": 1709}, "beh": {"name": "Passo del Bernina", "hoehe": 2260}}
+      "hinweis": "Spalte htoauts0 (Schneehöhe automatisch, cm, 10 Minuten); Dateiname nach openpaul.github.io (Beispiel brz) und der Doku von MeteoSchweiz (now = seit gestern 12 UTC, Zeit UTC, Semikolon, Windows-1252). Stationen aus ogd-smn_meta_stations.csv vom 9.11.2026; am 9.11.2026 meldete nur Samedan eine Schneehöhe (Segl-Maria und Bernina nicht).",
+      "stationen": {"sam": {"name": "Samedan", "hoehe": 1709}}
     }
   },
   "regionen": [
@@ -115,7 +115,7 @@
     },
     {
       "id": "allgaeu-oberstdorf",
-      "stationen": {"geosphere": ["11187", "11308"]},
+      "stationen": {"geosphere": ["11187", "11308", "11111"]},
       "name": "Allgäu / Oberstdorf",
       "land": "DE",
       "punkt": [47.38, 10.3],
@@ -189,7 +189,7 @@
     },
     {
       "id": "oetztal-gurgl",
-      "stationen": {"tirol": ["rosskar", "obergurgl_sonn"]},
+      "stationen": {"tirol": ["rosskar", "obergurgl_sonn"], "geosphere": ["11316"]},
       "name": "Ötztal / Obergurgl",
       "land": "AT",
       "punkt": [46.84, 11.0],
@@ -218,7 +218,7 @@
     },
     {
       "id": "oberengadin",
-      "stationen": {"meteoswiss": ["sia", "sam", "beh"]},
+      "stationen": {"meteoswiss": ["sam"]},
       "name": "Oberengadin",
       "land": "CH",
       "punkt": [46.45, 9.87],
@@ -261,7 +261,7 @@
     },
     {
       "id": "gastein-rauris",
-      "stationen": {"geosphere": ["11344", "11343", "11372"]},
+      "stationen": {"geosphere": ["11343", "11260"]},
       "name": "Gastein / Rauris (Salzburg)",
       "land": "AT",
       "punkt": [47.09, 13.03],
@@ -275,7 +275,7 @@
     },
     {
       "id": "nassfeld",
-      "stationen": {"geosphere": ["11265", "11259"]},
+      "stationen": {"geosphere": ["11259"]},
       "name": "Nassfeld / Karnische Alpen (Kärnten)",
       "land": "AT",
       "punkt": [46.56, 13.28],
@@ -289,7 +289,7 @@
     },
     {
       "id": "soelktaeler",
-      "stationen": {"geosphere": ["11351", "11359"]},
+      "stationen": {"geosphere": ["11268", "11351"]},
       "name": "Schladminger Tauern / Sölktäler (Steiermark)",
       "land": "AT",
       "punkt": [47.29, 13.95],
@@ -303,7 +303,7 @@
     },
     {
       "id": "obertauern",
-      "stationen": {"geosphere": ["11149"]},
+      "stationen": {"geosphere": ["11349", "8989078"]},
       "name": "Obertauern / Radstädter Tauern (Salzburg)",
       "land": "AT",
       "punkt": [47.25, 13.56],
@@ -317,7 +317,7 @@
     },
     {
       "id": "lungau",
-      "stationen": {"geosphere": ["11349", "8989078", "11148"]},
+      "stationen": {"geosphere": ["8989078", "11349", "11148"]},
       "name": "Lungau (Weißeck, Riedingtal, Salzburg)",
       "land": "AT",
       "punkt": [47.16, 13.45],
@@ -331,7 +331,7 @@
     },
     {
       "id": "saalbach-glemmtal",
-      "stationen": {"geosphere": ["11340", "11366"]},
+      "stationen": {"geosphere": ["11366", "8989044"]},
       "name": "Saalbach / Glemmtal (Salzburg)",
       "land": "AT",
       "punkt": [47.37, 12.6],
