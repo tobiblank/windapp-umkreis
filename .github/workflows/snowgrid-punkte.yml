@@ -1,0 +1,35 @@
+name: SNOWGRID-Punkte suchen
+
+# Von Hand starten (seit 9.11.2026): sucht je Schnee-Region Punkte in Tourhoehe fuer
+# SNOWGRID-CL (GeoSphere Austria) und zeigt deren Schneehoehe (tools/snowgrid_punkte.php).
+# Ergebnis im Log und als Artefakt punkte.json. Aendert nichts im Repo oder auf dem Server.
+
+on:
+  workflow_dispatch:
+    inputs:
+      km:
+        description: "Umkreis um den Vorhersagepunkt in km"
+        default: "10"
+
+permissions:
+  contents: read
+
+jobs:
+  suchen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          coverage: none
+
+      - name: Suchen
+        run: php tools/snowgrid_punkte.php daten/schneeregionen.json punkte.json "${{ inputs.km }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: punkte
+          path: punkte.json
