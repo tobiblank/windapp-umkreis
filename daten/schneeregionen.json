@@ -518,7 +518,7 @@
       "warndienst": "euregio",
       "eaws": ["IT-32-BZ-14"],
       "stationen": {"suedtirol": ["06090SF"]},
-      "hinweis": "Südtirol. Punkt um Sulden geschätzt."
+      "hinweis": "Südtirol. Punkt um Sulden geschätzt; Warnregion Ortlergruppe mit tools/eaws_zuordnen.php geprüft. Station Madritsch 2 km entfernt."
     }
   ]
 }
