@@ -10,6 +10,9 @@ on:
       km:
         description: "Umkreis um den Vorhersagepunkt in km"
         default: "10"
+      nur:
+        description: "Nur diese Regionen (Komma), leer = alle in Oesterreich"
+        default: ""
 
 permissions:
   contents: read
@@ -27,7 +30,7 @@ jobs:
           coverage: none
 
       - name: Suchen
-        run: php tools/snowgrid_punkte.php daten/schneeregionen.json punkte.json "${{ inputs.km }}"
+        run: php tools/snowgrid_punkte.php daten/schneeregionen.json punkte.json "${{ inputs.km }}" "${{ inputs.nur }}"
 
       - uses: actions/upload-artifact@v4
         with:

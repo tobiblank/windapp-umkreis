@@ -2,7 +2,7 @@
 /**
  * Punkte fuer SNOWGRID-CL (GeoSphere Austria, 1-km-Raster, taeglich) suchen (seit 9.11.2026).
  *
- *   php tools/snowgrid_punkte.php daten/schneeregionen.json [punkte.json] [km]
+ *   php tools/snowgrid_punkte.php daten/schneeregionen.json [punkte.json] [km] [region,region]
  *
  * Je Schnee-Region ein Raster von Punkten im Umkreis km (Standard 10) um den
  * Vorhersagepunkt, Hoehe aus der Open-Meteo Elevation API (Copernicus DEM 90 m).
@@ -23,6 +23,7 @@ require __DIR__ . '/../server/web/lib/schnee.php';
 $katalog = $argv[1] ?? null;
 $aus = $argv[2] ?? null;
 $km = (float)($argv[3] ?? 10);
+$nur = array_filter(explode(',', (string)($argv[4] ?? '')));
 if (!$katalog) {
     fwrite(STDERR, "Aufruf: php tools/snowgrid_punkte.php <schneeregionen.json> [punkte.json] [km]\n");
     exit(2);
@@ -36,6 +37,11 @@ function holen(string $url): ?string
                             CURLOPT_FOLLOWLOCATION => true, CURLOPT_USERAGENT => 'windapp-umkreis/0.1 (Hobbyprojekt)']);
     $body = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    if ($code === 429) {
+        fwrite(STDERR, "429, warte 61 s\n");
+        sleep(61);
+        return holen($url);
+    }
     if ($body === false || $code < 200 || $code >= 300) {
         fwrite(STDERR, substr($url, 0, 160) . ": http=$code " . substr((string)$body, 0, 300) . "\n");
         return null;
@@ -63,12 +69,15 @@ function hoehen(array $punkte): array
 
 $ergebnis = [];
 foreach ($regionen as $r) {
+    if ($nur && !in_array($r['id'], $nur, true) || $r['land'] !== 'AT') {
+        continue;
+    }
     [$la, $lo] = $r['punkt'];
     $dla = $km / 111.0;
     $dlo = $km / (111.0 * cos(deg2rad($la)));
     $gitter = [];
-    for ($y = $la - $dla; $y <= $la + $dla + 1e-9; $y += 0.01) {
-        for ($x = $lo - $dlo; $x <= $lo + $dlo + 1e-9; $x += 0.014) {
+    for ($y = $la - $dla; $y <= $la + $dla + 1e-9; $y += 0.015) {
+        for ($x = $lo - $dlo; $x <= $lo + $dlo + 1e-9; $x += 0.021) {
             if (entfernung_km($r['punkt'], [$y, $x]) <= $km) {
                 $gitter[] = [round($y, 4), round($x, 4)];
             }
