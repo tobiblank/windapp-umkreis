@@ -247,7 +247,7 @@
       "anfahrt": [47.077, 13.056],
       "warndienst": "salzburg",
       "eaws": ["AT-05-09", "AT-05-05"],
-      "hinweis": "Für das Salzburger Land stellvertretend die Hohen Tauern um Sportgastein und Kolm-Saigurn (Goldberggruppe Nord AT-05-09 und Zentral AT-05-05, IDs aus dem EAWS-Bericht vom 4.4.2026). Punkt und Anfahrt (Sportgastein) geschätzt. Andere Salzburger Gebiete mit eigenem Wetter: Obertauern/Radstädter Tauern (AT-05-04), Glemmtal/Saalbach (AT-05-14), Lofer/Leogang (AT-05-18). Keine offenen Stationen gefunden."
+      "hinweis": "Hohe Tauern um Sportgastein und Kolm-Saigurn (Goldberggruppe Nord AT-05-09 und Zentral AT-05-05, IDs aus dem EAWS-Bericht vom 4.4.2026). Punkt und Anfahrt (Sportgastein) geschätzt. Weitere Salzburger Regionen seit 9.11.2026: Obertauern, Lungau, Saalbach/Glemmtal, Hochkönig. Keine offenen Stationen gefunden."
     },
     {
       "id": "nassfeld",
@@ -274,6 +274,58 @@
       "warndienst": "steiermark",
       "eaws": ["AT-06-04-01", "AT-06-04-02"],
       "hinweis": "Skitourengebiet der Niederen Tauern; Punkt zwischen Untertal und Sölktal geschätzt, Anfahrt St. Nikolai im Sölktal ungefähr. Mikroregionen Schladminger Tauern Nord und Süd (AT-06-04-01, AT-06-04-02, aus dem EAWS-Bericht vom 6.4.2026); die Sölktäler reichen in die Wölzer Tauern (AT-06-05). Keine offenen Stationen gefunden."
+    },
+    {
+      "id": "obertauern",
+      "name": "Obertauern / Radstädter Tauern (Salzburg)",
+      "land": "AT",
+      "punkt": [47.25, 13.56],
+      "hoehe_tour": 2200,
+      "hoehe_tal": 1000,
+      "zeitzone": "Europe/Vienna",
+      "anfahrt": [47.249, 13.558],
+      "warndienst": "salzburg",
+      "eaws": ["AT-05-04", "AT-05-08"],
+      "hinweis": "Passhöhe auf 1.740 m am Alpenhauptkamm der Niederen Tauern, bekommt Schnee bei Nord- und Südstau. Mikroregionen Niedere Tauern Alpenhauptkamm (AT-05-04) und Nord (AT-05-08) aus dem EAWS-Bericht vom 4.4.2026. Punkt und Anfahrt geschätzt, Talort Untertauern."
+    },
+    {
+      "id": "lungau",
+      "name": "Lungau (Weißeck, Riedingtal, Salzburg)",
+      "land": "AT",
+      "punkt": [47.16, 13.45],
+      "hoehe_tour": 2300,
+      "hoehe_tal": 1200,
+      "zeitzone": "Europe/Vienna",
+      "anfahrt": [47.155, 13.505],
+      "warndienst": "salzburg",
+      "eaws": ["AT-05-03", "AT-05-02"],
+      "hinweis": "Inneralpin und eher trocken, aber kalt; Touren um Zederhaus und das Riedingtal. Mikroregionen Weisseck/Muhr (AT-05-03) und Niedere Tauern Süd (AT-05-02) aus dem EAWS-Bericht vom 4.4.2026. Punkt und Anfahrt (Riedingtal) geschätzt."
+    },
+    {
+      "id": "saalbach-glemmtal",
+      "name": "Saalbach / Glemmtal (Salzburg)",
+      "land": "AT",
+      "punkt": [47.37, 12.6],
+      "hoehe_tour": 2000,
+      "hoehe_tal": 1000,
+      "zeitzone": "Europe/Vienna",
+      "anfahrt": [47.377, 12.588],
+      "warndienst": "salzburg",
+      "eaws": ["AT-05-14"],
+      "hinweis": "Salzburger Seite der Kitzbüheler Alpen (Grasberge, Nordstau). Mikroregion Kitzbüheler Alpen Glemmtal (AT-05-14) aus dem EAWS-Bericht vom 4.4.2026. Punkt und Anfahrt (Hinterglemm) geschätzt."
+    },
+    {
+      "id": "hochkoenig",
+      "name": "Hochkönig / Dienten (Salzburg)",
+      "land": "AT",
+      "punkt": [47.4, 13.02],
+      "hoehe_tour": 2000,
+      "hoehe_tal": 1000,
+      "zeitzone": "Europe/Vienna",
+      "anfahrt": [47.383, 13.004],
+      "warndienst": "salzburg",
+      "eaws": ["AT-05-13", "AT-05-17"],
+      "hinweis": "Nordstau am Hochkönig, Grasberge um Dienten. Mikroregionen Dientner Grasberge (AT-05-13) und Steinernes Meer, Hochkönig, Hagengebirge, Göllstock (AT-05-17) aus dem EAWS-Bericht vom 4.4.2026. Punkt und Anfahrt (Dienten) geschätzt."
     }
   ]
 }
