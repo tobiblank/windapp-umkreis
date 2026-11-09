@@ -194,19 +194,24 @@ function karte_ausschnitt(array $punkte): array
 /**
  * Namen an die Punkte setzen, ohne dass sie sich ueberlappen: die besten zuerst,
  * rechts vom Punkt, sonst links, sonst ohne Namen. Breite grob geschaetzt
- * (0,55 x Schriftgroesse je Zeichen).
+ * (0,55 x Schriftgroesse je Zeichen). Seit 9.11.2026 halten Namen Abstand zu fremden
+ * Punkten (KARTE_NAME_ABSTAND x $rp ueber den Punkt hinaus): ein Name direkt unter oder
+ * neben einem anderen Punkt las sich als dessen Name (Silvaplana unter dem Reschensee).
  * $punkte: [schluessel => ['xy' => [x, y], 'name' => string, 'rang' => float]]
  * Rueckgabe [schluessel => 'rechts' | 'links'], fehlend = kein Name.
  */
+const KARTE_NAME_ABSTAND = 1.0; // Rand um fremde Punkte, in Punktgroessen
+
 function karte_namen(array $punkte, float $rp, array $ausschnitt): array
 {
     [$vx, $vy, $vw, $vh] = $ausschnitt;
     $schrift = $rp;
     uasort($punkte, fn($a, $b) => $b['rang'] <=> $a['rang']);
-    // Belegte Flaechen: zuerst alle Punkte, dann die gesetzten Namen
+    // Belegte Flaechen: zuerst alle Punkte (mit Rand, der eigene ohne), dann die gesetzten Namen
     $belegt = [];
-    foreach ($punkte as $p) {
-        $belegt[] = [$p['xy'][0] - $rp, $p['xy'][1] - $rp, $p['xy'][0] + $rp, $p['xy'][1] + $rp];
+    $rand = $rp * (1 + KARTE_NAME_ABSTAND);
+    foreach ($punkte as $k => $p) {
+        $belegt[] = [$p['xy'][0] - $rand, $p['xy'][1] - $rand, $p['xy'][0] + $rand, $p['xy'][1] + $rand, $k];
     }
     $out = [];
     foreach ($punkte as $k => $p) {
@@ -222,6 +227,9 @@ function karte_namen(array $punkte, float $rp, array $ausschnitt): array
             }
             $frei = true;
             foreach ($belegt as $o) {
+                if (isset($o[4]) && $o[4] === $k) {
+                    $o = [$x - $rp, $y - $rp, $x + $rp, $y + $rp];
+                }
                 if ($box[0] < $o[2] && $box[2] > $o[0] && $box[1] < $o[3] && $box[3] > $o[1]) {
                     $frei = false;
                     break;

@@ -106,6 +106,9 @@ $np = ['a' => ['xy' => [100, 100], 'name' => 'Erster', 'rang' => 1.0], 'b' => ['
 $nm = karte_namen($np, 1.0, [80, 80, 80, 88]);
 pruefe(($nm['a'] ?? null) !== null && ($nm['c'] ?? null) === 'rechts' && count($nm) <= 3, 'Namen: der beste bekommt einen, freie Punkte rechts');
 pruefe(!isset($nm['b']) || $nm['b'] !== $nm['a'], 'Namen: zwei nahe Punkte nicht auf derselben Seite');
+// Reschensee/Silvaplana (9.11.2026): Name rechts von B laege direkt unter A und liest sich als Name von A
+$nm = karte_namen(['a' => ['xy' => [100, 100], 'name' => 'Reschensee', 'rang' => 1.0], 'b' => ['xy' => [97.5, 102.0], 'name' => 'Silvaplana', 'rang' => 0.0]], 1.0, [60, 60, 80, 88]);
+pruefe(($nm['a'] ?? null) === 'rechts' && ($nm['b'] ?? null) !== 'rechts', 'Namen: kein Name direkt neben einem fremden Punkt');
 $e = ['tage' => ['t1' => ['det' => ['geht' => true], 'ens' => ['chance' => 0.3]], 't2' => ['det' => ['geht' => false], 'ens' => ['chance' => 0.8]],
                  't3' => ['det' => ['geht' => false], 'ens' => null, 'vorbei' => true]]];
 pruefe(karte_wert($e, null)['tag'] === 't2' && abs(karte_wert($e, 't1')['chance'] - 0.3) < 1e-9 && karte_wert($e, 't3')['tag'] === null,

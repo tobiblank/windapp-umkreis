@@ -29,3 +29,8 @@ jobs:
         run: |
           curl -sS --max-time 60 "https://wohinfahrma.de/$PFAD" -o seite.html -w 'http=%{http_code} %{size_download} Bytes\n'
           sed -e 's/<\/p>/<\/p>\n/g' seite.html | grep -E "$MUSTER" | sed -e 's/<[^>]*>//g' -e 's/^[[:space:]]*//' | head -80
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: seite
+          path: seite.html
