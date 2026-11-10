@@ -44,9 +44,14 @@ foreach ($dienste as $id => $d) {
             continue;
         }
         $b = lawine_filtern($b, $d['freigegeben']);
+        $roh = roh_bulletins($body, $d['format']);
         $ohneStufe = 0;
         foreach ($b as $x) {
             $ohneStufe += $x['stufen'] ? 0 : 1;
+            if (lawine_mehrdeutig($x['stufen'])) {
+                // Mehrere Stufen zur selben Tageszeit ohne Hoehengrenze: Rohdaten zeigen (seit 10.11.2026)
+                echo '     MEHRDEUTIG, Rohdaten: ' . json_encode($roh[$x['id']] ?? null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+            }
             printf("   %s | %s bis %s | %s\n     Stufe: %s\n", substr($x['id'], 0, 8), $x['von'], $x['bis'],
                    implode(', ', array_map(fn($r) => "$r[0] $r[1]", $x['regionen'])), lawine_stufen_text($x['stufen'], false) ?: '–');
             foreach (lawine_probleme_liste($x['probleme']) as $p) {
@@ -61,3 +66,22 @@ foreach ($dienste as $id => $d) {
 }
 echo $fehler ? "\n$fehler FEHLER\n" : "\nAlles gelesen\n";
 exit($fehler ? 1 : 0);
+
+/** Rohe Stufen-Angaben je bulletinID (dangerRatings bzw. dangerRating), zur Fehlersuche */
+function roh_bulletins(string $body, string $format): array
+{
+    if ($format === 'xml') {
+        $dom = new DOMDocument();
+        if (!@$dom->loadXML($body, LIBXML_NONET)) {
+            return [];
+        }
+        $liste = lawine_xml_array($dom->documentElement)['bulletin'] ?? [];
+    } else {
+        $liste = json_decode($body, true)['bulletins'] ?? [];
+    }
+    $out = [];
+    foreach ($liste as $b) {
+        $out[(string)($b['bulletinID'] ?? '')] = $b['dangerRatings'] ?? $b['dangerRating'] ?? null;
+    }
+    return $out;
+}

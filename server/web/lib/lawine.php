@@ -396,6 +396,22 @@ function lawine_freigegeben(array $region, array $dienste): bool
 // TEXTE
 // ===================================================================
 
+/**
+ * Mehrdeutig (seit 10.11.2026): mindestens zwei Stufen zur selben Tageszeit, von denen
+ * mindestens zwei keine Hoehengrenze haben. Dann ist nicht klar, wo welche Stufe gilt.
+ */
+function lawine_mehrdeutig(array $teile): bool
+{
+    $ohne = [];
+    foreach ($teile as $t) {
+        if ($t['ab'] === null && $t['bis'] === null) {
+            $z = $t['zeit'] ?? 'all_day';
+            $ohne[$z] = ($ohne[$z] ?? 0) + 1;
+        }
+    }
+    return $ohne && max($ohne) > 1;
+}
+
 /** "2200 m", "Waldgrenze"; null bleibt null */
 function lawine_hoehe_text(?string $h): ?string
 {
