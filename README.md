@@ -44,7 +44,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Hell / Dunkel | 7.11.2026: wie das Gerät, im Fuß festlegbar auf „Hell“ oder „Dunkel“ (nur im Browser gespeichert); siehe „Hell und Dunkel“ |
 | Schnee-Modus | 8.11.2026: `schnee.php` (Liste, Woche, Karte; seit 9.11.2026 eine Regel „Pulvertag“ statt Freeride und Skitour), `schnee_stunden.php`, Schalter Wind · Schnee im Kopf beider Seiten, Katalog `daten/schneeregionen.json` (9 Regionen), Lawinenlage aus CAAML v6 (SLF, Südtirol/Trentino und seit 10.11.2026 Bayern freigegeben, Tirol nur Link). **Noch nie gegen echte Quellen gelaufen.** Siehe `SCHNEE.md` |
 | Vorrechnen | 8.11.2026: Bewertung je Sportart, Tag und Region im Zwischenspeicher, unabhängig von Standort und Umkreis; nach jedem Sammler-Lauf und Deploy von `vorrechnen.php` gefüllt (braucht Schlüssel in `config.php` und Secret `VORRECHNEN_SCHLUESSEL`). Mit Testdaten in Originalgröße: Rangliste 2500 km 0,36 s / 104 MB vorher, aus dem Zwischenspeicher unter 0,01 s / 2 MB. Siehe „Vorrechnen“ |
-| Fremde Prognosen | 10.11.2026: Walchensee bekommt für Kite, Wing und Windsurf (ohne Wave) die Chance aus Marco Schandas kalibrierter Walchensee-Vorhersage, mit seiner Zustimmung (Mail 10.11.2026). Gelesen aus dem Datenordner von ammerseewind.de, sein Dienst wird nicht zusätzlich abgerufen. **Wirkt erst, wenn `fremdprognosen` in `config.php` auf dem Server steht.** Siehe „Fremde Prognosen“ |
+| Fremde Prognosen | 10.11.2026: Walchensee bekommt für Kite, Wing und Windsurf (ohne Wave) die Chance aus Marco Schandas kalibrierter Walchensee-Vorhersage, mit seiner Zustimmung (Mail 10.11.2026). Gelesen aus dem Datenordner von ammerseewind.de, sein Dienst wird nicht zusätzlich abgerufen. `fremdprognosen` steht seit 10.11.2026 in `config.php` auf dem Server (Ordner `winddaten/walchensee` von ammerseewind.de); ob die Zahl live erscheint, ist noch nicht geprüft. Siehe „Fremde Prognosen“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -414,7 +414,7 @@ server/web/vorrechnen.php  Bewertung vorab rechnen (nur mit Schlüssel)
 
 1. Offene Punkte zum Sammler oben prüfen
 2. Weitere Regionen eintragen; zuerst Silvaplana und Urnersee mit den neuen Feldern `grundstroemung`, `saison`, `links`
-3. ~~Walchensee-Prognose von Marco Schanda~~ (10.11.2026 eingebaut; auf dem Server `fremdprognosen` in `config.php` eintragen). Gardasee (Pelèr/Ora) von Marco: Endpunkt und Zustimmung angefragt
+3. ~~Walchensee-Prognose von Marco Schanda~~ (10.11.2026 eingebaut, `fremdprognosen` in `config.php` eingetragen; Anzeige live noch prüfen). Gardasee (Pelèr/Ora) von Marco: Endpunkt und Zustimmung angefragt
 4. Design und endgültiges Symbol (in Arbeit)
 5. Zugang aus stegen-wind übernehmen, Wohnort und Sportarten je Person
 6. Stegen: kalibrierte Chance aus ammerseewind.de über einen kleinen Endpoint übernehmen
