@@ -419,7 +419,8 @@
       "zeitzone": "Europe/Rome",
       "alplakes": "garda",
       "thermik": true,
-      "hinweis": "Regel nach kitewetter.at (Föhndiagramm): Druckdifferenz Bozen − Brescia/Ghedi; höherer Druck in Brescia bringt Ora, umgekehrt Vento (Pelèr). Eine Schwelle nennt die Seite nicht, hier 0 hPa. Geschätzt (Claude): Stärken, Tageszeiten (Pelèr bis 12, Ora ab 12 Uhr), Saison April–Oktober. Gardasee Süd wäre eine eigene Region. Punkt geschätzt.",
+      "fenster_ab": 6,
+      "hinweis": "Regel nach kitewetter.at (Föhndiagramm): Druckdifferenz Bozen − Brescia/Ghedi; höherer Druck in Brescia bringt Ora, umgekehrt Vento (Pelèr). Eine Schwelle nennt die Seite nicht, hier 0 hPa. Geschätzt (Claude): Stärken, Tageszeiten (Pelèr bis 12, Ora ab 12 Uhr), Saison April–Oktober. Seit 10.11.2026 fenster_ab 6 (Wunsch Tobias), damit der Pelèr ab Sonnenaufgang zählt: laut Marco Schandas Gardasee-Vorhersage setzt er nachts ein, ist bei Sonnenaufgang am stärksten und lässt bis Mittag nach. Gardasee Süd wäre eine eigene Region. Punkt geschätzt.",
       "windlagen": [
         {"name": "Pelèr", "sektor": [330, 30], "charakter": "morgens", "druck": [{"plus": "bozen", "minus": "brescia", "min": 0}], "zeit": [6, 12], "saison": [4, 10], "staerke": [14, 22]},
         {"name": "Ora", "sektor": [150, 210], "charakter": "nachmittags, Thermik", "druck": [{"plus": "bozen", "minus": "brescia", "max": 0}], "wetter": "sonnig", "zeit": [12, 18], "saison": [4, 10], "staerke": [14, 22]}
