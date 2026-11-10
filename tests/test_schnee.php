@@ -60,6 +60,10 @@ pruefe($real && count($real) === 2 && count($real[0]['regionen']) === 4 && count
 pruefe(lawine_stufen_text($real[0]['stufen'], true) === 'vormittags 1 gering; nachmittags 2 mäßig über 1.600 m, 1 gering unter 1.600 m'
        && lawine_stufen_text($lj[0]['stufen'], true) === 'erheblich über 2.200 m, darunter Stufe 2 mäßig',
        'Stufen nach Tageszeit: Vormittag und Nachmittag beide genannt (Abzeichen zeigt die höhere)');
+$ohneGrenze = [['stufe' => 2, 'ab' => null, 'bis' => null, 'zeit' => 'all_day'], ['stufe' => 1, 'ab' => null, 'bis' => null, 'zeit' => 'all_day']];
+pruefe(lawine_mehrdeutig($ohneGrenze) && !lawine_mehrdeutig($real[0]['stufen']) && !lawine_mehrdeutig($lj[0]['stufen'])
+       && lawine_stufen_text($ohneGrenze) === '2 mäßig, 1 gering (wo welche Stufe gilt, fehlt in den Daten; siehe Bericht)',
+       'zwei Stufen ohne Höhengrenze (Trentino, 17.4.2026): Lücke wird genannt, nicht geraten');
 pruefe(array_column(lawine_probleme_liste($real[0]['probleme']), 'text') === ['Altschnee (N, NO, NW über 2.200 m)', 'nachmittags: Nassschnee (alle Expositionen über 1.600 m)', 'nachmittags: Nassschnee (alle Expositionen unter 1.600 m)'],
        'Probleme: Altschnee vor- und nachmittags nur einmal, Nassschnee mit „nachmittags“');
 $tzB = new DateTimeZone('Europe/Berlin');

@@ -117,7 +117,7 @@ Freigabe per Mail der Lawinenwarnzentrale Bayern (Dr. Thomas Feistl, 10.11.2026)
 |---|---|
 | Quellenangabe mit Link auf den aktuellen Bericht | Link bei jeder Region und auf der Stundenseite, voller Name im Fuß und im Impressum |
 | Ausgabe- und Gültigkeitszeit, aktuellster Datensatz | „ausgegeben heute 17:00, gültig bis morgen 17:00“ (`lawine_gueltig_text()`); nur gültige Berichte, heute ab Mittag der jetzt gültige |
-| Vollständig, korrekt, eindeutig | Stufen nach Tageszeit beide („vormittags …; nachmittags …“), Höhengrenzen, Probleme je Tageszeit (`lawine_probleme_liste()`) |
+| Vollständig, korrekt, eindeutig | Stufen nach Tageszeit beide („vormittags …; nachmittags …“), Höhengrenzen, Probleme je Tageszeit (`lawine_probleme_liste()`). Mehrere Stufen ohne Höhengrenze (in der Trentiner Datei vom 17.4.2026 gesehen: zwei Ganztagsstufen ohne `elevation`) werden nicht geraten; der Text sagt „wo welche Stufe gilt, fehlt in den Daten; siehe Bericht“ (`lawine_mehrdeutig()`), das Abzeichen zeigt die höhere |
 | Bearbeitungen kennzeichnen, eigene Bewertungen trennen | „Auszug aus dem Lagebericht (Quelle: …): nur Gefahrenstufe und Lawinenprobleme, ohne die Texte; von Wohinfahrma gekürzt und aufbereitet“ (`lawine_auszug_text()`), mehrere Teilgebiete benannt; Warndreieck-Texte beginnen mit „Hinweis von Wohinfahrma:“ und stehen nach den Angaben des Warndiensts |
 | Angemessen abrufen | drei Läufe am Tag (6:25, 8:40, 18:25 Uhr im Winter), je Dienst zwei Dateien |
 | Ausfälle deutlich anzeigen | `lawine_stoerung()`: letzter Abruf fehlgeschlagen, letzter guter Abruf älter als 13 h oder gar keine Daten: Hinweis oben, bei der Region („Abruf gestört“, Block aufgeklappt) und auf der Stundenseite, mit Stand |

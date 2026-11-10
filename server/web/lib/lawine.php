@@ -455,13 +455,15 @@ function lawine_stufen_text(array $teile, bool $nachAbzeichen = false): string
         $out[] = $name . $wo;
     }
     $out = array_values(array_unique($out));
+    // Mehrere Stufen ohne Hoehengrenze (gesehen bei Trentino, 17.4.2026): nicht raten, sagen
+    $luecke = lawine_mehrdeutig($teile) ? ' (wo welche Stufe gilt, fehlt in den Daten; siehe Bericht)' : '';
     if ($nachAbzeichen && $out) {
         $out[0] = preg_replace('/^\d /', '', $out[0]);
         foreach (array_slice(array_keys($out), 1) as $i) {
             $out[$i] = preg_match('/^(\d) (.+) unter /u', $out[$i], $m) ? "darunter Stufe $m[1] $m[2]" : 'Stufe ' . $out[$i];
         }
     }
-    return implode(', ', $out);
+    return implode(', ', $out) . $luecke;
 }
 
 /** "Triebschnee (N, NO, O über 2000 m)" */
