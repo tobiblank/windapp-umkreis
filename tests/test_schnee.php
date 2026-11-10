@@ -20,6 +20,7 @@ $kaputt['lawinendienste']['slf']['freigegeben'] = ['AT-'];
 $kaputt['regionen'][0]['hoehe_tal'] = 3000;
 $kaputt['regionen'][1]['warndienst'] = 'gibtsnicht';
 $kaputt['regionen'][2]['eaws_namen'] = [];
+unset($kaputt['regionen'][2]['eaws']);
 $kaputt['regionen'][3]['eaws'] = ['CH-1'];
 $f = implode(' | ', schneeregionen_pruefen($kaputt));
 pruefe(str_contains($f, 'freigegeben AT-') && str_contains($f, 'hoehe_tal') && str_contains($f, 'warndienst fehlt')
@@ -175,6 +176,26 @@ $sortiert = schnee_sortieren([
     ['region' => ['id' => 'viel'], 'km' => 300, 'pulver_max' => 30.0, 'neu_summe' => 30.0],
 ], 'summe');
 pruefe(array_column(array_column($sortiert, 'region'), 'id') === ['viel', 'wenig', 'nebel'], 'Rangliste: 30 cm bei Sonne vor 12 cm bei Sonne vor 40 cm im Nebel');
+$prioListe = [
+    ['region' => ['id' => 'nebel40'], 'km' => 50, 'pulver_max' => 0.0, 'neu_summe' => 40.0, 'schoene_tage' => 0,
+     'tage' => ['T' => ['det' => ['pulver' => 0.0, 'neu24' => 40.0, 'neu72' => 40.0, 'wolken' => 95.0]]], 'fahrt' => ['min' => 200]],
+    ['region' => ['id' => 'sonne28'], 'km' => 60, 'pulver_max' => 28.0, 'neu_summe' => 28.0, 'schoene_tage' => 2,
+     'tage' => ['T' => ['det' => ['pulver' => 28.0, 'neu24' => 28.0, 'neu72' => 28.0, 'wolken' => 10.0]]], 'fahrt' => ['min' => 150]],
+    ['region' => ['id' => 'sonne18'], 'km' => 70, 'pulver_max' => 18.0, 'neu_summe' => 18.0, 'schoene_tage' => 2,
+     'tage' => ['T' => ['det' => ['pulver' => 18.0, 'neu24' => 18.0, 'neu72' => 18.0, 'wolken' => 5.0]]], 'fahrt' => ['min' => 90]],
+    ['region' => ['id' => 'nebel25'], 'km' => 80, 'pulver_max' => 0.0, 'neu_summe' => 25.0, 'schoene_tage' => 0,
+     'tage' => ['T' => ['det' => ['pulver' => 0.0, 'neu24' => 25.0, 'neu72' => 25.0, 'wolken' => 90.0]]], 'fahrt' => ['min' => 60]],
+];
+$ids = fn($l) => array_column(array_column($l, 'region'), 'id');
+pruefe($ids(schnee_sortieren($prioListe, 'summe')) === ['sonne28', 'sonne18', 'nebel40', 'nebel25'], 'Priorität Pulver + Sonne (Standard): Pulvertage zuerst');
+pruefe($ids(schnee_sortieren($prioListe, 'summe', 'neu')) === ['nebel40', 'sonne28', 'sonne18', 'nebel25'], 'Priorität Neuschnee: Stufe ab 30 cm zuerst, in der Stufe 15–30 cm die Sonne vor mehr cm');
+pruefe($ids(schnee_sortieren($prioListe, 'T', 'neu')) === ['nebel40', 'sonne28', 'sonne18', 'nebel25'], 'Priorität Neuschnee an einem Tag: Stufe, dann Sonne (wie das Symbol), dann cm');
+pruefe($ids(schnee_sortieren($prioListe, 'summe', 'km')) === ['nebel25', 'sonne18', 'sonne28', 'nebel40'] && $ids(schnee_sortieren($prioListe, 'km')) === $ids(schnee_sortieren($prioListe, 'summe', 'km')),
+       'Priorität Fahrzeit, alter Parameter nach=km gleichwertig');
+pruefe(schnee_neu_stufe(4.9) === 0 && schnee_neu_stufe(5.0) === 1 && schnee_neu_stufe(15.0) === 2 && schnee_neu_stufe(30.0) === 3 && schnee_neu_stufe(null) === 0, 'Neuschnee-Stufen ab 5, 15, 30 cm');
+pruefe(lawine_warnung(null) === null && lawine_warnung(['stufe' => 2]) === null && lawine_warnung(['stufe' => 3])['klasse'] === 'warn-erheblich'
+       && str_contains(lawine_warnung(['stufe' => 3])['text'], 'meisten tödlichen') && lawine_warnung(['stufe' => 4])['klasse'] === 'warn-hoch'
+       && lawine_warnung(['stufe' => 5])['klasse'] === 'warn-hoch', 'Lawinen-Warnzeichen: ab Stufe 3, ab Stufe 4 hoch');
 pruefe(schneefarbe(0) === 'rgb(128, 146, 156)' && schneefarbe(10) === 'rgb(52, 120, 222)' && schneefarbe(500) === schneefarbe(80)
        && schneefarbe_hell(1.0) && !schneefarbe_hell(20.0), 'Neuschnee-Farbskala');
 
@@ -187,7 +208,7 @@ $la = lawine_lage($sR['schnee-a'], $lagen, $t1);
 pruefe($la && $la['stufe'] === 3 && $la['ueber_namen'] && $la['regionen'] === [['CH-7111', 'Oberengadin']], 'A: SLF über den Namen „Oberengadin“, Stufe 3 morgen');
 $lb = lawine_lage($sR['schnee-b'], $lagen, $t0);
 pruefe($lb && $lb['stufe'] === 2 && ($lb['probleme'][0]['aspekte'] ?? []) === ['N', 'NW'] && !$lb['ueber_namen'], 'B: Bayern (XML) über DE-BY-30, Stufe 2, Triebschnee N und NW');
-pruefe(lawine_lage($sR['schnee-c'], $lagen, $t0)['stufe'] === 4, 'C: Südtirol über den Namen „Ahrntal“');
+pruefe(lawine_lage($sR['schnee-c'], $lagen, $t0)['stufe'] === 4, 'C: Südtirol über die Mikroregion IT-32-BZ-08, Stufe 4 (freigegeben, für das Warnzeichen)');
 pruefe(lawine_lage($sR['schnee-a'], $lagen, $t3) === null, 'ohne gültigen Bericht (in drei Tagen): keine Lage, keine Hochrechnung');
 pruefe(!lawine_freigegeben($sR['schnee-d'], $sKat['lawinendienste']) && lawine_freigegeben($sR['schnee-b'], $sKat['lawinendienste']), 'Freigabe je Warndienst');
 pruefe(!lawine_freigegeben($sk['regionen'][0], $sk['lawinendienste']) && lawine_freigegeben(array_values(array_filter($sk['regionen'], fn($r) => $r['id'] === 'oberengadin'))[0], $sk['lawinendienste']),
@@ -220,7 +241,7 @@ $sWeb = proc_open(['php', '-d', 'display_errors=1', '-d', 'error_reporting=-1', 
 for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $wPort); $i++) {
     usleep(100000);
 }
-foreach (['schnee.php', 'schnee.php?km=800', 'schnee.php?km=800&ansicht=reise', 'schnee.php?km=800&ansicht=woche', 'schnee.php?sport=skitour&km=800&nach=km',
+foreach (['schnee.php', 'schnee.php?km=800', 'schnee.php?km=800&ansicht=reise', 'schnee.php?km=800&ansicht=woche', 'schnee.php?sport=skitour&km=800&nach=km', 'schnee.php?km=800&prio=neu', "schnee.php?km=800&prio=neu&nach=$t1", 'schnee.php?km=800&prio=km&ansicht=woche', 'schnee.php?km=800&prio=<x>',
           "schnee.php?km=800&nach=$t1", 'schnee.php?sport=<script>&km=12', 'schnee_stunden.php?region=schnee-a', "schnee_stunden.php?region=schnee-b&sport=skitour&tag=$t0",
           "schnee.php?region=schnee-a&nach=$t1", 'schnee.php?region=schnee-a&nach=2020-01-01'] as $u) {
     [$code, $html] = holen($wPort, $u);
@@ -237,7 +258,13 @@ if (getenv('UMKREIS_SEITE_OFFEN')) {   // zum Ansehen im Browser: Seite eine Wei
     file_put_contents(getenv('UMKREIS_SEITE_OFFEN'), (string)$wPort);
     sleep(90);
 }
-pruefe(str_contains($html, 'class="lw lw3"') && str_contains($html, 'class="lw lw2"') && str_contains($html, 'Zuordnung über den Namen'), 'Lawinen-Abzeichen in EAWS-Farben, Hinweis auf Namenszuordnung');
+pruefe(str_contains($html, 'class="lw lw3 warn-erheblich"') && str_contains($html, 'class="lw lw2"') && str_contains($html, 'Zuordnung über den Namen'), 'Lawinen-Abzeichen in EAWS-Farben, Hinweis auf Namenszuordnung');
+pruefe(preg_match('#id="r-schnee-c".*?class="tag [^"]*warn-hoch"#s', $html) === 1 && str_contains($html, 'class="lw lw4 warn-hoch"') && str_contains($html, '<span class="warn" aria-label="Warnung">⚠')
+       && preg_match('#class="warn-punkt warn-hoch"#', $html) === 1 && preg_match('#class="warn-punkt warn-erheblich"#', $html) === 1
+       && str_contains($html, 'Bei Stufe 3 passieren die meisten tödlichen Lawinenunfälle.'),
+       'Lawinen-Warnzeichen: Stufe 4 Kachel rot umrandet, Dreieck im Abzeichen und auf der Karte, Hinweis zu Stufe 3');
+pruefe(str_contains($html, '<select name="prio">') && str_contains($html, '<option value="pulver" selected>Pulver + Sonne</option>') && str_contains($html, '<select name="nach">')
+       && preg_match('#<select name="nach">(.*?)</select>#s', $html, $mNach) && !str_contains($mNach[1], 'value="km"'), 'Auswahl: Tag und Priorität getrennt');
 pruefe(substr_count($html, 'ersetzt keine Beurteilung vor Ort') >= 3 && str_contains($html, '<p class="karte klein haftung">'), 'Haftungshinweis oben, je Region und im Fuß');
 pruefe(preg_match('#id="r-schnee-d".*?Lawinenlage: <a href="https://example.org/bericht"#s', $html) === 1 && !preg_match('#id="r-schnee-d".*?class="lw lw#s', explode('id="r-schnee-a"', $html)[0] ?? ''),
        'nicht freigegebener Dienst: nur Link, keine Stufe');
@@ -259,6 +286,9 @@ pruefe(preg_match('#id="r-schnee-d".*?Schneehöhe im Modell, Stand \w\w \d+\.\d+
        'Liste: SNOWGRID als Modellwert abgesetzt, nicht als Messung');
 pruefe(preg_match('#id="r-schnee-c".*?Schneehöhe gemessen heute .*?Bezett eins <span class="leise">2.450 m</span> <b>26 cm</b>.*?\(24 h \+6\).*?Bezett zwei <span class="leise">2.000 m</span> <b>0 cm</b>#s', $html) === 1,
        'Liste: Südtiroler Stationen');
+[, $hw] = holen($wPort, 'schnee.php?km=800&prio=neu&ansicht=woche');
+pruefe(str_contains($hw, '<option value="neu" selected>Neuschnee</option>') && str_contains($hw, 'prio=neu') && preg_match('#<td class="[^"]*warn-(hoch|erheblich)"#', $hw) === 1,
+       'Woche: Priorität bleibt in den Links, Warnzeichen in den Zellen');
 [, $html] = holen($wPort, "schnee.php?region=schnee-a&nach=$t1");
 pruefe(str_contains($html, 'Geteilte Vorhersage') && !str_contains($html, 'id="r-schnee-b"') && !str_contains($html, 'id="wahl"'), 'geteilte Vorhersage: nur diese Region, ohne Auswahl');
 [, $html] = holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t1);

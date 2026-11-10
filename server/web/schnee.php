@@ -9,10 +9,12 @@
  *   km      Umkreis in km Strasse
  *   ort     "Breite,Laenge", auf 0,1 Grad gerundet
  *   ansicht bald (heute bis uebermorgen), reise (Tag 3 bis 7), woche
- *   nach    summe | YYYY-MM-DD | km
+ *   nach    summe | YYYY-MM-DD (Tag); km aus alten Links heisst prio=km
+ *   prio    pulver | neu | km (seit 10.11.2026, SCHNEE_PRIOS in lib/schnee.php)
  *   region + nach=YYYY-MM-DD: geteilte Vorhersage einer Region
  *
- * Die Lawinenwarnstufe geht nie in Bewertung, Sortierung oder Farbe ein.
+ * Die Lawinenwarnstufe geht nie in Bewertung, Sortierung oder Farbe ein. Seit 10.11.2026
+ * steht ab Stufe 3 ein Warndreieck bei der Region, ab Stufe 4 rot umrandet (lawine_warnung()).
  */
 
 declare(strict_types=1);
@@ -139,8 +141,15 @@ $messungen = stationen_laden($dataDir);
 $messnetze = $schnee['messnetze'];
 
 $nach = (string)($_GET['nach'] ?? 'summe');
-if ($nach !== 'km' && !in_array($nach, $tage, true)) {
+$prio = (string)($_GET['prio'] ?? 'pulver');
+if ($nach === 'km') {          // alte Links: Fahrzeit war eine Sortierung
+    $prio = 'km';
+}
+if (!in_array($nach, $tage, true)) {
     $nach = 'summe';
+}
+if (!isset(SCHNEE_PRIOS[$prio])) {
+    $prio = 'pulver';
 }
 $fahrzeiten = fahrzeiten_laden($dataDir);
 $alleRegionen = array_merge($windRegionen, $regionen);
@@ -152,7 +161,7 @@ foreach ($liste as $i => $e) {
 if (!$geteilt) {
     $liste = array_values(array_filter($liste, fn($e) => im_umkreis($e, (float)$km)));
 }
-$liste = schnee_sortieren($liste, $nach);
+$liste = schnee_sortieren($liste, $nach, $prio);
 
 $zeiten = [];
 foreach ($stand['_ts'] as $proRegion) {
@@ -198,10 +207,13 @@ function spanne_text(array $d): ?string
 
 function link_mit(array $aenderung): string
 {
-    global $km, $ansicht, $heim, $eigenerOrt, $nach;
+    global $km, $ansicht, $heim, $eigenerOrt, $nach, $prio;
     $p = ['km' => $km, 'ansicht' => $ansicht];
     if ($nach !== 'summe') {
         $p['nach'] = $nach;
+    }
+    if ($prio !== 'pulver') {
+        $p['prio'] = $prio;
     }
     if ($eigenerOrt) {
         $p['ort'] = $heim[0] . ',' . $heim[1];
@@ -274,12 +286,14 @@ function teilenswert(array $d): bool
     return $d['det']['geht'] && empty($d['vorbei']);
 }
 
-function teilen_text(array $region, string $tag, array $d, DateTimeZone $tz): string
+function teilen_text(array $region, string $tag, array $d, DateTimeZone $tz, ?array $lage = null): string
 {
     $k = $d['det'];
     $teile = ['Neuschnee ' . cm($k['neu24']) . ' über Nacht, ' . cm($k['neu72']) . ' in 72 h', schnee_himmel($k['wolken']),
               $k['kamm_stark'] ? 'viel Wind am Kamm' : null];
-    return $region['name'] . ', ' . tag_datum($tag, $tz) . ': ' . implode(' · ', array_filter($teile)) . '. ' . HAFTUNG;
+    $w = lawine_warnung($lage);
+    return $region['name'] . ', ' . tag_datum($tag, $tz) . ': ' . implode(' · ', array_filter($teile)) . '. '
+         . ($w ? '⚠ ' . $w['text'] . ' ' : '') . HAFTUNG;
 }
 
 /** Ausgabezeit eines Berichts: "So 17:00" */
@@ -300,7 +314,9 @@ function lawine_abzeichen(?array $lage, string $wort = 'LWS'): string
         return '';
     }
     $s = $lage['stufe'];
-    return '<span class="lw lw' . $s . '" title="' . h('Lawinenwarnstufe (Gefahrenstufe des Warndiensts): ' . lawine_stufen_text($lage['teile'])) . '">' . h($wort) . ' ' . ($s ?: '–') . '</span>';
+    $w = lawine_warnung($lage);
+    return '<span class="lw lw' . $s . ($w ? ' ' . $w['klasse'] : '') . '" title="' . h('Lawinenwarnstufe (Gefahrenstufe des Warndiensts): ' . lawine_stufen_text($lage['teile']) . ($w ? '. ' . $w['text'] : '')) . '">'
+         . ($w ? '<span class="warn" aria-label="Warnung">⚠&#xFE0E;</span> ' : '') . h($wort) . ' ' . ($s ?: '–') . '</span>';
 }
 
 /** Block mit der Lawinenlage fuer heute und morgen (soweit angezeigt) */
@@ -323,7 +339,7 @@ function lawine_html(array $region, array $lagenTage, array $dienste, array $tag
     $zus = [];
     foreach ($kurze as $t) {
         $l = $lagenTage[$t] ?? null;
-        $zus[] = h(tag_kurz($t, $heute)) . ' ' . ($l ? 'LWS ' . ($l['stufe'] ?: '–') : 'kein Bericht');
+        $zus[] = h(tag_kurz($t, $heute)) . ' ' . ($l ? (lawine_warnung($l) ? '⚠&#xFE0E; ' : '') . 'LWS ' . ($l['stufe'] ?: '–') : 'kein Bericht');
     }
     $o = '<details class="lawine klein"><summary>Lawinenlage: ' . implode(', ', $zus) . '</summary>';
     foreach ($kurze as $t) {
@@ -333,7 +349,9 @@ function lawine_html(array $region, array $lagenTage, array $dienste, array $tag
             continue;
         }
         $probleme = array_map(fn($p) => h(lawine_problem_text($p)) . ($p['aspekte'] && count($p['aspekte']) < 8 ? ' ' . lawine_rose($p['aspekte']) : ''), $l['probleme']);
-        $o .= '<p><b>' . h(tag_kurz($t, $heute)) . ':</b> ' . lawine_abzeichen($l, 'Gefahrenstufe') . ' ' . h(lawine_stufen_text($l['teile'], true))
+        $w = lawine_warnung($l);
+        $o .= ($w ? '<p class="lawine-warnung ' . $w['klasse'] . '">⚠&#xFE0E; ' . h(tag_kurz($t, $heute)) . ': ' . h($w['text']) . '</p>' : '')
+            . '<p><b>' . h(tag_kurz($t, $heute)) . ':</b> ' . lawine_abzeichen($l, 'Gefahrenstufe') . ' ' . h(lawine_stufen_text($l['teile'], true))
             . ($probleme ? ' · ' . implode(' · ', $probleme) : '')
             . ' · ' . $link . ' <span class="leise">ausgegeben ' . h(ausgabe_text($l['veroeffentlicht'], $tzSeite, $heute)) . '</span>'
             . ($l['ueber_namen'] ? ' <span class="leise" title="' . h('Mikroregionen über den Namen zugeordnet: ' . implode(', ', array_map(fn($r) => $r[1], $l['regionen']))) . '">(Zuordnung über den Namen)</span>' : '')
@@ -399,16 +417,22 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
     </select>
   </label>
   <?php if (!$woche): ?>
-  <label>Sortierung
+  <label>Tag
     <select name="nach">
       <option value="summe"<?= $nach === 'summe' ? ' selected' : '' ?>>alle Tage</option>
       <?php foreach ($tage as $t): ?>
         <option value="<?= h($t) ?>"<?= $nach === $t ? ' selected' : '' ?>><?= h(tag_kurz($t, $heute)) ?></option>
       <?php endforeach ?>
-      <option value="km"<?= $nach === 'km' ? ' selected' : '' ?>>Fahrzeit</option>
     </select>
   </label>
   <?php endif ?>
+  <label>Priorität
+    <select name="prio">
+      <?php foreach (SCHNEE_PRIOS as $wert => $name): ?>
+        <option value="<?= h($wert) ?>"<?= $prio === $wert ? ' selected' : '' ?>><?= h($name) ?></option>
+      <?php endforeach ?>
+    </select>
+  </label>
   <input type="hidden" name="ansicht" value="<?= h($ansicht) ?>">
   <?php if ($eigenerOrt): ?><input type="hidden" name="ort" value="<?= h($heim[0] . ',' . $heim[1]) ?>"><?php endif ?>
   <p class="ort klein leise">
@@ -431,17 +455,17 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
 <?php endif ?>
 <?php endif ?>
 
-<p class="karte klein haftung"><b>Lawinen:</b> <?= h(HAFTUNG) ?> Die Gefahrenstufe geht nicht in Farbe oder Reihenfolge ein.</p>
+<p class="karte klein haftung"><b>Lawinen:</b> <?= h(HAFTUNG) ?> Die Gefahrenstufe ändert Farbe und Reihenfolge nicht; ab Stufe 3 steht ein Warndreieck ⚠&#xFE0E; bei der Region, ab Stufe 4 ist der Tag rot umrandet.</p>
 
 <details class="leise klein erklaerung">
   <summary><b>Pulvertag</b> · <?= h($schwelle) ?> · <span class="unterstrichen">Wie wird gerechnet?</span></summary>
   <p>
   „Neu“ je Tag: Niederschlag der 24 Stunden bis <?= SCHNEE_MORGEN ?> Uhr, der auf Tourhöhe als Schnee fällt (Schneefallgrenze unter der Tourhöhe; 1 mm Wasser = <?= zahl(SCHNEE_CM_JE_MM, 1) ?> cm Schnee). So lassen sich die Tage addieren. Darunter die Spanne aus dem ECMWF-Ensemble (80 % der 51 Läufe liegen darin).
   „Pulvertag“ (kräftiges Blau): mindestens <?= SCHNEE_REGEL['neu_min'] ?> cm Neuschnee in den 72 Stunden davor, damit auch der schöne Tag nach dem Schneefall zählt, und von <?= SCHNEE_TAG[0] ?> bis <?= SCHNEE_TAG[1] ?> Uhr höchstens teils sonnig (⛅, bis <?= SCHNEE_REGEL['wolken_max'] ?> % Wolken). Sonst hellt das Blau mit dem Neuschnee ab (ab 10 cm, ab 3 cm).
-  Reihenfolge: der beste Pulvertag, also am meisten Neuschnee an einem schönen Tag, dann Neuschnee im Zeitraum.
+  Reihenfolge nach der gewählten Priorität: „Pulver + Sonne“ = der beste Pulvertag, also am meisten Neuschnee an einem schönen Tag, dann Neuschnee im Zeitraum. „Neuschnee“ = Neuschnee in Stufen (ab <?= implode(', ab ', SCHNEE_NEU_STUFEN) ?> cm), innerhalb einer Stufe zuerst die Sonne. „Fahrzeit“ = die nächste zuerst.
   Schneehöhe und Wind am Kamm (700 hPa, etwa 3000 m) schließen nichts aus, sie stehen nur dabei; 💨 ab <?= SCHNEE_KAMM_HINWEIS ?> km/h am Kamm. Ob genug Schnee für eine Tour liegt, siehst du an der Schneehöhe (Modell, im Gebirge grob) und an den Messstationen. Die Schwellen sind Startwerte, nicht kalibriert.
   </p>
-  <p>Blau statt Grün: Ein gutes Feld heißt „guter Schnee“, nie „sicher“. Die Lawinenstufe steht in den offiziellen Farben daneben, nur für Tage mit Lagebericht: „LWS 3“ = Lawinenwarnstufe, im Bericht „Gefahrenstufe 3“.</p>
+  <p>Blau statt Grün: Ein gutes Feld heißt „guter Schnee“, nie „sicher“. Die Lawinenstufe steht in den offiziellen Farben daneben, nur für Tage mit Lagebericht: „LWS 3“ = Lawinenwarnstufe, im Bericht „Gefahrenstufe 3“. ⚠&#xFE0E; ab Stufe 3, weil bei Stufe 3 die meisten tödlichen Unfälle passieren (Bayerische Alpen seit 1993/94: 48 % laut Lawinenwarndienst Bayern); ab Stufe 4 zusätzlich rot umrandet. Am Platz in der Rangliste ändert das nichts.</p>
 </details>
 
 <?php if ($liste && !$geteilt):
@@ -506,13 +530,20 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
         $zahl = $n !== null && $n >= 0.5;
         $rk = $zahl ? $rp : $rp * 0.55;
         $fuellung = $n === null ? '' : ' style="fill: ' . schneefarbe((float)$n) . '"';
-        $titel = $r['name'] . ': Neuschnee ' . cm($n) . ($kartenTag ? '' : ' im Zeitraum')
+        $stufeMax = 0;
+        foreach ($kartenTag ? [$kartenTag] : $tage as $t) {
+            $stufeMax = max($stufeMax, (int)($lageVon[$r['id']][$t]['stufe'] ?? 0));
+        }
+        $warn = lawine_warnung($stufeMax ? ['stufe' => $stufeMax] : null);
+        $titel = ($warn ? '⚠ ' : '') . $r['name'] . ': Neuschnee ' . cm($n) . ($kartenTag ? '' : ' im Zeitraum')
                . ($p['wert']['geht'] ? ' · Pulvertag' . ($kartenTag ? '' : ' ' . tag_kurz($p['wert']['tag'], $heute)) : '')
-               . ' · ' . fahrzeit_text($p['e']['fahrt']) . ' Fahrt';
+               . ' · ' . fahrzeit_text($p['e']['fahrt']) . ' Fahrt'
+               . ($warn ? ' · Lawinenwarnstufe ' . $stufeMax . ($kartenTag ? '' : ' (höchste heute/morgen)') : '');
     ?>
     <a href="<?= h(stunden_link($r, $p['wert']['tag'])) ?>" class="punkt <?= $klasse ?>">
       <title><?= h($titel) ?></title>
       <circle cx="<?= round($p['xy'][0], 1) ?>" cy="<?= round($p['xy'][1], 1) ?>" r="<?= round($rk, 2) ?>"<?= $fuellung ?><?php if ($p['wert']['geht']): ?> data-schneit="<?= round($p['xy'][0], 1) ?>,<?= round($p['xy'][1], 1) ?>,<?= round((float)$n) ?>"<?php endif ?>/>
+      <?php if ($warn): ?><text class="warn-punkt <?= $warn['klasse'] ?>" x="<?= round($p['xy'][0] + $rk * 0.75, 2) ?>" y="<?= round($p['xy'][1] - $rk * 0.55, 2) ?>" font-size="<?= round($rp * ($warn['stufe'] >= 4 ? 1.25 : 1.0), 2) ?>" stroke-width="<?= round($rp * 0.25, 2) ?>">⚠&#xFE0E;</text><?php endif ?>
       <?php if ($zahl): ?><text class="zahl<?= $dunkel ?>" x="<?= round($p['xy'][0], 1) ?>" y="<?= round($p['xy'][1] + $rp * 0.36, 2) ?>" font-size="<?= round($rp * 1.05, 2) ?>"><?= zahl(round($n)) ?></text><?php endif ?>
       <?php if (isset($namen[$nr])): $rechts = $namen[$nr] === 'rechts'; ?><text class="name<?= $rechts ? '' : ' links' ?>" x="<?= round($p['xy'][0] + ($rechts ? 1 : -1) * $rp * 1.3, 2) ?>" y="<?= round($p['xy'][1] + $rp * 0.35, 2) ?>" font-size="<?= round($rp, 2) ?>" stroke-width="<?= round($rp * 0.3, 2) ?>"><?= h($r['name']) ?></text><?php endif ?>
     </a>
@@ -535,7 +566,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
   <?php if ($zellen): $rts = new DateTimeImmutable($raster['ts']); ?>
   <p class="leise klein landkarte-fuss">Fläche: Neuschnee auf <?= zahl(SCHNEE_RASTER_HOEHE) ?> m<?= $kartenTag ? '' : ' im Zeitraum' ?>, Raster rund 25 km, ein Modell, Stand <?= h(tag_kurz($rts->setTimezone($tzSeite)->format('Y-m-d'), $heute)) ?> <?= $rts->setTimezone($tzSeite)->format('G:i') ?> Uhr. Grob: Täler und einzelne Kämme verschwimmen. <button type="button" class="textknopf" id="feldKnopf" aria-pressed="true" hidden>Fläche ein/aus</button></p>
   <?php endif ?>
-  <p class="leise klein landkarte-fuss">Punkte, Farbe und Zahl: Neuschnee in cm auf Tourhöhe der Region<?= $kartenTag ? ' (24 h bis ' . SCHNEE_MORGEN . ' Uhr)' : ', alle Tage im Zeitraum zusammen' ?>. Ring: <?= $kartenTag ? 'Pulvertag' : 'mindestens ein Pulvertag' ?>. Männchen: <?= $eigenerOrt ? 'dein Standort' : 'Inning' ?>, antippen: wohin fahr ma? Punkt antippen: Stunden der Region. Kreis: <?= zahl($km) ?> km Luftlinie; der Umkreis zählt die Straße. Karte: Natural Earth.</p>
+  <p class="leise klein landkarte-fuss">Punkte, Farbe und Zahl: Neuschnee in cm auf Tourhöhe der Region<?= $kartenTag ? ' (24 h bis ' . SCHNEE_MORGEN . ' Uhr)' : ', alle Tage im Zeitraum zusammen' ?>. Ring: <?= $kartenTag ? 'Pulvertag' : 'mindestens ein Pulvertag' ?>. ⚠&#xFE0E; Lawinenwarnstufe ab 3 (orange) bzw. ab 4 (rot)<?= $kartenTag ? '' : ', heute oder morgen' ?>. Männchen: <?= $eigenerOrt ? 'dein Standort' : 'Inning' ?>, antippen: wohin fahr ma? Punkt antippen: Stunden der Region. Kreis: <?= zahl($km) ?> km Luftlinie; der Umkreis zählt die Straße. Karte: Natural Earth.</p>
 </details>
 <?php endif ?>
 
@@ -571,7 +602,8 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
               $text = $vorbei ? '' : ($offen ? '?' : ($n === null ? '' : ($n < 0.5 ? ($d['det']['geht'] ? '0' : '') : zahl(round($n)))));
               $titel = $r['name'] . ', ' . tag_kurz($t, $heute) . ': ' . ($vorbei ? 'vorbei' : ($offen ? 'noch keine Vorhersage' : kachel_titel($d)));
           ?>
-            <td class="<?= $klasse ?>" title="<?= h($titel) ?>"><a href="<?= h(stunden_link($r, $t)) ?>"><?= h($text) ?></a></td>
+            <?php $warn = $vorbei ? null : lawine_warnung($lageVon[$r['id']][$t] ?? null); ?>
+            <td class="<?= $klasse ?><?= $warn ? ' ' . $warn['klasse'] : '' ?>" title="<?= h(($warn ? '⚠ ' . $warn['text'] . ' · ' : '') . $titel) ?>"><a href="<?= h(stunden_link($r, $t)) ?>"><?= h($text) ?><?= $warn ? '<span class="warn">⚠&#xFE0E;</span>' : '' ?></a></td>
           <?php endforeach ?>
         </tr>
       <?php endforeach ?>
@@ -608,7 +640,8 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
           <span class="w vorbei">?</span>
         </a>
         <?php else: ?>
-        <a class="tag <?= schnee_klasse($d) ?><?= $nach === $t ? ' gewaehlt' : '' ?>" href="<?= h(stunden_link($r, $t)) ?>"
+        <?php $warn = lawine_warnung($lageVon[$r['id']][$t] ?? null); ?>
+        <a class="tag <?= schnee_klasse($d) ?><?= $nach === $t ? ' gewaehlt' : '' ?><?= $warn ? ' ' . $warn['klasse'] : '' ?>" href="<?= h(stunden_link($r, $t)) ?>"
            title="<?= h(kachel_titel($d)) ?>">
           <span class="t"><?= h(tag_kurz($t, $heute)) ?></span>
           <span class="himmel"><?= himmel_symbol($d['det']['wolken'], ($d['det']['neu_tag'] ?? 0) >= 2) ?? '–' ?><?= $d['det']['kamm_stark'] ? '<span class="kamm" title="Viel Wind am Kamm">💨</span>' : '' ?></span>
@@ -626,11 +659,12 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
           <li>
             <b><?= h(tag_kurz($t, $heute)) ?>:</b>
             <span>Pulvertag: <?= h(implode(', ', array_filter([cm($d['det']['neu72']) . ' in 72 h', schnee_himmel($d['det']['wolken']), $d['det']['kamm_stark'] ? 'viel Wind am Kamm' : null]))) ?> ·</span>
+            <?php if ($warn = lawine_warnung($lageVon[$r['id']][$t] ?? null)): ?><span class="lawine-warnung <?= $warn['klasse'] ?>">⚠&#xFE0E; <?= h($warn['text']) ?></span><?php endif ?>
             <?php if (!$geteilt && ($ab = abfahrt_text($e, $t, $d))): ?><span class="abfahrt"><?= h($ab) ?> ·</span><?php endif ?>
             <a class="stunden-link" href="<?= h(stunden_link($r, $t)) ?>">Details ›</a>
             <?php if (teilenswert($d)): ?><button type="button" class="teilen" hidden
               data-titel="<?= h('Wohinfahrma: ' . $r['name'] . ', ' . tag_datum($t, $tzSeite)) ?>"
-              data-text="<?= h(teilen_text($r, $t, $d, $tzSeite)) ?>"
+              data-text="<?= h(teilen_text($r, $t, $d, $tzSeite, $lageVon[$r['id']][$t] ?? null)) ?>"
               data-url="<?= h('schnee.php?' . http_build_query(['region' => $r['id'], 'nach' => $t])) ?>"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>Teilen</button><?php endif ?>
           </li>
         <?php endforeach ?>

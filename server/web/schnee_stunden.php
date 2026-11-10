@@ -317,6 +317,7 @@ $jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
   <?php elseif (!$lage): ?>
     <p class="klein">Kein Lagebericht für diesen Tag. Das heißt nicht „keine Gefahr“. <a href="<?= h($dienst['url_bericht']) ?>" rel="noopener"><?= h($dienst['kurz']) ?> ↗</a></p>
   <?php else: ?>
+    <?php if ($warn = lawine_warnung($lage)): ?><p class="klein lawine-warnung <?= $warn['klasse'] ?>">⚠&#xFE0E; <?= h($warn['text']) ?></p><?php endif ?>
     <p class="klein"><span class="lw lw<?= $lage['stufe'] ?>">Gefahrenstufe <?= $lage['stufe'] ?: '–' ?></span> <?= h(lawine_stufen_text($lage['teile'], true)) ?></p>
     <?php foreach ($lage['probleme'] as $p): ?>
       <p class="klein"><?= $p['aspekte'] && count($p['aspekte']) < 8 ? lawine_rose($p['aspekte'], 22) . ' ' : '' ?><?= h(lawine_problem_text($p)) ?></p>

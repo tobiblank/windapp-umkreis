@@ -24,11 +24,16 @@
  *   Pulvertag  schoener Tag (hoechstens teils sonnig, wie das Symbol ⛅) mit Neuschnee
  *              in 72 h ab SCHNEE_REGEL['neu_min']. Schneehoehe und Wind am Kamm schliessen
  *              nichts aus, sie stehen nur dabei (Wind ab SCHNEE_KAMM_HINWEIS als Hinweis).
- *   Rangliste  bester Pulvertag (Neuschnee 72 h an einem schoenen Tag), dann Neuschnee
- *              im Zeitraum.
+ *   Rangliste  nach Prioritaet (seit 10.11.2026 waehlbar, SCHNEE_PRIOS):
+ *              pulver  bester Pulvertag (Neuschnee 72 h an einem schoenen Tag), dann
+ *                      Neuschnee im Zeitraum (wie bisher, Standard)
+ *              neu     Neuschnee in Stufen (SCHNEE_NEU_STUFEN), innerhalb einer Stufe die
+ *                      Sonne: sonst entschiede fast immer der erste Zentimeter
+ *              km      Fahrzeit
  * Die Schwellen sind Startwerte ohne Quelle (SCHNEE_REGEL, SCHNEE_KAMM_HINWEIS).
  *
- * Die Lawinenlage geht NICHT ein (siehe lawine.php).
+ * Die Lawinenlage geht NICHT in die Reihenfolge ein (siehe lawine.php). Seit 10.11.2026
+ * steht sie ab Stufe 3 mit Warnzeichen bei der Region (lawine_warnung()), der Platz bleibt.
  *
  * UNGEPRUEFT gegen das echte Open-Meteo: wie der Parameter elevation (Tourhoehe) auf
  * Schneefall, Schneefallgrenze und Schneehoehe wirkt; welche Modelle snowfall_height
@@ -58,6 +63,11 @@ const SCHNEE_REGEL = ['name' => 'Pulvertag', 'neu_min' => 10, 'wolken_max' => SC
 const SCHNEE_KAMM_HINWEIS = 50;       // km/h in 700 hPa: ab hier Hinweis "Wind am Kamm" (Startwert ohne Quelle)
 
 const SCHNEE_FORMATE = ['json', 'xml'];
+
+/** Prioritaeten der Rangliste (seit 10.11.2026), Schluessel = Parameter prio */
+const SCHNEE_PRIOS = ['pulver' => 'Pulver + Sonne', 'neu' => 'Neuschnee', 'km' => 'Fahrzeit'];
+/** cm Neuschnee: Stufengrenzen fuer die Prioritaet "neu" (Startwerte ohne Quelle) */
+const SCHNEE_NEU_STUFEN = [5, 15, 30];
 
 // ===================================================================
 // KATALOG
@@ -526,31 +536,61 @@ function schnee_rangliste(array $regionen, array $stand, array $heim, float $rad
         $det = 0;
         $neu = 0.0;
         $pulver = 0.0;
+        $schoen = 0;
         foreach ($proTag as $t) {
             $det += $t['det']['geht'] ? 1 : 0;
             $neu += (float)($t['det']['neu24'] ?? 0);
             $pulver = max($pulver, $t['det']['pulver']);
+            if (empty($t['vorbei']) && empty($t['offen']) && $t['det']['wolken'] !== null && $t['det']['wolken'] <= SCHNEE_WOLKIG) {
+                $schoen++;
+            }
         }
-        $liste[] = ['region' => $r, 'km' => round($km), 'tage' => $proTag,
-                    'tage_modellmittel' => $det, 'pulver_max' => round($pulver, 1), 'neu_summe' => round($neu, 1)];
+        $liste[] = ['region' => $r, 'km' => round($km), 'tage' => $proTag, 'tage_modellmittel' => $det,
+                    'pulver_max' => round($pulver, 1), 'neu_summe' => round($neu, 1), 'schoene_tage' => $schoen];
     }
     return schnee_sortieren($liste, 'summe');
 }
 
-/**
- * 'summe' (bester Pulvertag, dann Neuschnee im Zeitraum), ein Tag (Pulver, dann Neuschnee
- * 72 h und 24 h) oder 'km' (Fahrzeit). Pulver = Neuschnee 72 h an einem Pulvertag: 30 cm
- * bei Sonne gehen vor 12 cm bei Sonne, beide vor 40 cm im Nebel.
- */
-function schnee_sortieren(array $liste, string $nach): array
+/** Stufe des Neuschnees fuer die Prioritaet "neu": 0 unter 5 cm, 1 ab 5, 2 ab 15, 3 ab 30 */
+function schnee_neu_stufe(?float $cm): int
 {
-    if ($nach === 'km') {
+    $s = 0;
+    foreach (SCHNEE_NEU_STUFEN as $g) {
+        $s += ($cm ?? 0) >= $g ? 1 : 0;
+    }
+    return $s;
+}
+
+/**
+ * Rangliste sortieren. $nach: 'summe' (alle Tage) oder ein Tag (YYYY-MM-DD); 'km' bleibt
+ * fuer alte Links gueltig und heisst dasselbe wie $prio 'km'.
+ * $prio 'pulver': bester Pulvertag, dann Neuschnee im Zeitraum; an einem Tag Pulver, dann
+ *   Neuschnee 72 h und 24 h. Pulver = Neuschnee 72 h an einem Pulvertag: 30 cm bei Sonne
+ *   gehen vor 12 cm bei Sonne, beide vor 40 cm im Nebel.
+ * $prio 'neu': Neuschnee in Stufen (schnee_neu_stufe()), in der Stufe zuerst die Sonne
+ *   (alle Tage: Zahl der schoenen Tage; ein Tag: sonnig vor teils sonnig vor bewoelkt, wie
+ *   das Symbol, nicht die einzelnen Prozent), dann die cm. 40 cm im
+ *   Nebel gehen vor 30 cm bei Sonne, 18 cm bei Sonne vor 25 cm im Nebel.
+ * $prio 'km': Fahrzeit.
+ * Bei Gleichstand gewinnt die naehere Region. Die Lawinenlage geht nicht ein.
+ */
+function schnee_sortieren(array $liste, string $nach, string $prio = 'pulver'): array
+{
+    if ($nach === 'km' || $prio === 'km') {
         $k = fn($e) => isset($e['fahrt']) ? [$e['fahrt']['min'] === null ? 1 : 0, $e['fahrt']['min'] ?? 0, $e['km']] : [0, $e['km'], 0];
         usort($liste, fn($a, $b) => $k($a) <=> $k($b));
         return $liste;
     }
     $tag = $liste && isset($liste[0]['tage'][$nach]) ? $nach : null;
-    $s = function (array $e) use ($tag): array {
+    $s = function (array $e) use ($tag, $prio): array {
+        if ($prio === 'neu') {
+            if ($tag === null) {
+                return [schnee_neu_stufe($e['neu_summe']), $e['schoene_tage'] ?? 0, $e['neu_summe'], -$e['km']];
+            }
+            $d = $e['tage'][$tag]['det'];
+            $sonne = $d['wolken'] === null ? 0 : ($d['wolken'] <= SCHNEE_SONNIG ? 2 : ($d['wolken'] <= SCHNEE_WOLKIG ? 1 : 0));
+            return [schnee_neu_stufe($d['neu24'] ?? null), $sonne, $d['neu24'] ?? 0, $d['neu72'] ?? 0, -$e['km']];
+        }
         if ($tag === null) {
             return [$e['pulver_max'], $e['neu_summe'], -$e['km']];
         }

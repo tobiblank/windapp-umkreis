@@ -122,7 +122,7 @@
       "hoehe_tal": 900,
       "zeitzone": "Europe/Rome",
       "warndienst": "euregio",
-      "eaws_namen": ["Ahrntal"],
+      "eaws": ["IT-32-BZ-08"],
       "stationen": {"suedtirol": ["bz1", "bz2", "bz3"]}
     },
     {

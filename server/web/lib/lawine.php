@@ -309,6 +309,27 @@ function lawine_max(array $b): int
     return $b['stufen'] ? max(array_column($b['stufen'], 'stufe')) : 0;
 }
 
+/**
+ * Warnzeichen zu einer Lage (seit 10.11.2026): ab Stufe 3 steht ein Dreieck bei der Region,
+ * ab Stufe 4 zusaetzlich rot umrandet. Die Reihenfolge der Rangliste aendert sich nicht.
+ * Stufe 3: Laut Lawinenwarndienst Bayern geschahen in den Bayerischen Alpen seit 1993/94
+ * 48 % der 52 toedlichen Lawinenunfaelle bei Stufe 3 (2022_toedl_Unfaelle_pro_Gefahrenstufe.pdf).
+ * Rueckgabe null (keine Lage, Stufe 0 bis 2) oder ['stufe', 'klasse' (warn-hoch|warn-erheblich), 'text']
+ */
+function lawine_warnung(?array $lage): ?array
+{
+    $s = $lage['stufe'] ?? 0;
+    if ($s >= 4) {
+        return ['stufe' => $s, 'klasse' => 'warn-hoch',
+                'text' => 'Lawinenwarnstufe ' . $s . ' (' . LAWINE_STUFEN_NAMEN[$s] . '): Lagebericht lesen, bevor du losfährst.'];
+    }
+    if ($s === 3) {
+        return ['stufe' => 3, 'klasse' => 'warn-erheblich',
+                'text' => 'Lawinenwarnstufe 3 (erheblich): Bei Stufe 3 passieren die meisten tödlichen Lawinenunfälle.'];
+    }
+    return null;
+}
+
 /** Ist der Warndienst einer Region fuer die Anzeige freigegeben (mindestens ein Praefix der Region)? */
 function lawine_freigegeben(array $region, array $dienste): bool
 {
