@@ -28,7 +28,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Hosting | Hetzner Webhosting, seit 7.11.2026 unter **wohinfahrma.de** (Ordner `public_html/wohinfahrma`, Let's Encrypt); wohinfahrma.dablank.de und www leiten dauerhaft um (`server/web/.htaccess`). Deploy per GitHub Action. Tarif Webhosting S: 2 PHP-Prozesse, `memory_limit` seit 8.11.2026 192M (Maximum des Tarifs, vorher 128M), PHP 8.4 (vorher 8.3); die Actions testen mit derselben Version |
 | Web-App zum Installieren | 7.11.2026: `manifest.php` (Name Wohinfahrma, unter dem Symbol „Fahrma“), `sw.js` und `offline.html` nach stegen-wind (nur Offline-Seite, nichts zwischengespeichert), Symbol als Platzhalter (`icon.svg`, PNG 192/512/180). Erst nach dem Umzug auf wohinfahrma.de auf dem Handy installieren. Hinweis „Als App installieren“ beim ersten Besuch (Chrome/Edge/Android mit Knopf, iPhone als Text), nach „Nicht jetzt“ 30 Tage Ruhe |
 | Quellen für Regionen | 7.11.2026 gesichtet, siehe „Quellen für Regionen und Spots“ |
-| Regel-Windlagen | 7.11.2026: Druckdifferenzen und Grundströmung statt Modellwind für Thermik- und Föhnlagen; Reschensee, Silvaplana, Gardasee Nord, Urnersee. 10.11.2026 dazu Walchensee, Achensee, Lago di Santa Croce; Kochelsee und Zeller See bewusst ohne (siehe `hinweis`). Stärken, Tageszeiten und Saison geschätzt, siehe „Regel-Windlagen“ |
+| Regel-Windlagen | 7.11.2026: Druckdifferenzen und Grundströmung statt Modellwind für Thermik- und Föhnlagen; Reschensee, Silvaplana, Gardasee Nord, Urnersee. 10.11.2026 dazu Walchensee, Achensee, Lago di Santa Croce und Föhn am Kochelsee (mit `fenster_ab` 6, weil er meist nur bis etwa 9 Uhr weht); Zeller See bewusst ohne (keine Quelle). Stärken, Tageszeiten und Saison geschätzt, siehe „Regel-Windlagen“ |
 | Verlauf über die Abrufe | 7.11.2026: dieselbe Chance aus bis zu drei früheren Abrufen, Pfeil in der Kachel und „stabil / steigt / fällt / schwankt“ in der Detailzeile, mit Zwischenspeicher; siehe „Verlauf über die Abrufe“ |
 | Landkarte | 7.11.2026: Regionen als Punkte über der Rangliste, eingefärbt nach der Chance am gewählten Tag, mit Umkreis; eigene SVG-Grundlage aus Natural Earth, keine fremden Server; siehe „Landkarte“ |
 | Fahrzeit und Abfahrt | 7.11.2026: Fahrzeit ab Inning laut openrouteservice (GitHub Action `fahrzeiten.yml`, braucht Secret `ORS_API_KEY`), sonst aus der Luftlinie geschätzt; „Abfahrt bis …“ an guten Tagen; Sortierung „Fahrzeit“; Umkreis nach Straßen-km. Echter ORS-Lauf am 7.11.2026: 40 von 40 Zielen; siehe „Fahrzeit und Abfahrt“ |
@@ -75,6 +75,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | `links` | optional, `[{name, url}]`: lokale Spezialprognose, auf der Seite als „Genauer: …“ verlinkt; nur `https://` |
 | `alplakes` | optional, nur Seen: Schlüssel des Simstrat-Seemodells bei [Alplakes](https://www.alplakes.eawag.ch/models), z. B. `ammersee`, `upperconstance`, `lucerneurnersee`. Damit holt der Sammler die Wassertemperatur (Quelle `seewasser`) |
 | `fremdprognose` | optional, `{name, url}` (seit 10.11.2026): kalibrierte Spezialprognose, deren Chance für Kite, Wing und Windsurf (ohne Wave) die eigene ersetzt; die Daten liest die Seite aus dem Ordner in `config.php` (`fremdprognosen`). Siehe „Fremde Prognosen“ |
+| `fenster_ab` | optional, ganze Stunde 5–9 (seit 10.11.2026): Tagesfenster beginnt früher als 9 Uhr, für Morgenwind (Föhn am Kochelsee), nie vor Sonnenaufgang |
 | `thermik` | optional, `true`: Thermik-See. Die Seite zeigt den Hinweis „Thermik“, weil das Modellmittel den Wind dort vermutlich unterschätzt |
 | `anreise` | optional, `["auto"]` (Standard), `["flug"]` oder `["auto", "flug"]`: in welcher Ansicht die Region erscheint. Reine Flugziele bekommen keine Fahrzeit |
 | `flughafen` | optional, `{name, transfer_min}`: Flughafen für die Ansicht „Flug“, Transfer zum Spot in Minuten (geschätzt) |
@@ -421,7 +422,7 @@ server/web/vorrechnen.php  Bewertung vorab rechnen (nur mit Schlüssel)
 8. Regel-Windlagen nach dem ersten echten Lauf prüfen (Druckniveaus im Ensemble, plausible Tage); Stärken aus eigener Erfahrung eintragen
 9. Google Search Console: Impressum und Datenschutz prüfen, Domain bestätigen, `indexieren` einschalten, Sitemap einreichen (siehe „Suchmaschinen“)
 10. Schnee-Modus nach dem ersten echten Lauf prüfen (siehe `SCHNEE.md`, „Beim ersten echten Lauf prüfen“); Mikroregion-IDs eintragen; Bayern und Tirol freigeben, sobald die Warndienste antworten
-11. Später: weitere Regeln (Kochelsee, Zeller See, Comer See, Mistral), Stärke nach Druckdifferenz staffeln (Vorbild Marcos Pelèr-Tabelle), Spot-Meldungen, Korrektur je Spot aus Sessions
+11. Später: weitere Regeln (Zeller See, Comer See, Mistral), Pelèr am Gardasee mit `fenster_ab` prüfen, Stärke nach Druckdifferenz staffeln (Vorbild Marcos Pelèr-Tabelle), Spot-Meldungen, Korrektur je Spot aus Sessions
 
 ### Ideen, in dieser Reihenfolge (7.11.2026)
 

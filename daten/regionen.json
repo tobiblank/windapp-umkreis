@@ -319,8 +319,14 @@
       "zeitzone": "Europe/Berlin",
       "alplakes": "kochelsee",
       "thermik": true,
-      "hinweis": "Entwurf (Claude), ungeprüft: Ohne Windlagen (grob), weil die Richtung von Spot zu Spot wechselt oder nicht sicher bekannt ist. Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Kleiner See: die Gitterzelle liegt womöglich an Land. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert. Stand 10.11.2026: keine Regel-Windlage. surf-magazin.de (Surfen in Bayern) beschreibt am Kochelsee vor allem Föhn aus Süd (Föhndiagramm über 4 hPa, Stationspaar nicht genannt), der aber meist nur bis etwa 9 Uhr weht und damit vor dem Tagesfenster der App liegt; die Thermik dort beschreibt der Artikel nur für den Walchensee.",
-      "windlagen": [],
+      "hinweis": "Föhn-Regel seit 10.11.2026 (Wunsch Tobias: am Kochelsee viele Frühaufsteher, die den Föhn nutzen). Nach surf-magazin.de (Surfen in Bayern): Föhn aus Süd über die Alpen, bei abziehendem Hoch im Osten und Tief über Norditalien; gute Chance für Kochel und Tegernsee, wenn das Föhndiagramm über 4 hPa steigt (Stationspaar dort nicht genannt); meist nur bis etwa 9 Uhr, also früh hin und Webcam prüfen; unberechenbar, bricht manchmal nicht durch; Beispiel 8 Bft an Neujahr. Geschätzt (Claude): Druckdifferenz Bozen − Innsbruck ab 4 hPa (Föhndiagramm wie bei kitewetter.at), Sektor 150–230°, Zeit 6–10 Uhr (bis 10, damit im Winter nach Sonnenaufgang um 8 Uhr noch 2 Stunden bleiben), Stärke 16–28 kn, keine Saison. Tagesfenster ab 6 Uhr (fenster_ab), nie vor Sonnenaufgang. Thermik am Kochelsee beschreibt die Quelle nicht, deshalb keine. Kleiner See: die Gitterzelle liegt womöglich an Land. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "fenster_ab": 6,
+      "infos": [
+        {"art": "tipp", "text": "Föhn weht meist nur bis etwa 9 Uhr: früh hinfahren und vorher die Webcam prüfen; er bricht nicht immer durch", "quelle": "surf-magazin.de"}
+      ],
+      "windlagen": [
+        {"name": "Föhn (Süd)", "sektor": [150, 230], "charakter": "böig, früh morgens", "druck": [{"plus": "bozen", "minus": "innsbruck", "min": 4}], "zeit": [6, 10], "staerke": [16, 28]}
+      ],
       "spots": []
     },
     {

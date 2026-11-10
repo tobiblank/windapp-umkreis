@@ -687,11 +687,12 @@ function sektor_mitte(array $s): float
 // ===================================================================
 
 /** [ab, bis) in Ortsstunden: 9 Uhr (oder Sonnenaufgang, wenn spaeter) bis Sonnenuntergang, gerundet */
-function tagesfenster(string $tag, DateTimeZone $tz, float $lat, float $lon): array
+function tagesfenster(string $tag, DateTimeZone $tz, float $lat, float $lon, int $ab = FENSTER_AB): array
 {
+    // $ab: frueherer Beginn fuer Regionen mit Morgenwind (Katalogfeld fenster_ab, seit 10.11.2026),
+    // nie vor Sonnenaufgang
     $mittag = new DateTimeImmutable("$tag 12:00", $tz);
     $sonne = date_sun_info($mittag->getTimestamp(), $lat, $lon);
-    $ab = FENSTER_AB;
     $bis = 18;
     if (is_int($sonne['sunrise'] ?? null)) {
         $auf = (new DateTimeImmutable('@' . $sonne['sunrise']))->setTimezone($tz);
@@ -934,6 +935,12 @@ function ensemble_chance(array $laeufe, string $tag, array $fenster, array $spor
 // REGION
 // ===================================================================
 
+/** Beginn des Tagesfensters einer Region: fenster_ab aus dem Katalog (Morgenwind wie Foehn am Kochelsee), sonst FENSTER_AB */
+function region_fenster_ab(array $region): int
+{
+    return (int)($region['fenster_ab'] ?? FENSTER_AB);
+}
+
 /**
  * Bewertung einer Region fuer die angegebenen Tage.
  * $daten: ['vorhersage' => eintrag|null, 'ensemble' => eintrag|null, 'welle' => eintrag|null]
@@ -959,7 +966,7 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
 
     $out = [];
     foreach ($tage as $tag) {
-        [$fenster, $rest, $vorbei] = restfenster(tagesfenster($tag, $tz, (float)$lat, (float)$lon), $tag, $tz, $jetzt);
+        [$fenster, $rest, $vorbei] = restfenster(tagesfenster($tag, $tz, (float)$lat, (float)$lon, region_fenster_ab($region)), $tag, $tz, $jetzt);
         $sperre = region_sperre($region, $sport, (int)substr($tag, 5, 2));
         if ($vorbei) {
             $leer = ['geht' => false, 'stunden' => 0, 'grund' => 'Tag vorbei'];

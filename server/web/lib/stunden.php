@@ -40,7 +40,7 @@ function region_stunden(array $region, array $daten, array $sport, string $tag, 
     }
     $tz = new DateTimeZone($region['zeitzone']);
     $bew = fremd_einmischen($region, region_bewerten($region, $daten, $sport, [$tag], $jetzt), $sport, $jetzt)[$tag];
-    $fenster = tagesfenster($tag, $tz, (float)$region['punkt'][0], (float)$region['punkt'][1]);
+    $fenster = tagesfenster($tag, $tz, (float)$region['punkt'][0], (float)$region['punkt'][1], region_fenster_ab($region));
 
     $vh = vorhersage_stunden($daten['vorhersage'], $tz);
     $ws = welle_stunden($daten['welle'] ?? null, $tz);

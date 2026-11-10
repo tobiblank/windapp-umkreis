@@ -77,6 +77,9 @@ echo "Tagesfenster\n";
 pruefe($ab === 9 && $bis === 17, "Ammersee 7.11.: 9 bis 17 Uhr (ist $ab bis $bis)");
 [$ab, $bis] = tagesfenster('2026-06-21', new DateTimeZone('Europe/Berlin'), 48.0, 11.13);
 pruefe($ab === 9 && $bis === 21, "Ammersee 21.6.: 9 bis 21 Uhr (ist $ab bis $bis)");
+pruefe(tagesfenster('2026-06-21', new DateTimeZone('Europe/Berlin'), 47.645, 11.345, 6)[0] === 6, 'fenster_ab 6: im Juni ab 6 Uhr');
+pruefe(tagesfenster('2026-12-10', new DateTimeZone('Europe/Berlin'), 47.645, 11.345, 6)[0] === 8, 'fenster_ab 6: im Dezember erst ab Sonnenaufgang (8 Uhr)');
+pruefe(region_fenster_ab(['id' => 'x']) === FENSTER_AB && region_fenster_ab(['fenster_ab' => 6]) === 6, 'Beginn je Region aus dem Katalog');
 
 echo "Landkarte\n";
 $svg = (string)file_get_contents("$ROOT/server/web/karte.svg");
@@ -285,6 +288,17 @@ pruefe($td && $td['det']['geht'] && $td['det']['regel'] && $td['det']['von'] ===
 pruefe($td && abs($td['det']['mittel_kn'] - 19) < 1e-9 && $td['det']['boe_max'] === null && $td['det']['staerke'] === [16, 22],
        'Druckregel: typische Stärke 19 kn (Mitte 16-22), keine Böen');
 pruefe($td && abs($td['ens']['chance'] - 1.0) < 1e-9, 'Druckregel morgen: alle Ensemble-Läufe');
+// Fruehes Fenster (seit 10.11.2026, Foehn am Kochelsee): fenster_ab und Regel bis 10 Uhr
+$frueh = $byId['testsee-druck']['region'];
+$frueh['fenster_ab'] = 6;
+$frueh['windlagen'] = [['name' => 'Föhn', 'sektor' => [150, 230], 'druck' => $frueh['windlagen'][0]['druck'], 'zeit' => [6, 10], 'staerke' => [16, 28]]];
+$fr = region_bewerten($frueh, region_daten($frueh, $stand), $kite, [$morgen], new DateTimeImmutable('today 06:00', new DateTimeZone('Europe/Berlin')))[$morgen];
+$sonnenAb = tagesfenster($morgen, new DateTimeZone('Europe/Berlin'), (float)$frueh['punkt'][0], (float)$frueh['punkt'][1], 6)[0];
+pruefe($fr['det']['geht'] && $fr['det']['von'] === $sonnenAb && $fr['det']['bis'] === 10 && $fr['fenster'][0] === $sonnenAb && $sonnenAb < FENSTER_AB,
+       "fenster_ab 6: Morgenregel geht ab Sonnenaufgang ($sonnenAb Uhr) bis 10 Uhr" . ($fr['det']['geht'] ? " (ist {$fr['det']['von']}-{$fr['det']['bis']})" : ' (geht nicht: ' . $fr['det']['grund'] . ')'));
+unset($frueh['fenster_ab']);
+$fr9 = region_bewerten($frueh, region_daten($frueh, $stand), $kite, [$morgen], new DateTimeImmutable('today 06:00', new DateTimeZone('Europe/Berlin')))[$morgen];
+pruefe(!$fr9['det']['geht'], 'ohne fenster_ab: dieselbe Morgenregel bleibt vor dem Fenster ab 9 Uhr (1 Stunde reicht nicht)');
 $td2 = $byId['testsee-druck']['tage'][$uebermorgen] ?? null;
 pruefe($td2 && !$td2['det']['geht'] && $td2['det']['grund'] === 'Druckdifferenz passt nicht' && abs($td2['ens']['chance']) < 1e-9,
        'Druckregel übermorgen: A−B < 0 → Druckdifferenz passt nicht, 0 %');

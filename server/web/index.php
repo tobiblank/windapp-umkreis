@@ -860,7 +860,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
         <a class="tag <?= stufe($c) ?><?= $nach === $t ? ' gewaehlt' : '' ?>" href="<?= h(stunden_link($r, $t)) ?>" title="<?= h(($c === null ? 'keine Ensemble-Daten' : zahl(100 * $c) . (!empty($d['fremd']) ? ' % laut Vorhersage von ' . $d['fremd']['name'] : ' % der Läufe'))
                                                      . (!empty($d['rest']) ? ', nur noch ' . $d['fenster'][0] . '–' . $d['fenster'][1] . ' Uhr' : '')
                                                      . ($tr ? '. ' . trend_titel($tr, $tzSeite, $heute) : '')) ?>">
-          <span class="t"><?= h(tag_kurz($t, $heute)) ?><?= !empty($d['rest']) && $d['fenster'][0] > FENSTER_AB ? ' ab ' . $d['fenster'][0] : '' ?></span>
+          <span class="t"><?= h(tag_kurz($t, $heute)) ?><?= !empty($d['rest']) && $d['fenster'][0] > region_fenster_ab($r) ? ' ab ' . $d['fenster'][0] : '' ?></span>
           <span class="w"><?= $c === null ? ($d['det']['geht'] ? 'ja' : '–') : zahl(100 * $c) . '<small>%</small>' ?></span>
           <?php if ($pfeil): ?><span class="v <?= $tr['art'] ?>"><?= $tr['art'] === 'steigt' ? '↑' : '↓' ?> von <?= zahl(100 * $tr['werte'][0]) ?></span><?php endif ?>
         </a>

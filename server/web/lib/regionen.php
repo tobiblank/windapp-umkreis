@@ -7,6 +7,8 @@
  *           windlagen [{name, sektor [von, bis], charakter?}], spots [...],
  *           links? [{name, url}] (lokale Spezialprognose, nur verlinkt),
  *           thermik? true (Modellwind unterschaetzt den Wind vermutlich; auf der Seite markiert)
+ *           fenster_ab? Stunde 5-9 (seit 10.11.2026): Tagesfenster frueher beginnen, fuer Morgenwind
+ *           (Foehn am Kochelsee); nie vor Sonnenaufgang. Standard FENSTER_AB (9 Uhr)
  *           fremdprognose? {name, url} (seit 10.11.2026: kalibrierte Spezialprognose, deren Chance
  *           fuer Kite, Wing und Windsurf die eigene ersetzt; Ordner der Daten in config.php 'fremdprognosen')
  *           alplakes? "ammersee": Schluessel des Simstrat-Seemodells bei Alplakes (Eawag),
@@ -137,6 +139,9 @@ function regionen_pruefen(array $d): array
         }
         if (isset($r['alplakes']) && (($r['typ'] ?? '') !== 'see' || !is_string($r['alplakes']) || !preg_match('/^[a-z0-9]+$/', $r['alplakes']))) {
             $f[] = "$wo: alplakes nur bei Seen, als Schluessel des Simstrat-Modells (a-z, 0-9)";
+        }
+        if (isset($r['fenster_ab']) && (!is_int($r['fenster_ab']) || $r['fenster_ab'] < 5 || $r['fenster_ab'] > 9)) {
+            $f[] = "$wo: fenster_ab muss eine ganze Stunde von 5 bis 9 sein";
         }
         if (isset($r['fremdprognose']) && (!is_array($r['fremdprognose']) || empty($r['fremdprognose']['name'])
             || !is_string($r['fremdprognose']['url'] ?? null) || !preg_match('#^https://[^\s"<>]+$#', $r['fremdprognose']['url']))) {
