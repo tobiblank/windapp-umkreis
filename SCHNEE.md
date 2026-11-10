@@ -28,7 +28,7 @@ Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnst
 
 | Messstationen (seit 9.11.2026) | `lib/stationen.php`, Sammler-Quelle `stationen` (stündlich als Cronjob, in der Action bei jedem Lauf, auch um 7:40 UTC). Gemessene Schneehöhe und ihre Änderung in 24 h je Region unter den Kacheln (nur „Heute – Übermorgen“) und auf der Stundenseite für heute, siehe „Messstationen“ |
 
-| Orte auf der Karte (seit 10.11.2026) | `karte_orte()` in `lib/karte.php`, auch im Wind-Modus: Städte als kleiner grauer Punkt mit Namen (kursiv), große immer, Alpenorte ab einem Ausschnitt bis 10 Längengrade. Ein Ort entfällt, wenn er einen Regionspunkt, einen Regionsnamen oder das Männchen verdecken würde (Innsbruck und Bozen fallen deshalb im vollen Schnee-Umkreis meist weg). Koordinaten aus dem Gedächtnis, auf rund 1 km |
+| Orte auf der Karte (seit 10.11.2026) | Schnee-Modus: feste Auswahl von Tobias `KARTE_ORTE_SCHNEE` in `lib/karte.php` (Salzburg, Wien, Innsbruck, Bozen, Livigno, Oberstdorf, St. Anton), immer gezeigt, sofern im Ausschnitt; vor den Regionsnamen gesetzt (die weichen aus) und über den Regionspunkten gezeichnet. Wien liegt erst ab einem größeren Umkreis im Ausschnitt. Wind-Modus: `KARTE_ORTE`, große Städte immer, Alpenorte ab einem Ausschnitt bis 10 Längengrade, nur wo nichts verdeckt wird. Koordinaten aus dem Gedächtnis, auf rund 1 km |
 
 Nicht gebaut: Verlauf über die Abrufe, Mikroregionen als Polygone auf der Karte, feinere Alpen-Karte, Roadtrip.
 

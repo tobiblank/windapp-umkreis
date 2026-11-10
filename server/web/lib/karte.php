@@ -199,18 +199,19 @@ function karte_ausschnitt(array $punkte): array
  * so las sich Silvaplana als Name des Reschensees. Seitlich reicht KARTE_NAME_SEITE x $rp.
  * $punkte: [schluessel => ['xy' => [x, y], 'name' => string, 'rang' => float]]
  * Rueckgabe [schluessel => 'rechts' | 'links'], fehlend = kein Name.
- * $boxen bekommt die Flaechen der gesetzten Namen (fuer karte_orte()).
+ * $boxen bekommt die Flaechen der gesetzten Namen (fuer karte_orte()); $vorbelegt sind schon
+ * belegte Flaechen (feste Orte im Schnee-Modus, seit 10.11.2026).
  */
 const KARTE_NAME_UNTER = 1.8;  // fremder Punkt ueber/unter dem Namen: Mindestabstand zur Mitte, in Punktgroessen
 const KARTE_NAME_SEITE = 1.0;  // fremder Punkt seitlich vom Namen
 
-function karte_namen(array $punkte, float $rp, array $ausschnitt, ?array &$boxen = null): array
+function karte_namen(array $punkte, float $rp, array $ausschnitt, ?array &$boxen = null, array $vorbelegt = []): array
 {
     [$vx, $vy, $vw, $vh] = $ausschnitt;
     $schrift = $rp;
     uasort($punkte, fn($a, $b) => $b['rang'] <=> $a['rang']);
     // Belegte Flaechen: zuerst alle Punkte, dann die gesetzten Namen
-    $belegt = [];
+    $belegt = $vorbelegt;
     foreach ($punkte as $p) {
         $belegt[] = [$p['xy'][0] - $rp, $p['xy'][1] - $rp, $p['xy'][0] + $rp, $p['xy'][1] + $rp];
     }
@@ -288,13 +289,27 @@ const KARTE_ORTE = [
 ];
 
 /**
+ * Schnee-Modus (seit 10.11.2026, Auswahl Tobias): nur diese Orte, Stufe 0 = fest. Sie stehen
+ * immer da (sofern im Ausschnitt), werden vor den Regionsnamen gesetzt und duerfen notfalls
+ * unter einem Regionspunkt liegen. Livigno, Oberstdorf und St. Anton liegen an Regionspunkten;
+ * deren Regionsname weicht dann dem Ortsnamen.
+ */
+const KARTE_ORTE_SCHNEE = [
+    ['Salzburg', 47.800, 13.044, 0], ['Wien', 48.208, 16.373, 0], ['Innsbruck', 47.269, 11.404, 0],
+    ['Bozen', 46.498, 11.354, 0], ['Livigno', 46.538, 10.136, 0], ['Oberstdorf', 47.409, 10.279, 0],
+    ['St. Anton', 47.127, 10.268, 0],
+];
+
+/**
  * Welche Orte passen in den Ausschnitt, ohne Regionspunkte, deren Namen, den Standort oder
  * einander zu verdecken? Erst Stufe 1, dann Stufe 2; Name rechts, links, darueber oder darunter,
  * sonst kein Ort.
  * $frei: Liste von [x, y] (Punkte, Standort), $boxen: Namensflaechen aus karte_namen().
+ * Stufe 0 (fest): Punkt immer, Name an der ersten freien Seite, sonst rechts (bzw. die erste
+ * Seite im Ausschnitt), auch ueber einem Regionspunkt. $gesetzt bekommt die belegten Flaechen.
  * Rueckgabe Liste ['name', 'xy', 'seite', 'stufe'].
  */
-function karte_orte(array $ausschnitt, float $rp, array $punkte, array $boxen, array $orte = KARTE_ORTE): array
+function karte_orte(array $ausschnitt, float $rp, array $punkte, array $boxen, array $orte = KARTE_ORTE, ?array &$gesetzt = null): array
 {
     [$vx, $vy, $vw, $vh] = $ausschnitt;
     $schrift = $rp * 0.85;
@@ -323,20 +338,29 @@ function karte_orte(array $ausschnitt, float $rp, array $punkte, array $boxen, a
             'unten'  => [$x - $b / 2, $y + $rp * 0.4, $x + $b / 2, $y + $rp * 0.4 + $schrift * 1.1],
         ];
         $ueber = fn(array $a, array $o) => $a[0] < $o[2] && $a[2] > $o[0] && $a[1] < $o[3] && $a[3] > $o[1];
-        if (array_filter($belegt, fn($o) => $ueber($dot, $o))) {
+        $fest = $stufe === 0;
+        if (!$fest && array_filter($belegt, fn($o) => $ueber($dot, $o))) {
             continue;
         }
+        $notfall = null;
+        $wahl = null;
         foreach ($kandidaten as $seite => $box) {
             if ($box[0] < $vx || $box[2] > $vx + $vw || $box[1] < $vy || $box[3] > $vy + $vh) {
                 continue;
             }
+            $notfall ??= [$seite, $box];
             if (array_filter($belegt, fn($o) => $ueber($box, $o))) {
                 continue;
             }
-            $out[] = ['name' => $name, 'xy' => [$x, $y], 'seite' => $seite, 'stufe' => $stufe];
-            $belegt[] = $box;
-            $belegt[] = $dot;
+            $wahl = [$seite, $box];
             break;
+        }
+        $wahl ??= $fest ? $notfall : null;
+        if ($wahl) {
+            $out[] = ['name' => $name, 'xy' => [$x, $y], 'seite' => $wahl[0], 'stufe' => $stufe];
+            $belegt[] = $wahl[1];
+            $belegt[] = $dot;
+            $gesetzt[] = $wahl[1];
         }
     }
     return $out;
@@ -358,7 +382,7 @@ function karte_orte_svg(array $orte, float $rp): string
             default  => [$x, $y + $rp * 0.4 + $rp * 0.85 * 0.85, ' mitte'],
         };
         $s .= '<circle cx="' . round($x, 2) . '" cy="' . round($y, 2) . '" r="' . round($rp * 0.22, 2) . '"/>'
-            . '<text class="' . trim(($o['stufe'] === 1 ? 'gross' : '') . $anker) . '" x="' . round($tx, 2)
+            . '<text class="' . trim(($o['stufe'] <= 1 ? 'gross' : '') . $anker) . '" x="' . round($tx, 2)
             . '" y="' . round($ty, 2) . '" font-size="' . round($rp * 0.85, 2) . '" stroke-width="' . round($rp * 0.25, 2) . '">'
             . htmlspecialchars($o['name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</text>';
     }

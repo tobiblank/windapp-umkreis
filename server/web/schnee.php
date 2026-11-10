@@ -490,9 +490,10 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
     usort($punkte, fn($a, $b) => $a['wert']['rang'] <=> $b['wert']['rang']);
     [$vx, $vy, $vw, $vh] = karte_ausschnitt(array_merge([$heimXY], array_column($punkte, 'xy')));
     $rp = $vw / 42;
-    $namen = karte_namen(array_map(fn($p) => ['xy' => $p['xy'], 'name' => $p['e']['region']['name'], 'rang' => $p['wert']['rang']], $punkte), $rp, [$vx, $vy, $vw, $vh], $namenBoxen);
-    // Orte zur Orientierung (seit 10.11.2026), frei von Punkten, Namen und Maennchen
-    $orte = karte_orte([$vx, $vy, $vw, $vh], $rp, array_merge(array_column($punkte, 'xy'), [$heimXY, [$heimXY[0], $heimXY[1] - $rp * 1.5]]), $namenBoxen ?? []);
+    // Feste Orte zur Orientierung (seit 10.11.2026, Auswahl Tobias) vor den Regionsnamen,
+    // frei vom Maennchen; die Regionsnamen weichen ihnen aus
+    $orte = karte_orte([$vx, $vy, $vw, $vh], $rp, array_merge(array_column($punkte, 'xy'), [$heimXY, [$heimXY[0], $heimXY[1] - $rp * 1.5]]), [], KARTE_ORTE_SCHNEE, $ortBoxen);
+    $namen = karte_namen(array_map(fn($p) => ['xy' => $p['xy'], 'name' => $p['e']['region']['name'], 'rang' => $p['wert']['rang']], $punkte), $rp, [$vx, $vy, $vw, $vh], $namenBoxen, $ortBoxen ?? []);
     // Neuschnee-Raster (seit 9.11.2026): Zellen mit eigenem Modellwert, Tage wie bei den Punkten
     // (am gewaehlten Tag oder Summe im Zeitraum; heute nicht mehr, wenn das Tourenfenster vorbei ist)
     $raster = schnee_raster_laden($dataDir);
@@ -536,7 +537,6 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
     </g>
     <?php endif ?>
     <circle class="umkreis" cx="<?= round($heimXY[0], 1) ?>" cy="<?= round($heimXY[1], 1) ?>" r="<?= round(karte_km((float)$km, $heim[0]), 1) ?>"/>
-    <?= karte_orte_svg($orte, $rp) ?>
     <?php foreach ($punkte as $nr => $p):
         $r = $p['e']['region'];
         $n = $p['wert']['neu'];
@@ -563,6 +563,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
       <?php if (isset($namen[$nr])): $rechts = $namen[$nr] === 'rechts'; ?><text class="name<?= $rechts ? '' : ' links' ?>" x="<?= round($p['xy'][0] + ($rechts ? 1 : -1) * $rp * 1.3, 2) ?>" y="<?= round($p['xy'][1] + $rp * 0.35, 2) ?>" font-size="<?= round($rp, 2) ?>" stroke-width="<?= round($rp * 0.3, 2) ?>"><?= h($r['name']) ?></text><?php endif ?>
     </a>
     <?php endforeach ?>
+    <?= karte_orte_svg($orte, $rp) // feste Orte ueber den Regionspunkten, damit kein Name verdeckt wird ?>
     <?php
         // Maennchen (Animation seit 9.11.2026 wie im Wind-Modus, lib/maennchen.js): zeigt auf die
         // beste Region mit Pulvertag (bei "alle Tage" die mit dem meisten Neuschnee am besten
