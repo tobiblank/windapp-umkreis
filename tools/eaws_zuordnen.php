@@ -60,7 +60,7 @@ foreach ($baum as $p) {
 echo 'Namen: ' . count($namen) . "\n";
 
 // Polygone der benoetigten Praefixe
-$praefixe = ['AT-07', 'AT-08', 'DE-BY', 'IT-32-BZ', 'IT-25-SO-LI', 'IT-25', 'CH'];
+$praefixe = ['AT-02', 'AT-05', 'AT-06', 'AT-07', 'AT-08', 'DE-BY', 'IT-32-BZ', 'IT-25-SO-LI', 'IT-25', 'CH'];
 $flaechen = [];
 foreach ($baum as $p) {
     foreach ($praefixe as $pr) {
