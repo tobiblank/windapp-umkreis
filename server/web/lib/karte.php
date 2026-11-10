@@ -297,7 +297,7 @@ const KARTE_ORTE = [
 const KARTE_ORTE_SCHNEE = [
     ['Salzburg', 47.800, 13.044, 0], ['Wien', 48.208, 16.373, 0], ['Innsbruck', 47.269, 11.404, 0],
     ['Bozen', 46.498, 11.354, 0], ['Livigno', 46.538, 10.136, 0], ['Oberstdorf', 47.409, 10.279, 0],
-    ['St. Anton', 47.127, 10.268, 0],
+    ['St. Anton', 47.127, 10.268, 0], ['Bad Tölz', 47.760, 11.557, 0], ['Garmisch', 47.492, 11.095, 0],
 ];
 
 /**
