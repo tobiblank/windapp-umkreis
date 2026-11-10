@@ -39,6 +39,9 @@ const LAWINE_PROBLEME = [
 const LAWINE_ASPEKTE = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const LAWINE_ASPEKTE_DE = ['N' => 'N', 'NE' => 'NO', 'E' => 'O', 'SE' => 'SO', 'S' => 'S', 'SW' => 'SW', 'W' => 'W', 'NW' => 'NW'];
 const LAWINE_SUCHTAGE = 2;   // so viele UTC-Tage Sammler-Dateien zurueck lesen
+const LAWINE_ALT_STUNDEN = 13;   // letzter guter Abruf aelter: Hinweis "nicht aktuell" (lawine_stoerung)
+const LAWINE_ZEITEN = ['all_day' => '', 'earlier' => 'vormittags', 'later' => 'nachmittags'];
+const LAWINE_HAFTUNG = 'Die Lawinenlage stammt vom Warndienst, ohne Gewähr. Sie ersetzt weder den aktuellen Lagebericht auf dessen Website noch die eigene Beurteilung vor Ort. Wohinfahrma bewertet nur Schnee und Wetter.';
 
 // ===================================================================
 // EINLESEN
@@ -195,8 +198,11 @@ function lawine_url(array $dienst, string $datum): string
  * Neueste Berichte je Dienst aus den Sammler-Dateien (lawine/<lauf>.ndjson.gz oder
  * lawine/<tag>.ndjson). Eine Zeile je Dienst und Abruf:
  *   {"ts", "source": "lawine", "ok", "dienst", "tage": {datum: [bulletins]|null}}
- * Rueckgabe [dienst => ['ts' => ..., 'bulletins' => [...]]]; je Dienst die
- * neueste Zeile, darin alle abgerufenen Tage zusammen.
+ * Rueckgabe [dienst => ['ts' => ..., 'bulletins' => [...], 'versuch' => ts, 'versuch_ok' => bool]];
+ * je Dienst die neueste gute Zeile, darin alle abgerufenen Tage zusammen. Seit 10.11.2026
+ * auch der neueste Abrufversuch ueberhaupt (versuch, versuch_ok), damit die Seite eine
+ * Stoerung anzeigen kann (Hinweise des LWD Bayern: Ausfaelle deutlich kennzeichnen).
+ * Ein Dienst nur mit fehlgeschlagenen Versuchen steht mit 'ts' => '' und ohne Berichte da.
  */
 function lawine_laden(string $dataDir, ?int $jetzt = null): array
 {
@@ -208,6 +214,7 @@ function lawine_laden(string $dataDir, ?int $jetzt = null): array
     }
     rsort($dateien);
     $out = [];
+    $versuch = [];
     foreach ($dateien as $f) {
         $txt = (string)@file_get_contents($f);
         if (str_ends_with($f, '.gz')) {
@@ -217,6 +224,9 @@ function lawine_laden(string $dataDir, ?int $jetzt = null): array
         foreach ($zeilen as $z) {
             $j = json_decode($z, true);
             $d = $j['dienst'] ?? null;
+            if (is_array($j) && is_string($d) && (string)($j['ts'] ?? '') > ($versuch[$d][0] ?? '')) {
+                $versuch[$d] = [(string)$j['ts'], !empty($j['ok'])];
+            }
             if (!is_array($j) || empty($j['ok']) || !is_string($d) || isset($out[$d]) || !is_array($j['tage'] ?? null)) {
                 continue;
             }
@@ -235,25 +245,59 @@ function lawine_laden(string $dataDir, ?int $jetzt = null): array
             $out[$d] = ['ts' => (string)($j['ts'] ?? ''), 'bulletins' => $b];
         }
     }
+    foreach ($versuch as $d => [$ts, $ok]) {
+        $out[$d] ??= ['ts' => '', 'bulletins' => []];
+        $out[$d]['versuch'] = $ts;
+        $out[$d]['versuch_ok'] = $ok;
+    }
     return $out;
 }
 
 /**
- * Lage einer Schnee-Region an einem Ortstag: Bericht, der um 12 Uhr Ortszeit gilt,
+ * Stoerung beim Abruf eines Warndiensts (seit 10.11.2026) oder null. Gestoert heisst:
+ * gar keine Daten, der letzte Versuch ist fehlgeschlagen oder der letzte gute Abruf ist
+ * aelter als LAWINE_ALT_STUNDEN (Laeufe 6:25, 8:40, 18:25 Uhr: laengste Luecke 10 h).
+ * Rueckgabe ['text' => ..., 'stand' => ts|''] fuer den Hinweis auf der Seite.
+ */
+function lawine_stoerung(?array $lage, ?int $jetzt = null): ?array
+{
+    $jetzt ??= time();
+    $stand = (string)($lage['ts'] ?? '');
+    $t = $stand !== '' ? strtotime($stand) : false;
+    if (!$lage || $t === false) {
+        return ['text' => 'Die Daten des Warndiensts konnten nicht abgerufen werden.', 'stand' => ''];
+    }
+    if (isset($lage['versuch_ok']) && !$lage['versuch_ok']) {
+        return ['text' => 'Der letzte Abruf beim Warndienst ist fehlgeschlagen. Ein neuerer Bericht kann fehlen.', 'stand' => $stand];
+    }
+    if ($jetzt - $t > LAWINE_ALT_STUNDEN * 3600) {
+        return ['text' => 'Die Daten des Warndiensts wurden länger nicht aktualisiert. Ein neuerer Bericht kann fehlen.', 'stand' => $stand];
+    }
+    return null;
+}
+
+/**
+ * Lage einer Schnee-Region an einem Ortstag: Bericht, der um 12 Uhr Ortszeit gilt
+ * (heute ab Mittag: der Bericht, der jetzt gilt; seit 10.11.2026, damit nach 17 Uhr kein
+ * abgelaufener Bericht als aktuell erscheint),
  * fuer die Mikroregionen der Region (eaws: Praefix der regionID; ohne eaws ueber
  * eaws_namen, Teil des Namens). Bei mehreren Mikroregionen gilt die hoechste Stufe.
  * Rueckgabe null (kein Bericht fuer diesen Tag) oder
  *   ['stufe' => max, 'teile' => [stufen], 'probleme' => [...], 'veroeffentlicht', 'von', 'bis',
  *    'regionen' => [[id, name]], 'ueber_namen' => bool]
  */
-function lawine_lage(array $region, array $lagen, string $tag): ?array
+function lawine_lage(array $region, array $lagen, string $tag, ?int $jetzt = null): ?array
 {
     $lage = $lagen[$region['warndienst'] ?? ''] ?? null;
-    if (!$lage) {
+    if (!$lage || !$lage['bulletins']) {
         return null;
     }
+    $jetzt ??= time();
     $tz = new DateTimeZone($region['zeitzone']);
     $mittag = (new DateTimeImmutable("$tag 12:00", $tz))->getTimestamp();
+    if ($tag === (new DateTimeImmutable('@' . $jetzt))->setTimezone($tz)->format('Y-m-d')) {
+        $mittag = max($mittag, $jetzt);
+    }
     $eaws = $region['eaws'] ?? [];
     $namen = $region['eaws_namen'] ?? [];
     $treffer = [];
@@ -312,6 +356,8 @@ function lawine_max(array $b): int
 /**
  * Warnzeichen zu einer Lage (seit 10.11.2026): ab Stufe 3 steht ein Dreieck bei der Region,
  * ab Stufe 4 zusaetzlich rot umrandet. Die Reihenfolge der Rangliste aendert sich nicht.
+ * Der Text ist ein eigener Hinweis, kein Inhalt des Warndiensts, und beginnt deshalb mit
+ * "Hinweis von Wohinfahrma:" (Hinweise des LWD Bayern: eigene Bewertungen trennen).
  * Stufe 3: Laut Lawinenwarndienst Bayern geschahen in den Bayerischen Alpen seit 1993/94
  * 48 % der 52 toedlichen Lawinenunfaelle bei Stufe 3 (2022_toedl_Unfaelle_pro_Gefahrenstufe.pdf).
  * Rueckgabe null (keine Lage, Stufe 0 bis 2) oder ['stufe', 'klasse' (warn-hoch|warn-erheblich), 'text']
@@ -321,11 +367,11 @@ function lawine_warnung(?array $lage): ?array
     $s = $lage['stufe'] ?? 0;
     if ($s >= 4) {
         return ['stufe' => $s, 'klasse' => 'warn-hoch',
-                'text' => 'Lawinenwarnstufe ' . $s . ' (' . LAWINE_STUFEN_NAMEN[$s] . '): Lagebericht lesen, bevor du losfährst.'];
+                'text' => 'Hinweis von Wohinfahrma: Lawinenwarnstufe ' . $s . ' (' . LAWINE_STUFEN_NAMEN[$s] . '). Lagebericht lesen, bevor du losfährst.'];
     }
     if ($s === 3) {
         return ['stufe' => 3, 'klasse' => 'warn-erheblich',
-                'text' => 'Lawinenwarnstufe 3 (erheblich): Bei Stufe 3 passieren die meisten tödlichen Lawinenunfälle.'];
+                'text' => 'Hinweis von Wohinfahrma: Lawinenwarnstufe 3 (erheblich). Bei Stufe 3 passieren die meisten tödlichen Lawinenunfälle.'];
     }
     return null;
 }
@@ -364,11 +410,27 @@ function lawine_hoehe_text(?string $h): ?string
 
 /**
  * "3 erheblich über 2.200 m, 2 mäßig unter 2.200 m"; mit $nachAbzeichen (das Abzeichen
- * davor zeigt schon "Stufe 3"): "erheblich über 2.200 m, darunter Stufe 2 mäßig"
+ * davor zeigt schon "Stufe 3"): "erheblich über 2.200 m, darunter Stufe 2 mäßig".
+ * Teilt der Bericht nach Tageszeit (earlier/later, z. B. Nassschnee im Fruehjahr), stehen
+ * seit 10.11.2026 beide Teile da: "vormittags 1 gering; nachmittags 2 mäßig über 1.600 m, ..."
+ * (vorher fiel der Nachmittag weg, das Abzeichen zeigte aber dessen hoehere Stufe).
  */
 function lawine_stufen_text(array $teile, bool $nachAbzeichen = false): string
 {
-    $teile = array_values(array_filter($teile, fn($t) => ($t['zeit'] ?? 'all_day') !== 'later')) ?: $teile;
+    $gruppen = [];
+    foreach ($teile as $t) {
+        $z = $t['zeit'] ?? 'all_day';
+        $gruppen[isset(LAWINE_ZEITEN[$z]) ? $z : 'all_day'][] = $t;
+    }
+    if (count($gruppen) > 1) {
+        $out = [];
+        foreach (LAWINE_ZEITEN as $z => $wort) {
+            if (isset($gruppen[$z])) {
+                $out[] = ($wort !== '' ? "$wort " : '') . lawine_stufen_text($gruppen[$z]);
+            }
+        }
+        return implode('; ', $out);
+    }
     usort($teile, fn($a, $b) => $b['stufe'] <=> $a['stufe']);
     $out = [];
     foreach ($teile as $t) {
@@ -394,6 +456,73 @@ function lawine_problem_text(array $p): string
     $wo = $p['ab'] !== null ? 'über ' . lawine_hoehe_text($p['ab']) : ($p['bis'] !== null ? 'unter ' . lawine_hoehe_text($p['bis']) : '');
     $zusatz = trim($asp . ($asp && $wo ? ' ' : '') . $wo);
     return $name . ($zusatz !== '' ? " ($zusatz)" : '');
+}
+
+/**
+ * Lawinenprobleme fuer die Anzeige (seit 10.11.2026): gleiche Probleme (Typ, Expositionen,
+ * Hoehe) aus Vormittag und Nachmittag nur einmal; gilt eines nur zu einer Tageszeit,
+ * steht sie davor. Rueckgabe [['text' => "nachmittags: Nassschnee (...)", 'aspekte' => [...]], ...]
+ */
+function lawine_probleme_liste(array $probleme): array
+{
+    $sammel = [];
+    foreach ($probleme as $p) {
+        $k = $p['typ'] . '|' . implode(',', $p['aspekte']) . '|' . $p['ab'] . '|' . $p['bis'];
+        $sammel[$k]['p'] ??= $p;
+        $sammel[$k]['zeiten'][$p['zeit'] ?? 'all_day'] = true;
+    }
+    $out = [];
+    foreach ($sammel as ['p' => $p, 'zeiten' => $z]) {
+        $nur = count($z) === 1 && !isset($z['all_day']) ? (LAWINE_ZEITEN[array_key_first($z)] ?? '') : '';
+        $out[] = ['text' => ($nur !== '' ? "$nur: " : '') . lawine_problem_text($p), 'aspekte' => $p['aspekte']];
+    }
+    return $out;
+}
+
+/**
+ * Zeitpunkt eines Berichts fuer die Anzeige: "heute 17:00", "Mo 17:00" (Ortszeit $tz),
+ * mehr als 6 Tage entfernt mit Datum. Leer, wenn der Zeitpunkt fehlt.
+ */
+function lawine_zeit_text(string $iso, DateTimeZone $tz, ?int $jetzt = null): string
+{
+    $t = $iso !== '' ? strtotime($iso) : false;
+    if ($t === false) {
+        return '';
+    }
+    $jetzt ??= time();
+    $d = (new DateTimeImmutable('@' . $t))->setTimezone($tz);
+    $heute = (new DateTimeImmutable('@' . $jetzt))->setTimezone($tz)->format('Y-m-d');
+    $morgen = (new DateTimeImmutable('@' . ($jetzt + 86400)))->setTimezone($tz)->format('Y-m-d');
+    $tag = match (true) {
+        $d->format('Y-m-d') === $heute  => 'heute',
+        $d->format('Y-m-d') === $morgen => 'morgen',
+        abs($t - $jetzt) > 6 * 86400    => $d->format('j.n.'),
+        default                         => ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][(int)$d->format('w')],
+    };
+    return $tag . ' ' . $d->format('G:i');
+}
+
+/** "ausgegeben heute 17:00, gültig bis morgen 17:00" */
+function lawine_gueltig_text(array $lage, DateTimeZone $tz, ?int $jetzt = null): string
+{
+    $aus = lawine_zeit_text($lage['veroeffentlicht'] ?? '', $tz, $jetzt);
+    $bis = lawine_zeit_text($lage['bis'] ?? '', $tz, $jetzt);
+    return implode(', ', array_filter([$aus !== '' ? "ausgegeben $aus" : '', $bis !== '' ? "gültig bis $bis" : '']));
+}
+
+/**
+ * Kennzeichnung der Aufbereitung (Hinweise des LWD Bayern, seit 10.11.2026): Auszug,
+ * zusammengefasste Mikroregionen, Zuordnung ueber den Namen.
+ */
+function lawine_auszug_text(array $lage, array $dienst): string
+{
+    $namen = array_values(array_unique(array_map(fn($r) => $r[1] ?: $r[0], $lage['regionen'])));
+    $t = 'Auszug aus dem Lagebericht (Quelle: ' . ($dienst['name'] ?? 'Warndienst') . '): nur Gefahrenstufe und Lawinenprobleme, ohne die Texte; von Wohinfahrma gekürzt und aufbereitet. '
+       . 'Gilt für ' . implode(', ', $namen) . ($lage['ueber_namen'] ? ' (Zuordnung über den Namen)' : '') . '.';
+    if (count($namen) > 1) {
+        $t .= ' Bei mehreren Teilgebieten steht hier das mit der höchsten Stufe.';
+    }
+    return $t;
 }
 
 /** Kleine Expositionsrose als SVG (8 Sektoren, betroffene gefuellt), fuer das Lawinen-Abzeichen */

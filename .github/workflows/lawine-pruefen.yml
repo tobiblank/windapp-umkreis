@@ -1,0 +1,39 @@
+name: Lagebericht prüfen
+
+# Seit 10.11.2026: liest echte Lageberichte der freigegebenen Warndienste mit {datum}
+# (derzeit Bayern) mit lawine_lesen() und zeigt Stufen und Probleme so, wie die Seite sie
+# zeigt (tools/lawine_pruefen.php). Laeuft bei Aenderungen am Parser oder am Katalog und
+# von Hand (Actions > Lagebericht prüfen > Run workflow, optional mit Tagen).
+
+on:
+  push:
+    paths:
+      - server/web/lib/lawine.php
+      - tools/lawine_pruefen.php
+      - daten/schneeregionen.json
+      - .github/workflows/lawine-pruefen.yml
+  workflow_dispatch:
+    inputs:
+      tage:
+        description: "Tage (YYYY-MM-DD, durch Leerzeichen getrennt); leer = zwei Tage aus dem letzten Winter"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: curl
+          coverage: none
+      - name: Echte Berichte lesen
+        env:
+          TAGE: ${{ github.event.inputs.tage }}
+        run: php tools/lawine_pruefen.php daten/schneeregionen.json $TAGE

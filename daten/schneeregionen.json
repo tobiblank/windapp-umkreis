@@ -29,10 +29,10 @@
       "url_bericht": "https://www.lawinenwarndienst.bayern.de",
       "abruf": "https://static.lawinen-warnung.eu/bulletins/{datum}/{datum}_DE-BY_de_CAAMLv6.xml",
       "format": "xml",
-      "lizenz": "ungeklärt",
+      "lizenz": "Weiterverarbeitung erlaubt, ohne Gewähr",
       "praefixe": ["DE-BY"],
-      "freigegeben": [],
-      "hinweis": "Datei und Regions-IDs am 8.11.2026 an 2025-12-20_DE-BY_de_CAAMLv6.xml gesehen (CAAML v6, XML). Lizenz offen, Anfrage an den LWD Bayern läuft; bis dahin nur Link."
+      "freigegeben": ["DE-BY"],
+      "hinweis": "Datei und Regions-IDs am 8.11.2026 an 2025-12-20_DE-BY_de_CAAMLv6.xml gesehen (CAAML v6, XML). Freigabe per Mail der Lawinenwarnzentrale Bayern (Dr. Thomas Feistl) am 10.11.2026: Einbindung über die CAAML-Dateien, Hinweise zur Weiterverarbeitung auf lawinenwarndienst.bayern.de/presse/ beachten (Quellenangabe mit Link, Ausgabe- und Gültigkeitszeit, keine veralteten Daten als aktuell, Kürzungen und eigene Hinweise kennzeichnen, Störungen anzeigen, angemessen abrufen). Messdaten nur von der Website; eine Datenschnittstelle ist angekündigt."
     },
     "salzburg": {
       "name": "Lawinenwarndienst Salzburg",

@@ -12,8 +12,8 @@ $sk = schnee_katalog_laden("$ROOT/daten/schneeregionen.json");
 pruefe(count($sk['regionen']) >= 8, 'echter Schnee-Katalog gültig, mindestens 8 Regionen');
 $windIds = array_column(regionen_laden("$ROOT/daten/regionen.json"), 'id');
 pruefe(!array_intersect($windIds, array_column($sk['regionen'], 'id')), 'ids von Wind- und Schnee-Katalog verschieden (gemeinsame fahrzeiten.json)');
-pruefe(($sk['lawinendienste']['bayern']['freigegeben'] ?? null) === [] && !in_array('AT-07', $sk['lawinendienste']['euregio']['freigegeben'], true),
-       'Bayern und Tirol nicht freigegeben, solange die Lizenz offen ist');
+pruefe(($sk['lawinendienste']['bayern']['freigegeben'] ?? null) === ['DE-BY'] && !in_array('AT-07', $sk['lawinendienste']['euregio']['freigegeben'], true),
+       'Bayern freigegeben (Mail der Lawinenwarnzentrale, 10.11.2026), Tirol nicht, solange die Lizenz offen ist');
 pruefe(schnee_katalog_laden(__DIR__ . '/schneeregionen_test.json')['regionen'][0]['typ'] === 'schnee', 'Testkatalog gültig, typ schnee gesetzt');
 $kaputt = json_decode(file_get_contents(__DIR__ . '/schneeregionen_test.json'), true);
 $kaputt['lawinendienste']['slf']['freigegeben'] = ['AT-'];
@@ -52,6 +52,25 @@ pruefe($lx && $lx[0]['regionen'] === [['DE-BY-30', 'Werdenfelser Alpen']] && $lx
        'XML (Namensraum, Attribute, Expositionen direkt als aspect)');
 pruefe(lawine_lesen('<ObsCollection xmlns="http://caaml.org/Schemas/V5.0/Profiles/BulletinEAWS"/>', 'xml') === null && lawine_lesen('kaputt', 'json') === null && lawine_lesen('', 'xml') === null,
        'CAAML v5 und Unsinn werden nicht gelesen');
+$real = lawine_lesen((string)file_get_contents(__DIR__ . '/lawine_bayern_2026-04-17.xml'), 'xml');
+pruefe($real && count($real) === 2 && count($real[0]['regionen']) === 4 && count($real[0]['stufen']) === 3 && count($real[0]['probleme']) === 4 && lawine_max($real[0]) === 2
+       && $real[0]['stufen'][0] === ['stufe' => 1, 'ab' => null, 'bis' => null, 'zeit' => 'earlier'] && $real[0]['stufen'][2]['ab'] === '1600'
+       && $real[1]['stufen'][0]['ab'] === null && $real[0]['bis'] === '2026-04-17T15:00:00Z',
+       'Bayern, Aufbau wie die echte Datei vom 17.4.2026: Tageszeiten, Höhe mit uom, leeres elevation');
+pruefe(lawine_stufen_text($real[0]['stufen'], true) === 'vormittags 1 gering; nachmittags 2 mäßig über 1.600 m, 1 gering unter 1.600 m'
+       && lawine_stufen_text($lj[0]['stufen'], true) === 'erheblich über 2.200 m, darunter Stufe 2 mäßig',
+       'Stufen nach Tageszeit: Vormittag und Nachmittag beide genannt (Abzeichen zeigt die höhere)');
+pruefe(array_column(lawine_probleme_liste($real[0]['probleme']), 'text') === ['Altschnee (N, NO, NW über 2.200 m)', 'nachmittags: Nassschnee (alle Expositionen über 1.600 m)', 'nachmittags: Nassschnee (alle Expositionen unter 1.600 m)'],
+       'Probleme: Altschnee vor- und nachmittags nur einmal, Nassschnee mit „nachmittags“');
+$tzB = new DateTimeZone('Europe/Berlin');
+$jetztB = (new DateTimeImmutable('2026-04-16 18:00', $tzB))->getTimestamp();
+pruefe(lawine_gueltig_text($real[0], $tzB, $jetztB) === 'ausgegeben heute 17:00, gültig bis morgen 17:00' && lawine_zeit_text('', $tzB) === ''
+       && lawine_zeit_text('2026-04-20T15:00:00Z', $tzB, $jetztB) === 'Mo 17:00', 'Ausgabe und Gültigkeit in Ortszeit');
+$auszug = lawine_auszug_text(['regionen' => [['DE-BY-30', 'Werdenfelser Alpen'], ['DE-BY-12', 'Allgäuer Alpen Mitte']], 'ueber_namen' => false], ['name' => 'Lawinenwarndienst Bayern']);
+pruefe(str_starts_with($auszug, 'Auszug aus dem Lagebericht (Quelle: Lawinenwarndienst Bayern)') && str_contains($auszug, 'gekürzt und aufbereitet')
+       && str_contains($auszug, 'Werdenfelser Alpen, Allgäuer Alpen Mitte') && str_contains($auszug, 'höchsten Stufe'), 'Auszug gekennzeichnet, mehrere Teilgebiete benannt');
+pruefe(str_starts_with(lawine_warnung(['stufe' => 4])['text'], 'Hinweis von Wohinfahrma:') && str_contains(LAWINE_HAFTUNG, 'weder den aktuellen Lagebericht'),
+       'eigene Hinweise als solche benannt; Haftung nennt den aktuellen Lagebericht');
 pruefe(str_contains(lawine_rose(['N']), 'class="an"') && substr_count(lawine_rose(['N']), '<path') === 8, 'Expositionsrose: 8 Sektoren, betroffene markiert');
 
 // ---------------------------------------------------------------
@@ -210,9 +229,28 @@ $lb = lawine_lage($sR['schnee-b'], $lagen, $t0);
 pruefe($lb && $lb['stufe'] === 2 && ($lb['probleme'][0]['aspekte'] ?? []) === ['N', 'NW'] && !$lb['ueber_namen'], 'B: Bayern (XML) über DE-BY-30, Stufe 2, Triebschnee N und NW');
 pruefe(lawine_lage($sR['schnee-c'], $lagen, $t0)['stufe'] === 4, 'C: Südtirol über die Mikroregion IT-32-BZ-08, Stufe 4 (freigegeben, für das Warnzeichen)');
 pruefe(lawine_lage($sR['schnee-a'], $lagen, $t3) === null, 'ohne gültigen Bericht (in drei Tagen): keine Lage, keine Hochrechnung');
+$tzR = new DateTimeZone($sR['schnee-b']['zeitzone']);
+$um = fn(string $uhr) => (new DateTimeImmutable("2026-01-15 $uhr", $tzR))->getTimestamp();
+$bAlt = ['id' => 'alt', 'veroeffentlicht' => '2026-01-14T16:00:00Z', 'von' => '2026-01-14T16:00:00Z', 'bis' => '2026-01-15T16:00:00Z', 'regionen' => [['DE-BY-30', 'Werdenfels']],
+         'stufen' => [['stufe' => 3, 'ab' => null, 'bis' => null, 'zeit' => 'all_day']], 'probleme' => []];
+$bNeu = ['id' => 'neu', 'veroeffentlicht' => '2026-01-15T16:00:00Z', 'von' => '2026-01-15T16:00:00Z', 'bis' => '2026-01-16T16:00:00Z'] + $bAlt;
+$bNeu['stufen'][0]['stufe'] = 1;
+$nurAlt = [$sR['schnee-b']['warndienst'] => ['ts' => 'x', 'bulletins' => [$bAlt]]];
+$beide = [$sR['schnee-b']['warndienst'] => ['ts' => 'x', 'bulletins' => [$bAlt, $bNeu]]];
+pruefe(lawine_lage($sR['schnee-b'], $nurAlt, '2026-01-15', $um('10:00'))['stufe'] === 3 && lawine_lage($sR['schnee-b'], $nurAlt, '2026-01-15', $um('18:00')) === null
+       && lawine_lage($sR['schnee-b'], $beide, '2026-01-15', $um('18:00'))['stufe'] === 1 && lawine_lage($sR['schnee-b'], $nurAlt, '2026-01-15', $um('10:00') + 2 * 86400) !== null,
+       'heute nach 17 Uhr: abgelaufener Bericht gilt nicht mehr, der neue schon; andere Tage weiter um 12 Uhr');
+$jetzt0 = time();
+pruefe(lawine_stoerung(null)['stand'] === '' && lawine_stoerung(['ts' => gmdate('Y-m-d\TH:i:s\Z', $jetzt0 - 3600), 'bulletins' => [], 'versuch_ok' => true], $jetzt0) === null
+       && str_contains(lawine_stoerung(['ts' => gmdate('Y-m-d\TH:i:s\Z', $jetzt0 - 3600), 'bulletins' => [], 'versuch_ok' => false], $jetzt0)['text'], 'fehlgeschlagen')
+       && str_contains(lawine_stoerung(['ts' => gmdate('Y-m-d\TH:i:s\Z', $jetzt0 - 20 * 3600), 'bulletins' => []], $jetzt0)['text'], 'länger nicht aktualisiert')
+       && lawine_stoerung(['ts' => '', 'bulletins' => [], 'versuch_ok' => false], $jetzt0)['stand'] === '',
+       'Störung: keine Daten, letzter Versuch fehlgeschlagen, zu alt; frisch und gut ohne Hinweis');
 pruefe(!lawine_freigegeben($sR['schnee-d'], $sKat['lawinendienste']) && lawine_freigegeben($sR['schnee-b'], $sKat['lawinendienste']), 'Freigabe je Warndienst');
-pruefe(!lawine_freigegeben($sk['regionen'][0], $sk['lawinendienste']) && lawine_freigegeben(array_values(array_filter($sk['regionen'], fn($r) => $r['id'] === 'oberengadin'))[0], $sk['lawinendienste']),
-       'echter Katalog: Werdenfels (Bayern) nur Link, Oberengadin (SLF) mit Stufe');
+$skId = fn(string $id) => array_values(array_filter($sk['regionen'], fn($r) => $r['id'] === $id))[0];
+pruefe(lawine_freigegeben($skId('werdenfels'), $sk['lawinendienste']) && lawine_freigegeben($skId('oberengadin'), $sk['lawinendienste'])
+       && !lawine_freigegeben($skId('stubai'), $sk['lawinendienste']) && !lawine_freigegeben($skId('gastein-rauris'), $sk['lawinendienste']),
+       'echter Katalog: Werdenfels (Bayern) und Oberengadin (SLF) mit Stufe, Stubai (Tirol) und Gastein (Salzburg) nur Link');
 
 echo "Schnee: Fahrzeiten mit zwei Katalogen\n";
 $oPort = $port + 6;
@@ -265,7 +303,11 @@ pruefe(preg_match('#id="r-schnee-c".*?class="tag [^"]*warn-hoch"#s', $html) === 
        'Lawinen-Warnzeichen: Stufe 4 Kachel rot umrandet, Dreieck im Abzeichen und auf der Karte, Hinweis zu Stufe 3');
 pruefe(str_contains($html, '<select name="prio">') && str_contains($html, '<option value="pulver" selected>Pulver + Sonne</option>') && str_contains($html, '<select name="nach">')
        && preg_match('#<select name="nach">(.*?)</select>#s', $html, $mNach) && !str_contains($mNach[1], 'value="km"'), 'Auswahl: Tag und Priorität getrennt');
-pruefe(substr_count($html, 'ersetzt keine Beurteilung vor Ort') >= 3 && str_contains($html, '<p class="karte klein haftung">'), 'Haftungshinweis oben, je Region und im Fuß');
+pruefe(substr_count($html, 'noch die eigene Beurteilung vor Ort') >= 3 && str_contains($html, '<p class="karte klein haftung">'), 'Haftungshinweis oben, je Region und im Fuß');
+pruefe(preg_match('#id="r-schnee-b".*?ausgegeben heute \d+:\d\d, gültig bis \S+ \d+:\d\d.*?Auszug aus dem Lagebericht \(Quelle: LWD Bayern Test\)#s', $html) === 1
+       && str_contains($html, 'Hinweis von Wohinfahrma: Lawinenwarnstufe 4') && str_contains($html, 'Warndreiecke und ihre Texte sind Hinweise von Wohinfahrma')
+       && !str_contains($html, 'lawine-stoerung'),
+       'Lawinenlage: Ausgabe und Gültigkeit, Auszug mit Quelle, eigene Hinweise benannt, ohne Störung kein Störungshinweis');
 pruefe(preg_match('#id="r-schnee-d".*?Lawinenlage: <a href="https://example.org/bericht"#s', $html) === 1 && !preg_match('#id="r-schnee-d".*?class="lw lw#s', explode('id="r-schnee-a"', $html)[0] ?? ''),
        'nicht freigegebener Dienst: nur Link, keine Stufe');
 pruefe(str_contains($html, '<nav class="modus" aria-label="Modus"><a href="./">Wind</a><a href="schnee.php" aria-current="page">Schnee</a>'), 'Schalter Wind · Schnee');
@@ -302,6 +344,15 @@ pruefe(!str_contains(holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $
 pruefe($code === 404, 'Stundenseite: unbekannte Region 404');
 [, $html] = holen($wPort, 'index.php?km=1000');
 pruefe(str_contains($html, '<a href="./" aria-current="page">Wind</a><a href="schnee.php">Schnee</a>'), 'Wind-Seite: Schalter zum Schnee-Modus');
+$stoerDatei = "$tmp/schnee/lawine/" . gmdate('Y-m-d') . '.ndjson';
+file_put_contents($stoerDatei, json_encode(['ts' => gmdate('Y-m-d\TH:i:s\Z', time() + 60), 'source' => 'lawine', 'ok' => false, 'dienst' => 'euregio', 'tage' => [], 'err' => 'http=500']) . "\n");
+[, $hSt] = holen($wPort, 'schnee.php?km=800');
+pruefe(str_contains($hSt, '<p class="karte klein lawine-stoerung">') && preg_match('#id="r-schnee-c".*?Abruf gestört.*?Der letzte Abruf beim Warndienst ist fehlgeschlagen.*?class="lw lw4#s', $hSt) === 1
+       && substr_count($hSt, 'Abruf gestört') === 1,
+       'Störung beim Abruf: Hinweis oben und bei der Region, letzter guter Bericht bleibt sichtbar; anderer Dienst unberührt');
+[, $hSt] = holen($wPort, 'schnee_stunden.php?region=schnee-c&tag=' . $t0);
+pruefe(str_contains($hSt, 'class="klein lawine-stoerung"') && str_contains($hSt, 'Stand der Daten:'), 'Stundenseite: Störungshinweis mit Stand');
+unlink($stoerDatei);
 unlink("$sSite/lib/schneeregionen.json");
 [$code] = holen($wPort, 'schnee.php');
 pruefe($code === 503, 'ohne Schnee-Katalog: 503');

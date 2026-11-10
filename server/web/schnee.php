@@ -31,7 +31,7 @@ const TZ_SEITE = 'Europe/Berlin';
 const HEIM_STANDARD = [48.07, 11.15];      // Inning am Ammersee
 const UMKREISE = [100, 200, 300, 400, 600, 800];
 const WOCHENTAGE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-const HAFTUNG = 'Die Lawinenlage stammt vom Warndienst. Sie ersetzt keine Beurteilung vor Ort. Wohinfahrma bewertet nur Schnee und Wetter.';
+const HAFTUNG = LAWINE_HAFTUNG;
 
 function h(?string $s): string
 {
@@ -296,17 +296,6 @@ function teilen_text(array $region, string $tag, array $d, DateTimeZone $tz, ?ar
          . ($w ? '⚠ ' . $w['text'] . ' ' : '') . HAFTUNG;
 }
 
-/** Ausgabezeit eines Berichts: "So 17:00" */
-function ausgabe_text(string $iso, DateTimeZone $tz, DateTimeImmutable $heute): string
-{
-    $t = strtotime($iso);
-    if ($t === false) {
-        return '';
-    }
-    $d = (new DateTimeImmutable('@' . $t))->setTimezone($tz);
-    return ($d->format('Y-m-d') === $heute->format('Y-m-d') ? 'heute' : WOCHENTAGE[(int)$d->format('w')]) . ' ' . $d->format('G:i');
-}
-
 /** Lawinen-Abzeichen fuer eine Kachel oder null */
 function lawine_abzeichen(?array $lage, string $wort = 'LWS'): string
 {
@@ -319,8 +308,12 @@ function lawine_abzeichen(?array $lage, string $wort = 'LWS'): string
          . ($w ? '<span class="warn" aria-label="Warnung">⚠&#xFE0E;</span> ' : '') . h($wort) . ' ' . ($s ?: '–') . '</span>';
 }
 
-/** Block mit der Lawinenlage fuer heute und morgen (soweit angezeigt) */
-function lawine_html(array $region, array $lagenTage, array $dienste, array $tage): string
+/**
+ * Block mit der Lawinenlage fuer heute und morgen (soweit angezeigt). Seit 10.11.2026 nach den
+ * Hinweisen des LWD Bayern: Gueltigkeit, Stoerung des Abrufs, Auszug gekennzeichnet, eigene
+ * Hinweise (Warnzeichen) nach den Angaben des Warndiensts und als solche benannt.
+ */
+function lawine_html(array $region, array $lagenTage, array $dienste, array $tage, array $lagen = []): string
 {
     global $tzSeite, $heute;
     $d = $dienste[$region['warndienst']] ?? null;
@@ -336,28 +329,45 @@ function lawine_html(array $region, array $lagenTage, array $dienste, array $tag
     if (!lawine_freigegeben($region, $dienste)) {
         return '<div class="lawine klein"><p>Lawinenlage: ' . $link . ' <span class="leise">(die Stufe zeigen wir hier, sobald die Nutzung mit dem Warndienst geklärt ist)</span></p></div>';
     }
+    $stoerung = lawine_stoerung($lagen[$region['warndienst']] ?? null);
     $zus = [];
     foreach ($kurze as $t) {
         $l = $lagenTage[$t] ?? null;
         $zus[] = h(tag_kurz($t, $heute)) . ' ' . ($l ? (lawine_warnung($l) ? '⚠&#xFE0E; ' : '') . 'LWS ' . ($l['stufe'] ?: '–') : 'kein Bericht');
     }
-    $o = '<details class="lawine klein"><summary>Lawinenlage: ' . implode(', ', $zus) . '</summary>';
+    $o = '<details class="lawine klein"' . ($stoerung ? ' open' : '') . '><summary>Lawinenlage: ' . implode(', ', $zus) . ($stoerung ? ' · <span class="lawine-stoerung">Abruf gestört</span>' : '') . '</summary>';
+    if ($stoerung) {
+        $o .= stoerung_html($stoerung, $d);
+    }
+    $warnungen = '';
+    $auszug = null;
     foreach ($kurze as $t) {
         $l = $lagenTage[$t] ?? null;
         if (!$l) {
-            $o .= '<p><b>' . h(tag_kurz($t, $heute)) . ':</b> <span class="leise">kein Lagebericht (heißt nicht „keine Gefahr“)</span> · ' . $link . '</p>';
+            $o .= '<p><b>' . h(tag_kurz($t, $heute)) . ':</b> <span class="leise">kein gültiger Lagebericht (heißt nicht „keine Gefahr“)</span> · ' . $link . '</p>';
             continue;
         }
-        $probleme = array_map(fn($p) => h(lawine_problem_text($p)) . ($p['aspekte'] && count($p['aspekte']) < 8 ? ' ' . lawine_rose($p['aspekte']) : ''), $l['probleme']);
-        $w = lawine_warnung($l);
-        $o .= ($w ? '<p class="lawine-warnung ' . $w['klasse'] . '">⚠&#xFE0E; ' . h(tag_kurz($t, $heute)) . ': ' . h($w['text']) . '</p>' : '')
-            . '<p><b>' . h(tag_kurz($t, $heute)) . ':</b> ' . lawine_abzeichen($l, 'Gefahrenstufe') . ' ' . h(lawine_stufen_text($l['teile'], true))
+        $probleme = array_map(fn($p) => h($p['text']) . ($p['aspekte'] && count($p['aspekte']) < 8 ? ' ' . lawine_rose($p['aspekte']) : ''), lawine_probleme_liste($l['probleme']));
+        $o .= '<p><b>' . h(tag_kurz($t, $heute)) . ':</b> ' . lawine_abzeichen($l, 'Gefahrenstufe') . ' ' . h(lawine_stufen_text($l['teile'], true))
             . ($probleme ? ' · ' . implode(' · ', $probleme) : '')
-            . ' · ' . $link . ' <span class="leise">ausgegeben ' . h(ausgabe_text($l['veroeffentlicht'], $tzSeite, $heute)) . '</span>'
-            . ($l['ueber_namen'] ? ' <span class="leise" title="' . h('Mikroregionen über den Namen zugeordnet: ' . implode(', ', array_map(fn($r) => $r[1], $l['regionen']))) . '">(Zuordnung über den Namen)</span>' : '')
-            . '</p>';
+            . ' · ' . $link . ' <span class="leise">' . h(lawine_gueltig_text($l, $tzSeite)) . '</span></p>';
+        if ($w = lawine_warnung($l)) {
+            $warnungen .= '<p class="lawine-warnung ' . $w['klasse'] . '">⚠&#xFE0E; ' . h(tag_kurz($t, $heute)) . ': ' . h($w['text']) . '</p>';
+        }
+        $auszug ??= $l;
     }
-    return $o . '<p class="leise">' . h(HAFTUNG) . '</p></details>';
+    if ($auszug) {
+        $o .= '<p class="leise">' . h(lawine_auszug_text($auszug, $d)) . ' Vollständiger Bericht: ' . $link . '</p>';
+    }
+    return $o . $warnungen . '<p class="leise">' . h(HAFTUNG) . '</p></details>';
+}
+
+/** Hinweis bei gestoertem Abruf eines Warndiensts (lawine_stoerung()) */
+function stoerung_html(array $stoerung, array $dienst): string
+{
+    global $tzSeite;
+    $stand = $stoerung['stand'] !== '' ? ' Stand der Daten: ' . lawine_zeit_text($stoerung['stand'], $tzSeite) . '.' : '';
+    return '<p class="lawine-stoerung">⚠&#xFE0E; ' . h($stoerung['text'] . $stand) . ' Bitte direkt im Bericht nachsehen: <a href="' . h($dienst['url_bericht']) . '" rel="noopener">' . h($dienst['name']) . ' ↗</a></p>';
 }
 
 // Lage je Region und Tag (nur fuer freigegebene Dienste; heute und morgen)
@@ -456,6 +466,8 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
 <?php endif ?>
 
 <p class="karte klein haftung"><b>Lawinen:</b> <?= h(HAFTUNG) ?> Die Gefahrenstufe ändert Farbe und Reihenfolge nicht; ab Stufe 3 steht ein Warndreieck ⚠&#xFE0E; bei der Region, ab Stufe 4 ist der Tag rot umrandet.</p>
+<?php foreach ($quellen as $id => $d): if ($st = lawine_stoerung($lagen[$id] ?? null)): ?><?= str_replace('<p class="lawine-stoerung">', '<p class="karte klein lawine-stoerung">', stoerung_html($st, $d)) ?>
+<?php endif; endforeach ?>
 
 <details class="leise klein erklaerung">
   <summary><b>Pulvertag</b> · <?= h($schwelle) ?> · <span class="unterstrichen">Wie wird gerechnet?</span></summary>
@@ -675,7 +687,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
       <p class="klein leise"><?= $guteTage ? '' : 'Kein passender Tag in diesem Zeitraum.' ?><?= $offene ? ' Für ' . h(implode(', ', array_map(fn($x) => tag_kurz($x, $heute), $offene))) . ' gibt es noch keine Vorhersage.' : '' ?></p>
     <?php endif ?>
     <?= $ansicht === 'bald' ? stationen_html(stationen_region($r, $messungen), $messnetze, $tzSeite, $heute) : '' ?>
-    <?= lawine_html($r, $lageVon[$r['id']] ?? [], $dienste, $tage) ?>
+    <?= lawine_html($r, $lageVon[$r['id']] ?? [], $dienste, $tage, $lagen) ?>
     <?php if (!empty($r['links'])): ?>
       <p class="links klein">Genauer:
         <?php foreach ($r['links'] as $i => $l): ?><?= $i ? ' · ' : '' ?><a href="<?= h($l['url']) ?>" rel="noopener"><?= h($l['name']) ?> ↗</a><?php endforeach ?>
@@ -686,7 +698,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
 
 <footer class="fuss klein leise">
   <p><b>Rohwerte, nicht kalibriert.</b> Schneefall und Schneefallgrenze auf Tourhöhe aus dem Mittel mehrerer Modelle; im Gebirge können sie deutlich danebenliegen. Schneehöhe ist ein Modellwert. Umkreis nach Straßen-km, Fahrzeit ohne Verkehr, Pässe und Wintersperren; „≈“ heißt geschätzt.</p>
-  <p><b>Lawinen:</b> <?= h(HAFTUNG) ?> Lageberichte:
+  <p><b>Lawinen:</b> <?= h(HAFTUNG) ?> Gezeigt wird ein gekürzter, aufbereiteter Auszug (Gefahrenstufe, Lawinenprobleme, Ausgabe- und Gültigkeitszeit); Warndreiecke und ihre Texte sind Hinweise von Wohinfahrma, nicht des Warndiensts. Lageberichte:
     <?php $i = 0; foreach ($quellen as $d): ?><?= $i++ ? ' · ' : '' ?><a href="<?= h($d['url_bericht']) ?>" rel="noopener"><?= h($d['name']) ?></a> (<?= h($d['lizenz']) ?>)<?php endforeach ?>.
     Ohne Freigabe nur ein Link: <?php $i = 0; foreach (array_diff_key($dienste, $quellen) as $d): ?><?= $i++ ? ', ' : '' ?><a href="<?= h($d['url_bericht']) ?>" rel="noopener"><?= h($d['kurz']) ?></a><?php endforeach ?><?= $i ? '' : '–' ?>.</p>
   <?php if ($fahrzeiten): ?><p>Fahrzeiten ab <?= h($fahrzeiten['start']['name'] ?? 'Startort') ?>: © <a href="https://openrouteservice.org/">openrouteservice.org</a> by HeiGIT, Kartendaten © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende.</p><?php endif ?>

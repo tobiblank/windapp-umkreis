@@ -6,7 +6,7 @@ Zweiter Modus in Wohinfahrma für Skitourengeher und Freerider, nur Alpen: Wo li
 
 ## Grundsatz Lawine
 
-Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnstufe geht **nicht** in Sortierung oder Farbe der Bewertung ein. Seit 10.11.2026 (Wunsch Tobias) steht ab **Stufe 3 ein Warndreieck** ⚠ bei der Region: im Abzeichen der Kachel, auf dem Kartenpunkt (orange bzw. rot, bei „alle Tage“ die höchste Stufe heute/morgen), in der Wochenansicht, als Textzeile bei Pulvertagen, im Lawinenblock, auf der Stundenseite und im Teilen-Text. Ab **Stufe 4** ist der Tag zusätzlich rot umrandet. Der Platz in der Rangliste bleibt. Begründung für Stufe 3: Laut Lawinenwarndienst Bayern geschahen in den Bayerischen Alpen seit 1993/94 48 % der 52 tödlichen Lawinenunfälle bei Stufe 3 (`lawine_warnung()` in `lib/lawine.php`). Ohne Bericht (ab übermorgen, nicht freigegebene Dienste) kein Dreieck, nur „LWS –“. Sie steht als eigenes Abzeichen in den offiziellen EAWS-Farben daneben (Kachel „LWS 3“, im Lawinenblock und auf der Stundenseite „Gefahrenstufe 3“ wie im Bericht), mit Link zum Bericht und Ausgabezeit, nur für Tage mit gültigem Bericht (meist heute und morgen). Keine eigene Hochrechnung. Die Bewertung nutzt deshalb eine **Blau-Skala** statt Grün/Gelb/Rot. Fester Hinweis oben auf der Seite, je Region, im Teilen-Text, auf der Stundenseite und im Impressum: „Die Lawinenlage stammt vom Warndienst. Sie ersetzt keine Beurteilung vor Ort. Wohinfahrma bewertet nur Schnee und Wetter.“
+Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnstufe geht **nicht** in Sortierung oder Farbe der Bewertung ein. Seit 10.11.2026 (Wunsch Tobias) steht ab **Stufe 3 ein Warndreieck** ⚠ bei der Region: im Abzeichen der Kachel, auf dem Kartenpunkt (orange bzw. rot, bei „alle Tage“ die höchste Stufe heute/morgen), in der Wochenansicht, als Textzeile bei Pulvertagen, im Lawinenblock, auf der Stundenseite und im Teilen-Text. Ab **Stufe 4** ist der Tag zusätzlich rot umrandet. Der Platz in der Rangliste bleibt. Begründung für Stufe 3: Laut Lawinenwarndienst Bayern geschahen in den Bayerischen Alpen seit 1993/94 48 % der 52 tödlichen Lawinenunfälle bei Stufe 3 (`lawine_warnung()` in `lib/lawine.php`). Ohne Bericht (ab übermorgen, nicht freigegebene Dienste) kein Dreieck, nur „LWS –“. Sie steht als eigenes Abzeichen in den offiziellen EAWS-Farben daneben (Kachel „LWS 3“, im Lawinenblock und auf der Stundenseite „Gefahrenstufe 3“ wie im Bericht), mit Link zum Bericht und Ausgabezeit, nur für Tage mit gültigem Bericht (meist heute und morgen). Keine eigene Hochrechnung. Die Bewertung nutzt deshalb eine **Blau-Skala** statt Grün/Gelb/Rot. Fester Hinweis oben auf der Seite, je Region, im Teilen-Text, auf der Stundenseite und im Impressum (`LAWINE_HAFTUNG`, seit 10.11.2026 nach den Hinweisen des LWD Bayern): „Die Lawinenlage stammt vom Warndienst, ohne Gewähr. Sie ersetzt weder den aktuellen Lagebericht auf dessen Website noch die eigene Beurteilung vor Ort. Wohinfahrma bewertet nur Schnee und Wetter.“
 
 ## Stand
 
@@ -105,9 +105,25 @@ Warndienste stehen im Katalog unter `lawinendienste`:
 | `freigegeben` | Präfixe, die gezeigt werden dürfen. Der Sammler ruft nur Dienste mit Freigabe ab und speichert nur freigegebene Mikroregionen. Ohne Freigabe zeigt die Seite einen Link zum Bericht |
 | `name`, `kurz`, `url_bericht`, `lizenz` | Anzeige und Quellenangabe |
 
-Je Region: `warndienst`, `eaws` (Präfixe der regionID) und/oder `eaws_namen` (Teil des Namens im Bericht, nur wenn `eaws` leer ist; dann steht „Zuordnung über den Namen“ dabei). Bei mehreren Mikroregionen gilt die höchste Stufe. Gezeigt wird der Bericht, der um 12 Uhr Ortszeit des Tages gilt, aus der neuesten Ausgabe.
+Je Region: `warndienst`, `eaws` (Präfixe der regionID) und/oder `eaws_namen` (Teil des Namens im Bericht, nur wenn `eaws` leer ist; dann steht „Zuordnung über den Namen“ dabei). Bei mehreren Mikroregionen gilt die höchste Stufe. Gezeigt wird der Bericht, der um 12 Uhr Ortszeit des Tages gilt, aus der neuesten Ausgabe; für heute ab Mittag der Bericht, der jetzt gilt (seit 10.11.2026; vorher stand nach 17 Uhr unter „heute“ noch der abgelaufene Bericht).
 
 Der Sammler holt je Dienst heute und morgen. HTTP 404 heißt „noch kein Bericht“ (morgen vor 17 Uhr, außerhalb der Saison) und ist kein Fehler. Gespeichert wird eine Zeile je Dienst: `{"ts", "source": "lawine", "ok", "dienst", "tage": {datum: [berichte]|null}}`.
+
+### Hinweise des LWD Bayern zur Weiterverarbeitung (seit 10.11.2026)
+
+Freigabe per Mail der Lawinenwarnzentrale Bayern (Dr. Thomas Feistl, 10.11.2026): Einbindung über die CAAML-Dateien, Hinweise auf `lawinenwarndienst.bayern.de/presse/` beachten. Messdaten nur von der Website; eine Datenschnittstelle ist angekündigt. Umgesetzt für alle Dienste, nicht nur Bayern:
+
+| Hinweis | Umsetzung |
+|---|---|
+| Quellenangabe mit Link auf den aktuellen Bericht | Link bei jeder Region und auf der Stundenseite, voller Name im Fuß und im Impressum |
+| Ausgabe- und Gültigkeitszeit, aktuellster Datensatz | „ausgegeben heute 17:00, gültig bis morgen 17:00“ (`lawine_gueltig_text()`); nur gültige Berichte, heute ab Mittag der jetzt gültige |
+| Vollständig, korrekt, eindeutig | Stufen nach Tageszeit beide („vormittags …; nachmittags …“), Höhengrenzen, Probleme je Tageszeit (`lawine_probleme_liste()`) |
+| Bearbeitungen kennzeichnen, eigene Bewertungen trennen | „Auszug aus dem Lagebericht (Quelle: …): nur Gefahrenstufe und Lawinenprobleme, ohne die Texte; von Wohinfahrma gekürzt und aufbereitet“ (`lawine_auszug_text()`), mehrere Teilgebiete benannt; Warndreieck-Texte beginnen mit „Hinweis von Wohinfahrma:“ und stehen nach den Angaben des Warndiensts |
+| Angemessen abrufen | drei Läufe am Tag (6:25, 8:40, 18:25 Uhr im Winter), je Dienst zwei Dateien |
+| Ausfälle deutlich anzeigen | `lawine_stoerung()`: letzter Abruf fehlgeschlagen, letzter guter Abruf älter als 13 h oder gar keine Daten: Hinweis oben, bei der Region („Abruf gestört“, Block aufgeklappt) und auf der Stundenseite, mit Stand |
+| Haftung, Eigenverantwortung | `LAWINE_HAFTUNG` (siehe oben) |
+
+Echte Berichte prüft die Action „Lagebericht prüfen“ (`tools/lawine_pruefen.php`, bei Änderungen am Parser oder Katalog und von Hand). Testdatei `tests/lawine_bayern_2026-04-17.xml` nach dem Aufbau der echten Datei vom 17.4.2026 (Tageszeiten, Nassschnee).
 
 ### Freigabe am 8.11.2026
 
@@ -115,10 +131,10 @@ Der Sammler holt je Dienst heute und morgen. HTTP 404 heißt „noch kein Berich
 |---|---|---|---|
 | SLF | `aws.slf.ch/api/bulletin/caaml/de/json` (laut API-Seite: gerade gültiger Bericht, CAAML v6) | CC BY 4.0, Quellenangabe mit Link | `CH-` |
 | Euregio | `static.avalanche.report/bulletins/{datum}/{datum}_EUREGIO_de_CAAMLv6.json` (Schema aus dem Verzeichnis von 2019; Host für 2026 ungeprüft) | Südtirol CC BY, Trentino CC BY 4.0; Tirol, Kärnten offen | `IT-32-BZ`, `IT-32-TN` |
-| Bayern | `static.lawinen-warnung.eu/bulletins/{datum}/{datum}_DE-BY_de_CAAMLv6.xml` (Struktur an echter Datei vom 20.12.2025 gesehen) | offen | – |
+| Bayern | `static.lawinen-warnung.eu/bulletins/{datum}/{datum}_DE-BY_de_CAAMLv6.xml` (Struktur an echten Dateien vom 20.12.2025 und 17.4.2026 gesehen) | Weiterverarbeitung erlaubt (Mail 10.11.2026), Hinweise siehe oben | `DE-BY` (seit 10.11.2026) |
 | Salzburg, Kärnten, Steiermark (seit 9.11.2026), Vorarlberg (seit 10.11.2026, Kleinwalsertal) | `static.avalanche.report/eaws_bulletins/{datum}/{datum}-AT-05.json` (bzw. AT-02, AT-06, AT-08), EAWS-Sammlung, Format wie CAAML ohne Versionsangabe; ob `lawine_lesen()` es liest, ungeprüft | offen | – |
 
-Anfragen an LWD Tirol und LWD Bayern laufen; nach Antwort nur `freigegeben` ergänzen (`AT-07` bzw. `DE-BY`). Beim SLF im Verteiler „Avalanche Bulletin“ angemeldet (info@dablank.de, bestätigt am 9.11.2026, Vorgang DATA-2406). Antworten von LWD Tirol und LWD Bayern stehen aus (angefragt 8.11.2026).
+Anfrage an den LWD Tirol läuft; nach Antwort nur `freigegeben` ergänzen (`AT-07`). LWD Bayern hat am 10.11.2026 geantwortet (siehe oben). Beim SLF im Verteiler „Avalanche Bulletin“ angemeldet (info@dablank.de, bestätigt am 9.11.2026, Vorgang DATA-2406). Antwort des LWD Tirol steht aus (angefragt 8.11.2026).
 
 ### Mikroregionen
 
@@ -141,7 +157,7 @@ Seit 9.11.2026 haben alle Regionen echte IDs, bestimmt mit `tools/eaws_zuordnen.
 |---|---|---|---|
 | Lagebericht Schweiz | SLF, `aws.slf.ch/api/bulletin/caaml` | CC BY 4.0 | geprüft |
 | Lagebericht Euregio | Albina, `static.avalanche.report` | Südtirol, Trentino CC BY; Tirol, Kärnten offen | teils |
-| Lagebericht Bayern | `static.lawinen-warnung.eu`, CAAML v6 XML | offen | Feed gefunden |
+| Lagebericht Bayern | `static.lawinen-warnung.eu`, CAAML v6 XML | Weiterverarbeitung erlaubt (10.11.2026) | eingebaut |
 | Übrige Länder, AINEVA, Frankreich | – | offen bzw. eingeschränkt | später |
 | Schneehöhe Stationen | Tirol: LWD/HD Tirol über data.gv.at (GeoJSON, stündlich, CC BY 4.0), seit 9.11.2026 eingebaut. Schweiz: SLF IMIS `measurement-api.slf.ch` (CC BY 4.0; laut SLF-Bedingungen aber „nicht für die Speisung von Informationssystemen“, vorher beim SLF nachfragen). Südtirol: `geoservices.buergernetz.bz.it/services/meteo/v1/` (CC0), seit 9.11.2026 eingebaut. GeoSphere TAWES und MeteoSchweiz eingebaut. Bayern: keine offene Schnittstelle gefunden. GeoSphere SNOWGRID (CC BY 4.0, Modell) eingebaut | Stand 9.11.2026 | eingebaut außer SLF und Bayern |
 | Schnee und Wetter | Open-Meteo | CC BY 4.0 | Variablen dokumentiert, Verhalten im Gebirge ungeprüft |
@@ -151,7 +167,7 @@ Für die Rechnung nur Stufe und strukturierte Felder; Texte der Berichte nicht k
 ## Nächste Schritte
 
 1. Erster echter Lauf (siehe oben), danach Mikroregion-IDs eintragen
-2. Antworten der Warndienste: Bayern, Tirol freigeben
+2. Antwort des LWD Tirol: Tirol freigeben (Bayern seit 10.11.2026). Bayern: Messdaten erst über die angekündigte Schnittstelle
 3. Schwellen (`SCHNEE_REGEL`, `SCHNEE_KAMM_HINWEIS`) und Tourhöhen aus eigener Erfahrung anpassen
 4. Weitere Messstationen (SLF nach Rückfrage)
 5. Verlauf über die Abrufe

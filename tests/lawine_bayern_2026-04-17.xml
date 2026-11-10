@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Aufbau wie static.lawinen-warnung.eu/bulletins/2026-04-17/2026-04-17_DE-BY_en_CAAMLv6.xml
+     (am 10.11.2026 angesehen): Stufen und Probleme nach Tageszeit (earlier/later), Hoehe mit uom,
+     Expositionen direkt als aspect. Erster Teil nach der echten Datei, Texte gekuerzt; der zweite
+     Teil ist fuer den Test nachgebaut (die echte Datei hat dort ein leeres elevation). -->
+<bulletins xmlns="http://caaml.org/Schemas/V6.0/Profiles/BulletinEAWS">
+  <bulletin bulletinID="b6587f0d-1ae6-42ea-87b9-b4944948f6a9" lang="en">
+    <publicationTime>2026-04-16T15:00:00Z</publicationTime>
+    <validTime>
+      <startTime>2026-04-16T15:00:00Z</startTime>
+      <endTime>2026-04-17T15:00:00Z</endTime>
+    </validTime>
+    <unscheduled>false</unscheduled>
+    <source><person><name>Avalanche Service Bavaria</name></person></source>
+    <region regionID="DE-BY-30"><name>Werdenfels Alps</name></region>
+    <region regionID="DE-BY-60"><name>Berchtesgaden Alps</name></region>
+    <region regionID="DE-BY-12"><name>Allgäu Alps Central</name></region>
+    <region regionID="DE-BY-20"><name>Ammergau Alps North</name></region>
+    <dangerRating>
+      <mainValue>low</mainValue>
+      <validTimePeriod>earlier</validTimePeriod>
+    </dangerRating>
+    <dangerRating>
+      <mainValue>low</mainValue>
+      <elevation uom="m"><upperBound>1600</upperBound></elevation>
+      <validTimePeriod>later</validTimePeriod>
+    </dangerRating>
+    <dangerRating>
+      <mainValue>moderate</mainValue>
+      <elevation uom="m"><lowerBound>1600</lowerBound></elevation>
+      <validTimePeriod>later</validTimePeriod>
+    </dangerRating>
+    <avalancheProblem>
+      <problemType>persistent_weak_layers</problemType>
+      <elevation uom="m"><lowerBound>2200</lowerBound></elevation>
+      <aspect>NW</aspect><aspect>N</aspect><aspect>NE</aspect>
+      <validTimePeriod>earlier</validTimePeriod>
+      <customData><ALBINA><avalancheType>slab</avalancheType></ALBINA></customData>
+    </avalancheProblem>
+    <avalancheProblem>
+      <problemType>wet_snow</problemType>
+      <elevation uom="m"><lowerBound>1600</lowerBound></elevation>
+      <aspect>NW</aspect><aspect>N</aspect><aspect>W</aspect><aspect>SW</aspect><aspect>SE</aspect><aspect>S</aspect><aspect>E</aspect><aspect>NE</aspect>
+      <validTimePeriod>later</validTimePeriod>
+      <customData><ALBINA><avalancheType>loose</avalancheType></ALBINA></customData>
+    </avalancheProblem>
+    <avalancheProblem>
+      <problemType>wet_snow</problemType>
+      <elevation uom="m"><upperBound>1600</upperBound></elevation>
+      <aspect>NW</aspect><aspect>N</aspect><aspect>W</aspect><aspect>SW</aspect><aspect>SE</aspect><aspect>S</aspect><aspect>E</aspect><aspect>NE</aspect>
+      <validTimePeriod>later</validTimePeriod>
+      <customData><ALBINA><avalancheType>loose</avalancheType></ALBINA></customData>
+    </avalancheProblem>
+    <avalancheProblem>
+      <problemType>persistent_weak_layers</problemType>
+      <elevation uom="m"><lowerBound>2200</lowerBound></elevation>
+      <aspect>NW</aspect><aspect>N</aspect><aspect>NE</aspect>
+      <validTimePeriod>later</validTimePeriod>
+      <customData><ALBINA><avalancheType>slab</avalancheType></ALBINA></customData>
+    </avalancheProblem>
+    <avalancheActivity><highlights>You often sink in deep when the snow surface is softened.</highlights><comment>…</comment></avalancheActivity>
+    <snowpackStructure><comment>…</comment></snowpackStructure>
+    <tendency>
+      <highlights>No change for the time being.</highlights>
+      <validTime><startTime>2026-04-17T15:00:00Z</startTime><endTime>2026-04-18T15:00:00Z</endTime></validTime>
+    </tendency>
+    <customData><ALBINA><mainDate>2026-04-17</mainDate></ALBINA><LWD_Tyrol/></customData>
+  </bulletin>
+  <bulletin bulletinID="test-zweiter-teil" lang="en">
+    <publicationTime>2026-04-16T15:00:00Z</publicationTime>
+    <validTime><startTime>2026-04-16T15:00:00Z</startTime><endTime>2026-04-17T15:00:00Z</endTime></validTime>
+    <region regionID="DE-BY-41"><name>Bavarian Prealps Central</name></region>
+    <dangerRating>
+      <mainValue>low</mainValue>
+      <elevation uom="m"/>
+      <validTimePeriod>all_day</validTimePeriod>
+    </dangerRating>
+  </bulletin>
+</bulletins>
