@@ -28,7 +28,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Hosting | Hetzner Webhosting, seit 7.11.2026 unter **wohinfahrma.de** (Ordner `public_html/wohinfahrma`, Let's Encrypt); wohinfahrma.dablank.de und www leiten dauerhaft um (`server/web/.htaccess`). Deploy per GitHub Action. Tarif Webhosting S: 2 PHP-Prozesse, `memory_limit` seit 8.11.2026 192M (Maximum des Tarifs, vorher 128M), PHP 8.4 (vorher 8.3); die Actions testen mit derselben Version |
 | Web-App zum Installieren | 7.11.2026: `manifest.php` (Name Wohinfahrma, unter dem Symbol „Fahrma“), `sw.js` und `offline.html` nach stegen-wind (nur Offline-Seite, nichts zwischengespeichert), Symbol als Platzhalter (`icon.svg`, PNG 192/512/180). Erst nach dem Umzug auf wohinfahrma.de auf dem Handy installieren. Hinweis „Als App installieren“ beim ersten Besuch (Chrome/Edge/Android mit Knopf, iPhone als Text), nach „Nicht jetzt“ 30 Tage Ruhe |
 | Quellen für Regionen | 7.11.2026 gesichtet, siehe „Quellen für Regionen und Spots“ |
-| Regel-Windlagen | 7.11.2026: Druckdifferenzen und Grundströmung statt Modellwind für Thermik- und Föhnlagen; Reschensee, Silvaplana, Gardasee Nord, Urnersee. Stärken, Tageszeiten und Saison geschätzt, siehe „Regel-Windlagen“ |
+| Regel-Windlagen | 7.11.2026: Druckdifferenzen und Grundströmung statt Modellwind für Thermik- und Föhnlagen; Reschensee, Silvaplana, Gardasee Nord, Urnersee. 10.11.2026 dazu Walchensee, Achensee, Lago di Santa Croce; Kochelsee und Zeller See bewusst ohne (siehe `hinweis`). Stärken, Tageszeiten und Saison geschätzt, siehe „Regel-Windlagen“ |
 | Verlauf über die Abrufe | 7.11.2026: dieselbe Chance aus bis zu drei früheren Abrufen, Pfeil in der Kachel und „stabil / steigt / fällt / schwankt“ in der Detailzeile, mit Zwischenspeicher; siehe „Verlauf über die Abrufe“ |
 | Landkarte | 7.11.2026: Regionen als Punkte über der Rangliste, eingefärbt nach der Chance am gewählten Tag, mit Umkreis; eigene SVG-Grundlage aus Natural Earth, keine fremden Server; siehe „Landkarte“ |
 | Fahrzeit und Abfahrt | 7.11.2026: Fahrzeit ab Inning laut openrouteservice (GitHub Action `fahrzeiten.yml`, braucht Secret `ORS_API_KEY`), sonst aus der Luftlinie geschätzt; „Abfahrt bis …“ an guten Tagen; Sortierung „Fahrzeit“; Umkreis nach Straßen-km. Echter ORS-Lauf am 7.11.2026: 40 von 40 Zielen; siehe „Fahrzeit und Abfahrt“ |
@@ -289,6 +289,8 @@ Sind alle Bedingungen einer Stunde erfüllt, rechnet die Bewertung mit der Mitte
 - Die Schwellen stammen von Seiten, die mit Stationsdruck (DWD Open Data) arbeiten; hier ist es Modell-Meeresspiegeldruck. Sie sind deshalb nur Startwerte.
 - Stärken, Tageszeiten, Saison und die Höhe der Grundströmung bei Silvaplana sind geschätzt (im `hinweis` je Region vermerkt) und sollten aus eigener Erfahrung korrigiert werden.
 - Ob das ECMWF-Ensemble bei Open-Meteo Druckniveaus (700/850 hPa) liefert, ist ungeprüft; die Quellen `hoehe` und `hoehe_ensemble` laufen deshalb getrennt, ein Fehler dort lässt die Vorhersage unberührt.
+- Seit 10.11.2026 (Walchensee, Achensee, Santa Croce) steht „leichte Grundströmung“ bzw. „Hochdruck“ aus den Quellen als 10-m-Modellwind am Vorhersagepunkt höchstens 8 kn (wie beim Urnersee). Das ist ein Ersatz: Zeigt das Modell die Thermik selbst schon stärker, fällt der Tag fälschlich heraus. Föhn als Bozen − Innsbruck über 4 hPa ist für die Seen nördlich des Inntals nur angenähert.
+- Meer-Regionen mit Thermik (Talamone, Algarve West) und der Ebro-Stausee bleiben bei normalen Windlagen: Seewind erfassen die Modelle besser, und die alpinen Druckachsen passen dort nicht.
 - Bora (Maribor − Triest) und Bise (Genf − Güttingen) bleiben normale Windlagen, weil die Modelle diese großräumigen Winde gut erfassen.
 
 ## Sammler
@@ -419,7 +421,7 @@ server/web/vorrechnen.php  Bewertung vorab rechnen (nur mit Schlüssel)
 8. Regel-Windlagen nach dem ersten echten Lauf prüfen (Druckniveaus im Ensemble, plausible Tage); Stärken aus eigener Erfahrung eintragen
 9. Google Search Console: Impressum und Datenschutz prüfen, Domain bestätigen, `indexieren` einschalten, Sitemap einreichen (siehe „Suchmaschinen“)
 10. Schnee-Modus nach dem ersten echten Lauf prüfen (siehe `SCHNEE.md`, „Beim ersten echten Lauf prüfen“); Mikroregion-IDs eintragen; Bayern und Tirol freigeben, sobald die Warndienste antworten
-11. Später: weitere Regeln (Achensee, Walchensee, Mistral), Spot-Meldungen, Korrektur je Spot aus Sessions
+11. Später: weitere Regeln (Kochelsee, Zeller See, Comer See, Mistral), Stärke nach Druckdifferenz staffeln (Vorbild Marcos Pelèr-Tabelle), Spot-Meldungen, Korrektur je Spot aus Sessions
 
 ### Ideen, in dieser Reihenfolge (7.11.2026)
 
