@@ -112,6 +112,17 @@ pruefe(!isset($nm['b']) || $nm['b'] !== $nm['a'], 'Namen: zwei nahe Punkte nicht
 // Reschensee/Silvaplana (9.11.2026): Name rechts von B laege direkt unter A und liest sich als Name von A
 $nm = karte_namen(['a' => ['xy' => [100, 100], 'name' => 'Reschensee', 'rang' => 1.0], 'b' => ['xy' => [97.5, 102.0], 'name' => 'Silvaplana', 'rang' => 0.0]], 1.0, [60, 60, 80, 88]);
 pruefe(($nm['a'] ?? null) === 'rechts' && ($nm['b'] ?? null) !== 'rechts', 'Namen: kein Name direkt neben einem fremden Punkt');
+// Orte zur Orientierung (seit 10.11.2026)
+$aus = karte_ausschnitt([karte_punkt(48.07, 11.15), karte_punkt(46.5, 11.4)]);
+$or = karte_orte($aus, $aus[2] / 42, [], []);
+$on = array_column($or, 'name');
+pruefe(in_array('Innsbruck', $on, true) && in_array('München', $on, true) && !in_array('Paris', $on, true), 'Orte im Alpen-Ausschnitt: München, Innsbruck, kein Paris');
+$ib = karte_punkt(47.269, 11.404);
+$or2 = karte_orte($aus, $aus[2] / 42, [$ib], []);
+pruefe(!in_array('Innsbruck', array_column($or2, 'name'), true), 'Ort unter einem Regionspunkt entfaellt');
+$gross = karte_orte(karte_ausschnitt([karte_punkt(63, -19), karte_punkt(23, 35)]), 1.0, [], []);
+pruefe(!array_filter($gross, fn($o) => $o['stufe'] === 2), 'Europa-Ausschnitt: nur grosse Staedte');
+pruefe(str_contains(karte_orte_svg($or, 1.0), '<g class="orte"') && karte_orte_svg([], 1.0) === '', 'Orte als SVG');
 $e = ['tage' => ['t1' => ['det' => ['geht' => true], 'ens' => ['chance' => 0.3]], 't2' => ['det' => ['geht' => false], 'ens' => ['chance' => 0.8]],
                  't3' => ['det' => ['geht' => false], 'ens' => null, 'vorbei' => true]]];
 pruefe(karte_wert($e, null)['tag'] === 't2' && abs(karte_wert($e, 't1')['chance'] - 0.3) < 1e-9 && karte_wert($e, 't3')['tag'] === null,

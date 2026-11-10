@@ -199,11 +199,12 @@ function karte_ausschnitt(array $punkte): array
  * so las sich Silvaplana als Name des Reschensees. Seitlich reicht KARTE_NAME_SEITE x $rp.
  * $punkte: [schluessel => ['xy' => [x, y], 'name' => string, 'rang' => float]]
  * Rueckgabe [schluessel => 'rechts' | 'links'], fehlend = kein Name.
+ * $boxen bekommt die Flaechen der gesetzten Namen (fuer karte_orte()).
  */
 const KARTE_NAME_UNTER = 1.8;  // fremder Punkt ueber/unter dem Namen: Mindestabstand zur Mitte, in Punktgroessen
 const KARTE_NAME_SEITE = 1.0;  // fremder Punkt seitlich vom Namen
 
-function karte_namen(array $punkte, float $rp, array $ausschnitt): array
+function karte_namen(array $punkte, float $rp, array $ausschnitt, ?array &$boxen = null): array
 {
     [$vx, $vy, $vw, $vh] = $ausschnitt;
     $schrift = $rp;
@@ -247,11 +248,121 @@ function karte_namen(array $punkte, float $rp, array $ausschnitt): array
             if ($frei) {
                 $out[$k] = $seite;
                 $belegt[] = $box;
+                $boxen[] = $box;
                 break;
             }
         }
     }
     return $out;
+}
+
+/**
+ * Orte zur Orientierung (seit 10.11.2026, Wunsch Tobias): Staedte als kleiner grauer Punkt
+ * mit Namen, unter den Regionen. Stufe 1 (grosse Staedte) immer, Stufe 2 (Alpenorte) nur bei
+ * einem Ausschnitt bis KARTE_ORTE_STUFE2_GRAD Laengengrade. Koordinaten aus dem Gedaechtnis
+ * (Ortsmitte, auf rund 1 km), nicht gegen eine Quelle geprueft; fuer die Orientierung reicht das.
+ */
+const KARTE_ORTE_STUFE2_GRAD = 10.0;
+const KARTE_ORTE = [
+    // Stufe 1
+    ['München', 48.137, 11.575, 1], ['Innsbruck', 47.269, 11.404, 1], ['Salzburg', 47.800, 13.044, 1],
+    ['Zürich', 47.377, 8.540, 1], ['Bozen', 46.498, 11.354, 1], ['Mailand', 45.464, 9.190, 1],
+    ['Verona', 45.438, 10.992, 1], ['Venedig', 45.440, 12.316, 1], ['Wien', 48.208, 16.373, 1],
+    ['Stuttgart', 48.776, 9.183, 1], ['Genf', 46.204, 6.143, 1], ['Lyon', 45.764, 4.835, 1],
+    ['Turin', 45.070, 7.687, 1], ['Graz', 47.071, 15.439, 1], ['Ljubljana', 46.056, 14.506, 1],
+    ['Bern', 46.948, 7.447, 1], ['Nürnberg', 49.452, 11.077, 1], ['Frankfurt', 50.110, 8.682, 1],
+    ['Marseille', 43.296, 5.370, 1], ['Barcelona', 41.387, 2.168, 1], ['Paris', 48.857, 2.352, 1],
+    ['Hamburg', 53.551, 9.994, 1], ['Berlin', 52.520, 13.405, 1], ['Rom', 41.903, 12.496, 1],
+    ['Florenz', 43.770, 11.256, 1], ['Kopenhagen', 55.676, 12.568, 1], ['Madrid', 40.417, -3.704, 1],
+    ['Lissabon', 38.722, -9.139, 1], ['Bordeaux', 44.838, -0.579, 1], ['Nantes', 47.218, -1.554, 1],
+    // Stufe 2
+    ['Garmisch', 47.492, 11.095, 2], ['Kufstein', 47.583, 12.170, 2], ['Landeck', 47.140, 10.567, 2],
+    ['Bregenz', 47.503, 9.747, 2], ['Lienz', 46.829, 12.769, 2], ['Chur', 46.851, 9.532, 2],
+    ['Brixen', 46.715, 11.657, 2], ['Meran', 46.671, 11.160, 2], ['Trient', 46.067, 11.121, 2],
+    ['Villach', 46.611, 13.855, 2], ['Klagenfurt', 46.624, 14.308, 2], ['Kempten', 47.727, 10.315, 2],
+    ['Rosenheim', 47.857, 12.123, 2], ['Zell am See', 47.324, 12.796, 2], ['Bludenz', 47.155, 9.822, 2],
+    ['Reutte', 47.486, 10.719, 2], ['Kitzbühel', 47.446, 12.392, 2], ['St. Moritz', 46.498, 9.839, 2],
+    ['Lugano', 46.004, 8.951, 2], ['Bergamo', 45.698, 9.677, 2], ['Udine', 46.063, 13.235, 2],
+    ['Augsburg', 48.371, 10.898, 2], ['Bischofshofen', 47.418, 13.219, 2], ['Liezen', 47.567, 14.240, 2],
+    ['Bad Tölz', 47.760, 11.557, 2], ['Belluno', 46.140, 12.217, 2], ['Davos', 46.802, 9.836, 2],
+];
+
+/**
+ * Welche Orte passen in den Ausschnitt, ohne Regionspunkte, deren Namen, den Standort oder
+ * einander zu verdecken? Erst Stufe 1, dann Stufe 2; Name rechts, links, darueber oder darunter,
+ * sonst kein Ort.
+ * $frei: Liste von [x, y] (Punkte, Standort), $boxen: Namensflaechen aus karte_namen().
+ * Rueckgabe Liste ['name', 'xy', 'seite', 'stufe'].
+ */
+function karte_orte(array $ausschnitt, float $rp, array $punkte, array $boxen, array $orte = KARTE_ORTE): array
+{
+    [$vx, $vy, $vw, $vh] = $ausschnitt;
+    $schrift = $rp * 0.85;
+    $belegt = $boxen;
+    foreach ($punkte as [$x, $y]) {
+        $belegt[] = [$x - $rp * 1.2, $y - $rp * 1.2, $x + $rp * 1.2, $y + $rp * 1.2];
+    }
+    $stufe2 = $vw <= KARTE_ORTE_STUFE2_GRAD * KARTE_K;
+    usort($orte, fn($a, $b) => $a[3] <=> $b[3]);
+    $out = [];
+    foreach ($orte as [$name, $lat, $lon, $stufe]) {
+        if ($stufe > 1 && !$stufe2) {
+            continue;
+        }
+        [$x, $y] = karte_punkt($lat, $lon);
+        $rd = $rp * 0.25;
+        $dot = [$x - $rd, $y - $rd, $x + $rd, $y + $rd];
+        if ($dot[0] < $vx || $dot[2] > $vx + $vw || $dot[1] < $vy || $dot[3] > $vy + $vh) {
+            continue;
+        }
+        $b = mb_strlen($name) * 0.55 * $schrift;
+        $kandidaten = [
+            'rechts' => [$x + $rp * 0.5, $y - $schrift * 0.6, $x + $rp * 0.5 + $b, $y + $schrift * 0.6],
+            'links'  => [$x - $rp * 0.5 - $b, $y - $schrift * 0.6, $x - $rp * 0.5, $y + $schrift * 0.6],
+            'oben'   => [$x - $b / 2, $y - $rp * 0.4 - $schrift * 1.1, $x + $b / 2, $y - $rp * 0.4],
+            'unten'  => [$x - $b / 2, $y + $rp * 0.4, $x + $b / 2, $y + $rp * 0.4 + $schrift * 1.1],
+        ];
+        $ueber = fn(array $a, array $o) => $a[0] < $o[2] && $a[2] > $o[0] && $a[1] < $o[3] && $a[3] > $o[1];
+        if (array_filter($belegt, fn($o) => $ueber($dot, $o))) {
+            continue;
+        }
+        foreach ($kandidaten as $seite => $box) {
+            if ($box[0] < $vx || $box[2] > $vx + $vw || $box[1] < $vy || $box[3] > $vy + $vh) {
+                continue;
+            }
+            if (array_filter($belegt, fn($o) => $ueber($box, $o))) {
+                continue;
+            }
+            $out[] = ['name' => $name, 'xy' => [$x, $y], 'seite' => $seite, 'stufe' => $stufe];
+            $belegt[] = $box;
+            $belegt[] = $dot;
+            break;
+        }
+    }
+    return $out;
+}
+
+/** SVG der Orte (unter den Regionspunkten zeichnen, nicht anklickbar). */
+function karte_orte_svg(array $orte, float $rp): string
+{
+    if (!$orte) {
+        return '';
+    }
+    $s = '<g class="orte" aria-hidden="true">';
+    foreach ($orte as $o) {
+        [$x, $y] = $o['xy'];
+        [$tx, $ty, $anker] = match ($o['seite']) {
+            'rechts' => [$x + $rp * 0.5, $y + $rp * 0.3, ''],
+            'links'  => [$x - $rp * 0.5, $y + $rp * 0.3, ' links'],
+            'oben'   => [$x, $y - $rp * 0.65, ' mitte'],
+            default  => [$x, $y + $rp * 0.4 + $rp * 0.85 * 0.85, ' mitte'],
+        };
+        $s .= '<circle cx="' . round($x, 2) . '" cy="' . round($y, 2) . '" r="' . round($rp * 0.22, 2) . '"/>'
+            . '<text class="' . trim(($o['stufe'] === 1 ? 'gross' : '') . $anker) . '" x="' . round($tx, 2)
+            . '" y="' . round($ty, 2) . '" font-size="' . round($rp * 0.85, 2) . '" stroke-width="' . round($rp * 0.25, 2) . '">'
+            . htmlspecialchars($o['name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</text>';
+    }
+    return $s . '</g>';
 }
 
 /**

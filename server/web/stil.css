@@ -202,6 +202,11 @@ a.tag:active { filter: brightness(.94); }
 .landkarte .punkt text.zahl { fill: var(--karte); font-family: var(--zahlen); font-weight: 600; text-anchor: middle; pointer-events: none; }
 .landkarte .punkt text.name.links { text-anchor: end; }
 .landkarte .punkt text.name { fill: var(--text); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-weight: 500; paint-order: stroke; stroke: var(--land); stroke-linejoin: round; }
+.landkarte .orte circle { fill: var(--leise); }
+.landkarte .orte text { fill: var(--leise); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-style: italic; paint-order: stroke; stroke: var(--land); stroke-linejoin: round; pointer-events: none; }
+.landkarte .orte text.gross { font-weight: 600; }
+.landkarte .orte text.links { text-anchor: end; }
+.landkarte .orte text.mitte { text-anchor: middle; }
 .landkarte .punkt:hover circle, .landkarte .punkt:focus circle { stroke: var(--text); stroke-width: 2px; }
 .landkarte .windfeld { opacity: .55; pointer-events: none; }
 .landkarte.ohne-feld .windfeld, .landkarte.ohne-feld .windskala { display: none; }

@@ -659,7 +659,9 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     }
     $namen = karte_namen(array_map(fn($p) => ['xy' => $p['xy'], 'name' => $p['e']['region']['name'],
                                               'rang' => $p['wert']['chance'] ?? ($p['wert']['geht'] ? 1 : -1)], $punkte),
-                         $rp, [$vx, $vy, $vw, $vh]);
+                         $rp, [$vx, $vy, $vw, $vh], $namenBoxen);
+    // Orte zur Orientierung (seit 10.11.2026), frei von Punkten, Namen und Maennchen
+    $orte = karte_orte([$vx, $vy, $vw, $vh], $rp, array_merge(array_column($punkte, 'xy'), [$heimXY, [$heimXY[0], $heimXY[1] - $rp * 1.5]]), $namenBoxen ?? []);
 ?>
 <details class="karte landkarte" id="landkarte" open>
   <summary><b>Karte</b> <span class="leise klein"><?= $kartenTag ? 'Chance ' . h(tag_kurz($kartenTag, $heute)) : 'beste Chance im Zeitraum' ?> · Tag über <?= $woche ? 'den Spaltenkopf' : '„Sortierung“' ?> wählen</span></summary>
@@ -677,6 +679,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     </g>
     <?php if (!$flug): ?>
     <circle class="umkreis" cx="<?= round($heimXY[0], 1) ?>" cy="<?= round($heimXY[1], 1) ?>" r="<?= round(karte_km((float)$km, $heim[0]), 1) ?>"/>
+    <?= karte_orte_svg($orte, $rp) ?>
     <?php endif ?>
     <?php foreach ($punkte as $nr => $p):
         $r = $p['e']['region'];
