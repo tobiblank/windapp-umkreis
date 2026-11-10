@@ -54,6 +54,7 @@ try {
 } catch (RuntimeException $e) {
     fehlerseite('Der Regionen-Katalog ist nicht lesbar.', 500);
 }
+fremdprognosen_laden($cfg, $regionen);
 $nachId = [];
 foreach ($regionen as $r) {
     $nachId[$r['id']] = $r;
@@ -110,7 +111,7 @@ function daten_fuer(array $r, array $stand): array
 }
 
 $daten = daten_fuer($region, $stand);
-$woche = $daten['vorhersage'] ? region_bewerten($region, $daten, $sport, $tage, $jetzt) : [];
+$woche = $daten['vorhersage'] ? fremd_einmischen($region, region_bewerten($region, $daten, $sport, $tage, $jetzt), $sport, $jetzt) : [];
 
 // Tag: gewaehlt, sonst der beste (hoechste Chance, dann Fenster im Modellmittel), sonst heute
 $tag = in_array($_GET['tag'] ?? '', $tage, true) ? (string)$_GET['tag'] : null;
@@ -338,6 +339,12 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
     $det = $b['det'];
     $o .= '<p class="klein">' . h(tag_kurz($tag, $heute)) . ': ' . (!empty($b['vorbei']) ? 'vorbei'
         : ($det['geht'] ? h($det['windlage'] ?? 'jede Richtung') . ' · ' . $det['von'] . '–' . $det['bis'] . ' Uhr' : '<span class="leise">' . h($det['grund']) . '</span>')) . '</p>';
+    if (!empty($b['fremd'])) {
+        // Seit 10.11.2026: Chance aus einer kalibrierten Spezialprognose, die Kurven bleiben Modellwind
+        $fr = $b['fremd'];
+        $o .= '<p class="klein">Chance aus der <a href="' . h($fr['url']) . '" rel="noopener">Vorhersage von ' . h($fr['name']) . ' ↗</a>, an Messwerten kalibriert: '
+            . h(fremd_text($fr, $heute->getTimezone())) . '. <span class="leise">Die Kurven unten sind weiter Modellwind.</span></p>';
+    }
     if (!empty($b['temp']) && $det['grund'] !== 'noch keine Vorhersage') {
         $n = neopren($b['temp']);
         $teile = [];

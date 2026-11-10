@@ -28,6 +28,13 @@ return [
     // Erzeugen z. B. mit: php -r 'echo bin2hex(random_bytes(20)), "\n";'
     // 'vorrechnen_schluessel' => '...',
 
+    // Optional (seit 10.11.2026): Ordner fremder, kalibrierter Prognosen je Region (Katalogfeld
+    // fremdprognose). Walchensee: der Ordner, in den der Sammler von ammerseewind.de die
+    // Walchensee-Vorhersage von Marco Schanda schreibt, also <data_dir von stegen-wind>/walchensee
+    // (Dateien 2026-11-10.ndjson usw.). Wohinfahrma ruft seinen Dienst nicht selbst ab.
+    // Ohne Eintrag: Walchensee wie bisher aus dem Modellwind, als "grob".
+    // 'fremdprognosen' => ['walchensee' => '/usr/home/DEINUSER/winddaten/walchensee'],
+
     // Optional: Startseite (ohne Parameter) fuer Suchmaschinen freigeben.
     // Standard false = ueberall noindex. Erst einschalten, wenn Impressum
     // und Datenschutz geprueft sind. Alle anderen Ansichten bleiben noindex.

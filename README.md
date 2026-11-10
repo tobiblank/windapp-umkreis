@@ -44,6 +44,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Hell / Dunkel | 7.11.2026: wie das Gerät, im Fuß festlegbar auf „Hell“ oder „Dunkel“ (nur im Browser gespeichert); siehe „Hell und Dunkel“ |
 | Schnee-Modus | 8.11.2026: `schnee.php` (Liste, Woche, Karte; seit 9.11.2026 eine Regel „Pulvertag“ statt Freeride und Skitour), `schnee_stunden.php`, Schalter Wind · Schnee im Kopf beider Seiten, Katalog `daten/schneeregionen.json` (9 Regionen), Lawinenlage aus CAAML v6 (SLF und Südtirol/Trentino freigegeben, Bayern und Tirol nur Link). **Noch nie gegen echte Quellen gelaufen.** Siehe `SCHNEE.md` |
 | Vorrechnen | 8.11.2026: Bewertung je Sportart, Tag und Region im Zwischenspeicher, unabhängig von Standort und Umkreis; nach jedem Sammler-Lauf und Deploy von `vorrechnen.php` gefüllt (braucht Schlüssel in `config.php` und Secret `VORRECHNEN_SCHLUESSEL`). Mit Testdaten in Originalgröße: Rangliste 2500 km 0,36 s / 104 MB vorher, aus dem Zwischenspeicher unter 0,01 s / 2 MB. Siehe „Vorrechnen“ |
+| Fremde Prognosen | 10.11.2026: Walchensee bekommt für Kite (ohne Wave) die Chance aus Marco Schandas kalibrierter Walchensee-Vorhersage, mit seiner Zustimmung (Mail 10.11.2026). Gelesen aus dem Datenordner von ammerseewind.de, sein Dienst wird nicht zusätzlich abgerufen. **Wirkt erst, wenn `fremdprognosen` in `config.php` auf dem Server steht.** Siehe „Fremde Prognosen“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -73,6 +74,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | `hinweis` | Herkunft und offene Fragen (nicht auf der Seite) |
 | `links` | optional, `[{name, url}]`: lokale Spezialprognose, auf der Seite als „Genauer: …“ verlinkt; nur `https://` |
 | `alplakes` | optional, nur Seen: Schlüssel des Simstrat-Seemodells bei [Alplakes](https://www.alplakes.eawag.ch/models), z. B. `ammersee`, `upperconstance`, `lucerneurnersee`. Damit holt der Sammler die Wassertemperatur (Quelle `seewasser`) |
+| `fremdprognose` | optional, `{name, url}` (seit 10.11.2026): kalibrierte Spezialprognose, deren Chance für Kite (ohne Wave) die eigene ersetzt; die Daten liest die Seite aus dem Ordner in `config.php` (`fremdprognosen`). Siehe „Fremde Prognosen“ |
 | `thermik` | optional, `true`: Thermik-See. Die Seite zeigt den Hinweis „Thermik“, weil das Modellmittel den Wind dort vermutlich unterschätzt |
 | `anreise` | optional, `["auto"]` (Standard), `["flug"]` oder `["auto", "flug"]`: in welcher Ansicht die Region erscheint. Reine Flugziele bekommen keine Fahrzeit |
 | `flughafen` | optional, `{name, transfer_min}`: Flughafen für die Ansicht „Flug“, Transfer zum Spot in Minuten (geschätzt) |
@@ -247,6 +249,18 @@ Seit 8.11.2026 vorbereitet. In den Index soll nur die **Startseite ohne Paramete
 - **Reihenfolge:** Impressum und Datenschutz prüfen → Property bestätigen → `indexieren` einschalten → Sitemap einreichen → in der Search Console „URL-Prüfung“ für die Startseite.
 - Die Prüfungen stehen in `tests/test.php` (Abschnitt „Seite“).
 
+## Fremde Prognosen
+
+Seit 10.11.2026. Für manche Regionen gibt es eine an Messwerten kalibrierte Spezialprognose, die besser ist als jeder Modellwind hier. Wohinfahrma übernimmt dann deren Chance, statt selbst zu rechnen.
+
+- **Walchensee:** [Walchensee Wind Predictor](https://walchenseewindpredictor.onrender.com/) von Marco Schanda, Zustimmung per Mail am 10.11.2026. Je Tag `chance` (0–1), `status` (go/maybe/no), `peak_kt`.
+- **Woher die Daten kommen:** Der Sammler von ammerseewind.de (`wind-logger.php`, Quelle `walchensee`) holt `/forecast` ohnehin stündlich von 6 bis 21 Uhr. Wohinfahrma liest dieselben Dateien (`<data_dir von stegen-wind>/walchensee/JJJJ-MM-TT.ndjson`) und weckt seinen Server nicht zusätzlich. Der Ordner steht in `config.php`: `'fremdprognosen' => ['walchensee' => '…/walchensee']`. Ohne Eintrag bleibt der Walchensee „grob“ aus dem Modellwind.
+- **Frische** wie `prognose.php` in stegen-wind: nur der neueste erfolgreiche Abruf, `status` success, nicht `stale`, `generated_at` (Ortszeit) höchstens 18 h alt. Sonst gilt keiner.
+- **Wofür:** nur Kite-Sportarten ohne Wave (seine Chance meint kitebaren Wind); Wing, Windsurf, Segeln behalten den eigenen, groben Wert. Heute nur bis 15 Uhr Ortszeit (wie der Hinweis in ammerseewind.de), danach der eigene Wert. Sperren aus den Spot-Infos gehen vor.
+- **Was ersetzt wird:** nur die Chance des Tages (Kachel, Rangliste, Woche, Roadtrip, Karte). Die Detailzeile zeigt dann „GO · Spitze 17 kn · Stand 6:10 · Vorhersage von Marco Schanda ↗“, die Stundenseite einen Satz dazu; die Kurven bleiben Modellwind. Kein Verlauf über die Abrufe für diese Tage, weil die früheren Abrufe Modellwind sind.
+- **Zwischenspeicher:** Die vorgerechnete Bewertung bleibt ohne fremde Prognose; `fremd_einmischen()` setzt sie erst beim Zusammensetzen der Rangliste ein. So macht sein stündlicher Stand nicht den ganzen Zwischenspeicher ungültig.
+- **Gardasee (offen):** Marco hat auch eine kalibrierte Prognose für Pelèr und Ora ([kitepredictionlagodigarda.onrender.com](https://kitepredictionlagodigarda.onrender.com/)). Endpunkt und Zustimmung sind angefragt; dann als zweite Quelle im Sammler von ammerseewind.de und `fremdprognose` bei `gardasee-nord`, Format der Tage vermutlich anders (Session Pelèr/Ora).
+
 ## Regel-Windlagen
 
 Seit 7.11.2026, nach dem Vorbild lokaler Vorhersageseiten (kitewetter.at, kitesailing.ch, unhooked). Für Thermik- und Föhnlagen ist der 10-m-Modellwind am See schlecht; diese Seiten schließen aus Druckdifferenzen und Grundströmung, **ob** die Windlage kommt. Eine Windlage mit `druck` und/oder `grundstroemung` ist eine Regel-Windlage:
@@ -328,7 +342,7 @@ Stand 7.11.2026. Für Windlagen, Sektoren und `hinweis`; Regeln in eigenen Worte
 | [kitewetter.at](https://www.kitewetter.at) | Spotseiten für rund 20 Alpenreviere (u. a. Ammersee/Starnberger See, Achensee, Attersee, Bodensee, Chiemsee, Comer See, Gardasee/Idrosee, Reschensee, Silvaplana, Traunsee, Walchensee/Kochelsee, Zell am See, Neusiedler See, Adria). Arbeitet mit AROME 1,3 km, ICON-D2, INCA, MOSMIX, Föhndiagramm (Druckdifferenz Bozen–Innsbruck, Lugano–Zürich aus DWD Open Data), Thermikvorhersage, Radiosonde München | Kandidatenliste für den Katalog, Vorbild für die Methode, Link je Region. Nutzungsbedingungen nicht geprüft |
 | [kitesailing.ch](https://kitesailing.ch/en/spot/weather-kitesurfing) | Silvaplana: Kiten nur bei S bis SW, N sehr selten fahrbar. Malojawind ab kurz vor Mittag bis später Nachmittag; Höhenströmung N–SO schwächt, kräftige W–SW stärkt. Schwellen der Druckdifferenz: ab 0 hPa Südföhn (gut), 0 bis −4 hPa Maloja setzt sich meist durch, unter −6 hPa Nordföhn meist zu stark | Aktuelle Quelle für Silvaplana, auch für Zonen und Saison |
 | [unhooked.ch](https://www.unhooked.ch/2008/spotguide/) | Spotguide Schweiz mit „Windverhältnisse“ je Spot. **Keine eigene Vorhersage** (anders als kitesailing.ch schreibt): Das Team wertet meteoblue-Karten (10 m, 850, 700 hPa) von Hand aus | Faustregeln für die Grundströmung, siehe unten. Copyright 2008, jüngstes gesehenes Archiv 2016, keine Nutzungsbedingungen gefunden |
-| Walchensee Wind Predictor (Marco Schanda), `walchenseewindpredictor.onrender.com/forecast` | Je Tag `chance`, `status` (go/maybe/no), `peak_kt`, dazu `generated_at`, `stale`; rechnet um 6, 10 und 21 Uhr; Thermikfenster laut stegen-wind 11–18 Uhr | In ammerseewind.de seit 6./7.11.2026 eingebunden, **Zustimmung gilt nur dafür**. Für Wohinfahrma erst Marco fragen. Dann nicht erneut abrufen, sondern die Datei mitlesen, die der Sammler von ammerseewind.de holt (zweiter Pfad in `config.php`). Walchensee bekommt seine Zahl statt des Rohwerts, nur für Kite-Sportarten, markiert „Prognose von Marco Schanda“; Frische wie in prognose.php: höchstens 18 h alt, nicht `stale` |
+| Walchensee Wind Predictor (Marco Schanda), `walchenseewindpredictor.onrender.com/forecast` | Je Tag `chance`, `status` (go/maybe/no), `peak_kt`, dazu `generated_at`, `stale`; rechnet um 6, 10 und 21 Uhr; Thermikfenster laut stegen-wind 11–18 Uhr | In ammerseewind.de seit 6./7.11.2026, in Wohinfahrma seit 10.11.2026 (Zustimmung per Mail), siehe „Fremde Prognosen“ |
 | [addicted-sports.com](https://www.addicted-sports.com/forecast/) | Spotvorhersage Walchensee Urfeld aus eigenem MOS-Modell: Grundwind, Böen, Windwahrscheinlichkeit, Druckgradient, Höhenwind 850 hPa, Schichtung 2 m–850 hPa | Link je Region, Vorbild für Thermik-Kennwerte |
 | [kiteloopers.com](https://www.kiteloopers.com/legal/terms) | Rund 1700 Spots weltweit | **Nur von Hand zum Gegenprüfen.** Die Bedingungen verbieten Scraping und automatisierte Extraktion; die Übernahme wesentlicher Teile der Datenbank (Spots, Windstatistik) gilt dort als Verletzung des Datenbankrechts |
 
@@ -397,7 +411,7 @@ server/web/vorrechnen.php  Bewertung vorab rechnen (nur mit Schlüssel)
 
 1. Offene Punkte zum Sammler oben prüfen
 2. Weitere Regionen eintragen; zuerst Silvaplana und Urnersee mit den neuen Feldern `grundstroemung`, `saison`, `links`
-3. Marco Schanda fragen, ob Wohinfahrma seine Walchensee-Prognose zeigen darf; erst danach einbauen
+3. ~~Walchensee-Prognose von Marco Schanda~~ (10.11.2026 eingebaut; auf dem Server `fremdprognosen` in `config.php` eintragen). Gardasee (Pelèr/Ora) von Marco: Endpunkt und Zustimmung angefragt
 4. Design und endgültiges Symbol (in Arbeit)
 5. Zugang aus stegen-wind übernehmen, Wohnort und Sportarten je Person
 6. Stegen: kalibrierte Chance aus ammerseewind.de über einen kleinen Endpoint übernehmen

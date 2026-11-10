@@ -7,6 +7,8 @@
  *           windlagen [{name, sektor [von, bis], charakter?}], spots [...],
  *           links? [{name, url}] (lokale Spezialprognose, nur verlinkt),
  *           thermik? true (Modellwind unterschaetzt den Wind vermutlich; auf der Seite markiert)
+ *           fremdprognose? {name, url} (seit 10.11.2026: kalibrierte Spezialprognose, deren Chance
+ *           fuer Kite die eigene ersetzt; Ordner der Daten in config.php 'fremdprognosen')
  *           alplakes? "ammersee": Schluessel des Simstrat-Seemodells bei Alplakes (Eawag),
  *           nur bei Seen; der Sammler holt damit die Wassertemperatur (seit 8.11.2026)
  *           anfahrt? [lat, lon] (Ziel fuer die Fahrzeit, z. B. Parkplatz am Spot; sonst
@@ -135,6 +137,10 @@ function regionen_pruefen(array $d): array
         }
         if (isset($r['alplakes']) && (($r['typ'] ?? '') !== 'see' || !is_string($r['alplakes']) || !preg_match('/^[a-z0-9]+$/', $r['alplakes']))) {
             $f[] = "$wo: alplakes nur bei Seen, als Schluessel des Simstrat-Modells (a-z, 0-9)";
+        }
+        if (isset($r['fremdprognose']) && (!is_array($r['fremdprognose']) || empty($r['fremdprognose']['name'])
+            || !is_string($r['fremdprognose']['url'] ?? null) || !preg_match('#^https://[^\s"<>]+$#', $r['fremdprognose']['url']))) {
+            $f[] = "$wo: fremdprognose braucht name und eine https-Adresse";
         }
         foreach ($r['links'] ?? [] as $l) {
             if (empty($l['name']) || !is_string($l['url'] ?? null) || !preg_match('#^https://[^\s"<>]+$#', $l['url'])) {

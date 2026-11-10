@@ -31,6 +31,7 @@ for ($i = 0; $i < 7; $i++) {
 }
 $regionen = regionen_laden($CFG['regionen_datei'] ?? "$WEB_DIR/lib/regionen.json");
 $stand = daten_laden(rtrim($CFG['data_dir'], '/'));
+fremdprognosen_laden($CFG, $regionen);
 $liste = rangliste($regionen, $stand, $sport, $heim, $radius, $tage);
 
 printf("%s ab %d kn, Umkreis %d km, ROHWERTE (nicht kalibriert)\n\n", $sport['name'], $sport['min'], $radius);

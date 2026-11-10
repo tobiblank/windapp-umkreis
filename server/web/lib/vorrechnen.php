@@ -205,7 +205,8 @@ function rangliste_mit_cache(array $regionen, string $dataDir, ?string $cacheDir
         if (in_array(null, $proTag, true)) {
             continue;   // keine Daten (wie rangliste(): weder Vorhersage noch Ensemble)
         }
-        $liste[] = ranglisten_eintrag($r, $km, $proTag);
+        // Fremde Prognose erst hier, nicht im Zwischenspeicher (siehe fremd_einmischen)
+        $liste[] = ranglisten_eintrag($r, $km, fremd_einmischen($r, $proTag, $sport, $jetzt));
     }
     return ['liste' => rangliste_sortieren($liste, 'summe'), 'stand' => $stand,
             'gerechnet' => count($fehlt), 'aus_cache' => count($kandidaten) - count($fehlt)];

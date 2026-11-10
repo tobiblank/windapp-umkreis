@@ -80,6 +80,8 @@ try {
 } catch (RuntimeException $e) {
     fehlerseite('Der Regionen-Katalog ist nicht lesbar.');
 }
+// Kalibrierte Spezialprognosen (seit 10.11.2026, Walchensee): Chance fuer Kite statt Modellwind
+fremdprognosen_laden($cfg, $regionen);
 
 // --- Suchmaschinen ----------------------------------------------------
 // Nur die Startseite ohne Parameter darf in den Index, und erst, wenn
@@ -402,8 +404,8 @@ function trend_fuer(array $e, string $tag): ?array
 {
     global $verlauf;
     $d = $e['tage'][$tag];
-    if (!empty($d['vorbei'])) {
-        return null;
+    if (!empty($d['vorbei']) || !empty($d['fremd'])) {
+        return null;   // fremde Prognose: die frueheren Abrufe sind Modellwind, nicht vergleichbar
     }
     return verlauf_trend($verlauf[$e['region']['id']][$tag] ?? [], $d['ens']['chance'] ?? null);
 }
@@ -834,7 +836,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <?php $kartenZiel = stunden_link($r, in_array($nach, $tage, true) ? $nach : null); ?>
   <article class="karte region beste-<?= beste_stufe($e) ?><?= $guteTage ? '' : ' still' ?>" id="r-<?= h($r['id']) ?>" data-ziel="<?= h($kartenZiel) ?>">
     <div class="region-kopf">
-      <h2><a class="region-link" href="<?= h($kartenZiel) ?>"><?= h($r['name']) ?></a><?php if (!empty($r['thermik'])): ?> <span class="marker thermik" title="Thermik bilden die Modelle schlecht ab: die Zahl ist hier vermutlich zu niedrig">Thermik</span><?php endif ?></h2>
+      <h2><a class="region-link" href="<?= h($kartenZiel) ?>"><?= h($r['name']) ?></a><?php if (!empty($r['thermik'])): $mitFremd = array_filter($e['tage'], fn($x) => !empty($x['fremd'])); ?> <span class="marker thermik" title="<?= h($mitFremd ? 'Chance aus der an Messwerten kalibrierten Vorhersage von ' . reset($mitFremd)['fremd']['name'] : 'Thermik bilden die Modelle schlecht ab: die Zahl ist hier vermutlich zu niedrig') ?>">Thermik</span><?php endif ?></h2>
       <?php if (!$geteilt): ?><span class="leise klein fahrzeit" title="<?= h(fahrzeit_titel($e)) ?>"><?= h(fahrzeit_mit_wort($e['fahrt'])) ?><span class="km"><?= h(km_text($e)) ?></span></span><?php endif ?>
     </div>
     <div class="tage" style="--n: <?= count($tage) ?>">
@@ -855,7 +857,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
           <span class="w vorbei">?</span>
         </a>
         <?php else: ?>
-        <a class="tag <?= stufe($c) ?><?= $nach === $t ? ' gewaehlt' : '' ?>" href="<?= h(stunden_link($r, $t)) ?>" title="<?= h(($c === null ? 'keine Ensemble-Daten' : zahl(100 * $c) . ' % der Läufe')
+        <a class="tag <?= stufe($c) ?><?= $nach === $t ? ' gewaehlt' : '' ?>" href="<?= h(stunden_link($r, $t)) ?>" title="<?= h(($c === null ? 'keine Ensemble-Daten' : zahl(100 * $c) . (!empty($d['fremd']) ? ' % laut Vorhersage von ' . $d['fremd']['name'] : ' % der Läufe'))
                                                      . (!empty($d['rest']) ? ', nur noch ' . $d['fenster'][0] . '–' . $d['fenster'][1] . ' Uhr' : '')
                                                      . ($tr ? '. ' . trend_titel($tr, $tzSeite, $heute) : '')) ?>">
           <span class="t"><?= h(tag_kurz($t, $heute)) ?><?= !empty($d['rest']) && $d['fenster'][0] > FENSTER_AB ? ' ab ' . $d['fenster'][0] : '' ?></span>
@@ -873,7 +875,12 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
         ?>
           <li>
             <b><?= h(tag_kurz($t, $heute)) ?>:</b>
-            <?php if ($det['geht']): ?>
+            <?php if (!empty($d['fremd'])): $fr = $d['fremd']; ?>
+              <?= h(fremd_text($fr, $tzSeite)) ?>
+              <?php if ($tt = temp_text($d)): ?><span class="temp" title="<?= h($tt[1]) ?>">· <?= h($tt[0]) ?></span><?php endif ?>
+              <a href="<?= h($fr['url']) ?>" rel="noopener">· Vorhersage von <?= h($fr['name']) ?> ↗</a>
+              <a class="stunden-link" href="stunden.php?<?= h(http_build_query(['region' => $r['id'], 'sport' => $sportId, 'tag' => $t])) ?>">· Stunden ›</a>
+            <?php elseif ($det['geht']): ?>
               <?= h($d['spot_name'] ?? 'ganze Region') ?> ·
               <?= h($det['windlage'] ?? 'jede Richtung') ?> ·
               <?= $det['von'] ?>–<?= $det['bis'] ?> Uhr ·

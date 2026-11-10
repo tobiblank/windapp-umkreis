@@ -1105,6 +1105,153 @@ function spot_vergleich(array $a, array $b): int
 }
 
 // ===================================================================
+// FREMDE PROGNOSEN (seit 10.11.2026)
+// ===================================================================
+//
+// Fuer einzelne Regionen gibt es eine an Messwerten kalibrierte Spezialprognose,
+// die besser ist als der Modellwind hier. Erste: Walchensee Wind Predictor von
+// Marco Schanda (mit seiner Zustimmung, Mail vom 10.11.2026). Wohinfahrma ruft
+// seinen Dienst nicht selbst ab: Der Sammler von ammerseewind.de holt /forecast
+// ohnehin stuendlich (6-21 Uhr) in seinen Datenordner, eine NDJSON-Datei je UTC-Tag
+// mit Zeilen {ok, payload}. config.php nennt diesen Ordner ('fremdprognosen').
+//
+// Gilt nur fuer Kite-Sportarten ohne Welle (seine Chance meint kitebaren Wind) und
+// ersetzt dort nur die Chance des Tages; Modellmittel, Temperatur usw. bleiben.
+// Bewusst nach dem Zwischenspeicher eingemischt (fremd_einmischen), damit sein
+// stuendlicher Stand nicht die vorgerechnete Bewertung aller Regionen ungueltig macht.
+
+const FREMD_FRISCH_S = 18 * 3600;   // wie prognose.php in stegen-wind: hoechstens 18 h alt
+const FREMD_HEUTE_BIS = 15;          // heute nur bis 15 Uhr Ortszeit, danach ist die Thermik meist vorbei
+const FREMD_STUFEN = ['go' => 'GO', 'maybe' => 'vielleicht', 'no' => 'eher nicht'];
+
+/** Gemerkte Prognosen je Region (fremdprognosen_laden); mit Argument ersetzen */
+function fremdprognosen(?array $neu = null): array
+{
+    static $p = [];
+    if ($neu !== null) {
+        $p = $neu;
+    }
+    return $p;
+}
+
+/**
+ * Payload des Walchensee-Predictors pruefen: status success, nicht stale,
+ * generated_at (Ortszeit Europe/Berlin) hoechstens FREMD_FRISCH_S alt.
+ * Rueckgabe ['stand' => Unix-Zeit, 'tage' => [YYYY-MM-DD => ['chance' 0..1, 'stufe', 'peak_kt' oder null]]] oder null
+ */
+function fremdprognose_auswerten(array $p, ?int $jetzt = null): ?array
+{
+    $jetzt ??= time();
+    if (($p['status'] ?? '') !== 'success' || !empty($p['stale']) || !is_string($p['generated_at'] ?? null)) {
+        return null;
+    }
+    try {
+        $stand = (new DateTimeImmutable($p['generated_at'], new DateTimeZone('Europe/Berlin')))->getTimestamp();
+    } catch (Exception) {
+        return null;
+    }
+    if ($jetzt - $stand > FREMD_FRISCH_S || $stand - $jetzt > 3600) {
+        return null;
+    }
+    $tage = [];
+    foreach ($p['days'] ?? [] as $d) {
+        if (!is_array($d) || empty($d['data_available']) || !is_string($d['date'] ?? null)
+            || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $d['date']) || !is_numeric($d['chance'] ?? null)) {
+            continue;
+        }
+        $tage[$d['date']] = [
+            'chance'  => max(0.0, min(1.0, (float)$d['chance'])),
+            'stufe'   => isset(FREMD_STUFEN[$d['status'] ?? '']) ? $d['status'] : 'no',
+            'peak_kt' => is_numeric($d['peak_kt'] ?? null) ? (float)$d['peak_kt'] : null,
+        ];
+    }
+    return $tage ? ['stand' => $stand, 'tage' => $tage] : null;
+}
+
+/**
+ * Neuester erfolgreicher Abruf im Ordner (heute oder gestern UTC), wie
+ * letzter_lauf_quelle() in stegen-wind: ist der neueste nicht frisch, gilt keiner.
+ */
+function fremdprognose_lesen(string $dir, ?int $jetzt = null): ?array
+{
+    $jetzt ??= time();
+    foreach ([gmdate('Y-m-d', $jetzt), gmdate('Y-m-d', $jetzt - 86400)] as $d) {
+        $f = "$dir/$d.ndjson";
+        if (!is_file($f)) {
+            continue;
+        }
+        $zeilen = @file($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+        for ($i = count($zeilen) - 1; $i >= 0; $i--) {
+            $z = json_decode($zeilen[$i], true);
+            if (is_array($z) && !empty($z['ok']) && is_array($z['payload'] ?? null)) {
+                return fremdprognose_auswerten($z['payload'], $jetzt);
+            }
+        }
+    }
+    return null;
+}
+
+/** Prognosen aller Regionen mit Katalogfeld fremdprognose und Ordner in config.php lesen und merken */
+function fremdprognosen_laden(array $cfg, array $regionen, ?int $jetzt = null): array
+{
+    $p = [];
+    foreach ($regionen as $r) {
+        $dir = $cfg['fremdprognosen'][$r['id']] ?? null;
+        if (!empty($r['fremdprognose']) && is_string($dir) && $dir !== '') {
+            $x = fremdprognose_lesen(rtrim($dir, '/'), $jetzt);
+            if ($x !== null) {
+                $p[$r['id']] = $x;
+            }
+        }
+    }
+    return fremdprognosen($p);
+}
+
+/** Gilt eine fremde Prognose fuer diese Sportart? Kite ohne Welle */
+function fremd_gilt(array $sport): bool
+{
+    return ($sport['gruppe'] ?? '') === 'kite' && empty($sport['welle_min']);
+}
+
+/**
+ * Chance der fremden Prognose in die Bewertung je Tag (region_bewerten) einsetzen.
+ * Nicht an vergangenen Tagen, bei Sperre und heute ab FREMD_HEUTE_BIS Uhr Ortszeit;
+ * dort bleibt der eigene Wert. Der Tag bekommt 'fremd' => [name, url, stufe, peak_kt, stand].
+ */
+function fremd_einmischen(array $region, array $proTag, array $sport, ?DateTimeImmutable $jetzt = null): array
+{
+    $q = $region['fremdprognose'] ?? null;
+    $p = fremdprognosen()[$region['id']] ?? null;
+    if (!$q || !$p || !fremd_gilt($sport)) {
+        return $proTag;
+    }
+    $lok = ($jetzt ?? new DateTimeImmutable('now'))->setTimezone(new DateTimeZone($region['zeitzone']));
+    foreach ($proTag as $tag => $d) {
+        $f = $p['tage'][$tag] ?? null;
+        if ($d === null || $f === null || !empty($d['vorbei']) || str_starts_with((string)($d['det']['grund'] ?? ''), 'Sperre')
+            || ($tag === $lok->format('Y-m-d') && (int)$lok->format('G') >= FREMD_HEUTE_BIS)) {
+            continue;
+        }
+        $proTag[$tag]['ens'] = ['chance' => $f['chance'], 'laeufe' => 0];
+        $proTag[$tag]['offen'] = false;
+        $proTag[$tag]['fremd'] = ['name' => $q['name'], 'url' => $q['url'], 'stufe' => $f['stufe'],
+                                  'peak_kt' => $f['peak_kt'], 'stand' => $p['stand']];
+    }
+    return $proTag;
+}
+
+/** "GO · Spitze 17 kn · Stand 6:10" fuer die Seite */
+function fremd_text(array $fr, DateTimeZone $tz): string
+{
+    $teile = [FREMD_STUFEN[$fr['stufe']] ?? $fr['stufe']];
+    if ($fr['peak_kt'] !== null) {
+        $teile[] = 'Spitze ' . (string)round($fr['peak_kt']) . ' kn';
+    }
+    $teile[] = 'Stand ' . (new DateTimeImmutable('@' . $fr['stand']))->setTimezone($tz)->format('G:i');
+    return implode(' · ', $teile);
+}
+
+// ===================================================================
 // RANGLISTE
 // ===================================================================
 
@@ -1134,7 +1281,7 @@ function rangliste(array $regionen, array $stand, array $sport, array $heim, flo
         if ($daten === null) {
             continue;
         }
-        $liste[] = ranglisten_eintrag($r, $km, region_bewerten($r, $daten, $sport, $tage, $jetzt));
+        $liste[] = ranglisten_eintrag($r, $km, fremd_einmischen($r, region_bewerten($r, $daten, $sport, $tage, $jetzt), $sport, $jetzt));
     }
     return rangliste_sortieren($liste, 'summe');
 }

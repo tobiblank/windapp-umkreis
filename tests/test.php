@@ -823,6 +823,37 @@ file_put_contents("$site/verlauf/config.php", '<?php return ' . var_export(['dat
 pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, '<span class="v steigt">↑ von 0</span>')
        && str_contains($html, 'steigt (0 → 49 → 100 %)') && str_contains($html, 'Frühere Abrufe: '),
        'Seite mit früheren Abrufen: Pfeil in der Kachel, Verlauf in der Detailzeile');
+// Fremde Prognose auf der Seite (seit 10.11.2026): Ammersee im Test mit Prognose aus einem Ordner
+exec('cp -r ' . escapeshellarg("$ROOT/server/web") . ' ' . escapeshellarg("$site/fremd"));
+$fKat = json_decode(file_get_contents(__DIR__ . '/regionen_test.json'), true);
+foreach ($fKat['regionen'] as $k => $fr0) {
+    if ($fr0['id'] === 'ammersee') {
+        $fKat['regionen'][$k]['fremdprognose'] = ['name' => 'Marco Schanda', 'url' => 'https://walchenseewindpredictor.onrender.com/'];
+    }
+}
+file_put_contents("$site/fremd/lib/regionen.json", json_encode($fKat));
+$fOrdner = "$tmp/fremd/seite";
+@mkdir($fOrdner, 0777, true);
+$fBer = new DateTimeZone('Europe/Berlin');
+$fTage = [];
+for ($i = 0; $i < 3; $i++) {
+    $fTage[] = ['date' => (new DateTimeImmutable("today +$i day", $fBer))->format('Y-m-d'), 'data_available' => true, 'chance' => 0.93, 'status' => 'go', 'peak_kt' => 18.0];
+}
+file_put_contents("$fOrdner/" . gmdate('Y-m-d') . '.ndjson', json_encode(['ok' => true, 'payload' => [
+    'status' => 'success', 'stale' => false, 'generated_at' => (new DateTimeImmutable('now', $fBer))->format('Y-m-d H:i:s'), 'days' => $fTage]]) . "\n");
+file_put_contents("$site/fremd/config.php", '<?php return ' . var_export(['data_dir' => "$tmp/action", 'cache_dir' => "$tmp/fremd/cache", 'fremdprognosen' => ['ammersee' => $fOrdner]], true) . ';');
+[$code, $html] = holen($sitePort, 'fremd/index.php?km=100&sport=kite_twintip');
+pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'Vorhersage von Marco Schanda ↗') && str_contains($html, '93<small>%</small>')
+       && str_contains($html, 'GO · Spitze 18 kn'), 'Seite: Kite-Chance aus der fremden Prognose, mit Quelle');
+[$code, $html] = holen($sitePort, 'fremd/index.php?km=100&sport=kite_twintip');
+pruefe($code === 200 && str_contains($html, '93<small>%</small>') && count(glob("$tmp/fremd/cache/bewertung-kite_twintip-*.ser")) > 0, 'aus dem Zwischenspeicher: fremde Chance trotzdem drin');
+[$code, $html] = holen($sitePort, 'fremd/index.php?km=100&sport=wingfoil');
+pruefe($code === 200 && ohne_php_meldung($html) && !str_contains($html, 'Vorhersage von Marco Schanda ↗'), 'Seite: Wingfoil ohne fremde Prognose');
+[$code, $html] = holen($sitePort, 'fremd/stunden.php?region=ammersee&sport=kite_twintip&tag=' . $fTage[1]['date']);
+pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'Chance aus der <a href="https://walchenseewindpredictor.onrender.com/"'), 'Stundenseite nennt die fremde Prognose');
+[$code, $html] = holen($sitePort, 'fremd/index.php?km=100&ansicht=woche');
+pruefe($code === 200 && ohne_php_meldung($html), 'Woche mit fremder Prognose: keine PHP-Meldung');
+
 // Vorrechnen (seit 8.11.2026): nur mit Schluessel aus config.php, nur per POST
 function senden(int $port, string $pfad, array $felder): array
 {
@@ -987,6 +1018,60 @@ foreach ($m['icons'] ?? [] as $ic) {
     pruefe($info && $info[0] . 'x' . $info[1] === $ic['sizes'], "Symbol {$ic['src']} hat {$ic['sizes']}");
 }
 proc_terminate($web);
+
+// Fremde Prognose (seit 10.11.2026): Walchensee-Predictor aus dem Ordner von ammerseewind.de
+echo "\nFremde Prognose\n";
+$fJetzt = strtotime('2030-07-10 08:00:00 UTC');   // 10 Uhr Ortszeit
+$fDir = "$tmp/fremd/walchensee";
+@mkdir($fDir, 0777, true);
+$fPayload = fn(array $extra = []) => $extra + [
+    'status' => 'success', 'stale' => false, 'generated_at' => '2030-07-10 06:10:00',
+    'days' => [
+        ['date' => '2030-07-10', 'data_available' => true, 'chance' => 0.72, 'status' => 'go', 'peak_kt' => 16.4],
+        ['date' => '2030-07-11', 'data_available' => true, 'chance' => 0.35, 'status' => 'maybe', 'peak_kt' => 11.0],
+        ['date' => '2030-07-12', 'data_available' => false, 'chance' => 0.0],
+    ],
+];
+$fSchreib = fn(array $p) => file_put_contents("$fDir/2030-07-10.ndjson",
+    json_encode(['ts' => '2030-07-10T05:15:00Z', 'ok' => true, 'payload' => $fPayload()]) . "\n"
+  . json_encode(['ts' => '2030-07-10T06:15:00Z', 'ok' => false, 'error' => 'timeout']) . "\n"
+  . json_encode(['ts' => '2030-07-10T07:15:00Z', 'ok' => true, 'payload' => $p]) . "\n");
+$fSchreib($fPayload());
+$fp = fremdprognose_lesen($fDir, $fJetzt);
+pruefe($fp !== null && array_keys($fp['tage']) === ['2030-07-10', '2030-07-11'], 'liest den neuesten erfolgreichen Abruf, nur Tage mit Daten');
+pruefe(abs($fp['tage']['2030-07-10']['chance'] - 0.72) < 1e-9 && $fp['tage']['2030-07-10']['stufe'] === 'go' && $fp['tage']['2030-07-10']['peak_kt'] === 16.4, 'Chance, Stufe und Spitze übernommen');
+pruefe($fp['stand'] === strtotime('2030-07-10 04:10:00 UTC'), 'generated_at als Ortszeit Europe/Berlin');
+$fSchreib($fPayload(['stale' => true]));
+pruefe(fremdprognose_lesen($fDir, $fJetzt) === null, 'stale: keine Prognose (auch nicht die ältere Zeile)');
+$fSchreib($fPayload(['generated_at' => '2030-07-09 10:00:00']));
+pruefe(fremdprognose_lesen($fDir, $fJetzt) === null, 'älter als 18 h: keine Prognose');
+pruefe(fremdprognose_lesen("$tmp/fremd/gibtsnicht", $fJetzt) === null, 'ohne Ordner: keine Prognose');
+$fSchreib($fPayload());
+
+$fRegion = ['id' => 'walchensee', 'name' => 'Walchensee', 'zeitzone' => 'Europe/Berlin',
+            'fremdprognose' => ['name' => 'Marco Schanda', 'url' => 'https://walchenseewindpredictor.onrender.com/']];
+pruefe(regionen_pruefen(['regionen' => [$fRegion + ['land' => 'DE', 'typ' => 'see', 'punkt' => [47.59, 11.34], 'windlagen' => [], 'spots' => []]]]) === [], 'Katalogfeld fremdprognose gültig');
+$fFalsch = regionen_pruefen(['regionen' => [['fremdprognose' => ['name' => 'X', 'url' => 'http://a']] + $fRegion + ['land' => 'DE', 'typ' => 'see', 'punkt' => [47.59, 11.34], 'windlagen' => [], 'spots' => []]]]);
+pruefe((bool)array_filter($fFalsch, fn($x) => str_contains($x, 'fremdprognose')), 'fremdprognose ohne https wird abgelehnt');
+
+fremdprognosen_laden(['fremdprognosen' => ['walchensee' => $fDir]], [$fRegion, ['id' => 'adria-nord', 'zeitzone' => 'Europe/Rome']], $fJetzt);
+pruefe(array_keys(fremdprognosen()) === ['walchensee'], 'nur Regionen mit Katalogfeld und Ordner');
+$fTag = fn(float $c) => ['spot' => null, 'det' => ['geht' => false, 'stunden' => 0, 'grund' => 'zu wenig Wind'], 'ens' => ['chance' => $c, 'laeufe' => 51], 'vorbei' => false, 'offen' => false];
+$fProTag = ['2030-07-10' => $fTag(0.05), '2030-07-11' => $fTag(0.1), '2030-07-12' => $fTag(0.2)];
+$fUm = fn(string $hhmm) => new DateTimeImmutable("2030-07-10 $hhmm", new DateTimeZone('Europe/Berlin'));
+$fx = fremd_einmischen($fRegion, $fProTag, SPORTARTEN['kite_twintip'], $fUm('10:00'));
+pruefe(abs($fx['2030-07-10']['ens']['chance'] - 0.72) < 1e-9 && abs($fx['2030-07-11']['ens']['chance'] - 0.35) < 1e-9, 'Kite: Chance aus der fremden Prognose');
+pruefe(($fx['2030-07-10']['fremd']['name'] ?? '') === 'Marco Schanda' && !isset($fx['2030-07-12']['fremd']) && abs($fx['2030-07-12']['ens']['chance'] - 0.2) < 1e-9, 'Tag ohne seine Daten bleibt beim eigenen Wert');
+pruefe(!isset(fremd_einmischen($fRegion, $fProTag, SPORTARTEN['wingfoil'], $fUm('10:00'))['2030-07-10']['fremd']), 'Wingfoil: eigener Wert');
+pruefe(!isset(fremd_einmischen($fRegion, $fProTag, SPORTARTEN['kite_wave'], $fUm('10:00'))['2030-07-10']['fremd']), 'Kite Wave: eigener Wert');
+$fy = fremd_einmischen($fRegion, $fProTag, SPORTARTEN['kitefoil'], $fUm('15:30'));
+pruefe(!isset($fy['2030-07-10']['fremd']) && isset($fy['2030-07-11']['fremd']), 'heute ab 15 Uhr nicht mehr, morgen schon');
+$fz = fremd_einmischen($fRegion, ['2030-07-11' => ['det' => ['geht' => false, 'stunden' => 0, 'grund' => 'Sperre: Test']] + $fTag(0.0)], SPORTARTEN['kite_twintip'], $fUm('10:00'));
+pruefe(!isset($fz['2030-07-11']['fremd']), 'Sperre bleibt Sperre');
+pruefe(fremd_text($fx['2030-07-10']['fremd'], new DateTimeZone('Europe/Berlin')) === 'GO · Spitze 16 kn · Stand 6:10', 'Text für die Seite');
+$fE = ranglisten_eintrag($fRegion, 50, $fx);
+pruefe(abs($fE['erwartete_tage'] - (0.72 + 0.35 + 0.2)) < 1e-9, 'Rangliste zählt die fremde Chance');
+fremdprognosen([]);
 
 // Schnee-Modus (seit 8.11.2026)
 require __DIR__ . '/test_schnee.php';

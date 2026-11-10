@@ -108,12 +108,13 @@
       "punkt": [47.59, 11.34],
       "zeitzone": "Europe/Berlin",
       "alplakes": "walchensee",
-      "hinweis": "Thermik-See: das 10-m-Modellmittel bildet die Thermik schlecht ab, deshalb ohne Windlagen (grob), bis grundstroemung eingebaut ist. Richtung der Thermik noch offen. Marcos Prognose nur verlinkt; seine Zahlen erst nach seiner Zustimmung für Wohinfahrma. Punkt geschätzt (Seemitte), bitte prüfen.",
+      "hinweis": "Thermik-See: das 10-m-Modellmittel bildet die Thermik schlecht ab, deshalb ohne Windlagen (grob), bis grundstroemung eingebaut ist. Richtung der Thermik noch offen. Seit 10.11.2026 kommt die Chance für Kite (ohne Wave) aus Marcos kalibrierter Walchensee-Vorhersage (Zustimmung per Mail 10.11.2026), siehe fremdprognose; andere Sportarten weiter grob. Punkt geschätzt (Seemitte), bitte prüfen.",
       "windlagen": [],
       "spots": [],
       "links": [
         {"name": "Walchensee-Vorhersage von Marco Schanda", "url": "https://walchenseewindpredictor.onrender.com/"}
       ],
+      "fremdprognose": {"name": "Marco Schanda", "url": "https://walchenseewindpredictor.onrender.com/"},
       "thermik": true
     },
     {
