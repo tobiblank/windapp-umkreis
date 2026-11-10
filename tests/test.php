@@ -848,7 +848,9 @@ pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'Vorhersa
 [$code, $html] = holen($sitePort, 'fremd/index.php?km=100&sport=kite_twintip');
 pruefe($code === 200 && str_contains($html, '93<small>%</small>') && count(glob("$tmp/fremd/cache/bewertung-kite_twintip-*.ser")) > 0, 'aus dem Zwischenspeicher: fremde Chance trotzdem drin');
 [$code, $html] = holen($sitePort, 'fremd/index.php?km=100&sport=wingfoil');
-pruefe($code === 200 && ohne_php_meldung($html) && !str_contains($html, 'Vorhersage von Marco Schanda ↗'), 'Seite: Wingfoil ohne fremde Prognose');
+pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'Vorhersage von Marco Schanda ↗'), 'Seite: Wingfoil mit fremder Prognose');
+[$code, $html] = holen($sitePort, 'fremd/index.php?km=100&sport=segeln');
+pruefe($code === 200 && ohne_php_meldung($html) && !str_contains($html, 'Vorhersage von Marco Schanda ↗'), 'Seite: Segeln ohne fremde Prognose');
 [$code, $html] = holen($sitePort, 'fremd/stunden.php?region=ammersee&sport=kite_twintip&tag=' . $fTage[1]['date']);
 pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'Chance aus der <a href="https://walchenseewindpredictor.onrender.com/"'), 'Stundenseite nennt die fremde Prognose');
 [$code, $html] = holen($sitePort, 'fremd/index.php?km=100&ansicht=woche');
@@ -1062,7 +1064,10 @@ $fUm = fn(string $hhmm) => new DateTimeImmutable("2030-07-10 $hhmm", new DateTim
 $fx = fremd_einmischen($fRegion, $fProTag, SPORTARTEN['kite_twintip'], $fUm('10:00'));
 pruefe(abs($fx['2030-07-10']['ens']['chance'] - 0.72) < 1e-9 && abs($fx['2030-07-11']['ens']['chance'] - 0.35) < 1e-9, 'Kite: Chance aus der fremden Prognose');
 pruefe(($fx['2030-07-10']['fremd']['name'] ?? '') === 'Marco Schanda' && !isset($fx['2030-07-12']['fremd']) && abs($fx['2030-07-12']['ens']['chance'] - 0.2) < 1e-9, 'Tag ohne seine Daten bleibt beim eigenen Wert');
-pruefe(!isset(fremd_einmischen($fRegion, $fProTag, SPORTARTEN['wingfoil'], $fUm('10:00'))['2030-07-10']['fremd']), 'Wingfoil: eigener Wert');
+pruefe(isset(fremd_einmischen($fRegion, $fProTag, SPORTARTEN['wingfoil'], $fUm('10:00'))['2030-07-10']['fremd'])
+       && isset(fremd_einmischen($fRegion, $fProTag, SPORTARTEN['windsurf_foil'], $fUm('10:00'))['2030-07-10']['fremd']), 'Wing und Windsurf: auch fremde Chance');
+pruefe(!isset(fremd_einmischen($fRegion, $fProTag, SPORTARTEN['segeln'], $fUm('10:00'))['2030-07-10']['fremd'])
+       && !isset(fremd_einmischen($fRegion, $fProTag, SPORTARTEN['wellenreiten'], $fUm('10:00'))['2030-07-10']['fremd']), 'Segeln und Wellenreiten: eigener Wert');
 pruefe(!isset(fremd_einmischen($fRegion, $fProTag, SPORTARTEN['kite_wave'], $fUm('10:00'))['2030-07-10']['fremd']), 'Kite Wave: eigener Wert');
 $fy = fremd_einmischen($fRegion, $fProTag, SPORTARTEN['kitefoil'], $fUm('15:30'));
 pruefe(!isset($fy['2030-07-10']['fremd']) && isset($fy['2030-07-11']['fremd']), 'heute ab 15 Uhr nicht mehr, morgen schon');

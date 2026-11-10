@@ -80,7 +80,7 @@ try {
 } catch (RuntimeException $e) {
     fehlerseite('Der Regionen-Katalog ist nicht lesbar.');
 }
-// Kalibrierte Spezialprognosen (seit 10.11.2026, Walchensee): Chance fuer Kite statt Modellwind
+// Kalibrierte Spezialprognosen (seit 10.11.2026, Walchensee): Chance fuer Kite, Wing, Windsurf statt Modellwind
 fremdprognosen_laden($cfg, $regionen);
 
 // --- Suchmaschinen ----------------------------------------------------

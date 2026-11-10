@@ -8,7 +8,7 @@
  *           links? [{name, url}] (lokale Spezialprognose, nur verlinkt),
  *           thermik? true (Modellwind unterschaetzt den Wind vermutlich; auf der Seite markiert)
  *           fremdprognose? {name, url} (seit 10.11.2026: kalibrierte Spezialprognose, deren Chance
- *           fuer Kite die eigene ersetzt; Ordner der Daten in config.php 'fremdprognosen')
+ *           fuer Kite, Wing und Windsurf die eigene ersetzt; Ordner der Daten in config.php 'fremdprognosen')
  *           alplakes? "ammersee": Schluessel des Simstrat-Seemodells bei Alplakes (Eawag),
  *           nur bei Seen; der Sammler holt damit die Wassertemperatur (seit 8.11.2026)
  *           anfahrt? [lat, lon] (Ziel fuer die Fahrzeit, z. B. Parkplatz am Spot; sonst

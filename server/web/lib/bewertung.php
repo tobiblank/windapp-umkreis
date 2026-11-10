@@ -1115,8 +1115,10 @@ function spot_vergleich(array $a, array $b): int
 // ohnehin stuendlich (6-21 Uhr) in seinen Datenordner, eine NDJSON-Datei je UTC-Tag
 // mit Zeilen {ok, payload}. config.php nennt diesen Ordner ('fremdprognosen').
 //
-// Gilt nur fuer Kite-Sportarten ohne Welle (seine Chance meint kitebaren Wind) und
-// ersetzt dort nur die Chance des Tages; Modellmittel, Temperatur usw. bleiben.
+// Gilt fuer Kite, Wing und Windsurf ohne Welle (seine Chance meint kitebaren Wind; laut
+// Tobias, 10.11.2026, unterscheiden sich die Schwellen dort nicht so stark, dass der Rohwert
+// besser waere), nicht fuer Segeln und Wellenreiten. Ersetzt nur die Chance des Tages;
+// Modellmittel, Temperatur usw. bleiben.
 // Bewusst nach dem Zwischenspeicher eingemischt (fremd_einmischen), damit sein
 // stuendlicher Stand nicht die vorgerechnete Bewertung aller Regionen ungueltig macht.
 
@@ -1207,10 +1209,10 @@ function fremdprognosen_laden(array $cfg, array $regionen, ?int $jetzt = null): 
     return fremdprognosen($p);
 }
 
-/** Gilt eine fremde Prognose fuer diese Sportart? Kite ohne Welle */
+/** Gilt eine fremde Prognose fuer diese Sportart? Kite, Wing, Windsurf, jeweils ohne Welle */
 function fremd_gilt(array $sport): bool
 {
-    return ($sport['gruppe'] ?? '') === 'kite' && empty($sport['welle_min']);
+    return in_array($sport['gruppe'] ?? '', ['kite', 'wing', 'windsurf'], true) && empty($sport['welle_min']);
 }
 
 /**
