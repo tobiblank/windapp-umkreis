@@ -494,6 +494,9 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
     // frei vom Maennchen; die Regionsnamen weichen ihnen aus
     $orte = karte_orte([$vx, $vy, $vw, $vh], $rp, array_merge(array_column($punkte, 'xy'), [$heimXY, [$heimXY[0], $heimXY[1] - $rp * 1.5]]), [], KARTE_ORTE_SCHNEE, $ortBoxen);
     $namen = karte_namen(array_map(fn($p) => ['xy' => $p['xy'], 'name' => $p['e']['region']['name'], 'rang' => $p['wert']['rang']], $punkte), $rp, [$vx, $vy, $vw, $vh], $namenBoxen, $ortBoxen ?? []);
+    // Weitere Orte (seit 10.11.2026) nur in den Luecken: frei von Punkten, Namen, festen Orten, Maennchen
+    $festXY = array_column($orte, 'xy');
+    $orte = array_merge($orte, karte_orte([$vx, $vy, $vw, $vh], $rp, array_merge(array_column($punkte, 'xy'), $festXY, [$heimXY, [$heimXY[0], $heimXY[1] - $rp * 1.5]]), array_merge($namenBoxen ?? [], $ortBoxen ?? []), KARTE_ORTE_SCHNEE_LUECKEN));
     // Neuschnee-Raster (seit 9.11.2026): Zellen mit eigenem Modellwert, Tage wie bei den Punkten
     // (am gewaehlten Tag oder Summe im Zeitraum; heute nicht mehr, wenn das Tourenfenster vorbei ist)
     $raster = schnee_raster_laden($dataDir);

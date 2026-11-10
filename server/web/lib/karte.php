@@ -301,6 +301,26 @@ const KARTE_ORTE_SCHNEE = [
 ];
 
 /**
+ * Schnee-Modus, zusaetzlich (seit 10.11.2026): fuellen die Luecken, aber nur wo Platz ist
+ * (nach den Regionsnamen gesetzt, Stufe 2 wie im Wind-Modus). Koordinaten aus dem Gedaechtnis.
+ */
+const KARTE_ORTE_SCHNEE_LUECKEN = [
+    ['Kufstein', 47.583, 12.170, 2], ['Kitzbühel', 47.446, 12.392, 2], ['Zell am See', 47.324, 12.796, 2],
+    ['Lienz', 46.829, 12.769, 2], ['Villach', 46.611, 13.855, 2], ['Klagenfurt', 46.624, 14.308, 2],
+    ['Schladming', 47.393, 13.687, 2], ['Bischofshofen', 47.418, 13.219, 2], ['Berchtesgaden', 47.631, 13.002, 2],
+    ['Rosenheim', 47.857, 12.123, 2], ['Kempten', 47.727, 10.315, 2], ['Reutte', 47.486, 10.719, 2],
+    ['Landeck', 47.140, 10.567, 2], ['Bregenz', 47.503, 9.747, 2], ['Bludenz', 47.155, 9.822, 2],
+    ['Chur', 46.851, 9.532, 2], ['Davos', 46.802, 9.836, 2], ['St. Moritz', 46.498, 9.839, 2],
+    ['Meran', 46.671, 11.160, 2], ['Brixen', 46.715, 11.657, 2], ['Sterzing', 46.893, 11.433, 2],
+    ['Bruneck', 46.796, 11.938, 2], ['Cortina', 46.537, 12.136, 2], ['Trient', 46.067, 11.121, 2],
+    ['Bormio', 46.467, 10.371, 2], ['Mayrhofen', 47.167, 11.865, 2], ['Sölden', 46.966, 11.007, 2],
+    ['Lech', 47.208, 10.142, 2], ['Kaprun', 47.272, 12.760, 2], ['Gastein', 47.170, 13.103, 2],
+    ['Graz', 47.071, 15.439, 1], ['Linz', 48.306, 14.286, 1], ['München', 48.137, 11.575, 1],
+    ['Augsburg', 48.371, 10.898, 2], ['Zürich', 47.377, 8.540, 1], ['Verona', 45.438, 10.992, 1],
+    ['Venedig', 45.440, 12.316, 1], ['Ljubljana', 46.056, 14.506, 1], ['Udine', 46.063, 13.235, 2],
+];
+
+/**
  * Welche Orte passen in den Ausschnitt, ohne Regionspunkte, deren Namen, den Standort oder
  * einander zu verdecken? Erst Stufe 1, dann Stufe 2; Name rechts, links, darueber oder darunter,
  * sonst kein Ort.
