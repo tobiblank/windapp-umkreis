@@ -553,10 +553,10 @@
       "hoehe_tour": 2200,
       "hoehe_tal": 1300,
       "zeitzone": "Europe/Vienna",
-      "anfahrt": [47.113, 11.535],
+      "anfahrt": [47.1311, 11.5403],
       "warndienst": "euregio",
       "eaws": ["AT-07-15"],
-      "hinweis": "Tuxer Alpen West (AT-07-15). Anfahrt Wattenberg. Punkt, Anfahrt, Tour- und Talhöhe am 10.11.2026 geschätzt.",
+      "hinweis": "Tuxer Alpen West (AT-07-15). Anfahrt Navis (Koordinaten laut Wikipedia, DEM 1331 m). Punkt, Anfahrt, Tour- und Talhöhe am 10.11.2026 geschätzt.",
       "stationen": {"tirol": ["wattener_lizum", "wandspitze"], "snowgrid": ["tuxer-alpen-west-tour", "tuxer-alpen-west-mitte"]}
     },
     {
@@ -598,7 +598,7 @@
       "anfahrt": [47.398, 10.918],
       "warndienst": "euregio",
       "eaws": ["AT-07-03", "AT-07-02-02"],
-      "hinweis": "Ehrwald, Lermoos, Berwang (Mieminger Gebirge AT-07-03, Lechtaler Alpen Ost AT-07-02-02). Punkt, Anfahrt, Tour- und Talhöhe am 10.11.2026 geschätzt.",
+      "hinweis": "Punkt Richtung Ehrwalder Alm. Ehrwald, Lermoos, Berwang (Mieminger Gebirge AT-07-03, Lechtaler Alpen Ost AT-07-02-02). Punkt, Anfahrt, Tour- und Talhöhe am 10.11.2026 geschätzt.",
       "stationen": {"tirol": ["grubigstein", "marienbergalm"], "snowgrid": ["ehrwald-tour", "ehrwald-mitte"]}
     },
     {
@@ -612,7 +612,7 @@
       "anfahrt": [47.499, 10.517],
       "warndienst": "euregio",
       "eaws": ["AT-07-01"],
-      "hinweis": "Tiroler Allgäuer Alpen (Allgäuer Alpen Ost, AT-07-01). Anfahrt Tannheim. Punkt, Anfahrt, Tour- und Talhöhe am 10.11.2026 geschätzt.",
+      "hinweis": "Tiroler Allgäuer Alpen (Allgäuer Alpen Ost, AT-07-01). Anfahrt Tannheim. Keine GeoSphere- oder LWD-Station mit Schneehöhe in der Nähe gefunden (Tannheim meldete am 10.11.2026 nichts), nur SNOWGRID. Punkt, Anfahrt, Tour- und Talhöhe am 10.11.2026 geschätzt.",
       "stationen": {"snowgrid": ["tannheimer-tal-tour", "tannheimer-tal-mitte"]}
     },
     {
@@ -637,10 +637,10 @@
       "hoehe_tour": 2900,
       "hoehe_tal": 1700,
       "zeitzone": "Europe/Vienna",
-      "anfahrt": [46.997, 10.845],
+      "anfahrt": [46.975, 10.873],
       "warndienst": "euregio",
       "eaws": ["AT-07-14-01", "AT-07-19", "AT-07-20"],
-      "hinweis": "Pitztaler und Kaunertaler Gletscher, im Frühwinter oft die ersten Tourenziele (Kaunergrat AT-07-14-01, Glockturm AT-07-19, Weißkugel AT-07-20). Punkt auf dem Kaunergrat, Anfahrt Mandarfen. Punkt, Anfahrt, Tour- und Talhöhe am 10.11.2026 geschätzt.",
+      "hinweis": "Pitztaler und Kaunertaler Gletscher, im Frühwinter oft die ersten Tourenziele (Kaunergrat AT-07-14-01, Glockturm AT-07-19, Weißkugel AT-07-20). Punkt auf dem Kaunergrat, Anfahrt Mittelberg/Gletscherbahn (DEM 1702 m). Punkt, Anfahrt, Tour- und Talhöhe am 10.11.2026 geschätzt.",
       "stationen": {"geosphere": ["11316"], "tirol": ["weisssee_lwd"], "snowgrid": ["pitztal-kaunertal-tour", "pitztal-kaunertal-mitte"]}
     },
     {
@@ -654,7 +654,7 @@
       "anfahrt": [46.968, 10.187],
       "warndienst": "euregio",
       "eaws": ["AT-07-12", "AT-07-13"],
-      "hinweis": "Jamtal und Silvretta (Silvretta Ost AT-07-12), Ischgl-Seite Samnaungruppe (AT-07-13). Anfahrt Galtür. Punkt, Anfahrt, Tour- und Talhöhe am 10.11.2026 geschätzt.",
+      "hinweis": "Jamtal und Silvretta (Silvretta Ost AT-07-12), Ischgl-Seite Samnaungruppe (AT-07-13). Anfahrt Galtür (liegt schon in Verwall Mitte, AT-07-10). Punkt, Anfahrt, Tour- und Talhöhe am 10.11.2026 geschätzt.",
       "stationen": {"tirol": ["jamtalhuette_gamshorn", "adamsberg"], "snowgrid": ["silvretta-galtuer-tour", "silvretta-galtuer-mitte"]}
     },
     {
@@ -665,11 +665,10 @@
       "hoehe_tour": 2700,
       "hoehe_tal": 900,
       "zeitzone": "Europe/Vienna",
-      "anfahrt": [47.22, 12.72],
+      "anfahrt": [47.24, 12.73],
       "warndienst": "salzburg",
-      "eaws": [],
-      "eaws_namen": ["Glockner"],
-      "hinweis": "Gletscher am Kitzsteinhorn, im Frühwinter früh befahrbar. Mikroregion (Glocknergruppe, LWD Salzburg) noch nicht bestimmt. Anfahrt Talstation Gletscherbahnen. Punkt, Anfahrt, Tour- und Talhöhe am 10.11.2026 geschätzt.",
+      "eaws": ["AT-05-10", "AT-05-06"],
+      "hinweis": "Gletscher am Kitzsteinhorn, im Frühwinter früh befahrbar. Glocknergruppe Nord (AT-05-10), südlich Glocknergruppe Mitte (AT-05-06), LWD Salzburg. Anfahrt oberes Kaprun (DEM 867 m). Keine Station mit Schneepegel im Umkreis von 17 km, nur SNOWGRID. Punkt, Anfahrt, Tour- und Talhöhe am 10.11.2026 geschätzt.",
       "stationen": {"snowgrid": ["kaprun-kitzsteinhorn-tour", "kaprun-kitzsteinhorn-mitte"]}
     }
   ]
