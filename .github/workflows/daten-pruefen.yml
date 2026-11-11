@@ -9,6 +9,10 @@ name: Daten prüfen
 on:
   workflow_dispatch:
     inputs:
+      seiten:
+        description: "Optional: Seiten mit den Daten von heute und gestern nachstellen (memory_limit 192M wie auf dem Server), z. B. schnee.php index.php"
+        required: false
+        default: ""
       punkte:
         description: "Optional: Punkte für die Höhe laut Open-Meteo (DEM), z. B. 46.447,9.785 50.26,-3.92 (Meer = 0, See = Seespiegel)"
         required: false
@@ -63,3 +67,37 @@ jobs:
             h=$(curl -sS --max-time 20 "https://api.open-meteo.com/v1/elevation?latitude=$lat&longitude=$lon")
             echo "$lat,$lon  $h"
           done
+
+      - name: Seiten nachstellen
+        if: inputs.seiten != ''
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          HOME_DIR: ${{ vars.HOME_DIR }}
+          SEITEN: ${{ inputs.seiten }}
+        run: |
+          set -uo pipefail
+          home="${HOME_DIR%/}"; [ -n "$home" ] && home="$home/"
+          heute=$(date -u +%F); gestern=$(date -u -d yesterday +%F)
+          mkdir -p alle
+          for q in vorhersage ensemble druck druck_ensemble hoehe hoehe_ensemble welle wasser seewasser \
+                   schnee_vorhersage schnee_ensemble schnee_raster stationen lawine; do
+            mkdir -p "alle/$q"
+            for f in $(curl -fsS --ssl-reqd --list-only --user "${FTP_USER}:${FTP_PASSWORD}" "ftp://${FTP_HOST}/${home}umkreisdaten/$q/" \
+                       | grep -E "^($heute|$gestern)"); do
+              curl -fsS --ssl-reqd --user "${FTP_USER}:${FTP_PASSWORD}" -o "alle/$q/$f" "ftp://${FTP_HOST}/${home}umkreisdaten/$q/$f"
+            done
+            echo "$q: $(ls alle/$q | wc -l) Dateien, $(du -sh alle/$q | cut -f1)"
+          done
+          curl -fsS --ssl-reqd --user "${FTP_USER}:${FTP_PASSWORD}" -o alle/fahrzeiten.json "ftp://${FTP_HOST}/${home}umkreisdaten/fahrzeiten.json" || true
+          cp daten/regionen.json server/web/lib/regionen.json
+          cp daten/schneeregionen.json server/web/lib/schneeregionen.json
+          echo "<?php return ['data_dir' => '$PWD/alle', 'cache_dir' => '$PWD/cache'];" > server/web/config.php
+          php -d memory_limit=192M -d max_execution_time=30 -d display_errors=0 -d log_errors=1 -d error_log=$PWD/php.log \
+              -S 127.0.0.1:8099 -t server/web > server.log 2>&1 &
+          sleep 1
+          for s in $SEITEN; do
+            curl -sS --max-time 90 -o /dev/null -w "$s: http=%{http_code} %{size_download} Bytes %{time_total} s\n" "http://127.0.0.1:8099/$s"
+          done
+          echo "--- PHP-Fehlerprotokoll"; cat php.log 2>/dev/null | cut -c1-400 | tail -20
