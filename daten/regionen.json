@@ -122,18 +122,28 @@
     },
     {
       "id": "leucate",
-      "name": "Leucate / Gruissan",
+      "name": "Leucate / La Franqui",
       "land": "FR",
       "typ": "meer",
       "punkt": [42.9, 3.15],
       "anfahrt": [42.935, 3.035],
       "zeitzone": "Europe/Paris",
-      "hinweis": "Entwurf (Claude), ungeprüft: Windlagen aus allgemeinem Wissen, Sektorgrenzen geschätzt, Punkt vor der Küste nicht auf der Karte kontrolliert. Anfahrt (Les Coussoules, La Franqui) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
-      "windlagen": [
-        {"name": "Tramontane", "sektor": [280, 340]},
-        {"name": "Marin", "sektor": [100, 160]}
+      "infos": [
+        {"art": "tipp", "text": "Bei Tramontane ins Étang de Leucate: Kitezone Richtung Île de la Rascasse, meist stehtief; bei zu viel Wind weiter südlich bei Port-Barcarès geschützter.", "quelle": "ultimatefrance.com"},
+        {"art": "niveau", "text": "Les Coussoules bei starker Tramontane (oft über 40 kn, side-offshore) nur für Fortgeschrittene.", "quelle": "ultimatefrance.com, tourisme-leucate.com"},
+        {"art": "zone", "text": "Coussoules: Kitezone vor der Rettungsstation. Étang: Le Goulet den Windsurfern vorbehalten, an den Austernparks (La Corrège) Kiten verboten.", "quelle": "ultimatefrance.com, tourisme-leucate.com"},
+        {"art": "gefahr", "text": "Im Étang Austernbänke und die Holzpfähle, die sie markieren.", "quelle": "ultimatefrance.com"}
       ],
-      "spots": []
+      "hinweis": "Auf Wunsch von Tobias am 11.11.2026 als Tramontane-Spot ausgebaut (vorher Entwurf ohne Spots, Name Leucate / Gruissan). tourisme-leucate.com: Tramontane ablandig, zwischen Port Leucate und La Franqui über 100 km/h möglich; La Franqui mit Mondial du Vent; Aqualand (Port Leucate) ideal bei SO und S. ultimatefrance.com: Tramontane Hauptwind an Coussoules und im Étang (über 200 Tage im Jahr), Marin (SO) im Sommer mit Welle. Tramontane-Sektor (WNW bis NNW) aus allgemeinem Wissen, keine Quelle nennt Grad; Ablandig an den Coussoules geschätzt (Strand nach O), die Tramontane bleibt absichtlich erlaubt (side-offshore). Étang ohne ablandig, weil die Lagune bei Tramontane gefahren wird. Punkt vor der Küste nicht auf der Karte kontrolliert. Anfahrt (Les Coussoules, La Franqui) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
+      "windlagen": [
+        {"name": "Tramontane", "sektor": [280, 340], "charakter": "stark, böig, am Meer side-offshore"},
+        {"name": "Marin", "sektor": [100, 170], "charakter": "Welle"}
+      ],
+      "spots": [
+        {"id": "coussoules", "name": "Les Coussoules (La Franqui)", "ablandig": [[230, 285]]},
+        {"id": "etang-leucate", "name": "Étang de Leucate (Rascasse)", "windlagen": [{"name": "Tramontane", "sektor": [280, 340], "charakter": "Flachwasser, stehtief"}], "ablandig": []},
+        {"id": "aqualand", "name": "Aqualand (Port Leucate)", "windlagen": [{"name": "Marin", "sektor": [100, 190], "charakter": "Welle"}], "ablandig": [[250, 360]]}
+      ]
     },
     {
       "id": "hyeres",
