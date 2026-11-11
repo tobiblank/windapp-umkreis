@@ -711,7 +711,8 @@ function lauf_zippen(string $dataDir, string $quelle, string $lauf): void
  */
 function fingerabdruck(array $liste): string
 {
-    return md5(json_encode(array_map(fn($e) => $e['hourly'], $liste)));
+    // Das Neuschnee-Raster speichert statt hourly nur den Neuschnee je Tag (neu)
+    return md5(json_encode(array_map(fn($e) => $e['hourly'] ?? $e['neu'] ?? $e, $liste)));
 }
 
 /** Tagesdateien aelter als gestern zippen (gelesen werden nur heute und gestern) */

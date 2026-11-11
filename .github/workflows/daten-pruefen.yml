@@ -1,0 +1,49 @@
+name: Daten prüfen
+
+# Seit 11.11.2026: Abgleich mit den echten Daten. Holt per FTPS die neueste Datei jeder
+# Quelle aus <HOME_DIR>/umkreisdaten/ (das, was die Seite gerade liest) und wertet sie mit
+# tools/daten_pruefen.php aus: Stand, Werte je Variable und Modell, Gitterzellen, Tourhöhe,
+# Neuschnee-Raster, Schneehöhe Modell gegen Stationen, Lageberichte. Ändert nichts.
+# Von Hand (Actions > Daten prüfen > Run workflow).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          coverage: none
+
+      - name: Neueste Dateien holen
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          HOME_DIR: ${{ vars.HOME_DIR }}
+        run: |
+          set -euo pipefail
+          home="${HOME_DIR%/}"; [ -n "$home" ] && home="$home/"
+          for q in vorhersage ensemble druck druck_ensemble hoehe hoehe_ensemble welle wasser seewasser \
+                   schnee_vorhersage schnee_ensemble schnee_raster stationen lawine; do
+            mkdir -p "daten_server/$q"
+            neueste=$(curl --fail --silent --show-error --ssl-reqd --list-only \
+                        --user "${FTP_USER}:${FTP_PASSWORD}" "ftp://${FTP_HOST}/${home}umkreisdaten/$q/" \
+                      | grep -E '\.ndjson(\.gz)?$' | sort | tail -1 || true)
+            if [ -z "$neueste" ]; then echo "$q: keine Datei"; continue; fi
+            echo "$q: $neueste"
+            curl --fail --silent --show-error --ssl-reqd --user "${FTP_USER}:${FTP_PASSWORD}" \
+                 -o "daten_server/$q/$neueste" "ftp://${FTP_HOST}/${home}umkreisdaten/$q/$neueste"
+          done
+
+      - name: Auswerten
+        run: php tools/daten_pruefen.php daten_server daten/regionen.json daten/schneeregionen.json
