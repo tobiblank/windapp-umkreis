@@ -866,6 +866,51 @@
       ]
     },
     {
+      "id": "riviera-ponente",
+      "name": "Riviera di Ponente (Andora, Albenga)",
+      "land": "IT",
+      "typ": "meer",
+      "punkt": [43.98, 8.22],
+      "anfahrt": [43.952, 8.158],
+      "zeitzone": "Europe/Rome",
+      "infos": [
+        {"art": "saison", "text": "Andora gilt als Spot für Herbst und Winter (Libeccio); im Sommer Badebetrieb.", "quelle": "waterwind.it"},
+        {"art": "gefahr", "text": "Andora: Buhnen mit Riffen, dort flach. Albenga: Tramontana böig und side-offshore, bei SW Shorebreak.", "quelle": "waterwind.it"},
+        {"art": "tipp", "text": "Bei West (Ponente) ist Andora ablandig, dann Imperia (Spiaggia d'Oro); bei Nordost Imperia La Rabina, bei Ost Bordighera.", "quelle": "waterwind.it"}
+      ],
+      "hinweis": "Auf Wunsch von Tobias am 11.11.2026 eingetragen (Ligurien, im Winter gut). waterwind.it (Andora): Libeccio (SW) auflandig und sicher, Ponente nur ablandig und instabil; Start am Strand von Marina di Andora beim ASD Andora Windsurf. waterwind.it (Albenga): Schwemmebene, mehrere Richtungen; N/NO böig side-off, NO/O besser (side-off, mäßige Welle), SW am besten aus S/SW mit Welle, S/SO kräftige Welle bei schlechtem Wetter; im Sommer von der Centa-Mündung starten, keine Schule bekannt. Sektoren und Ablandig aus diesen Beschreibungen geschätzt, Andora-Strand nach SO, Albenga nach O bis SO. Punkt vor der Küste und Anfahrt (Marina di Andora) ungefähr, von Claude am 11.11.2026 gesetzt.",
+      "windlagen": [
+        {"name": "Libeccio", "sektor": [190, 250], "charakter": "Welle, Herbst und Winter"},
+        {"name": "Scirocco", "sektor": [120, 180], "charakter": "Welle, oft schlechtes Wetter"},
+        {"name": "Grecale / Levante", "sektor": [40, 100], "charakter": "side-offshore"}
+      ],
+      "spots": [
+        {"id": "andora", "name": "Andora (Marina di Andora)", "windlagen": [{"name": "Libeccio", "sektor": [190, 250], "charakter": "auflandig, Welle"}, {"name": "Scirocco", "sektor": [120, 180]}], "ablandig": [[255, 30]]},
+        {"id": "albenga", "name": "Albenga (Centa-Mündung)", "ablandig": [[240, 330]]}
+      ]
+    },
+    {
+      "id": "genua-voltri",
+      "name": "Genua / Voltri",
+      "land": "IT",
+      "typ": "meer",
+      "punkt": [44.39, 8.75],
+      "anfahrt": [44.427, 8.752],
+      "zeitzone": "Europe/Rome",
+      "infos": [
+        {"art": "gefahr", "text": "Tramontana ist ablandig: dann nur mit Sicherheitsboot (die Locals fahren es an windigen Tagen) und nicht über den Wellenbrecher hinaus. Kein Anfängerspot.", "quelle": "kite-and-windsurfing-guide.com"},
+        {"art": "saison", "text": "Im Oktober und November oft sehr viel Wind.", "quelle": "kite-and-windsurfing-guide.com"}
+      ],
+      "hinweis": "Auf Wunsch von Tobias am 11.11.2026 eingetragen (Ligurien, im Winter gut). kite-and-windsurfing-guide.com (Voltri): Tramontana ablandig mit extrem flachem Wasser, nur mit Sicherheitsboot; Scirocco auflandig mit mittlerer Welle; Start vor der Pizzeria Voltri; kein Anfängerspot. Die Tramontana ist absichtlich nicht ablandig gesetzt, weil sie dort der Winterwind ist; die Warnung steht in den Infos. Sektoren geschätzt (Strand nach S). Punkt vor der Küste und Anfahrt (Voltri) ungefähr, von Claude am 11.11.2026 gesetzt.",
+      "windlagen": [
+        {"name": "Tramontana", "sektor": [330, 40], "charakter": "ablandig, Flachwasser, nur mit Sicherheitsboot"},
+        {"name": "Scirocco", "sektor": [110, 170], "charakter": "auflandig, mittlere Welle"}
+      ],
+      "spots": [
+        {"id": "voltri", "name": "Voltri", "ablandig": []}
+      ]
+    },
+    {
       "id": "balagne",
       "name": "Balagne / Algajola (Korsika)",
       "land": "FR",
