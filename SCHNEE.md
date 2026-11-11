@@ -1,6 +1,6 @@
 # Wohinfahrma – Schnee
 
-*Gebaut am 8.11.2026, **noch nie gegen echte Quellen gelaufen** (nur gegen `tests/fake_openmeteo.php`).* Ergänzung zu `README.md`.
+*Gebaut am 8.11.2026, seit dem Abend mit echten Daten; am 11.11.2026 abgeglichen (README.md, „Abgleich mit echten Daten“).* Ergänzung zu `README.md`.
 
 Zweiter Modus in Wohinfahrma für Skitourengeher und Freerider, nur Alpen: Wo liegt in den nächsten Tagen frischer Schnee, und wo wird es schön? Dazu Schneehöhe, Neuschnee, Wetter und – immer sichtbar, aber nicht in der Wertung – die Lawinenwarnstufe.
 
@@ -47,7 +47,7 @@ Seit 9.11.2026. Die Karte zeigt den Neuschnee nicht nur an den Regionen, sondern
 
 Seit 9.11.2026. Im Katalog `messnetze` (`{id: {art, name, kurz, abruf, url, lizenz, stationen?}}`; `art` = `lwd-geojson` (Standard, eine Datei aller Stationen), `geosphere`, `meteoswiss`, `suedtirol`, `snowgrid`) und je Region `stationen` (`{netz: [id, …]}`, Reihenfolge = Anzeige). Der Sammler holt je Netz einen Abruf (MeteoSchweiz und Südtirol: einen je Station) und speichert nur die genannten Stationen.
 
-- **Tirol** (`tirol`): Datensatz „Wetterstationsdaten Tirol“ (Land Tirol, LWD und Hydrographischer Dienst Tirol) auf data.gv.at, CC BY 4.0, stündlich. Felder an der Datei vom 9.11.2026 11:00 Uhr gesehen: 221 Stationen, 120 mit Schneehöhe; je Station `plot`, `name`, `LWD-Region` (EAWS-Mikroregion, z. B. „AT-07-22 Stubaier Alpen Mitte“), `date`, `HS` (Schneehöhe cm), `HSD24`/`HSD48`/`HSD72` (Änderung der Schneehöhe, mit Setzung, also kein Neuschnee), `LT`, Höhe als dritte Koordinate. **Die Abruf-URL ist geschätzt** (`wiski.tirol.gv.at/lawine/produkte/ogd.geojson`), beim ersten Lauf prüfen.
+- **Tirol** (`tirol`): Datensatz „Wetterstationsdaten Tirol“ (Land Tirol, LWD und Hydrographischer Dienst Tirol) auf data.gv.at, CC BY 4.0, stündlich. Felder an der Datei vom 9.11.2026 11:00 Uhr gesehen: 221 Stationen, 120 mit Schneehöhe; je Station `plot`, `name`, `LWD-Region` (EAWS-Mikroregion, z. B. „AT-07-22 Stubaier Alpen Mitte“), `date`, `HS` (Schneehöhe cm), `HSD24`/`HSD48`/`HSD72` (Änderung der Schneehöhe, mit Setzung, also kein Neuschnee), `LT`, Höhe als dritte Koordinate. Abruf-URL `wiski.tirol.gv.at/lawine/produkte/ogd.geojson`, am 11.11.2026 bestätigt (36 von 36 Stationen).
 - **Gewählt** am 9.11.2026 nach Nähe zum Vorhersagepunkt und Höhe nahe der Tourhöhe: Kühtai/Sellrain Gossenkölle, Lampsenspitze, Breiter Grieskogel; Stubai Schöckbichl, Eissee (Stubaier Gletscher), Dresdner Hütte; Zillertal/Tux Tuxerjoch, Wandspitze, Lämmerbichlalm; Arlberg Ulmerhütte, Gampberg, Kapall; Ötztal/Gurgl Rosskar, Sonnbergalm. Franz-Senn-Hütte bewusst nicht (meldete −1,3 cm).
 - **Plausibilität** (`stationen_wert()`): Schneehöhe unter −0,5 cm oder über 15 m fällt weg, leicht negativ zählt als 0; Änderung über 150 cm in 24 h wird leer (gesehen: −23 cm bei 0 cm Schnee); älter als 12 h mit Zeit, älter als 72 h nicht mehr.
 - **Ohne eigene Stationen:** Werdenfels und Allgäu (Lawinenwarndienst Bayern ohne offene Schnittstelle gefunden; Tiroler bzw. Vorarlberger Stationen jenseits der Grenze), Oberengadin nur Samedan (SLF IMIS frei, laut Bedingungen aber nicht zur Speisung fremder Informationssysteme; beim SLF am 10.11.2026 im Vorgang DATA-2406 angefragt, Antwort steht aus).
@@ -144,6 +144,9 @@ Seit 9.11.2026 haben alle Regionen echte IDs, bestimmt mit `tools/eaws_zuordnen.
 
 ## Beim ersten echten Lauf prüfen
 
+Stand 11.11.2026 (Action „Daten prüfen“): 0 bis 2 erledigt – Raster mit 294 Punkten ohne HTTP 429, alle Quellen grün, `elevation` als Liste angenommen (geliefert = Tourhöhe), `past_days` kommt an, Ensemble liefert `snow_depth`, aber `freezing_level_height` nur null (ECMWF und Ensemble), `snowfall_height` nur bei ICON. 3: Modell-Schneehöhe oft unter den Stationen (siehe README). 4 und 5: noch offen, bis die Saison beginnt (Euregio und Bayern 404, SLF ohne Berichtsteile). 6: siehe Vorrechnen in README.
+
+
 0. Seit 9.11.2026: `schnee_raster/0` bis `/2` grün? Liefert best_match `snowfall_height` im ganzen Alpenraum, und kommen keine HTTP 429?
 
 1. Action „Sammeln“ von Hand starten, Ausgabe von `--debug` ansehen: `schnee_vorhersage`, `schnee_ensemble`, `lawine/slf`, `lawine/euregio` grün?
@@ -168,7 +171,7 @@ Für die Rechnung nur Stufe und strukturierte Felder; Texte der Berichte nicht k
 
 ## Nächste Schritte
 
-1. Erster echter Lauf (siehe oben), danach Mikroregion-IDs eintragen
+1. ~~Erster echter Lauf~~ (abgeglichen 11.11.2026); Lageberichte und Zuordnung Oberengadin prüfen, sobald die Saison beginnt
 2. Antwort des LWD Tirol: Tirol freigeben (Bayern seit 10.11.2026). Bayern: Messdaten erst über die angekündigte Schnittstelle
 3. Schwellen (`SCHNEE_REGEL`, `SCHNEE_KAMM_HINWEIS`) und Tourhöhen aus eigener Erfahrung anpassen
 4. Weitere Messstationen (SLF IMIS nach Antwort auf die Rückfrage vom 10.11.2026, Vorgang DATA-2406)

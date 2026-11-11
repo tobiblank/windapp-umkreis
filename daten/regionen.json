@@ -379,10 +379,10 @@
       "name": "Reschensee",
       "land": "IT",
       "typ": "see",
-      "punkt": [46.82, 10.525],
+      "punkt": [46.81, 10.52],
       "zeitzone": "Europe/Rome",
       "thermik": true,
-      "hinweis": "Regeln nach kitewetter.at (Wind am Reschensee I/II, Föhndiagramm): Talwind aus Süd bei sonnigem Sommerwetter und Druckdifferenz Bozen − Innsbruck ab 0 hPa (besser über +2); unter −4 hPa heben sich Nord und Süd gegen Mittag auf. Nordföhn bei −4 bis −6 hPa oder stärker. Geschätzt (Claude): Stärken, Tageszeit 11–18 Uhr, Saison Mai–September für den Talwind. kitewetter nutzt DWD-Stationsdruck, hier Modell-Meeresspiegeldruck: Schwellen nicht 1:1 übertragbar. Punkt (Seemitte) geschätzt.",
+      "hinweis": "Regeln nach kitewetter.at (Wind am Reschensee I/II, Föhndiagramm): Talwind aus Süd bei sonnigem Sommerwetter und Druckdifferenz Bozen − Innsbruck ab 0 hPa (besser über +2); unter −4 hPa heben sich Nord und Süd gegen Mittag auf. Nordföhn bei −4 bis −6 hPa oder stärker. Geschätzt (Claude): Stärken, Tageszeit 11–18 Uhr, Saison Mai–September für den Talwind. kitewetter nutzt DWD-Stationsdruck, hier Modell-Meeresspiegeldruck: Schwellen nicht 1:1 übertragbar. Punkt (Seemitte) geschätzt. Punkt am 11.11.2026 auf den See verschoben: der alte (46,82/10,525) lag laut Open-Meteo-Höhenmodell auf 1519 m, also am Ufer; neu 1487 m.",
       "windlagen": [
         {"name": "Südwind (Talwind)", "sektor": [150, 210], "charakter": "Thermik", "druck": [{"plus": "bozen", "minus": "innsbruck", "min": 0}], "wetter": "sonnig", "zeit": [11, 18], "saison": [5, 9], "staerke": [14, 20]},
         {"name": "Nordföhn", "sektor": [330, 30], "charakter": "böig", "druck": [{"plus": "bozen", "minus": "innsbruck", "max": -4}], "staerke": [16, 25]}
@@ -394,7 +394,7 @@
       "name": "Silvaplana",
       "land": "CH",
       "typ": "see",
-      "punkt": [46.455, 9.79],
+      "punkt": [46.447, 9.785],
       "zeitzone": "Europe/Zurich",
       "alplakes": "silvaplana",
       "infos": [
@@ -402,7 +402,7 @@
         {"art": "tipp", "text": "Kiten nur bei Süd bis Südwest", "quelle": "kitesailing.ch"}
       ],
       "thermik": true,
-      "hinweis": "Regel nach kitesailing.ch und unhooked: Kiten nur bei S bis SW; Malojawind bei gutem Wetter und SW-Grundströmung (unhooked: 4–10 kn, kräftige W–SW-Strömung stärkt laut kitesailing.ch, deshalb ohne Obergrenze); Nordströmung verhindert ihn; Druckdifferenz Lugano − Zürich ab −4 hPa schwächer, unter −6 selten. Geschätzt (Claude): Höhe der Grundströmung 700 hPa (unhooked nennt keine), Stärke, Tageszeit 12–18 Uhr, Saison Mai–Oktober (unhooked: Mitte Februar bis Ende Oktober, früh im Jahr oft noch Eis). Punkt (Seemitte) geschätzt.",
+      "hinweis": "Regel nach kitesailing.ch und unhooked: Kiten nur bei S bis SW; Malojawind bei gutem Wetter und SW-Grundströmung (unhooked: 4–10 kn, kräftige W–SW-Strömung stärkt laut kitesailing.ch, deshalb ohne Obergrenze); Nordströmung verhindert ihn; Druckdifferenz Lugano − Zürich ab −4 hPa schwächer, unter −6 selten. Geschätzt (Claude): Höhe der Grundströmung 700 hPa (unhooked nennt keine), Stärke, Tageszeit 12–18 Uhr, Saison Mai–Oktober (unhooked: Mitte Februar bis Ende Oktober, früh im Jahr oft noch Eis). Punkt (Seemitte) geschätzt. Punkt am 11.11.2026 auf den See verschoben: der alte (46,455/9,79) lag laut Open-Meteo-Höhenmodell auf 1880 m, also am Ufer; neu 1790 m = Seespiegel.",
       "windlagen": [
         {"name": "Malojawind", "sektor": [180, 250], "charakter": "Thermik", "druck": [{"plus": "lugano", "minus": "zuerich", "min": -4}], "grundstroemung": {"hoehe": "700hPa", "sektor": [180, 290], "kn_min": 4}, "wetter": "sonnig", "zeit": [12, 18], "saison": [5, 10], "staerke": [15, 22]}
       ],
@@ -456,11 +456,11 @@
       "name": "Comer See Nord",
       "land": "IT",
       "typ": "see",
-      "punkt": [46.11, 9.33],
+      "punkt": [46.13, 9.33],
       "zeitzone": "Europe/Rome",
       "alplakes": "como",
       "thermik": true,
-      "hinweis": "Entwurf (Claude), ungeprüft: Tivano (N, morgens) und Breva (S, nachmittags) aus allgemeinem Wissen, Sektorgrenzen geschätzt. Punkt im Nordteil bei Dervio/Colico. Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert.",
+      "hinweis": "Entwurf (Claude), ungeprüft: Tivano (N, morgens) und Breva (S, nachmittags) aus allgemeinem Wissen, Sektorgrenzen geschätzt. Punkt im Nordteil bei Dervio/Colico. Thermik: das 10-m-Modellmittel unterschätzt den Wind vermutlich, bis grundstroemung eingebaut ist. Punkt (Seemitte) geschätzt, nicht auf der Karte kontrolliert. Punkt am 11.11.2026 auf den See verschoben: der alte (46,11/9,33) lag laut Open-Meteo-Höhenmodell auf 462 m, also am Hang; neu 197 m = Seespiegel.",
       "windlagen": [
         {"name": "Tivano", "sektor": [330, 30], "charakter": "morgens"},
         {"name": "Breva", "sektor": [150, 210], "charakter": "nachmittags"}
@@ -923,7 +923,7 @@
       "name": "Süd-Devon (Bigbury, Exmouth)",
       "land": "GB",
       "typ": "meer",
-      "punkt": [50.25, -3.85],
+      "punkt": [50.26, -3.92],
       "anfahrt": [50.282, -3.892],
       "zeitzone": "Europe/London",
       "infos": [
@@ -932,7 +932,7 @@
       ],
       "anreise": ["auto", "flug"],
       "flughafen": {"name": "Exeter (EXT)", "transfer_min": 50},
-      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. bigsalty.com: Bigbury bester Allround- und Wellenspot der Südküste Devons, in den meisten Richtungen fahrbar. forces-of-nature.co.uk: bei NW Bigbury statt Bantham (Bantham im Lee). surf-forecast.com: ablandig NO. windsurf.co.uk: Exmouth in allen Richtungen. Exmouth liegt rund 60 km nordöstlich des Vorhersagepunkts. Sektoren und ablandig geschätzt. Alternative oder Ergänzung: 'mounts-bay' unter 'optional'. Anfahrt (erster Spot) ungefähr, von Claude am 8.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer von Claude am 8.11.2026 geschätzt.",
+      "hinweis": "Von Claude am 8.11.2026 eingetragen, ungeprüft. bigsalty.com: Bigbury bester Allround- und Wellenspot der Südküste Devons, in den meisten Richtungen fahrbar. forces-of-nature.co.uk: bei NW Bigbury statt Bantham (Bantham im Lee). surf-forecast.com: ablandig NO. windsurf.co.uk: Exmouth in allen Richtungen. Exmouth liegt rund 60 km nordöstlich des Vorhersagepunkts. Sektoren und ablandig geschätzt. Alternative oder Ergänzung: 'mounts-bay' unter 'optional'. Anfahrt (erster Spot) ungefähr, von Claude am 8.11.2026 für die Fahrzeit gesetzt. Flughafen und Transfer von Claude am 8.11.2026 geschätzt. Punkt am 11.11.2026 aufs Meer (Bigbury Bay) verschoben: der alte (50,25/−3,85) lag laut Open-Meteo-Höhenmodell auf 74 m an Land; neu 0 m.",
       "windlagen": [],
       "spots": [
         {"id": "bigbury", "name": "Bigbury-on-Sea / Burgh Island", "windlagen": [{"name": "Ost bis Nordwest über Süd", "sektor": [80, 330], "charakter": "O/SO Welle (Backbordbug)"}], "ablandig": [[350, 70]]},

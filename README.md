@@ -20,10 +20,10 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Baustein | Status |
 |---|---|
 | Regionen-Katalog (`daten/regionen.json`) | 7.11.2026: Ammersee (Stegen, Herrsching, Eching; Link zu ammerseewind.de), Nördliche Adria (Bora, Scirocco), Walchensee (grob, mit Link zu Marcos Vorhersage); als Entwurf, ungeprüft: Leucate/Gruissan, Hyères/Almanarre, Fehmarn, Île de Ré, Bretagne, Normandie, Pas de Calais, Deutsche Bucht, Klitmøller, Władysławowo; dazu 15 Seen (Starnberger See, Kochelsee, Chiemsee, Bodensee, Achensee, Reschensee, Silvaplana, Gardasee Nord, Comer See Nord, Urnersee, Neuenburgersee, Attersee, Traunsee, Zeller See, Neusiedler See). 28 Regionen. 8.11.2026 dazu, als Entwurf, ungeprüft: Talamone, Balagne/Algajola (Korsika), Fischland-Darß (Bodden und Ostsee), Nord-Devon, Süd-Devon, Anglesey/Rhosneigr, Tiree, Brandon Bay; Tiree und Brandon Bay mit einer Windlage über alle Richtungen `[0, 360]`, dort entscheidet `ablandig` je Spot. Am selben Abend dazu, ebenso ungeprüft: Galicien (Razo, Baldaio), Ebrodelta, La Loteta, Embalse del Ebro, Viana do Castelo, Guincho, Algarve West (Lagos, Alvor). Insgesamt 59 Regionen. Sektorgrenzen teils geschätzt, siehe `hinweis` je Eintrag. Die Tests nutzen einen eigenen festen Katalog (`tests/regionen_test.json`) |
-| Sammler (`server/sammler.php`) | 7.11.2026, läuft als GitHub Action zweimal am Tag (`sammeln.yml`); gegen einen Open-Meteo-Ersatz getestet, **noch nie gegen das echte Open-Meteo gelaufen** |
+| Sammler (`server/sammler.php`) | 7.11.2026, läuft als GitHub Action (`sammeln.yml`), seit 7.11.2026 mit echten Daten; am 11.11.2026 gegen die Daten auf dem Server abgeglichen (siehe „Abgleich mit echten Daten“). Seit 11.11.2026 stößt ammerseewind.de die Läufe zur richtigen Zeit an, weil der Zeitplan von GitHub bis zu 8 Stunden zu spät startete |
 | Bewertung (`server/web/lib/bewertung.php`) | 7.11.2026: Stunde fahrbar, bester Block ≥ 2 h, Ensemble-Chance, Rangliste; seit 8.11.2026 Tage ohne Daten „offen“ statt 0 % |
 | Seite Rangliste (`server/web/index.php`) | 7.11.2026: Sportart, Umkreis (seit 7.11.2026 Straßen-km, siehe „Fahrzeit und Abfahrt“), Standort (auf 0,1° gerundet), „Heute bis übermorgen“ und „Tag 3 bis 7“, Knopf „Teilen“ an guten Tagen (siehe „Teilen“); ohne Anmeldung. Suchmaschinen seit 8.11.2026 vorbereitet, aber noch `noindex`, bis `indexieren` in `config.php` gesetzt ist (siehe „Suchmaschinen“) |
-| Impressum, Datenschutz (`server/web/*.html`) | 7.11.2026, aus stegen-wind abgeleitet – bitte prüfen |
+| Impressum, Datenschutz (`server/web/*.html`) | 7.11.2026, aus stegen-wind abgeleitet; am 11.11.2026 gegen den Code geprüft und ergänzt: Speicher `wohinfahrma_schneefeld`, mehrere Läufe am Tag, Anstoß und kalibrierte Vorhersagen über ammerseewind.de, Ammersee als Datenquelle, „Rohwerte“ eingeschränkt. Keine fremden Server im Browser (nur Links) |
 | Rangliste auf der Kommandozeile (`server/rangliste.php`) | zum Ausprobieren gegen Rohdaten |
 | Hosting | Hetzner Webhosting, seit 7.11.2026 unter **wohinfahrma.de** (Ordner `public_html/wohinfahrma`, Let's Encrypt); wohinfahrma.dablank.de und www leiten dauerhaft um (`server/web/.htaccess`). Deploy per GitHub Action. Tarif Webhosting S: 2 PHP-Prozesse, `memory_limit` seit 8.11.2026 192M (Maximum des Tarifs, vorher 128M), PHP 8.4 (vorher 8.3); die Actions testen mit derselben Version |
 | Web-App zum Installieren | 7.11.2026: `manifest.php` (Name Wohinfahrma, unter dem Symbol „Fahrma“), `sw.js` und `offline.html` nach stegen-wind (nur Offline-Seite, nichts zwischengespeichert), Symbol als Platzhalter (`icon.svg`, PNG 192/512/180). Erst nach dem Umzug auf wohinfahrma.de auf dem Handy installieren. Hinweis „Als App installieren“ beim ersten Besuch (Chrome/Edge/Android mit Knopf, iPhone als Text), nach „Nicht jetzt“ 30 Tage Ruhe |
@@ -36,15 +36,15 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Roadtrip | 7.11.2026: dritter Reiter, Reise vom Standort und zurück über bis zu 7 Tage, Hin-, Rückfahrt und Etappen bis 5 h; die App sucht die beste Länge; siehe „Roadtrip“ |
 | Woche | 7.11.2026: Reiter „Woche“, Matrix Regionen × 7 Tage; siehe „Woche“ |
 | Stunden | 7.11.2026: `stunden.php`, Diagramm je Stunde mit allen Modellen, Ensemble-Spanne, Böen, Richtung, fahrbaren Stunden; Vergleich zweier Regionen; siehe „Stunden“ |
-| Wasser und Neopren | 7.11.2026: Meerestemperatur aus der Marine API (neue Quelle `wasser`), Neopren-Faustregel in der Detailzeile und auf der Stundenseite. **Variablenname noch nie gegen das echte Open-Meteo geprüft**. Seit 8.11.2026 auch 14 von 18 Seen: Wassertemperatur aus dem Seemodell von Alplakes (Eawag, Quelle `seewasser`, Katalogfeld `alplakes`); Achensee, Reschensee, Lago di Santa Croce und Neusiedler See weiter nur Luft und gefühlt. Siehe „Wasser und Neopren“ |
+| Wasser und Neopren | 7.11.2026: Meerestemperatur aus der Marine API (neue Quelle `wasser`), Neopren-Faustregel in der Detailzeile und auf der Stundenseite. `sea_surface_temperature` am 11.11.2026 mit echten Daten bestätigt (alle 39 Meer-Regionen mit Werten). Seit 8.11.2026 auch 14 von 18 Seen: Wassertemperatur aus dem Seemodell von Alplakes (Eawag, Quelle `seewasser`, Katalogfeld `alplakes`); Achensee, Reschensee, Lago di Santa Croce und Neusiedler See weiter nur Luft und gefühlt. Siehe „Wasser und Neopren“ |
 | Wellen | 7.11.2026: Welle und Dünung in der Detailzeile und als Diagramm auf der Stundenseite; Sportarten Kite Wave, Windsurf Wave (mit Mindestwelle) und Wellenreiten; siehe „Wellen“ |
 | Spot-Infos | 7.11.2026: Katalogfeld `infos` (Niveau, Zone, Sperre, Saison, Achtung, Tipp) für 15 Regionen, aus den Quellen im `hinweis`; Sperren mit Monaten wirken auf die Bewertung; siehe „Spot-Infos“ |
 | Bedienung | 7.11.2026 aufgeräumt: Sortierung als Auswahlfeld im Formular; drei Ansichten Liste · Woche · Roadtrip; Zeitraum (Heute – Übermorgen / Tag 3 – 7) nur in der Liste; Erklärung eingeklappt hinter „Wie wird gerechnet?“ |
 | Farbe | 7.11.2026: Einstellungen und Ansichten in Wasserblau (`--steuer`, `--akzent`), damit sie sich von den Ergebnissen abheben; Grün/Gelb/Rot bleiben der Bewertung vorbehalten. Regionen und Roadtrips mit Farbbalken links nach dem besten Tag (`beste_stufe()`) |
 | Hell / Dunkel | 7.11.2026: wie das Gerät, im Fuß festlegbar auf „Hell“ oder „Dunkel“ (nur im Browser gespeichert); siehe „Hell und Dunkel“ |
-| Schnee-Modus | 8.11.2026: `schnee.php` (Liste, Woche, Karte; seit 9.11.2026 eine Regel „Pulvertag“ statt Freeride und Skitour), `schnee_stunden.php`, Schalter Wind · Schnee im Kopf beider Seiten, Katalog `daten/schneeregionen.json` (9 Regionen), Lawinenlage aus CAAML v6 (SLF, Südtirol/Trentino und seit 10.11.2026 Bayern freigegeben, Tirol nur Link). **Noch nie gegen echte Quellen gelaufen.** Siehe `SCHNEE.md` |
+| Schnee-Modus | 8.11.2026: `schnee.php` (Liste, Woche, Karte; seit 9.11.2026 eine Regel „Pulvertag“ statt Freeride und Skitour), `schnee_stunden.php`, Schalter Wind · Schnee im Kopf beider Seiten, Katalog `daten/schneeregionen.json` (9 Regionen), Lawinenlage aus CAAML v6 (SLF, Südtirol/Trentino und seit 10.11.2026 Bayern freigegeben, Tirol nur Link). Seit 8.11.2026 mit echten Daten, am 11.11.2026 abgeglichen. Siehe `SCHNEE.md` |
 | Vorrechnen | 8.11.2026: Bewertung je Sportart, Tag und Region im Zwischenspeicher, unabhängig von Standort und Umkreis; nach jedem Sammler-Lauf und Deploy von `vorrechnen.php` gefüllt (braucht Schlüssel in `config.php` und Secret `VORRECHNEN_SCHLUESSEL`). Mit Testdaten in Originalgröße: Rangliste 2500 km 0,36 s / 104 MB vorher, aus dem Zwischenspeicher unter 0,01 s / 2 MB. Siehe „Vorrechnen“ |
-| Fremde Prognosen | 10.11.2026: Walchensee bekommt für Kite, Wing und Windsurf (ohne Wave) die Chance aus Marco Schandas kalibrierter Walchensee-Vorhersage, mit seiner Zustimmung (Mail 10.11.2026). Gelesen aus dem Datenordner von ammerseewind.de, sein Dienst wird nicht zusätzlich abgerufen. `fremdprognosen` steht seit 10.11.2026 in `config.php` auf dem Server (Ordner `winddaten/walchensee` von ammerseewind.de); ob die Zahl live erscheint, ist noch nicht geprüft. Siehe „Fremde Prognosen“ |
+| Fremde Prognosen | 10.11.2026: Walchensee bekommt für Kite, Wing und Windsurf (ohne Wave) die Chance aus Marco Schandas kalibrierter Walchensee-Vorhersage, mit seiner Zustimmung (Mail 10.11.2026). Gelesen aus dem Datenordner von ammerseewind.de, sein Dienst wird nicht zusätzlich abgerufen. `fremdprognosen` steht seit 10.11.2026 in `config.php` auf dem Server (Ordner `winddaten/walchensee` von ammerseewind.de); die Anzeige ist live bestätigt (Tobias, 11.11.2026). Seit 11.11.2026 auch der Ammersee: kalibrierte Chance je Sportart von ammerseewind.de. Siehe „Fremde Prognosen“ |
 | Zugang, Benachrichtigung | offen |
 
 ## Regionen-Katalog
@@ -260,6 +260,10 @@ Seit 10.11.2026. Für manche Regionen gibt es eine an Messwerten kalibrierte Spe
 - **Wofür:** Kite, Wing und Windsurf, jeweils ohne Wave. Seine Chance meint kitebaren Wind; die Schwellen der anderen Sportarten unterscheiden sich laut Tobias nicht so stark, dass der grobe Rohwert besser wäre (10.11.2026). Segeln und Wellenreiten behalten den eigenen Wert. Heute nur bis 15 Uhr Ortszeit (wie der Hinweis in ammerseewind.de), danach der eigene Wert. Sperren aus den Spot-Infos gehen vor.
 - **Was ersetzt wird:** nur die Chance des Tages (Kachel, Rangliste, Woche, Roadtrip, Karte). Die Detailzeile zeigt dann „GO · Spitze 17 kn · Stand 6:10 · Vorhersage von Marco Schanda ↗“, die Stundenseite einen Satz dazu; die Kurven bleiben Modellwind. Kein Verlauf über die Abrufe für diese Tage, weil die früheren Abrufe Modellwind sind.
 - **Zwischenspeicher:** Die vorgerechnete Bewertung bleibt ohne fremde Prognose; `fremd_einmischen()` setzt sie erst beim Zusammensetzen der Rangliste ein. So macht sein stündlicher Stand nicht den ganzen Zwischenspeicher ungültig.
+- **Ammersee** (seit 11.11.2026, Wunsch Tobias): kalibrierte Chance von [ammerseewind.de](https://ammerseewind.de/) für Stegen (an der Messstation Oberpfaffenhofen kalibriert). `melden.php` dort schreibt alle 20 Minuten `winddaten/export/wohinfahrma.json` (`export_wohinfahrma.php` in stegen-wind): je Tag (heute, morgen, übermorgen) die allgemeine Zahl ohne persönliche Kurve je Sportart von ammerseewind.de; heute schon über das Restfenster gerechnet, nach dem Fenster ohne Zahl. Katalogfeld `fremdprognose` mit `format: ammerseewind` und `pfad: export/wohinfahrma.json`; den Ordner `winddaten` nimmt die Seite aus `config.php` (`winddaten`, sonst der Elternordner von `fremdprognosen.walchensee`), es braucht also keinen neuen Eintrag.
+  - **Sportarten:** Schlüssel `ammerseewind` in `SPORTARTEN` (Directional, Twintip, Kitefoil, Wing, Windsurf, Windsurf Foil, Segeln); Wave und Wellenreiten behalten den eigenen Wert. Achtung: Wing rechnet ammerseewind.de seit 5.11.2026 ab 11 kn, Wohinfahrma sonst ab 16 kn.
+  - **Frische:** `erzeugt` höchstens 18 h alt; heute nur, solange die Datei höchstens 2 h alt ist (sonst stimmt das Restfenster nicht mehr); keine 15-Uhr-Grenze wie beim Walchensee. Stufe wie in den Mails von ammerseewind.de: ab 60 % „lohnt sich“, ab 10 % „vielleicht“.
+  - **Grenze:** Die Zahl gilt für den Wind an Stegen (gemessen in Oberpfaffenhofen), ersetzt aber die Chance der ganzen Region Ammersee mit Herrsching und Eching.
 - **Gardasee (offen):** Marco hat auch eine kalibrierte Prognose für Pelèr und Ora ([kitepredictionlagodigarda.onrender.com](https://kitepredictionlagodigarda.onrender.com/)). Endpunkt und Zustimmung sind angefragt; dann als zweite Quelle im Sammler von ammerseewind.de und `fremdprognose` bei `gardasee-nord`, Format der Tage vermutlich anders (Session Pelèr/Ora).
 
 ## Regel-Windlagen
@@ -293,6 +297,21 @@ Sind alle Bedingungen einer Stunde erfüllt, rechnet die Bewertung mit der Mitte
 - Seit 10.11.2026 (Walchensee, Achensee, Santa Croce) steht „leichte Grundströmung“ bzw. „Hochdruck“ aus den Quellen als 10-m-Modellwind am Vorhersagepunkt höchstens 8 kn (wie beim Urnersee). Das ist ein Ersatz: Zeigt das Modell die Thermik selbst schon stärker, fällt der Tag fälschlich heraus. Föhn als Bozen − Innsbruck über 4 hPa ist für die Seen nördlich des Inntals nur angenähert.
 - Meer-Regionen mit Thermik (Talamone, Algarve West) und der Ebro-Stausee bleiben bei normalen Windlagen: Seewind erfassen die Modelle besser, und die alpinen Druckachsen passen dort nicht.
 - Bora (Maribor − Triest) und Bise (Genf − Güttingen) bleiben normale Windlagen, weil die Modelle diese großräumigen Winde gut erfassen.
+
+## Abgleich mit echten Daten
+
+Seit 11.11.2026: Action „Daten prüfen“ (`tools/daten_pruefen.php`, von Hand) holt per FTPS die neueste Datei jeder Quelle vom Server und zeigt Stand, Anteil der Werte je Variable und Modell, Gitterzellen, Tourhöhe, Raster, Schneehöhe Modell gegen Stationen und Lageberichte. Optional mit `punkte`: Höhe einzelner Koordinaten laut Open-Meteo-Höhenmodell (Meer 0 m, See = Seespiegel), um Vorhersagepunkte auf das Wasser zu legen.
+
+Ergebnis am 11.11.2026 (Lauf vom 10.11.2026, 22:26 UTC):
+
+- **Alle Quellen ok**, 59 Wind-, 38 Schnee-Regionen, 294 Rasterpunkte, alle Stationsnetze.
+- **Zeitplan:** Die Daten waren beim Abgleich 8,4 h alt. Geplante Läufe starteten bis zu 8 Stunden zu spät (5:25 → 13:38, 7:40 → 15:45, 17:25 → 22:26 UTC) oder gar nicht. Deshalb seit 11.11.2026 Anstoß durch ammerseewind.de (siehe „Sammler“); braucht `wohinfahrma_github_token` in der `config.php` von ammerseewind.de.
+- **Vorrechnen lief nie:** Secret `VORRECHNEN_SCHLUESSEL` fehlt in GitHub, jeder Aufruf rechnet deshalb alles neu (siehe „Vorrechnen“).
+- **Modelle:** AROME-HD liefert `cloud_cover`, `weather_code` und `pressure_msl` gar nicht (nur null), ECMWF IFS 9 km keine Druckniveaus (700/850 hPa); das Mittel nimmt die übrigen Modelle. Das ECMWF-Ensemble liefert 700/850 hPa (Regel-Windlagen gehen also).
+- **Schnee:** Tourhöhe wird angenommen (`elevation` je Ort, geliefert = angefragt), `past_days=3` kommt an. `snowfall_height` fehlt bei ECMWF und GFS, `freezing_level_height` bei ECMWF und im ganzen Ensemble; dort entscheidet `snowfall` bzw. die Temperatur auf Tourhöhe. Die Modell-Schneehöhe lag in vielen Regionen unter den Stationen (z. B. Kitzbüheler Alpen 0 cm gegen 8–14 cm, Werdenfels 0 gegen 5–15 cm, Ötztal 14 gegen 31 cm); bei wenig Schnee im November nur ein Hinweis.
+- **Vorhersagepunkte:** Silvaplana (1880 m statt 1790 m Seespiegel), Comer See Nord (462 statt 197 m), Reschensee (1519 statt 1487 m) und Süd-Devon (74 m an Land) lagen nicht auf dem Wasser; am 11.11.2026 verschoben. Alle übrigen Seen liegen auf Seespiegelhöhe.
+- **Lageberichte:** SLF ohne Berichtsteile, Euregio und Bayern 404 – Saison noch nicht begonnen; die Zuordnung Oberengadin lässt sich erst mit dem ersten Bericht prüfen.
+- **Sammler:** `fingerabdruck()` warf beim Raster rund 300 PHP-Warnungen je Lauf (behoben).
 
 ## Sammler
 
@@ -328,10 +347,8 @@ Format wie stegen-wind (als Cronjob eine Datei pro Quelle und Tag, ab vorgestern
 
 `payload` ist immer eine Liste in der Reihenfolge von `regionen`. Als Cronjob: Bleiben die Stundenwerte gleich (kein neuer Modelllauf), wird nichts geschrieben. Ein fehlgeschlagener Abruf wird protokolliert und im nächsten Lauf wiederholt; per Cron-Mail gemeldet wird erst, wenn im ganzen Takt nichts geklappt hat.
 
-**Ungeprüft, beim ersten echten Lauf mit `php sammler.php --debug` kontrollieren:**
+**Geprüft am 11.11.2026** (siehe „Abgleich mit echten Daten“): Open-Meteo nimmt mehrere Koordinaten in einem Abruf an und gibt eine Liste zurück; die Variablen der Marine API liefern Werte. Weiter ungeprüft:
 
-- dass Open-Meteo mehrere Koordinaten in einem Abruf annimmt und als Liste zurückgibt,
-- die Variablennamen der Marine API,
 - nur Cronjob: die Zählung. `om_gewicht()` nimmt an, dass jeder Ort einzeln zählt, Ensemble-Läufe aber nicht extra. Beides ist eine Annahme. Als Cronjob auf demselben Server wie ammerseewind.de teilen sich beide vermutlich das freie Kontingent (`openmeteo_limit` in `config.php`).
 
 Größe grob, aus dem Test hochgerechnet: rund 20 KB je Region und Vorhersage-Abruf, 75 KB je Region und Ensemble-Abruf, ungezippt.
@@ -414,13 +431,14 @@ server/web/vorrechnen.php  Bewertung vorab rechnen (nur mit Schlüssel)
 
 1. Offene Punkte zum Sammler oben prüfen
 2. Weitere Regionen eintragen; zuerst Silvaplana und Urnersee mit den neuen Feldern `grundstroemung`, `saison`, `links`
-3. ~~Walchensee-Prognose von Marco Schanda~~ (10.11.2026 eingebaut, `fremdprognosen` in `config.php` eingetragen; Anzeige live noch prüfen). Gardasee (Pelèr/Ora) von Marco: Endpunkt und Zustimmung angefragt
-4. Design und endgültiges Symbol (in Arbeit)
+3. ~~Walchensee-Prognose von Marco Schanda~~ (10.11.2026 eingebaut, live bestätigt 11.11.2026). Gardasee (Pelèr/Ora) von Marco: Endpunkt und Zustimmung angefragt
+4. ~~Design und endgültiges Symbol~~ (passt laut Tobias, 11.11.2026)
 5. Zugang aus stegen-wind übernehmen, Wohnort und Sportarten je Person
-6. Stegen: kalibrierte Chance aus ammerseewind.de über einen kleinen Endpoint übernehmen
+6. ~~Stegen: kalibrierte Chance aus ammerseewind.de~~ (11.11.2026, siehe „Fremde Prognosen“). Offen: Wing-Schwelle angleichen (hier 16 kn, ammerseewind.de 11 kn)?
 7. Mail-Benachrichtigung
 8. Regel-Windlagen nach dem ersten echten Lauf prüfen (Druckniveaus im Ensemble, plausible Tage); Stärken aus eigener Erfahrung eintragen
-9. Google Search Console: Impressum und Datenschutz prüfen, Domain bestätigen, `indexieren` einschalten, Sitemap einreichen (siehe „Suchmaschinen“)
+9. ~~Google Search Console~~ (Impressum und Datenschutz am 11.11.2026 geprüft, eingereicht laut Tobias 11.11.2026)
+9a. Tokens setzen: `wohinfahrma_github_token` in der `config.php` von ammerseewind.de (Anstoß des Sammlers), `VORRECHNEN_SCHLUESSEL` als Secret und `vorrechnen_schluessel` in der `config.php` von Wohinfahrma
 10. Schnee-Modus nach dem ersten echten Lauf prüfen (siehe `SCHNEE.md`, „Beim ersten echten Lauf prüfen“); Mikroregion-IDs eintragen; Bayern und Tirol freigeben, sobald die Warndienste antworten
 11. Später: weitere Regeln (Zeller See, Comer See, Mistral), Stärke nach Druckdifferenz staffeln (Vorbild Marcos Pelèr-Tabelle), Spot-Meldungen, Korrektur je Spot aus Sessions
 
