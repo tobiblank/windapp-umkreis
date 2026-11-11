@@ -31,7 +31,8 @@ jobs:
           PFAD: ${{ inputs.pfad }}
           MUSTER: ${{ inputs.muster }}
         run: |
-          curl -sS --max-time 60 "https://wohinfahrma.de/$PFAD" -o seite.html -w 'http=%{http_code} %{size_download} Bytes\n'
+          curl -sS -D kopf.txt --max-time 60 "https://wohinfahrma.de/$PFAD" -o seite.html -w 'http=%{http_code} %{size_download} Bytes\n'
+          sed -n '1,25p' kopf.txt
           if [ "${{ inputs.roh }}" = "true" ]; then
             sed -e 's/></>\n</g' seite.html | grep -E "$MUSTER" | cut -c1-300 | head -80
           else
