@@ -65,6 +65,10 @@ register_shutdown_function(function () {
        . ' Bitte später noch einmal versuchen.</p></main>';
 });
 
+// 11.11.2026: Nach einem Deploy lieferte nur die Adresse "/" (nicht "/index.php" oder "/?")
+// ein leeres HTTP 500, vermutlich ein beschaedigter Eintrag im Opcode-Cache des Servers.
+// Eine Aenderung an dieser Datei laesst ihn neu uebersetzen.
+
 // Mehr Speicher erbitten, falls der Server weniger einstellt (wirkt nur, wo erlaubt)
 $grenze = ini_get('memory_limit');
 if ($grenze !== false && $grenze !== '-1' && (int)$grenze > 0 && stripos($grenze, 'M') !== false && (int)$grenze < 256) {
