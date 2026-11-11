@@ -312,6 +312,8 @@ Ergebnis am 11.11.2026 (Lauf vom 10.11.2026, 22:26 UTC):
 - **Vorhersagepunkte:** Silvaplana (1880 m statt 1790 m Seespiegel), Comer See Nord (462 statt 197 m), Reschensee (1519 statt 1487 m) und Süd-Devon (74 m an Land) lagen nicht auf dem Wasser; am 11.11.2026 verschoben. Alle übrigen Seen liegen auf Seespiegelhöhe.
 - **Lageberichte:** SLF ohne Berichtsteile, Euregio und Bayern 404 – Saison noch nicht begonnen; die Zuordnung Oberengadin lässt sich erst mit dem ersten Bericht prüfen.
 - **Sammler:** `fingerabdruck()` warf beim Raster rund 300 PHP-Warnungen je Lauf (behoben).
+- **Schnee-Seite brach ab:** Sobald es am selben Tag einen zweiten Lauf gab, entpackte `daten_laden()` auch die ältere Schnee-Ensemble-Datei (rund 15 MB Text) zusätzlich zu den entpackten Einträgen; bei 192 MB gab `schnee.php` ein leeres HTTP 500 (am 11.11.2026 ab etwa 7:45 UTC live gesehen und mit den echten Daten nachgestellt). Seitdem liest `daten_laden()` ältere Dateien nicht mehr, wenn alle Regionen im Umkreis schon einen Stand haben; `schnee.php` zeigt einen Abbruch wie `index.php` als lesbare Seite. Nachstellen geht mit „Daten prüfen“, Eingabe `seiten` (lädt die Dateien von heute und gestern, `memory_limit` 192M).
+- **Suchmaschinen:** Die Startseite hat seit Tobias' Eintrag `indexieren` den Canonical-Link und kein `noindex` mehr (geprüft 11.11.2026).
 
 ## Sammler
 
