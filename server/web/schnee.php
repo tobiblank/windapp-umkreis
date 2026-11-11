@@ -52,6 +52,25 @@ function fehlerseite(string $text): never
     exit;
 }
 
+// Abbruch (z. B. zu wenig Speicher) als lesbare Seite statt leerem HTTP 500 (seit 11.11.2026,
+// wie index.php); die Meldung steht weiter im Fehlerprotokoll des Servers.
+register_shutdown_function(function () {
+    $e = error_get_last();
+    if ($e === null || !in_array($e['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true) || headers_sent()) {
+        return;
+    }
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    http_response_code(500);
+    $speicher = str_contains($e['message'], 'Allowed memory size');
+    echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+       . '<title>Wohinfahrma – Schnee</title><link rel="stylesheet" href="stil.css"><main class="seite"><h1 class="marke">Wohin<span>fahrma</span></h1>'
+       . '<p class="karte">' . ($speicher ? 'Die Seite braucht gerade mehr Speicher, als der Server erlaubt (memory_limit ' . h((string)ini_get('memory_limit')) . ').'
+                                          : 'Beim Rechnen der Schnee-Rangliste ist ein Fehler aufgetreten.')
+       . ' Bitte später noch einmal versuchen. <a href="./">Zum Wind-Modus</a></p></main>';
+});
+
 $cfg = @include __DIR__ . '/config.php';
 if (!is_array($cfg) || empty($cfg['data_dir'])) {
     fehlerseite('Die App ist noch nicht eingerichtet (config.php fehlt).');

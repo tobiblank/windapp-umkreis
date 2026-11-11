@@ -1510,6 +1510,13 @@ function daten_laden(string $dataDir, array $quellen = ['vorhersage', 'ensemble'
                 unset($z, $e);
             }
             unset($zeilen);
+            // Seit 11.11.2026: Haben schon alle Regionen im Umkreis einen Stand, aeltere Dateien
+            // nicht mehr entpacken. Sonst lag eine zweite Schnee-Ensemble-Datei (rund 15 MB Text)
+            // zusaetzlich zu den entpackten Eintraegen im Speicher, und schnee.php brach bei
+            // 192 MB ab (leeres HTTP 500), sobald es zwei Laeufe am Tag gab.
+            if ($behalten !== null && $filter && !array_diff_key($behalten, $out['_ts'][$q])) {
+                break;
+            }
         }
         if (!$out['_ts'][$q]) {
             unset($out['_ts'][$q]);
