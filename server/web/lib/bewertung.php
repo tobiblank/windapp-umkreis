@@ -46,17 +46,17 @@ const REST_VORLAUF_MIN = 30;   // heute: erst ab jetzt + 30 min (Anfahrt, Aufbau
 
 /** Voreinstellungen wie in stegen-wind (sport.php): nur 14 kn Directional ist dort kalibriert */
 const SPORTARTEN = [
-    'kite_directional' => ['name' => 'Kite Directional', 'gruppe' => 'kite', 'min' => 14],
-    'kite_twintip'     => ['name' => 'Kite Twintip', 'gruppe' => 'kite', 'min' => 14],
-    'kitefoil'         => ['name' => 'Kitefoil', 'gruppe' => 'kite', 'min' => 11],
-    'wingfoil'         => ['name' => 'Wingfoil', 'gruppe' => 'wing', 'min' => 16],
-    'windsurf'         => ['name' => 'Windsurf', 'gruppe' => 'windsurf', 'min' => 17],
-    'windsurf_foil'    => ['name' => 'Windsurf Foil', 'gruppe' => 'windsurf', 'min' => 12],
+    'kite_directional' => ['name' => 'Kite Directional', 'gruppe' => 'kite', 'min' => 14, 'ammerseewind' => 'directional'],
+    'kite_twintip'     => ['name' => 'Kite Twintip', 'gruppe' => 'kite', 'min' => 14, 'ammerseewind' => 'twintip'],
+    'kitefoil'         => ['name' => 'Kitefoil', 'gruppe' => 'kite', 'min' => 11, 'ammerseewind' => 'kitefoil'],
+    'wingfoil'         => ['name' => 'Wingfoil', 'gruppe' => 'wing', 'min' => 16, 'ammerseewind' => 'wing'],
+    'windsurf'         => ['name' => 'Windsurf', 'gruppe' => 'windsurf', 'min' => 17, 'ammerseewind' => 'windsurf'],
+    'windsurf_foil'    => ['name' => 'Windsurf Foil', 'gruppe' => 'windsurf', 'min' => 12, 'ammerseewind' => 'windsurffoil'],
     // Seit 7.11.2026: Wave-Varianten mit Mindestwelle, Wellenreiten ohne Mindestwind (Faustwerte, nicht kalibriert)
     'kite_wave'        => ['name' => 'Kite Wave', 'gruppe' => 'kite', 'min' => 14, 'welle_min' => 1.0],
     'windsurf_wave'    => ['name' => 'Windsurf Wave', 'gruppe' => 'windsurf', 'min' => 17, 'welle_min' => 1.0],
     'wellenreiten'     => ['name' => 'Wellenreiten', 'gruppe' => 'surf', 'min' => 0, 'surf' => true, 'welle_min' => 0.8, 'periode_min' => 8, 'wind_max' => 12],
-    'segeln'           => ['name' => 'Segeln', 'gruppe' => 'segeln', 'min' => 5, 'max' => 18],
+    'segeln'           => ['name' => 'Segeln', 'gruppe' => 'segeln', 'min' => 5, 'max' => 18, 'ammerseewind' => 'segeln'],
 ];
 
 // ===================================================================
@@ -1131,7 +1131,7 @@ function spot_vergleich(array $a, array $b): int
 
 const FREMD_FRISCH_S = 18 * 3600;   // wie prognose.php in stegen-wind: hoechstens 18 h alt
 const FREMD_HEUTE_BIS = 15;          // heute nur bis 15 Uhr Ortszeit, danach ist die Thermik meist vorbei
-const FREMD_STUFEN = ['go' => 'GO', 'maybe' => 'vielleicht', 'no' => 'eher nicht'];
+const FREMD_STUFEN = ['go' => 'GO', 'lohnt' => 'lohnt sich', 'maybe' => 'vielleicht', 'no' => 'eher nicht'];
 
 /** Gemerkte Prognosen je Region (fremdprognosen_laden); mit Argument ersetzen */
 function fremdprognosen(?array $neu = null): array
@@ -1200,17 +1200,87 @@ function fremdprognose_lesen(string $dir, ?int $jetzt = null): ?array
     return null;
 }
 
+// ammerseewind.de (seit 11.11.2026): kalibrierte Chance fuer Stegen, die melden.php dort
+// alle 20 Minuten als winddaten/export/wohinfahrma.json schreibt (export_wohinfahrma.php
+// in stegen-wind). Je Sportart eine Zahl (Schluessel 'ammerseewind' in SPORTARTEN); heute
+// schon ueber das Restfenster gerechnet, deshalb ohne FREMD_HEUTE_BIS, aber nur, solange
+// die Datei hoechstens FREMD_HEUTE_FRISCH_S alt ist (sonst stimmt das Restfenster nicht mehr).
+const FREMD_HEUTE_FRISCH_S = 2 * 3600;
+
+/**
+ * Exportdatei von ammerseewind.de pruefen: version 1, erzeugt hoechstens FREMD_FRISCH_S alt.
+ * Rueckgabe wie fremdprognose_auswerten(), je Tag mit 'chancen' [art => 0..1] statt 'chance'.
+ */
+function fremdprognose_ammerseewind(array $j, ?int $jetzt = null): ?array
+{
+    $jetzt ??= time();
+    $stand = is_string($j['erzeugt'] ?? null) ? strtotime($j['erzeugt']) : false;
+    if (($j['version'] ?? null) !== 1 || $stand === false || $jetzt - $stand > FREMD_FRISCH_S || $stand - $jetzt > 3600) {
+        return null;
+    }
+    $tage = [];
+    foreach ($j['tage'] ?? [] as $tag => $d) {
+        if (!is_string($tag) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $tag) || !is_array($d) || !empty($d['vorbei'])) {
+            continue;
+        }
+        $ch = [];
+        foreach ((array)($d['chance'] ?? []) as $art => $c) {
+            if (is_string($art) && is_numeric($c)) {
+                $ch[$art] = max(0.0, min(1.0, (float)$c));
+            }
+        }
+        if ($ch) {
+            $tage[$tag] = ['chancen' => $ch, 'peak_kt' => null];
+        }
+    }
+    return $tage ? ['stand' => $stand, 'tage' => $tage, 'format' => 'ammerseewind'] : null;
+}
+
+/** Ordner oder Datei einer Region: config.php 'fremdprognosen', sonst Katalogfeld pfad im Ordner 'winddaten' */
+function fremdprognose_quelle(array $cfg, array $region): ?string
+{
+    $q = $cfg['fremdprognosen'][$region['id']] ?? null;
+    if (is_string($q) && $q !== '') {
+        return rtrim($q, '/');
+    }
+    $pfad = $region['fremdprognose']['pfad'] ?? null;
+    if (!is_string($pfad) || $pfad === '') {
+        return null;
+    }
+    // Ordner winddaten von ammerseewind.de: eigener Eintrag, sonst der Elternordner eines
+    // anderen Eintrags dort (die Walchensee-Prognose liegt in winddaten/walchensee)
+    $basis = $cfg['winddaten'] ?? null;
+    if (!is_string($basis) || $basis === '') {
+        foreach ((array)($cfg['fremdprognosen'] ?? []) as $o) {
+            if (is_string($o) && $o !== '') {
+                $basis = dirname(rtrim($o, '/'));
+                break;
+            }
+        }
+    }
+    return is_string($basis) && $basis !== '' ? rtrim($basis, '/') . '/' . ltrim($pfad, '/') : null;
+}
+
 /** Prognosen aller Regionen mit Katalogfeld fremdprognose und Ordner in config.php lesen und merken */
 function fremdprognosen_laden(array $cfg, array $regionen, ?int $jetzt = null): array
 {
     $p = [];
     foreach ($regionen as $r) {
-        $dir = $cfg['fremdprognosen'][$r['id']] ?? null;
-        if (!empty($r['fremdprognose']) && is_string($dir) && $dir !== '') {
-            $x = fremdprognose_lesen(rtrim($dir, '/'), $jetzt);
-            if ($x !== null) {
-                $p[$r['id']] = $x;
-            }
+        if (empty($r['fremdprognose'])) {
+            continue;
+        }
+        $quelle = fremdprognose_quelle($cfg, $r);
+        if ($quelle === null) {
+            continue;
+        }
+        if (($r['fremdprognose']['format'] ?? '') === 'ammerseewind') {
+            $j = is_file($quelle) ? json_decode((string)@file_get_contents($quelle), true) : null;
+            $x = is_array($j) ? fremdprognose_ammerseewind($j, $jetzt) : null;
+        } else {
+            $x = fremdprognose_lesen($quelle, $jetzt);
+        }
+        if ($x !== null) {
+            $p[$r['id']] = $x;
         }
     }
     return fremdprognosen($p);
@@ -1231,19 +1301,30 @@ function fremd_einmischen(array $region, array $proTag, array $sport, ?DateTimeI
 {
     $q = $region['fremdprognose'] ?? null;
     $p = fremdprognosen()[$region['id']] ?? null;
-    if (!$q || !$p || !fremd_gilt($sport)) {
+    $aw = ($p['format'] ?? '') === 'ammerseewind';
+    // ammerseewind.de hat eine Zahl je Sportart (auch Segeln), der Walchensee-Predictor eine fuer Kite, Wing, Windsurf
+    if (!$q || !$p || ($aw ? empty($sport['ammerseewind']) : !fremd_gilt($sport))) {
         return $proTag;
     }
-    $lok = ($jetzt ?? new DateTimeImmutable('now'))->setTimezone(new DateTimeZone($region['zeitzone']));
+    $now = $jetzt ?? new DateTimeImmutable('now');
+    $lok = $now->setTimezone(new DateTimeZone($region['zeitzone']));
     foreach ($proTag as $tag => $d) {
         $f = $p['tage'][$tag] ?? null;
+        $heute = $tag === $lok->format('Y-m-d');
         if ($d === null || $f === null || !empty($d['vorbei']) || str_starts_with((string)($d['det']['grund'] ?? ''), 'Sperre')
-            || ($tag === $lok->format('Y-m-d') && (int)$lok->format('G') >= FREMD_HEUTE_BIS)) {
+            || ($heute && !$aw && (int)$lok->format('G') >= FREMD_HEUTE_BIS)
+            || ($heute && $aw && $now->getTimestamp() - $p['stand'] > FREMD_HEUTE_FRISCH_S)) {
             continue;
         }
-        $proTag[$tag]['ens'] = ['chance' => $f['chance'], 'laeufe' => 0];
+        $chance = $aw ? ($f['chancen'][$sport['ammerseewind']] ?? null) : $f['chance'];
+        if ($chance === null) {
+            continue;
+        }
+        // Stufe wie in den Mails von ammerseewind.de: ab 60 % "lohnt sich", ab 10 % "vielleicht"
+        $stufe = $aw ? ($chance >= 0.6 ? 'lohnt' : ($chance >= 0.1 ? 'maybe' : 'no')) : $f['stufe'];
+        $proTag[$tag]['ens'] = ['chance' => $chance, 'laeufe' => 0];
         $proTag[$tag]['offen'] = false;
-        $proTag[$tag]['fremd'] = ['name' => $q['name'], 'url' => $q['url'], 'stufe' => $f['stufe'],
+        $proTag[$tag]['fremd'] = ['name' => $q['name'], 'url' => $q['url'], 'stufe' => $stufe,
                                   'peak_kt' => $f['peak_kt'], 'stand' => $p['stand']];
     }
     return $proTag;

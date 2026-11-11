@@ -8,6 +8,11 @@ name: Daten prüfen
 
 on:
   workflow_dispatch:
+    inputs:
+      punkte:
+        description: "Optional: Punkte für die Höhe laut Open-Meteo (DEM), z. B. 46.447,9.785 50.26,-3.92 (Meer = 0, See = Seespiegel)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -47,3 +52,14 @@ jobs:
 
       - name: Auswerten
         run: php tools/daten_pruefen.php daten_server daten/regionen.json daten/schneeregionen.json
+
+      - name: Höhe einzelner Punkte
+        if: inputs.punkte != ''
+        env:
+          PUNKTE: ${{ inputs.punkte }}
+        run: |
+          for p in $PUNKTE; do
+            lat=${p%,*}; lon=${p#*,}
+            h=$(curl -sS --max-time 20 "https://api.open-meteo.com/v1/elevation?latitude=$lat&longitude=$lon")
+            echo "$lat,$lon  $h"
+          done

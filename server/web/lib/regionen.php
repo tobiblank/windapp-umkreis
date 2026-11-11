@@ -10,7 +10,9 @@
  *           fenster_ab? Stunde 5-9 (seit 10.11.2026): Tagesfenster frueher beginnen, fuer Morgenwind
  *           (Foehn am Kochelsee); nie vor Sonnenaufgang. Standard FENSTER_AB (9 Uhr)
  *           fremdprognose? {name, url} (seit 10.11.2026: kalibrierte Spezialprognose, deren Chance
- *           fuer Kite, Wing und Windsurf die eigene ersetzt; Ordner der Daten in config.php 'fremdprognosen')
+ *           fuer Kite, Wing und Windsurf die eigene ersetzt; Ordner der Daten in config.php 'fremdprognosen');
+ *           seit 11.11.2026 optional format (walchensee, ammerseewind) und pfad (Datei im Ordner
+ *           winddaten von ammerseewind.de, wenn config.php fuer die Region nichts nennt)
  *           alplakes? "ammersee": Schluessel des Simstrat-Seemodells bei Alplakes (Eawag),
  *           nur bei Seen; der Sammler holt damit die Wassertemperatur (seit 8.11.2026)
  *           anfahrt? [lat, lon] (Ziel fuer die Fahrzeit, z. B. Parkplatz am Spot; sonst
@@ -146,6 +148,9 @@ function regionen_pruefen(array $d): array
         if (isset($r['fremdprognose']) && (!is_array($r['fremdprognose']) || empty($r['fremdprognose']['name'])
             || !is_string($r['fremdprognose']['url'] ?? null) || !preg_match('#^https://[^\s"<>]+$#', $r['fremdprognose']['url']))) {
             $f[] = "$wo: fremdprognose braucht name und eine https-Adresse";
+        }
+        if (isset($r['fremdprognose']['format']) && !in_array($r['fremdprognose']['format'], ['walchensee', 'ammerseewind'], true)) {
+            $f[] = "$wo: fremdprognose.format unbekannt (walchensee, ammerseewind)";
         }
         foreach ($r['links'] ?? [] as $l) {
             if (empty($l['name']) || !is_string($l['url'] ?? null) || !preg_match('#^https://[^\s"<>]+$#', $l['url'])) {

@@ -16,6 +16,7 @@
       "punkt": [48.0, 11.135],
       "zeitzone": "Europe/Berlin",
       "alplakes": "ammersee",
+      "fremdprognose": {"name": "ammerseewind.de (kalibriert für Stegen)", "url": "https://ammerseewind.de/", "format": "ammerseewind", "pfad": "export/wohinfahrma.json"},
       "hinweis": "Punkt in der Seemitte. Richtungen hängen hier am Spot, deshalb keine Windlagen auf Regionsebene.",
       "windlagen": [],
       "spots": [

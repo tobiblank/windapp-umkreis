@@ -1107,6 +1107,59 @@ $fE = ranglisten_eintrag($fRegion, 50, $fx);
 pruefe(abs($fE['erwartete_tage'] - (0.72 + 0.35 + 0.2)) < 1e-9, 'Rangliste zählt die fremde Chance');
 fremdprognosen([]);
 
+// ammerseewind.de (seit 11.11.2026): Exportdatei mit einer Chance je Sportart
+echo "\nammerseewind.de\n";
+$aDir = "$tmp/fremd/winddaten";
+@mkdir("$aDir/export", 0777, true);
+$aExport = fn(array $extra = []) => $extra + [
+    'version' => 1, 'erzeugt' => '2030-07-10T07:40:00Z', 'lauf' => '2030-07-10T07:00:00Z', 'alter_h' => 0.7,
+    'quelle' => 'ammerseewind.de', 'ort' => 'Stegen',
+    'tage' => [
+        '2030-07-10' => ['von' => 9, 'bis' => 20, 'rest' => false, 'vorbei' => false, 'sektor' => 'sued',
+                         'chance' => ['directional' => 0.64, 'twintip' => 0.62, 'wing' => 0.9, 'segeln' => 0.3]],
+        '2030-07-11' => ['von' => 9, 'bis' => 20, 'rest' => false, 'vorbei' => false, 'sektor' => 'west',
+                         'chance' => ['twintip' => 0.05, 'segeln' => 0.8]],
+        '2030-07-09' => ['vorbei' => true, 'chance' => []],
+    ],
+];
+file_put_contents("$aDir/export/wohinfahrma.json", json_encode($aExport()));
+$aRegion = ['id' => 'ammersee', 'name' => 'Ammersee', 'zeitzone' => 'Europe/Berlin',
+            'fremdprognose' => ['name' => 'ammerseewind.de (kalibriert für Stegen)', 'url' => 'https://ammerseewind.de/',
+                                'format' => 'ammerseewind', 'pfad' => 'export/wohinfahrma.json']];
+pruefe(regionen_pruefen(['regionen' => [$aRegion + ['land' => 'DE', 'typ' => 'see', 'punkt' => [48.0, 11.1], 'windlagen' => [], 'spots' => []]]]) === [], 'Katalogfeld mit format und pfad gültig');
+$aFalsch = $aRegion;
+$aFalsch['fremdprognose']['format'] = 'xyz';
+pruefe((bool)array_filter(regionen_pruefen(['regionen' => [$aFalsch + ['land' => 'DE', 'typ' => 'see', 'punkt' => [48.0, 11.1], 'windlagen' => [], 'spots' => []]]]), fn($x) => str_contains($x, 'format')), 'unbekanntes format wird abgelehnt');
+pruefe(fremdprognose_quelle(['fremdprognosen' => ['walchensee' => "$aDir/walchensee"]], $aRegion) === "$aDir/export/wohinfahrma.json", 'Datei aus dem Elternordner der Walchensee-Prognose');
+pruefe(fremdprognose_quelle(['winddaten' => '/x/winddaten/'], $aRegion) === '/x/winddaten/export/wohinfahrma.json', 'Datei aus winddaten in config.php');
+pruefe(fremdprognose_quelle(['fremdprognosen' => ['ammersee' => '/y/datei.json']], $aRegion) === '/y/datei.json', 'eigener Eintrag geht vor');
+pruefe(fremdprognose_quelle([], $aRegion) === null, 'ohne Ordner: keine Quelle');
+fremdprognosen_laden(['fremdprognosen' => ['walchensee' => "$aDir/walchensee"]], [$aRegion], $fJetzt);
+$ap = fremdprognosen()['ammersee'] ?? null;
+pruefe($ap !== null && array_keys($ap['tage']) === ['2030-07-10', '2030-07-11'] && $ap['stand'] === strtotime('2030-07-10T07:40:00Z'), 'Export gelesen, vorbei-Tage weggelassen');
+$ax = fremd_einmischen($aRegion, $fProTag, SPORTARTEN['kite_twintip'], $fUm('10:00'));
+pruefe(abs($ax['2030-07-10']['ens']['chance'] - 0.62) < 1e-9 && abs($ax['2030-07-11']['ens']['chance'] - 0.05) < 1e-9, 'Twintip: Zahl der Sportart');
+pruefe(($ax['2030-07-10']['fremd']['stufe'] ?? '') === 'lohnt' && ($ax['2030-07-11']['fremd']['stufe'] ?? '') === 'no', 'Stufen wie in den Mails von ammerseewind.de');
+pruefe(fremd_text($ax['2030-07-10']['fremd'], new DateTimeZone('Europe/Berlin')) === 'lohnt sich · Stand 9:40', 'Text ohne Spitze');
+$ay = fremd_einmischen($aRegion, $fProTag, SPORTARTEN['segeln'], $fUm('10:00'));
+pruefe(abs($ay['2030-07-10']['ens']['chance'] - 0.3) < 1e-9, 'Segeln: auch von ammerseewind.de');
+$az = fremd_einmischen($aRegion, $fProTag, SPORTARTEN['kitefoil'], $fUm('10:00'));
+pruefe(!isset($az['2030-07-10']['fremd']) && abs($az['2030-07-10']['ens']['chance'] - 0.05) < 1e-9, 'Sportart ohne Zahl im Export: eigener Wert');
+pruefe(!isset(fremd_einmischen($aRegion, $fProTag, SPORTARTEN['kite_wave'], $fUm('10:00'))['2030-07-10']['fremd']), 'Wave: eigener Wert');
+$aSpaet = fremd_einmischen($aRegion, $fProTag, SPORTARTEN['kite_twintip'], $fUm('12:00'));
+pruefe(!isset($aSpaet['2030-07-10']['fremd']) && isset($aSpaet['2030-07-11']['fremd']), 'heute nur, solange der Export höchstens 2 h alt ist');
+pruefe(isset(fremd_einmischen($aRegion, $fProTag, SPORTARTEN['kite_twintip'], $fUm('16:00'))['2030-07-11']['fremd']), 'nach 15 Uhr: morgen weiter (keine Walchensee-Grenze)');
+file_put_contents("$aDir/export/wohinfahrma.json", json_encode($aExport(['erzeugt' => '2030-07-09T08:00:00Z'])));
+fremdprognosen_laden(['winddaten' => $aDir], [$aRegion], $fJetzt);
+pruefe(!isset(fremdprognosen()['ammersee']), 'älter als 18 h: keine Prognose');
+file_put_contents("$aDir/export/wohinfahrma.json", json_encode($aExport(['version' => 2])));
+fremdprognosen_laden(['winddaten' => $aDir], [$aRegion], $fJetzt);
+pruefe(!isset(fremdprognosen()['ammersee']), 'andere Version: keine Prognose');
+file_put_contents("$aDir/export/wohinfahrma.json", '{kaputt');
+fremdprognosen_laden(['winddaten' => $aDir], [$aRegion], $fJetzt);
+pruefe(!isset(fremdprognosen()['ammersee']), 'kaputte Datei: keine Prognose, kein Fehler');
+fremdprognosen([]);
+
 // Schnee-Modus (seit 8.11.2026)
 require __DIR__ . '/test_schnee.php';
 
