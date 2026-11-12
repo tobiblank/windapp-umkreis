@@ -93,6 +93,7 @@ function schnee_katalog_laden(string $datei): array
     }
     $d['lawinendienste'] ??= [];
     $d['messnetze'] ??= [];
+    $d['webcams'] ??= [];
     return $d;
 }
 
@@ -189,7 +190,7 @@ function schneeregionen_pruefen(array $d): array
             }
         }
     }
-    return array_merge($f, stationen_pruefen($d));
+    return array_merge($f, stationen_pruefen($d), webcams_pruefen($d));
 }
 
 /** Beginnt $id mit einem der Praefixe? (wie lawine_praefix, ohne lawine.php zu brauchen) */

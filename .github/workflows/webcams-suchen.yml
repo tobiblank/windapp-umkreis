@@ -1,0 +1,36 @@
+name: Webcams suchen
+
+# Von Hand starten (seit 12.11.2026): sucht je Messstation der Schnee-Regionen die
+# naechste Webcam von foto-webcam.eu (tools/webcams_suchen.php). Ergebnis im Log und als
+# Artefakt webcams.json; eingetragen wird es von Hand in daten/schneeregionen.json
+# (Teil "webcams"). Aendert nichts im Repo oder auf dem Server.
+
+on:
+  workflow_dispatch:
+    inputs:
+      km:
+        description: "Hoechstens so weit entfernt (km)"
+        default: "25"
+
+permissions:
+  contents: read
+
+jobs:
+  suchen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          coverage: none
+
+      - name: Suchen
+        run: php tools/webcams_suchen.php daten/schneeregionen.json webcams.json "${{ inputs.km || '25' }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: webcams
+          path: webcams.json

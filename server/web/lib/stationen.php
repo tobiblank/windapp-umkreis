@@ -474,3 +474,93 @@ function stationen_html(array $liste, array $netze, DateTimeZone $tz, DateTimeIm
          . ($link ? '<a href="' . $e($link) . '" rel="noopener">' . $e(implode(', ', $quellen)) . ' ↗</a>' : $e(implode(', ', $quellen)))
          . '):</span> ' . implode(' · ', $teile) . '</p>' . $modellZeile;
 }
+
+/*
+ * Webcams (seit 12.11.2026): je Messstation die naechste Webcam, nur verlinkt (kein Bild).
+ * Katalog daten/schneeregionen.json, Teil webcams:
+ *   stationen  {"netz:id": {name, url, titel?, km?, hoehe?}}  naechste Webcam zur Station
+ *   regionen   {region_id: {...}}  fuer Regionen ohne Messstation, naechste zum Vorhersagepunkt
+ * Gewaehlt mit tools/webcams_suchen.php (Action "Webcams suchen").
+ */
+const WEBCAM_AN_DER_STATION_KM = 0.5;  // naeher: "an der Station"
+
+/** Fehler im Katalogteil webcams */
+function webcams_pruefen(array $d): array
+{
+    $w = $d['webcams'] ?? [];
+    if (!is_array($w)) {
+        return ['webcams muss ein Objekt sein'];
+    }
+    $f = [];
+    $regionIds = array_column($d['regionen'] ?? [], 'id');
+    foreach (['stationen', 'regionen'] as $teil) {
+        foreach ($w[$teil] ?? [] as $k => $c) {
+            $wo = "webcams.$teil.$k";
+            if (!is_string($c['name'] ?? null) || $c['name'] === '') {
+                $f[] = "$wo: name fehlt";
+            }
+            if (!is_string($c['url'] ?? null) || !str_starts_with($c['url'], 'https://')) {
+                $f[] = "$wo: url muss mit https:// beginnen";
+            }
+            if (isset($c['km']) && (!is_numeric($c['km']) || $c['km'] < 0)) {
+                $f[] = "$wo: km muss eine Zahl ab 0 sein";
+            }
+            if ($teil === 'stationen' && !preg_match('/^[a-z0-9-]+:.+$/', (string)$k)) {
+                $f[] = "$wo: Schluessel muss netz:id sein";
+            }
+            if ($teil === 'regionen' && !in_array($k, $regionIds, true)) {
+                $f[] = "$wo: Region $k gibt es nicht";
+            }
+        }
+    }
+    return $f;
+}
+
+/** Name einer Station: aus den geladenen Messwerten, sonst aus dem Katalog, sonst die Kennung */
+function station_name(string $netz, string $id, array $netze, array $geladen): string
+{
+    $n = $geladen[$netz]['stationen'][$id]['name'] ?? $netze[$netz]['stationen'][$id]['name'] ?? $id;
+    // GeoSphere meldet Namen in Grossbuchstaben
+    return $n === mb_strtoupper($n) ? mb_convert_case(mb_strtolower($n), MB_CASE_TITLE) : $n;
+}
+
+/**
+ * Zeile "Webcams …" fuer Regionskarte und Stundenseite (HTML), leer ohne Webcam.
+ * Je Messstation der Region (ohne SNOWGRID-Punkte) die naechste Webcam mit Entfernung;
+ * teilen sich Stationen eine Webcam, steht sie einmal (bei der naechsten Station).
+ */
+function webcams_html(array $region, array $webcams, array $netze, array $geladen): string
+{
+    $e = fn(string $s) => htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $km = fn(float $v) => $v < 10 ? number_format($v, 1, ',', '.') : number_format(round($v), 0, ',', '.');
+    $treffer = [];   // url => [cam, wo]
+    foreach ($region['stationen'] ?? [] as $netz => $ids) {
+        if (($netze[$netz]['art'] ?? '') === 'snowgrid') {
+            continue;
+        }
+        foreach ($ids as $id) {
+            $c = $webcams['stationen']["$netz:$id"] ?? null;
+            if (!$c) {
+                continue;
+            }
+            $name = station_name($netz, $id, $netze, $geladen);
+            $d = isset($c['km']) ? (float)$c['km'] : null;
+            $wo = $d === null ? 'bei ' . $name : ($d < WEBCAM_AN_DER_STATION_KM ? 'an der Station ' . $name : $km($d) . ' km von ' . $name);
+            if (!isset($treffer[$c['url']]) || ($d ?? INF) < ($treffer[$c['url']][0]['km'] ?? INF)) {
+                $treffer[$c['url']] = [$c, $wo];
+            }
+        }
+    }
+    if (!$treffer && ($c = $webcams['regionen'][$region['id']] ?? null)) {
+        $treffer[$c['url']] = [$c, isset($c['km']) ? 'rund ' . $km((float)$c['km']) . ' km vom Tourengebiet' : 'im Gebiet'];
+    }
+    if (!$treffer) {
+        return '';
+    }
+    $teile = [];
+    foreach ($treffer as [$c, $wo]) {
+        $title = ($c['titel'] ?? $c['name']) . (isset($c['hoehe']) ? ', ' . number_format((int)$c['hoehe'], 0, ',', '.') . ' m' : '');
+        $teile[] = '<a href="' . $e($c['url']) . '" rel="noopener" title="' . $e($title) . '">' . $e($c['name']) . ' ↗</a> <span class="leise">' . $e($wo) . '</span>';
+    }
+    return '<p class="klein messung webcams"><span class="leise">📷&#xFE0E; Webcams:</span> ' . implode(' · ', $teile) . '</p>';
+}

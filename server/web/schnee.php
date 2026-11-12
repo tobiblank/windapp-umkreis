@@ -713,6 +713,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
       <p class="klein leise"><?= $guteTage ? '' : 'Kein passender Tag in diesem Zeitraum.' ?><?= $offene ? ' Für ' . h(implode(', ', array_map(fn($x) => tag_kurz($x, $heute), $offene))) . ' gibt es noch keine Vorhersage.' : '' ?></p>
     <?php endif ?>
     <?= $ansicht === 'bald' ? stationen_html(stationen_region($r, $messungen), $messnetze, $tzSeite, $heute) : '' ?>
+    <?= $ansicht === 'bald' ? webcams_html($r, $schnee['webcams'], $messnetze, $messungen) : '' ?>
     <?= lawine_html($r, $lageVon[$r['id']] ?? [], $dienste, $tage, $lagen) ?>
     <?php if (!empty($r['links'])): ?>
       <p class="links klein">Genauer:
@@ -730,6 +731,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
   <?php if ($fahrzeiten): ?><p>Fahrzeiten ab <?= h($fahrzeiten['start']['name'] ?? 'Startort') ?>: © <a href="https://openrouteservice.org/">openrouteservice.org</a> by HeiGIT, Kartendaten © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende.</p><?php endif ?>
   <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0)</p>
   <?php foreach (array_intersect_key($messnetze, $messungen) as $n): ?><p><?= ($n['art'] ?? '') === 'snowgrid' ? 'Modellwerte' : 'Messwerte' ?>: <a href="<?= h($n['url']) ?>" rel="noopener"><?= h($n['name']) ?></a> (<?= h($n['lizenz']) ?>), <?= ($n['art'] ?? '') === 'snowgrid' ? 'Tageswert vom Vortag, kein Messwert' : 'Rohdaten, ungeprüft' ?>.</p><?php endforeach ?>
+  <?php if (!empty($schnee['webcams']['stationen'])): ?><p>Webcams: verlinkt, nicht eingebunden; die meisten von <a href="https://www.foto-webcam.eu/" rel="noopener">foto-webcam.eu</a>, Entfernung Luftlinie zur Messstation.</p><?php endif ?>
   <?= design_schalter() ?>
   <?= maennchen_ton_schalter() ?>
   <p><a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a></p>

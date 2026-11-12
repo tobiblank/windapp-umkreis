@@ -137,5 +137,18 @@
       "eaws": ["XX-1"],
       "stationen": {"snowgrid": ["d-tour", "d-mitte"]}
     }
-  ]
+  ],
+  "webcams": {
+    "stationen": {
+      "tirol:sta-gut": {"name": "Cam Gutalm", "titel": "Gutalm - Blick nach Süden", "url": "https://example.org/cam/gutalm/", "km": 0.2, "hoehe": 2450},
+      "tirol:sta-sprung": {"name": "Cam Tal", "url": "https://example.org/cam/tal/", "km": 3.4},
+      "tirol:sta-fehlt": {"name": "Cam Tal", "url": "https://example.org/cam/tal/", "km": 7.9},
+      "geosphere:111": {"name": "Cam Hundert", "url": "https://example.org/cam/hundert/", "km": 12.3},
+      "snowgrid:d-tour": {"name": "Cam Modell", "url": "https://example.org/cam/modell/", "km": 1}
+    },
+    "regionen": {
+      "schnee-d": {"name": "Cam Region D", "url": "https://example.org/cam/d/", "km": 4.2},
+      "schnee-c": {"name": "Cam Region C", "url": "https://example.org/cam/c/"}
+    }
+  }
 }

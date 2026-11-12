@@ -304,7 +304,9 @@ $jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
     <div class="kz"><span class="t">Wind am Kamm<?= $k['kamm_stark'] ? ' 💨' : '' ?></span><span class="w"><?= $k['kamm'] === null ? '?' : zahl($k['kamm']) ?></span><span class="u">km/h, 700 hPa</span></div>
     <div class="kz"><span class="t">Böen im Tal</span><span class="w"><?= $k['boe'] === null ? '?' : zahl($k['boe']) ?></span><span class="u">km/h, höchste</span></div>
   </div>
-  <?= $tag === $heute->format('Y-m-d') ? stationen_html(stationen_region($region, stationen_laden($dataDir)), $schnee['messnetze'], $tzSeite, $heute) : '' ?>
+  <?php $gemessen = $tag === $heute->format('Y-m-d') ? stationen_laden($dataDir) : []; ?>
+  <?= $tag === $heute->format('Y-m-d') ? stationen_html(stationen_region($region, $gemessen), $schnee['messnetze'], $tzSeite, $heute) : '' ?>
+  <?= $tag === $heute->format('Y-m-d') ? webcams_html($region, $schnee['webcams'], $schnee['messnetze'], $gemessen) : '' ?>
   <h3 class="klein diagramm-titel">Die drei Tage davor und der Tag</h3>
   <p class="legende klein"><span><i class="l-schnee"></i>Schnee</span><span><i class="l-regen"></i>Regen auf Tourhöhe</span><span><i class="l-sfg"></i>Schneefallgrenze</span><span><i class="l-fenster"></i>Tourenfenster</span></p>
   <?= schnee_svg($reihe, $region, $tag, $b['fenster'], $jetztStunde) ?>

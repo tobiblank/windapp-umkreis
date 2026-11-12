@@ -95,7 +95,8 @@ a { color: var(--akzent); }
 .textknopf { font: inherit; color: var(--akzent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
 .knopf { grid-column: 1 / -1; font: inherit; font-weight: 600; padding: 10px; border-radius: 10px; border: 0; background: var(--text); color: var(--karte); }
 
-.reiter { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: var(--kachel); padding: 4px; border-radius: 12px; margin: 0 0 10px; }
+/* so viele gleich breite Spalten wie Reiter (Wind 3, Schnee 2), seit 12.11.2026 */
+.reiter { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; background: var(--kachel); padding: 4px; border-radius: 12px; margin: 0 0 10px; }
 .reiter a { text-align: center; padding: 8px 6px; border-radius: 9px; color: var(--leise); text-decoration: none; font-size: 14px; font-weight: 600; }
 .reiter a[aria-current] { background: var(--karte); color: var(--text); }
 
