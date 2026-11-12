@@ -142,6 +142,9 @@ pruefe(stationen_aus_reihe([1000 => 5.0, 1000 + 86400 => 8.0]) === [8.0, 3.0, gm
 pruefe(stationen_wert($mess['tirol']['stationen']['sta-gut'], time() + 4 * 86400) === null && stationen_wert($mess['tirol']['stationen']['sta-gut'], time() + 13 * 3600)['alt'],
        'Stationen: nach 12 h mit Zeit, nach 72 h nicht mehr angezeigt');
 pruefe(stationen_pruefen(['messnetze' => ['x' => ['name' => 'X']], 'regionen' => [['id' => 'r', 'stationen' => ['y' => []]]]]) !== [], 'Katalog: fehlerhafte Messnetze und Stationen werden gemeldet');
+pruefe(webcams_pruefen(['regionen' => [['id' => 'r']], 'webcams' => ['stationen' => ['ohnenetz' => ['name' => 'X', 'url' => 'http://x']], 'regionen' => ['gibtsnicht' => ['name' => 'Y', 'url' => 'https://y', 'km' => -1]]]]) !== []
+       && webcams_pruefen(['regionen' => [['id' => 'r']], 'webcams' => ['regionen' => ['r' => ['name' => 'Y', 'url' => 'https://y']]]]) === [],
+       'Katalog: fehlerhafte Webcams werden gemeldet, Webcam ohne km ist erlaubt');
 exec($sCmd("$tmp/schnee_nur", '--nur lawine'), $ausN, $rcN);
 pruefe($rcN === 0 && is_dir("$tmp/schnee_nur/lawine") && !is_dir("$tmp/schnee_nur/vorhersage") && !is_dir("$tmp/schnee_nur/schnee_ensemble"), '--nur lawine: nur der Lagebericht');
 
@@ -330,6 +333,17 @@ pruefe(preg_match('#id="r-schnee-a".*?Schneehöhe gemessen heute .*?Gutalm <span
 pruefe(preg_match('#id="r-schnee-d".*?Schneehöhe im Modell, Stand \w\w \d+\.\d+\. \(<a href="https://data.hub.geosphere.at/dataset/snowgrid_cl-v2-1d-1km"[^>]*>SNOWGRID ↗</a>\):</span> <span[^>]*>2.350 m <b>18 cm</b>.*?\(Vortag \+3\)#s', $html) === 1
        && !preg_match('#id="r-schnee-d".*?Schneehöhe gemessen#s', explode('id="r-schnee-a"', $html)[0] . 'x') && str_contains($html, 'Modellwerte: <a href="https://data.hub.geosphere.at/dataset/snowgrid_cl-v2-1d-1km"'),
        'Liste: SNOWGRID als Modellwert abgesetzt, nicht als Messung');
+$karte = fn(string $id) => explode('<article', explode('id="r-' . $id . '"', $html, 2)[1] ?? '')[0];
+$wa = $karte('schnee-a');
+pruefe(str_contains($wa, '>Cam Gutalm ↗</a> <span class="leise">an der Station Gutalm</span>') && str_contains($wa, 'title="Gutalm - Blick nach Süden, 2.450 m"')
+       && substr_count($wa, 'https://example.org/cam/tal/') === 1 && str_contains($wa, '>Cam Tal ↗</a> <span class="leise">3,4 km von Sprungjoch</span>'),
+       'Liste: Webcam an der Station, nächste Webcam mit Entfernung, geteilte Webcam nur einmal (bei der nächsten Station)');
+pruefe(str_contains($karte('schnee-b'), '>Cam Hundert ↗</a> <span class="leise">12 km von Hundertelf</span>'), 'Liste: Webcam ab 10 km ohne Nachkomma');
+$wd = $karte('schnee-d');
+pruefe(str_contains($wd, '>Cam Region D ↗</a> <span class="leise">rund 4,2 km vom Tourengebiet</span>') && !str_contains($wd, 'cam/modell'),
+       'Liste: nur SNOWGRID-Punkte → Webcam der Region, keine zum Modellpunkt');
+pruefe(str_contains($karte('schnee-c'), '>Cam Region C ↗</a> <span class="leise">im Gebiet</span>') && str_contains($html, 'Webcams: verlinkt, nicht eingebunden'),
+       'Liste: Station ohne Webcam → Webcam der Region ohne km; Quelle im Fuß');
 pruefe(preg_match('#id="r-schnee-c".*?Schneehöhe gemessen heute .*?Bezett eins <span class="leise">2.450 m</span> <b>26 cm</b>.*?\(24 h \+6\).*?Bezett zwei <span class="leise">2.000 m</span> <b>0 cm</b>#s', $html) === 1,
        'Liste: Südtiroler Stationen');
 [, $hw] = holen($wPort, 'schnee.php?km=800&prio=neu&ansicht=woche');
@@ -343,6 +357,7 @@ pruefe(str_contains($html, 'class="s-schnee"') && str_contains($html, 'class="s-
        'Stundenseite: Schneebalken, Schneefallgrenze, Lawinenlage, Spanne des Ensembles, Regeln einzeln');
 [, $html] = holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t0);
 pruefe(str_contains($html, 'Schneehöhe gemessen') && str_contains($html, 'Sprungjoch'), 'Stundenseite heute: gemessene Schneehöhe');
+pruefe(str_contains($html, 'Webcams:') && str_contains($html, 'https://example.org/cam/gutalm/'), 'Stundenseite heute: Webcams');
 pruefe(!str_contains(holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t1)[1], 'Schneehöhe gemessen'), 'Stundenseite morgen: keine Messung');
 [$code] = holen($wPort, 'schnee_stunden.php?region=gibtsnicht');
 pruefe($code === 404, 'Stundenseite: unbekannte Region 404');

@@ -11,8 +11,6 @@ on:
       km:
         description: "Hoechstens so weit entfernt (km)"
         default: "25"
-  push:
-    branches: [webcams-suchen-lauf]
 
 permissions:
   contents: read

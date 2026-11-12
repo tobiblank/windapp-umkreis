@@ -65,6 +65,13 @@ Seit 9.11.2026. Im Katalog `messnetze` (`{id: {art, name, kurz, abruf, url, lize
   - **LWD Salzburg, Kärnten, Steiermark:** eigene Stationsnetze auf ihren Seiten, aber keine offene Schnittstelle gefunden; anfragen wie bei der Lawinenlage.
 - **Nebenbei:** Die Stationen nennen die EAWS-Mikroregion; daraus ließen sich die `eaws`-IDs der Tiroler Regionen eintragen (z. B. Stubai AT-07-22, Gurgl AT-07-21, Tux AT-07-15).
 
+## Webcams (seit 12.11.2026)
+
+- Unter der Zeile mit den Messstationen (nur „Heute – Übermorgen“ und auf der Stundenseite für heute) steht je Messstation die **nächste Webcam**, nur als Link auf ihre Seite, kein Bild: „an der Station …“ unter 0,5 km, sonst „x km von …“ (Luftlinie). Teilen sich Stationen eine Webcam, steht sie einmal, bei der nächsten Station. SNOWGRID-Punkte bekommen keine Webcam. Regionen ohne Messstation (oder ohne Webcam an ihren Stationen) zeigen die Webcam der Region („rund x km vom Tourengebiet“, ohne km „im Gebiet“).
+- Katalog: `webcams.stationen` (`"netz:id"` → name, url, titel, km, hoehe) und `webcams.regionen` in `daten/schneeregionen.json`; geprüft in `webcams_pruefen()`.
+- Ausgewählt mit `tools/webcams_suchen.php` (Action „Webcams suchen“): Liste von foto-webcam.eu (`/webcam/include/metadata.php`, am 12.11.2026 384 Kameras mit Lage; `list.php` lieferte nichts), Lage der Stationen aus den Messnetzen, höchstens 25 km. Von Hand ergänzt: Samedan → feratel Diavolezza (km geschätzt), Livigno → Webcam-Seite Carosello 3000.
+- Grenzen: Luftlinie, nicht Sichtbarkeit. Einige Webcams liegen hinter einem Kamm oder tief im Tal (z. B. Erfurter Hütte → Kaltenbach im Zillertal, 19,5 km; Weißsee → Langtaufers, 6,6 km). Die Entfernung steht deshalb immer dabei.
+
 ## Pulvertag (eine Regel für alle)
 
 Seit 9.11.2026 keine Sportarten mehr. Vorher gab es Freeride (Neuschnee 72 h ≥ 15 cm, Bewölkung ≤ 40 %, Wind am Kamm ≤ 30 km/h) und Skitour (Schneehöhe im Modell ≥ 30 cm, Bewölkung ≤ 50 %, Wind am Kamm ≤ 40 km/h). Beide Schwellensätze waren ohne Quelle gesetzt; die Skitour-Regel hing an der Modell-Schneehöhe, dem unsichersten Wert. Der Unterschied war nur eine Gewichtung derselben Daten.
