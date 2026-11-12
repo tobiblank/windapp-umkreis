@@ -45,3 +45,13 @@ function design_schalter(): string
         . "box.addEventListener('click',function(e){var b=e.target.closest('button');if(b){setzen(b.getAttribute('data-design'))}});"
         . "zeigen(html.getAttribute('data-theme')||'auto');box.hidden=false})();</script>";
 }
+
+/**
+ * Adresse des Stylesheets mit Stand als Anhang (seit 12.11.2026): Nach einem Deploy
+ * laedt der Browser das neue stil.css, statt eine alte Kopie aus dem Cache zu nehmen.
+ */
+function stil_url(): string
+{
+    $t = @filemtime(__DIR__ . '/../stil.css');
+    return 'stil.css' . ($t ? '?v=' . $t : '');
+}

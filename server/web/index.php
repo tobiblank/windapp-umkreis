@@ -41,7 +41,7 @@ function fehlerseite(string $text): never
 {
     http_response_code(503);
     echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-       . '<title>Wohinfahrma</title><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="stil.css"><main class="seite"><h1 class="marke">Wohin<span>fahrma</span></h1>'
+       . '<title>Wohinfahrma</title><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="' . stil_url() . '"><main class="seite"><h1 class="marke">Wohin<span>fahrma</span></h1>'
        . '<p class="karte">' . h($text) . '</p></main>';
     exit;
 }
@@ -59,7 +59,7 @@ register_shutdown_function(function () {
     http_response_code(500);
     $speicher = str_contains($e['message'], 'Allowed memory size');
     echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-       . '<title>Wohinfahrma</title><link rel="stylesheet" href="stil.css"><main class="seite"><h1 class="marke">Wohin<span>fahrma</span></h1>'
+       . '<title>Wohinfahrma</title><link rel="stylesheet" href="' . stil_url() . '"><main class="seite"><h1 class="marke">Wohin<span>fahrma</span></h1>'
        . '<p class="karte">' . ($speicher ? 'Die Seite braucht gerade mehr Speicher, als der Server erlaubt (memory_limit ' . h((string)ini_get('memory_limit')) . ').'
                                           : 'Beim Rechnen der Rangliste ist ein Fehler aufgetreten.')
        . ' Bitte später noch einmal versuchen.</p></main>';
@@ -519,7 +519,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
 <meta property="og:title" content="Wohinfahrma – Wo ist Wind? Fahr ma.">
 <meta property="og:description" content="Rangliste der Windsport-Reviere im Umkreis nach Vorhersage und Chance.">
 <meta property="og:type" content="website">
-<link rel="stylesheet" href="stil.css">
+<link rel="stylesheet" href="<?= stil_url() ?>">
 <link rel="manifest" href="manifest.php">
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">

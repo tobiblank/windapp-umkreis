@@ -35,7 +35,7 @@ function fehlerseite(string $text, int $code = 404): never
 {
     http_response_code($code);
     echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">'
-       . '<title>Wohinfahrma – Schnee</title><link rel="stylesheet" href="stil.css"><main class="seite"><h1 class="marke">Wohin<span>fahrma</span></h1><p class="karte">'
+       . '<title>Wohinfahrma – Schnee</title><link rel="stylesheet" href="' . stil_url() . '"><main class="seite"><h1 class="marke">Wohin<span>fahrma</span></h1><p class="karte">'
        . h($text) . ' <a href="schnee.php">Zur Rangliste</a></p></main>';
     exit;
 }
@@ -253,7 +253,7 @@ $jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <title><?= h($region['name']) ?> – Schnee – Wohinfahrma</title>
-<link rel="stylesheet" href="stil.css">
+<link rel="stylesheet" href="<?= stil_url() ?>">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <?= design_kopf() ?>
 </head>

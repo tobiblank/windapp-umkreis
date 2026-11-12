@@ -39,7 +39,7 @@ function fehlerseite(string $text, int $code = 404): never
 {
     http_response_code($code);
     echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-       . '<title>Wohinfahrma</title><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="stil.css">'
+       . '<title>Wohinfahrma</title><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="' . stil_url() . '">'
        . '<main class="seite"><h1 class="marke">Wohin<span>fahrma</span></h1><p class="karte">' . h($text)
        . ' <a href="./">Zur Rangliste</a></p></main>';
     exit;
@@ -374,7 +374,7 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
 <meta name="robots" content="noindex">
 <title><?= h($region['name']) ?> – Wohinfahrma</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="stil.css">
+<link rel="stylesheet" href="<?= stil_url() ?>">
 <?= design_kopf() ?>
 </head>
 <body>
