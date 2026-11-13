@@ -21,6 +21,7 @@ require "$ROOT/server/web/lib/fahrzeit.php";
 require "$ROOT/server/web/lib/roadtrip.php";
 require "$ROOT/server/web/lib/stunden.php";
 require "$ROOT/server/web/lib/neopren.php";
+require "$ROOT/server/web/lib/amstueck.php";
 
 $fehler = 0;
 function pruefe(bool $ok, string $was): void
@@ -990,6 +991,32 @@ pruefe(str_contains($html, 'Hinfahrt ab Inning') && str_contains($html, 'Rückfa
 pruefe(str_contains($html, 'Roadtrips gibt es nur mit Anreise Auto') && ohne_php_meldung($html), 'Roadtrip mit Flug: Hinweis');
 [, $html] = holen($sitePort, 'index.php?km=100&ansicht=roadtrip');
 pruefe(str_contains($html, 'Kein Roadtrip lohnt sich gerade'), 'Roadtrip ohne passende Tage: Hinweis');
+// Windtage am Stueck (seit 13.11.2026)
+$tS = ['2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04', '2026-01-05', '2026-01-06', '2026-01-07'];
+$tagS = fn(?float $c) => ['ens' => $c === null ? null : ['chance' => $c], 'det' => ['geht' => false]];
+$folge = fn(array $cs) => array_combine($tS, array_map($tagS, $cs));
+$sA = am_stueck($folge([0.8, 0.4, 0.9, 0.1, 0.6, 0.7, 0.2]), $tS);
+$sB = am_stueck($folge([0.8, 0.4, 0.35, 0.9, 0.0, 0.0, 0.0]), $tS);
+pruefe($sA['wind'] === 2 && $sA['von'] === '2026-01-01' && $sA['bis'] === '2026-01-03' && $sA['tage'] === ['2026-01-01', '2026-01-02', '2026-01-03']
+       && $sB['wind'] === 1 && am_stueck($folge([0.1, 0.6, 0.7, 0.8, 0.0, 0.0, 0.0]), $tS)['wind'] === 3,
+       'Am Stück: ein schwacher Tag überbrückt und zählt nicht, zwei trennen; bei Gleichstand der frühere');
+pruefe(am_stueck_noetig('auto', ['min' => 90]) === 1 && am_stueck_noetig('auto', ['min' => 301]) === 2 && am_stueck_noetig('auto', ['min' => 310]) === 3
+       && am_stueck_noetig('auto', ['min' => null]) === 3 && am_stueck_noetig('auto', ['min' => 60, 'flug' => 'X']) === 3 && am_stueck_noetig('2', ['min' => 10]) === 2,
+       'Am Stück: nötige Windtage nach Fahrzeit, Flug und ohne Landweg 3, feste Wahl');
+[$code, $html] = holen($sitePort, 'index.php?km=1000&stueck=3');
+pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, '<select name="stueck">') && str_contains($html, '<option value="3" selected>')
+       && preg_match('#class="karte region[^"]* lohnt-nicht" id="r-adria-nord".*?Lohnt sich kaum: höchstens 2 Windtage am Stück \(Morgen bis .*?\), nötig 3#s', $html) === 1
+       && !preg_match('/class="heim" id="heim"[^>]* data-wohin=/', $html) && str_contains($html, 'stueck=3'),
+       'Am Stück 3: Adria mit 2 Windtagen lohnt sich kaum, Männchen fährt nicht hin, Links behalten die Wahl');
+[, $html] = holen($sitePort, 'index.php?km=1000');
+pruefe(str_contains($html, '✓ 2 Windtage am Stück: Morgen bis') && !str_contains($html, 'lohnt-nicht'), 'Am Stück nach Fahrzeit: Adria (5 h) mit 2 Windtagen lohnt');
+[, $html] = holen($sitePort, 'index.php?km=1000&stueck=egal');
+pruefe(!str_contains($html, 'stueck-zeile') && str_contains($html, '<option value="egal" selected>'), 'Am Stück egal: wie bisher');
+[, $html] = holen($sitePort, 'index.php?km=1000&ansicht=woche&stueck=3');
+pruefe(str_contains($html, '<tr class="lohnt-nicht"') && str_contains($html, ' stueck"'), 'Tabelle: lohnt sich kaum blass, Strecke markiert');
+[, $html] = holen($sitePort, 'index.php?km=1000&ansicht=roadtrip');
+pruefe(!str_contains($html, '<select name="stueck">'), 'Roadtrip: kein Feld Am Stück');
+
 // Deine Regionen im Wind-Modus (seit 13.11.2026)
 [, $html] = holen($sitePort, 'index.php?km=1000');
 pruefe(str_contains($html, 'class="fav" data-id="ammersee" aria-pressed="false"') && str_contains($html, 'id="favZeile" hidden') && str_contains($html, '"wohinfahrma_fav_wind"'),
@@ -1005,7 +1032,7 @@ pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'Keine de
 pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, '<table class="matrix">') && substr_count($html, '<th scope="col"') === 8
        && substr_count($html, '<th scope="row"') === 2 && !str_contains($html, 'class="karte region'),
        'Woche: Matrix mit 7 Tagen, eine Zeile je Region, keine Regionskarten');
-pruefe(preg_match('/id="r-adria-nord"|#r-adria-nord">Nördliche Adria/', $html) && preg_match('/<td class="go"[^>]*>.*?>100</s', $html)
+pruefe(preg_match('/id="r-adria-nord"|#r-adria-nord">Nördliche Adria/', $html) && preg_match('/<td class="go( stueck)?"[^>]*>.*?>100</s', $html)
        && str_contains($html, '>Tabelle 7 Tage</a>'), 'Woche: Adria morgen 100 %, verlinkt');
 [, $html] = holen($sitePort, "index.php?km=1000&ansicht=woche&nach=$morgen");
 pruefe(str_contains($html, 'class="m-aktiv"') && ohne_php_meldung($html), 'Woche nach einem Tag sortiert: Spalte markiert');

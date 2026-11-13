@@ -8,6 +8,8 @@
  *   ort     "Breite,Laenge", auf 0,1 Grad gerundet (ca. 10 km) - genauer wird
  *           nichts angenommen, damit kein genauer Standort im Zugriffsprotokoll steht
  *   ansicht bald (heute bis uebermorgen) oder reise (Tag 3 bis 7)
+ *   stueck  auto | egal | 2 | 3 (seit 13.11.2026): Windtage am Stueck, die eine Region braucht
+ *           (lib/amstueck.php); auto = nach Fahrzeit
  *   fav     "id,id,…" (seit 13.11.2026): nur diese Regionen, ohne Umkreis, innerhalb der
  *           gewaehlten Anreise (lib/favoriten.php)
  */
@@ -24,6 +26,7 @@ require __DIR__ . '/lib/neopren.php';
 require __DIR__ . '/lib/spotinfo.php';
 require __DIR__ . '/lib/design.php';
 require __DIR__ . '/lib/favoriten.php';
+require __DIR__ . '/lib/amstueck.php';
 
 const TZ_SEITE = 'Europe/Berlin';
 const HEIM_STANDARD = [48.07, 11.15];      // Inning am Ammersee
@@ -158,6 +161,14 @@ $tage = [];
 for ($i = $von; $i <= $bis; $i++) {
     $tage[] = $heute->modify("+$i day")->format('Y-m-d');
 }
+// Windtage am Stueck (seit 13.11.2026): immer ueber alle 7 Tage gezaehlt; nicht im Roadtrip
+// (der rechnet selbst) und nicht in der geteilten Ansicht
+$tage7 = [];
+for ($i = 0; $i <= 6; $i++) {
+    $tage7[] = $heute->modify("+$i day")->format('Y-m-d');
+}
+$stueck = isset(AM_STUECK_WAHL[$_GET['stueck'] ?? '']) ? (string)$_GET['stueck'] : 'auto';
+$stueckAn = !$geteilt && !$roadtrip && $stueck !== 'egal';
 
 function tag_kurz(string $tag, DateTimeImmutable $heute): string
 {
@@ -185,10 +196,17 @@ $zurAnreise = array_values(array_filter($regionen, fn($r) => in_array($anreise, 
 // Bewertung je Region und Tag (lib/vorrechnen.php). Rohdaten werden nur noch fuer
 // Regionen entpackt, die dort fehlen; nach einem Lauf fuellt vorrechnen.php alles.
 $cacheDir = array_key_exists('cache_dir', $cfg) ? ($cfg['cache_dir'] === null ? null : rtrim((string)$cfg['cache_dir'], '/')) : "$dataDir/cache";
+$tageRechnen = $stueckAn ? $tage7 : $tage;
 $rb = $geteilt
     ? rangliste_mit_cache([$geteilt], $dataDir, $cacheDir, $sportId, $heim, INF, $tage, $jetzt)
-    : rangliste_mit_cache($zurAnreise, $dataDir, $cacheDir, $sportId, $heim, $flug || $fav ? INF : (float)$km, $tage, $jetzt);
+    : rangliste_mit_cache($zurAnreise, $dataDir, $cacheDir, $sportId, $heim, $flug || $fav ? INF : (float)$km, $tageRechnen, $jetzt);
 $liste = $rb['liste'];
+if ($tageRechnen !== $tage) {
+    // Gerechnet fuer 7 Tage, angezeigt nur der Zeitraum: Summen fuer den Zeitraum neu, die 7 Tage behalten
+    foreach ($liste as $i => $e) {
+        $liste[$i] = ranglisten_eintrag($e['region'], (float)$e['km'], array_intersect_key($e['tage'], array_flip($tage))) + ['tage7' => $e['tage']];
+    }
+}
 $stand = $rb['stand'];   // nur _ts und _fp, ohne Rohdaten
 unset($rb);
 // Verlauf: dieselbe Chance aus frueheren Abrufen
@@ -217,6 +235,12 @@ if (!$geteilt && !$flug && !$fav) {
     $liste = array_values(array_filter($liste, fn($e) => im_umkreis($e, (float)$km)));
 }
 $liste = rangliste_sortieren($liste, $nach);
+if ($stueckAn) {
+    foreach ($liste as $i => $e) {
+        $liste[$i]['stueck'] = am_stueck_bewerten($e['tage7'] ?? $e['tage'], $tage7, $stueck, $e['fahrt']);
+    }
+    $liste = am_stueck_sortieren($liste, $nach === 'summe');
+}
 $jetztSeite = $jetzt->setTimezone($tzSeite);
 $trips = $roadtrip && !$geteilt && !$flug
     ? roadtrip_vorschlaege($liste, $tage, $fahrtModell, (int)$jetztSeite->format('G') + (int)$jetztSeite->format('i') / 60)
@@ -267,6 +291,20 @@ function temp_text(array $d): ?array
                 . ($luft ? '. ' . $luft : '')];
     }
     return $luft ? [$luft, 'Wassertemperatur für diesen See nicht bekannt, deshalb keine Neopren-Empfehlung. Gefühlt: Windchill bei Wind im Fenster.'] : null;
+}
+
+/** Zeile zu den Windtagen am Stueck (lib/amstueck.php) */
+function stueck_text(array $st, array $e): string
+{
+    global $heute;
+    $strecke = $st['von'] ? tag_kurz($st['von'], $heute) . ($st['bis'] !== $st['von'] ? ' bis ' . tag_kurz($st['bis'], $heute) : '') : '';
+    $tage = fn(int $n) => $n === 1 ? '1 Windtag' : $n . ' Windtage';
+    if ($st['lohnt']) {
+        return '✓ ' . $tage($st['wind']) . ' am Stück: ' . $strecke;
+    }
+    $fahrt = !empty($e['fahrt']['flug']) ? 'Flugziel' : (($e['fahrt']['min'] ?? null) !== null ? fahrzeit_mit_wort($e['fahrt']) : 'weite Anreise');
+    return 'Lohnt sich kaum: ' . ($st['wind'] ? 'höchstens ' . $tage($st['wind']) . ' am Stück (' . $strecke . ')' : 'kein Windtag in 7 Tagen')
+         . ', nötig ' . $st['noetig'] . ' (' . $fahrt . ')';
 }
 
 /** Stunden als Uhrzeit, auf 5 Minuten: 11.25 -> "11:15", ueber Mitternacht weiter gezaehlt */
@@ -320,13 +358,16 @@ function stufe(?float $chance): string
 
 function link_mit(array $aenderung): string
 {
-    global $sportId, $km, $ansicht, $heim, $eigenerOrt, $nach, $anreise, $fav;
+    global $sportId, $km, $ansicht, $heim, $eigenerOrt, $nach, $anreise, $fav, $stueck;
     $p = ['sport' => $sportId, 'km' => $km, 'ansicht' => $ansicht];
     if ($anreise === 'flug') {
         $p['anreise'] = 'flug';
     }
     if ($fav) {
         $p['fav'] = implode(',', $fav);
+    }
+    if ($stueck !== 'auto') {
+        $p['stueck'] = $stueck;
     }
     if ($nach !== 'summe') {
         $p['nach'] = $nach;
@@ -604,6 +645,15 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     </select>
   </label>
   <?php endif ?>
+  <?php if (!$roadtrip): ?>
+  <label title="Windtage hintereinander, die eine Region braucht, damit sich die Fahrt lohnt">Am Stück
+    <select name="stueck">
+      <?php foreach (AM_STUECK_WAHL as $wert => $name): ?>
+        <option value="<?= h((string)$wert) ?>"<?= (string)$wert === $stueck ? ' selected' : '' ?>><?= h($name) ?></option>
+      <?php endforeach ?>
+    </select>
+  </label>
+  <?php elseif ($stueck !== 'auto'): ?><input type="hidden" name="stueck" value="<?= h($stueck) ?>"><?php endif ?>
   <input type="hidden" name="ansicht" value="<?= h($ansicht) ?>">
   <?php if ($eigenerOrt): ?><input type="hidden" name="ort" value="<?= h($heim[0] . ',' . $heim[1]) ?>"><?php endif ?>
   <?php if ($flug): ?>
@@ -647,6 +697,11 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   „↑ von 40“ = vor bis zu drei Abrufen (zweimal am Tag) stand dort 40 %.
   <?php endif ?>
   </p>
+  <?php if ($stueckAn): ?>
+  <p>Am Stück: Ein Windtag hat mindestens <?= zahl(100 * AM_STUECK_WINDTAG) ?> % Chance (ohne Ensemble: Fenster nach Modellmittel). Ein einzelner Tag ab <?= zahl(100 * AM_STUECK_BRUECKE) ?> % zwischen zwei Windtagen hält die Strecke zusammen, zählt aber nicht mit. Gezählt wird über alle 7 Tage.
+  <?= $stueck === 'auto' ? 'Nach Fahrzeit: bis ' . intdiv(AM_STUECK_FAHRT[0][0], 60) . ' h Fahrt reicht 1 Windtag, bis ' . intdiv(AM_STUECK_FAHRT[1][0], 60) . ' h braucht es 2, darüber und bei Flugzielen 3.' : 'Jede Region braucht ' . h($stueck) . ' Windtage am Stück.' ?>
+  Regionen, die das nicht schaffen, stehen am Ende. Startwerte, nicht kalibriert.</p>
+  <?php endif ?>
   <?php if ($woche): ?><p>Nach einem Tag sortieren: auf den Spaltenkopf tippen.</p><?php endif ?>
 </details>
 
@@ -728,6 +783,9 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
         $ziel = null;
         foreach ($punkte as $p) {
             $c = $p['wert']['chance'];
+            if (isset($p['e']['stueck']) && !$p['e']['stueck']['lohnt']) {
+                continue;   // seit 13.11.2026: nicht zu Regionen, die sich nach "Am Stück" kaum lohnen
+            }
             if (($c !== null ? $c >= 0.4 : $p['wert']['geht']) && (!$ziel || $zielRang($p) > $zielRang($ziel))) {
                 $ziel = $p;
             }
@@ -822,8 +880,8 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
       </tr>
     </thead>
     <tbody>
-      <?php foreach ($liste as $e): $r = $e['region']; ?>
-        <tr>
+      <?php foreach ($liste as $e): $r = $e['region']; $st = $e['stueck'] ?? null; ?>
+        <tr<?= $st && !$st['lohnt'] ? ' class="lohnt-nicht" title="' . h(stueck_text($st, $e)) . '"' : '' ?>>
           <th scope="row" class="m-name"><a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>#r-<?= h($r['id']) ?>"><?= h($r['name']) ?></a><span class="leise"><?= h(fahrzeit_mit_wort($e['fahrt'])) ?></span></th>
           <?php foreach ($tage as $ti => $t):
               $d = $e['tage'][$t] ?? null;
@@ -838,7 +896,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
                      : ($c === null ? ($geht ? 'Fenster nach Modellmittel' : 'kein Fenster') : zahl(100 * $c) . ' %'))
                      . ($geht ? ', ' . $d['det']['von'] . '–' . $d['det']['bis'] . ' Uhr' . ', ' . staerke_text($d, $sport, false) : ''));
           ?>
-            <td class="<?= $klasse ?>" title="<?= h($titel) ?>"><a href="stunden.php?<?= h(http_build_query(['region' => $r['id'], 'sport' => $sportId, 'tag' => $t])) ?>"><?= h($text) ?></a></td>
+            <td class="<?= $klasse ?><?= $st && $st['wind'] >= 2 && in_array($t, $st['tage'], true) ? ' stueck' : '' ?>" title="<?= h($titel) ?>"><a href="stunden.php?<?= h(http_build_query(['region' => $r['id'], 'sport' => $sportId, 'tag' => $t])) ?>"><?= h($text) ?></a></td>
           <?php endforeach ?>
         </tr>
       <?php endforeach ?>
@@ -852,7 +910,8 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     $guteTage = array_filter($e['tage'], fn($t) => $t['det']['geht'] || (($t['ens']['chance'] ?? 0) >= 0.15));
 ?>
   <?php $kartenZiel = stunden_link($r, in_array($nach, $tage, true) ? $nach : null); ?>
-  <article class="karte region beste-<?= beste_stufe($e) ?><?= $guteTage ? '' : ' still' ?>" id="r-<?= h($r['id']) ?>" data-ziel="<?= h($kartenZiel) ?>">
+  <?php $st = $e['stueck'] ?? null; ?>
+  <article class="karte region beste-<?= beste_stufe($e) ?><?= $guteTage ? '' : ' still' ?><?= $st && !$st['lohnt'] ? ' lohnt-nicht' : '' ?>" id="r-<?= h($r['id']) ?>" data-ziel="<?= h($kartenZiel) ?>">
     <div class="region-kopf">
       <h2><a class="region-link" href="<?= h($kartenZiel) ?>"><?= h($r['name']) ?></a><?= $geteilt ? '' : fav_knopf_html($r, $fav) ?><?php if (!empty($r['thermik'])): $mitFremd = array_filter($e['tage'], fn($x) => !empty($x['fremd'])); ?> <span class="marker thermik" title="<?= h($mitFremd ? 'Chance aus der an Messwerten kalibrierten Vorhersage von ' . reset($mitFremd)['fremd']['name'] : 'Thermik bilden die Modelle schlecht ab: die Zahl ist hier vermutlich zu niedrig') ?>">Thermik</span><?php endif ?></h2>
       <?php if (!$geteilt): ?><span class="leise klein fahrzeit" title="<?= h(fahrzeit_titel($e)) ?>"><?= h(fahrzeit_mit_wort($e['fahrt'])) ?><span class="km"><?= h(km_text($e)) ?></span></span><?php endif ?>
@@ -930,6 +989,9 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
           $alleOffen = count($offeneTage) === count(array_filter($e['tage'], fn($x) => empty($x['vorbei'])));
       ?>
       <p class="klein leise"><?= $sperrGrund ? h($sperrGrund) . ' (für ' . h($sport['name']) . ').' : ($alleOffen && $offeneTage ? h($offenText) : 'Kein passender Tag in diesem Zeitraum.' . ($offenText ? ' ' . h($offenText) : '')) ?></p>
+    <?php endif ?>
+    <?php if ($st && (!$st['lohnt'] || $st['wind'] >= 2)): ?>
+      <p class="stueck-zeile klein<?= $st['lohnt'] ? '' : ' leise' ?>"><?= h(stueck_text($st, $e)) ?></p>
     <?php endif ?>
     <?= spotinfo_html($r) ?>
     <?php if (!empty($r['links'])): ?>
