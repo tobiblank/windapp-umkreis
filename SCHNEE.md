@@ -20,6 +20,7 @@ Die App sagt „wo liegt guter Schnee“, nie „wo ist es sicher“. Die Warnst
 | Lagebericht `server/web/lib/lawine.php` | liest CAAML v6 als JSON und XML, je Mikroregion Stufe (auch über/unter Höhengrenze), Probleme mit Expositionen und Höhe |
 | Sammler | Quellen `schnee_vorhersage`, `schnee_ensemble`, `lawine` mit `--schnee <katalog>`; `--nur a,b` für einzelne Quellen |
 | Action `sammeln.yml` | wie bisher 5:25 und 17:25 UTC, dazu 7:40 UTC nur `lawine` und `schnee_vorhersage` (Morgen-Update der Berichte) |
+| Abruf auf dem Server (seit 13.11.2026) | `lawine_holen.php` mit `server_abruf()` aus `lib/abruf.php`: Lageberichte und Stationen direkt vom Hetzner-Server, angestoßen von `melden.php` auf ammerseewind.de etwa alle 30 Minuten. Siehe „Abruf auf dem Server“ |
 | Fahrzeiten | `fahrzeiten.php` nimmt den Schnee-Katalog als zweites Argument; gemeinsame `fahrzeiten.json`, ids müssen in beiden Katalogen verschieden sein (Test prüft das) |
 | Deploy | lädt `daten/schneeregionen.json` als `lib/schneeregionen.json` hoch |
 | Impressum, Datenschutz | Quellen ergänzt (SLF, Lawinen.report), Haftungssatz |
@@ -128,6 +129,19 @@ Je Region: `warndienst`, `eaws` (Präfixe der regionID) und/oder `eaws_namen` (T
 
 Der Sammler holt je Dienst heute und morgen. HTTP 404 heißt „noch kein Bericht“ (morgen vor 17 Uhr, außerhalb der Saison) und ist kein Fehler. Gespeichert wird eine Zeile je Dienst: `{"ts", "source": "lawine", "ok", "dienst", "tage": {datum: [berichte]|null}}`.
 
+### Abruf auf dem Server (seit 13.11.2026)
+
+**Warum:** Der Zeitplan der GitHub Action startete im November 2026 drei bis acht Stunden zu spät (geplant 5:25 UTC, gelaufen 13:38–13:53; geplant 17:25, gelaufen 22:26–23:33) oder gar nicht. Am 13.11.2026 stand um 14 Uhr noch der Bericht vom Vorabend in der App. Für den Lagebericht ist das zu lang. Der Anstoß der Action durch ammerseewind.de (seit 11.11.2026, `workflow_dispatch`) macht die drei Läufe pünktlich, ein Update des Warndiensts zwischen den Läufen käme aber trotzdem erst beim nächsten Lauf.
+
+**Wie:** `lawine_holen.php` (POST, `schluessel` = `abruf_schluessel` aus `config.php`, mindestens 20 Zeichen; sonst 404) ruft `server_abruf()` auf. `melden.php` auf ammerseewind.de (Cronjob alle 10 Minuten) stößt es an, sobald eine neue halbe Stunde angefangen hat (`wohinfahrma_lawine_holen()` in `export_wohinfahrma.php`, Schlüssel dort `wohinfahrma_abruf_schluessel`). Kein zweiter Cronjob nötig.
+
+- **Was:** alle freigegebenen Warndienste (wie der Sammler, heute und morgen), höchstens alle 20 Minuten; die Messstationen höchstens alle 50 Minuten. Zusammen laut Log vom 13.11.2026 wenige Sekunden. Kein Open-Meteo, also kein Kontingent.
+- **Wohin:** je Quelle eine kleine Datei `lawine/server.ndjson` und `stationen/server.ndjson`, atomar ersetzt: je Dienst bzw. Netz die letzte gute Zeile und, falls danach ein Versuch scheiterte, die Fehlerzeile. Die Datei wächst nicht; die Seite liest nicht Dutzende Abrufe ein. Verlauf gibt es weiter in den Dateien der Action.
+- **Lesen:** `lawine_laden()` und `stationen_laden()` nehmen je Dienst bzw. Netz die Zeile mit dem neuesten `ts`, egal aus welcher Datei. Vorher galt die Reihenfolge der Dateinamen, und `2026-11-13_1310.ndjson.gz` sortiert hinter `server.ndjson` bzw. einer Tagesdatei.
+- **Im Seitenaufruf nicht lange warten:** eine Wiederholung nach 5 s statt zwei nach 15 s, Zeitlimit 10 s je Abruf, nach 100 s kein weiterer Dienst und kein weiteres Netz (gilt als Fehlversuch). Zwei Anstöße gleichzeitig: der zweite bekommt 409.
+- **Hinweis „nicht aktualisiert“:** Ist `lawine/server.ndjson` jünger als 3 Tage (Server-Abruf eingerichtet), erscheint er schon nach 2 statt 13 Stunden (`LAWINE_ALT_STUNDEN_SERVER`). Fällt der Server-Abruf aus, merkt man es also bald. Liegt er länger als 3 Tage still, gilt wieder die Frist für die Action.
+- **Einrichten:** Schlüssel erzeugen (`php -r 'echo bin2hex(random_bytes(20)), "\n";'`), in die `config.php` von Wohinfahrma als `abruf_schluessel` und in die von ammerseewind.de als `wohinfahrma_abruf_schluessel`. Ohne Schlüssel bleibt alles wie vorher.
+
 ### Hinweise des LWD Bayern zur Weiterverarbeitung (seit 10.11.2026)
 
 Freigabe per Mail der Lawinenwarnzentrale Bayern (Dr. Thomas Feistl, 10.11.2026): Einbindung über die CAAML-Dateien, Hinweise auf `lawinenwarndienst.bayern.de/presse/` beachten. Messdaten nur von der Website; eine Datenschnittstelle ist angekündigt. Umgesetzt für alle Dienste, nicht nur Bayern:
@@ -139,7 +153,7 @@ Freigabe per Mail der Lawinenwarnzentrale Bayern (Dr. Thomas Feistl, 10.11.2026)
 | Vollständig, korrekt, eindeutig | Stufen nach Tageszeit beide („vormittags …; nachmittags …“), Höhengrenzen, Probleme je Tageszeit (`lawine_probleme_liste()`). Mehrere Stufen ohne Höhengrenze (in der Trentiner Datei vom 17.4.2026 gesehen: zwei Ganztagsstufen ohne `elevation`) werden nicht geraten; der Text sagt „wo welche Stufe gilt, fehlt in den Daten; siehe Bericht“ (`lawine_mehrdeutig()`), das Abzeichen zeigt die höhere |
 | Bearbeitungen kennzeichnen, eigene Bewertungen trennen | „Auszug aus dem Lagebericht (Quelle: …): nur Gefahrenstufe und Lawinenprobleme, ohne die Texte; von Wohinfahrma gekürzt und aufbereitet“ (`lawine_auszug_text()`), mehrere Teilgebiete benannt; Warndreieck-Texte beginnen mit „Hinweis von Wohinfahrma:“ und stehen nach den Angaben des Warndiensts |
 | Angemessen abrufen | drei Läufe am Tag (6:25, 8:40, 18:25 Uhr im Winter), je Dienst zwei Dateien |
-| Ausfälle deutlich anzeigen | `lawine_stoerung()`: letzter Abruf fehlgeschlagen, letzter guter Abruf älter als 13 h oder gar keine Daten: Hinweis oben, bei der Region („Abruf gestört“, Block aufgeklappt) und auf der Stundenseite, mit Stand |
+| Ausfälle deutlich anzeigen | `lawine_stoerung()`: letzter Abruf fehlgeschlagen, letzter guter Abruf älter als 13 h (mit Abruf auf dem Server: 2 h) oder gar keine Daten: Hinweis oben, bei der Region („Abruf gestört“, Block aufgeklappt) und auf der Stundenseite, mit Stand |
 | Haftung, Eigenverantwortung | `LAWINE_HAFTUNG` (siehe oben) |
 
 Echte Berichte prüft die Action „Lagebericht prüfen“ (`tools/lawine_pruefen.php`, bei Änderungen am Parser oder Katalog und von Hand). Testdatei `tests/lawine_bayern_2026-04-17.xml` nach dem Aufbau der echten Datei vom 17.4.2026 (Tageszeiten, Nassschnee).

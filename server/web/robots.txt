@@ -13,6 +13,7 @@ Disallow: /stunden.php
 Disallow: /schnee_stunden.php
 Disallow: /manifest.php
 Disallow: /vorrechnen.php
+Disallow: /lawine_holen.php
 Disallow: /lib/
 
 Sitemap: https://wohinfahrma.de/sitemap.xml
