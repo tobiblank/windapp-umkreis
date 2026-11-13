@@ -12,9 +12,7 @@
  *   nach    summe | YYYY-MM-DD (Tag); km aus alten Links heisst prio=km
  *   prio    pulver | neu | km (seit 10.11.2026, SCHNEE_PRIOS in lib/schnee.php)
  *   region + nach=YYYY-MM-DD: geteilte Vorhersage einer Region
- *   fav     "id,id,…" (seit 13.11.2026): nur diese Regionen, ohne Umkreis. Die Sterne an den
- *           Regionen merkt sich der Browser (FAV_SCHLUESSEL), der Link "Nur deine Regionen"
- *           schreibt sie in die Adresse; der Server merkt sich nichts.
+ *   fav     "id,id,…" (seit 13.11.2026): nur diese Regionen, ohne Umkreis (lib/favoriten.php)
  *
  * Die Lawinenwarnstufe geht nie in Bewertung, Sortierung oder Farbe ein. Seit 10.11.2026
  * steht ab Stufe 3 ein Warndreieck bei der Region, ab Stufe 4 rot umrandet (lawine_warnung()).
@@ -29,6 +27,7 @@ require __DIR__ . '/lib/fahrzeit.php';
 require __DIR__ . '/lib/design.php';
 require __DIR__ . '/lib/schnee.php';
 require __DIR__ . '/lib/lawine.php';
+require __DIR__ . '/lib/favoriten.php';
 
 const TZ_SEITE = 'Europe/Berlin';
 const HEIM_STANDARD = [48.07, 11.15];      // Inning am Ammersee
@@ -129,11 +128,7 @@ if ($geteilt && is_string($_GET['nach'] ?? null) && preg_match('/^\d{4}-\d{2}-\d
 }
 
 // Deine Regionen (seit 13.11.2026): nur bekannte ids, Reihenfolge wie im Katalog
-$fav = [];
-if (!$geteilt && is_string($_GET['fav'] ?? null)) {
-    $gewuenscht = array_flip(explode(',', $_GET['fav']));
-    $fav = array_values(array_filter(array_column($regionen, 'id'), fn($id) => isset($gewuenscht[$id])));
-}
+$fav = $geteilt ? [] : fav_aus_get($regionen, $_GET['fav'] ?? null);
 
 [$von, $bis] = match ($ansicht) { 'reise' => [3, 6], 'woche' => [0, 6], default => [0, 2] };
 $tage = [];
@@ -496,11 +491,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
   <a href="<?= h(link_mit(['ansicht' => 'woche', 'nach' => null])) ?>"<?= $woche ? ' aria-current="page"' : '' ?>>Tabelle 7 Tage</a>
 </nav>
 <?php // Deine Regionen (seit 13.11.2026): mit fav= vom Server, sonst zeigt das Skript den Link ?>
-<?php if ($fav): ?>
-<p class="fav-zeile klein">★ Nur deine Regionen (<?= count($fav) ?>), ohne Umkreis · <a href="<?= h(link_mit(['fav' => null])) ?>">Alle Regionen</a></p>
-<?php else: ?>
-<p class="fav-zeile klein leise" id="favZeile" hidden><a id="favLink" href="#"></a><span id="favTipp">Tipp: ☆ bei einer Region antippen, dann kannst du nur deine Regionen anzeigen.</span></p>
-<?php endif ?>
+<?= fav_zeile_html($fav, link_mit(['fav' => null])) ?>
 <?php if (!$woche): ?>
 <?php $zn = zeitraum_namen($heute, WOCHENTAGE); // Wochentage statt "Heute – Übermorgen" / "Tag 3 – 7" (seit 13.11.2026) ?>
 <nav class="zeitraum klein" aria-label="Zeitraum">
@@ -708,7 +699,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
 ?>
   <article class="karte region beste-<?= beste_stufe($e) ?><?= $guteTage ? '' : ' still' ?>" id="r-<?= h($r['id']) ?>" data-ziel="<?= h($kartenZiel) ?>">
     <div class="region-kopf">
-      <h2><a class="region-link" href="<?= h($kartenZiel) ?>"><?= h($r['name']) ?></a><?php if (!$geteilt): ?><button type="button" class="fav" data-id="<?= h($r['id']) ?>" aria-pressed="<?= in_array($r['id'], $fav, true) ? 'true' : 'false' ?>" title="Zu deinen Regionen" aria-label="<?= h($r['name']) ?> zu deinen Regionen" hidden>★</button><?php endif ?></h2>
+      <h2><a class="region-link" href="<?= h($kartenZiel) ?>"><?= h($r['name']) ?></a><?= $geteilt ? '' : fav_knopf_html($r, $fav) ?></h2>
       <?php if (!$geteilt): ?><span class="leise klein fahrzeit"><?= h(fahrzeit_text($e['fahrt'])) ?> Fahrt<span class="km">Tour ab <?= zahl((float)$r['hoehe_tour']) ?> m</span></span><?php endif ?>
     </div>
     <div class="tage" style="--n: <?= count($tage) ?>">
@@ -835,45 +826,9 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
     });
   });
 })();
-// Deine Regionen (seit 13.11.2026): Sterne im Browser gemerkt (nur ids), Link "Nur deine Regionen"
-// mit fav= in der Adresse; die Seite selbst merkt sich sonst keine Auswahl
-(function () {
-  var S = <?= json_encode(FAV_SCHLUESSEL) ?>, ids = [], knoepfe = document.querySelectorAll('.fav[data-id]');
-  try { ids = JSON.parse(localStorage.getItem(S) || '[]'); } catch (e) { ids = []; }
-  if (!Array.isArray(ids)) { ids = []; }
-  var zeile = document.getElementById('favZeile'), link = document.getElementById('favLink'), tipp = document.getElementById('favTipp');
-  function zeigen() {
-    knoepfe.forEach(function (k) {
-      var an = ids.indexOf(k.dataset.id) >= 0;
-      k.setAttribute('aria-pressed', an ? 'true' : 'false');
-      k.title = an ? 'Aus deinen Regionen nehmen' : 'Zu deinen Regionen';
-      k.hidden = false;
-    });
-    if (!zeile) { return; }
-    zeile.hidden = !knoepfe.length && !ids.length;
-    link.hidden = !ids.length;
-    tipp.hidden = !!ids.length;
-    var u = new URL(location.href);
-    u.searchParams.set('fav', ids.join(','));
-    u.searchParams.delete('km');
-    link.href = 'schnee.php' + u.search;
-    link.textContent = '★ Nur deine Regionen (' + ids.length + ')';
-  }
-  // Mit fav= in der Adresse (z. B. aus einem Lesezeichen) und leerem Speicher: die Sterne der Seite
-  if (!ids.length) {
-    knoepfe.forEach(function (k) { if (k.getAttribute('aria-pressed') === 'true') { ids.push(k.dataset.id); } });
-  }
-  knoepfe.forEach(function (k) {
-    k.addEventListener('click', function (e) {
-      e.preventDefault();
-      var i = ids.indexOf(k.dataset.id);
-      if (i >= 0) { ids.splice(i, 1); } else { ids.push(k.dataset.id); }
-      try { localStorage.setItem(S, JSON.stringify(ids)); } catch (e2) {}
-      zeigen();
-    });
-  });
-  zeigen();
-})();
+// Deine Regionen (seit 13.11.2026, lib/favoriten.php)
+<?= fav_skript(FAV_SCHLUESSEL, 'schnee.php') ?>
+
 // Regionskarte antippen: Stundenseite; Links, Knoepfe und Textauswahl behalten ihre Wirkung
 document.addEventListener('click', function (e) {
   var karte = e.target.closest && e.target.closest('.region[data-ziel]');

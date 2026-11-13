@@ -990,6 +990,17 @@ pruefe(str_contains($html, 'Hinfahrt ab Inning') && str_contains($html, 'Rückfa
 pruefe(str_contains($html, 'Roadtrips gibt es nur mit Anreise Auto') && ohne_php_meldung($html), 'Roadtrip mit Flug: Hinweis');
 [, $html] = holen($sitePort, 'index.php?km=100&ansicht=roadtrip');
 pruefe(str_contains($html, 'Kein Roadtrip lohnt sich gerade'), 'Roadtrip ohne passende Tage: Hinweis');
+// Deine Regionen im Wind-Modus (seit 13.11.2026)
+[, $html] = holen($sitePort, 'index.php?km=1000');
+pruefe(str_contains($html, 'class="fav" data-id="ammersee" aria-pressed="false"') && str_contains($html, 'id="favZeile" hidden') && str_contains($html, '"wohinfahrma_fav_wind"'),
+       'Wind: Sterne an den Regionen, Zeile für deine Regionen');
+[$code, $html] = holen($sitePort, 'index.php?km=100&fav=adria-nord,<x>');
+pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'id="r-adria-nord"') && !str_contains($html, 'id="r-ammersee"')
+       && str_contains($html, '★ Nur deine Regionen (1), ohne Umkreis') && !str_contains($html, 'class="umkreis"') && str_contains($html, 'name="fav" value="adria-nord"')
+       && str_contains($html, 'fav=adria-nord') && str_contains($html, 'class="fav" data-id="adria-nord" aria-pressed="true"'),
+       'Wind: nur deine Regionen, ohne Umkreis, unbekannte ids weg');
+[$code, $html] = holen($sitePort, 'index.php?anreise=flug&fav=ammersee');
+pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'Keine deiner Regionen passt zur Anreise „Flug“'), 'Wind: deine Regionen ohne Flugziel: Hinweis');
 [$code, $html] = holen($sitePort, 'index.php?km=1000&ansicht=woche');
 pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, '<table class="matrix">') && substr_count($html, '<th scope="col"') === 8
        && substr_count($html, '<th scope="row"') === 2 && !str_contains($html, 'class="karte region'),

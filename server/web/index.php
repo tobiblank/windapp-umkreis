@@ -8,6 +8,8 @@
  *   ort     "Breite,Laenge", auf 0,1 Grad gerundet (ca. 10 km) - genauer wird
  *           nichts angenommen, damit kein genauer Standort im Zugriffsprotokoll steht
  *   ansicht bald (heute bis uebermorgen) oder reise (Tag 3 bis 7)
+ *   fav     "id,id,…" (seit 13.11.2026): nur diese Regionen, ohne Umkreis, innerhalb der
+ *           gewaehlten Anreise (lib/favoriten.php)
  */
 
 declare(strict_types=1);
@@ -21,11 +23,13 @@ require __DIR__ . '/lib/roadtrip.php';
 require __DIR__ . '/lib/neopren.php';
 require __DIR__ . '/lib/spotinfo.php';
 require __DIR__ . '/lib/design.php';
+require __DIR__ . '/lib/favoriten.php';
 
 const TZ_SEITE = 'Europe/Berlin';
 const HEIM_STANDARD = [48.07, 11.15];      // Inning am Ammersee
 const UMKREISE = [100, 200, 400, 700, 1000, 1500, 2500];
 const WOCHENTAGE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+const FAV_SCHLUESSEL = 'wohinfahrma_fav_wind';
 
 function h(?string $s): string
 {
@@ -146,6 +150,9 @@ if ($geteilt && is_string($_GET['nach'] ?? null) && preg_match('/^\d{4}-\d{2}-\d
     }
 }
 
+// Deine Regionen (seit 13.11.2026): nur diese, ohne Umkreis, innerhalb der Anreise
+$fav = $geteilt ? [] : fav_aus_get($regionen, $_GET['fav'] ?? null);
+
 [$von, $bis] = match ($ansicht) { 'reise' => [3, 6], 'roadtrip', 'woche' => [0, 6], default => [0, 2] };
 $tage = [];
 for ($i = $von; $i <= $bis; $i++) {
@@ -173,14 +180,14 @@ function tag_datum(string $tag, DateTimeZone $tz): string
 // --- Rechnen ----------------------------------------------------------
 $jetzt = new DateTimeImmutable('now');
 $dataDir = rtrim($cfg['data_dir'], '/');
-$zurAnreise = array_values(array_filter($regionen, fn($r) => in_array($anreise, region_anreise($r), true)));
+$zurAnreise = array_values(array_filter($regionen, fn($r) => in_array($anreise, region_anreise($r), true) && (!$fav || in_array($r['id'], $fav, true))));
 // Zwischenspeicher (Standard <data_dir>/cache): Verlauf und seit 8.11.2026 die
 // Bewertung je Region und Tag (lib/vorrechnen.php). Rohdaten werden nur noch fuer
 // Regionen entpackt, die dort fehlen; nach einem Lauf fuellt vorrechnen.php alles.
 $cacheDir = array_key_exists('cache_dir', $cfg) ? ($cfg['cache_dir'] === null ? null : rtrim((string)$cfg['cache_dir'], '/')) : "$dataDir/cache";
 $rb = $geteilt
     ? rangliste_mit_cache([$geteilt], $dataDir, $cacheDir, $sportId, $heim, INF, $tage, $jetzt)
-    : rangliste_mit_cache($zurAnreise, $dataDir, $cacheDir, $sportId, $heim, $flug ? INF : (float)$km, $tage, $jetzt);
+    : rangliste_mit_cache($zurAnreise, $dataDir, $cacheDir, $sportId, $heim, $flug || $fav ? INF : (float)$km, $tage, $jetzt);
 $liste = $rb['liste'];
 $stand = $rb['stand'];   // nur _ts und _fp, ohne Rohdaten
 unset($rb);
@@ -206,7 +213,7 @@ foreach ($liste as $i => $e) {
 // Umkreis (seit 7.11.2026) zaehlt die Strasse: vorher war es die Luftlinie, und bei
 // 1.000 km standen Ziele mit 1.300 km Fahrt in der Liste. Vorauswahl oben bleibt
 // die Luftlinie (Strasse praktisch nie kuerzer), hier fallen die zu weiten raus.
-if (!$geteilt && !$flug) {
+if (!$geteilt && !$flug && !$fav) {
     $liste = array_values(array_filter($liste, fn($e) => im_umkreis($e, (float)$km)));
 }
 $liste = rangliste_sortieren($liste, $nach);
@@ -313,10 +320,13 @@ function stufe(?float $chance): string
 
 function link_mit(array $aenderung): string
 {
-    global $sportId, $km, $ansicht, $heim, $eigenerOrt, $nach, $anreise;
+    global $sportId, $km, $ansicht, $heim, $eigenerOrt, $nach, $anreise, $fav;
     $p = ['sport' => $sportId, 'km' => $km, 'ansicht' => $ansicht];
     if ($anreise === 'flug') {
         $p['anreise'] = 'flug';
+    }
+    if ($fav) {
+        $p['fav'] = implode(',', $fav);
     }
     if ($nach !== 'summe') {
         $p['nach'] = $nach;
@@ -573,7 +583,8 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
       <option value="flug"<?= $flug ? ' selected' : '' ?>>Flug</option>
     </select>
   </label>
-  <?php if ($flug): ?><input type="hidden" name="km" value="<?= $km ?>"><?php else: ?>
+  <?php if ($fav): ?><input type="hidden" name="fav" value="<?= h(implode(',', $fav)) ?>"><?php endif ?>
+  <?php if ($flug || $fav): ?><input type="hidden" name="km" value="<?= $km ?>"><?php else: ?>
   <label>Umkreis
     <select name="km">
       <?php foreach (UMKREISE as $u): ?>
@@ -613,6 +624,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <a href="<?= h(link_mit(['ansicht' => 'woche', 'nach' => null])) ?>"<?= $woche ? ' aria-current="page"' : '' ?>>Tabelle 7 Tage</a>
   <a href="<?= h(link_mit(['ansicht' => 'roadtrip', 'nach' => null])) ?>"<?= $roadtrip ? ' aria-current="page"' : '' ?>>Roadtrip</a>
 </nav>
+<?= fav_zeile_html($fav, link_mit(['fav' => null]), $flug ? 'nur Flugziele' : 'ohne Umkreis') ?>
 <?php if (!$woche && !$roadtrip): ?>
 <?php $zn = zeitraum_namen($heute, WOCHENTAGE); // Wochentage statt "Heute – Übermorgen" / "Tag 3 – 7" (seit 13.11.2026) ?>
 <nav class="zeitraum klein" aria-label="Zeitraum">
@@ -679,7 +691,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
       <?php endforeach ?>
     </g>
     <?php if (!$flug): ?>
-    <circle class="umkreis" cx="<?= round($heimXY[0], 1) ?>" cy="<?= round($heimXY[1], 1) ?>" r="<?= round(karte_km((float)$km, $heim[0]), 1) ?>"/>
+    <?php if (!$fav): ?><circle class="umkreis" cx="<?= round($heimXY[0], 1) ?>" cy="<?= round($heimXY[1], 1) ?>" r="<?= round(karte_km((float)$km, $heim[0]), 1) ?>"/><?php endif ?>
     <?= karte_orte_svg($orte, $rp) ?>
     <?php endif ?>
     <?php foreach ($punkte as $nr => $p):
@@ -728,7 +740,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   </svg>
   <button type="button" class="feldknopf" id="feldKnopf" aria-pressed="true" hidden>Farbfeld Windstärke</button>
   <?= windskala_legende() ?>
-  <p class="leise klein landkarte-fuss">Farbfeld: mittlerer Wind an der Region (am guten Tag im Fenster, sonst im Tagesmittel), nicht dazwischen. Spitze am Punkt: wohin der Wind weht (am guten Tag im Fenster, sonst im Tagesmittel, ab <?= KARTE_PFEIL_AB_KN ?> kn). <?= 'Männchen: ' . ($eigenerOrt ? 'dein Standort' : 'Inning') . ($flug ? ', fliegt zum besten Ziel' : '') . '. ' ?>Punkt antippen: Stunden der Region<?= $kartenTag ? '' : ' am besten Tag' ?>.<?= $flug ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße, darum fehlen manche Ziele innerhalb des Kreises.' ?> Karte: Natural Earth.</p>
+  <p class="leise klein landkarte-fuss">Farbfeld: mittlerer Wind an der Region (am guten Tag im Fenster, sonst im Tagesmittel), nicht dazwischen. Spitze am Punkt: wohin der Wind weht (am guten Tag im Fenster, sonst im Tagesmittel, ab <?= KARTE_PFEIL_AB_KN ?> kn). <?= 'Männchen: ' . ($eigenerOrt ? 'dein Standort' : 'Inning') . ($flug ? ', fliegt zum besten Ziel' : '') . '. ' ?>Punkt antippen: Stunden der Region<?= $kartenTag ? '' : ' am besten Tag' ?>.<?= $flug || $fav ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße, darum fehlen manche Ziele innerhalb des Kreises.' ?> Karte: Natural Earth.</p>
 </details>
 <?php endif ?>
 
@@ -737,7 +749,9 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
 <?php elseif (!$liste && $geteilt): ?>
   <p class="karte">Für <?= h($geteilt['name']) ?> gibt es gerade keine Vorhersagedaten. <a href="./">Zur Rangliste</a></p>
 <?php elseif (!$liste): ?>
-  <?php if ($flug): ?>
+  <?php if ($fav): ?>
+  <p class="karte">Keine deiner Regionen passt zur Anreise „<?= $flug ? 'Flug' : 'Auto' ?>“, oder es gibt gerade keine Vorhersagedaten. <a href="<?= h(link_mit(['fav' => null])) ?>">Alle Regionen</a></p>
+  <?php elseif ($flug): ?>
   <p class="karte">Im Katalog ist noch kein Flugziel eingetragen.</p>
   <?php else: ?>
   <p class="karte">Keine Region im Umkreis von <?= zahl($km) ?> km. <a href="<?= h(link_mit(['km' => UMKREISE[count(UMKREISE) - 1]])) ?>">Umkreis vergrößern</a></p>
@@ -840,7 +854,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <?php $kartenZiel = stunden_link($r, in_array($nach, $tage, true) ? $nach : null); ?>
   <article class="karte region beste-<?= beste_stufe($e) ?><?= $guteTage ? '' : ' still' ?>" id="r-<?= h($r['id']) ?>" data-ziel="<?= h($kartenZiel) ?>">
     <div class="region-kopf">
-      <h2><a class="region-link" href="<?= h($kartenZiel) ?>"><?= h($r['name']) ?></a><?php if (!empty($r['thermik'])): $mitFremd = array_filter($e['tage'], fn($x) => !empty($x['fremd'])); ?> <span class="marker thermik" title="<?= h($mitFremd ? 'Chance aus der an Messwerten kalibrierten Vorhersage von ' . reset($mitFremd)['fremd']['name'] : 'Thermik bilden die Modelle schlecht ab: die Zahl ist hier vermutlich zu niedrig') ?>">Thermik</span><?php endif ?></h2>
+      <h2><a class="region-link" href="<?= h($kartenZiel) ?>"><?= h($r['name']) ?></a><?= $geteilt ? '' : fav_knopf_html($r, $fav) ?><?php if (!empty($r['thermik'])): $mitFremd = array_filter($e['tage'], fn($x) => !empty($x['fremd'])); ?> <span class="marker thermik" title="<?= h($mitFremd ? 'Chance aus der an Messwerten kalibrierten Vorhersage von ' . reset($mitFremd)['fremd']['name'] : 'Thermik bilden die Modelle schlecht ab: die Zahl ist hier vermutlich zu niedrig') ?>">Thermik</span><?php endif ?></h2>
       <?php if (!$geteilt): ?><span class="leise klein fahrzeit" title="<?= h(fahrzeit_titel($e)) ?>"><?= h(fahrzeit_mit_wort($e['fahrt'])) ?><span class="km"><?= h(km_text($e)) ?></span></span><?php endif ?>
     </div>
     <div class="tage" style="--n: <?= count($tage) ?>">
@@ -1051,6 +1065,8 @@ document.addEventListener('click', function (e) {
   });
 })();
 <?php readfile(__DIR__ . '/lib/maennchen.js') ?>
+// Deine Regionen (seit 13.11.2026, lib/favoriten.php)
+<?= fav_skript(FAV_SCHLUESSEL, './') ?>
 (function () {
   var form = document.getElementById('wahl');
   if (!form) { return; }   // geteilte Vorhersage: keine Auswahl, nichts merken
