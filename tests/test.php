@@ -1004,7 +1004,7 @@ pruefe(am_stueck_noetig('auto', ['min' => 90]) === 1 && am_stueck_noetig('auto',
        && am_stueck_noetig('auto', ['min' => null]) === 3 && am_stueck_noetig('auto', ['min' => 60, 'flug' => 'X']) === 3 && am_stueck_noetig('2', ['min' => 10]) === 2,
        'Am Stück: nötige Windtage nach Fahrzeit, Flug und ohne Landweg 3, feste Wahl');
 [$code, $html] = holen($sitePort, 'index.php?km=1000&stueck=3');
-pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, '<select name="stueck">') && str_contains($html, '<option value="3" selected>')
+pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, '<select name="stueck">') && str_contains($html, '<option value="3" selected>mindestens 3</option>') && str_contains($html, '>Windtage am Stück')
        && preg_match('#class="karte region[^"]* lohnt-nicht" id="r-adria-nord".*?Lohnt sich kaum: höchstens 2 Windtage am Stück \(Morgen bis .*?\), nötig 3#s', $html) === 1
        && !preg_match('/class="heim" id="heim"[^>]* data-wohin=/', $html) && str_contains($html, 'stueck=3'),
        'Am Stück 3: Adria mit 2 Windtagen lohnt sich kaum, Männchen fährt nicht hin, Links behalten die Wahl');

@@ -19,7 +19,8 @@
 const AM_STUECK_WINDTAG = 0.5;
 const AM_STUECK_BRUECKE = 0.3;
 const AM_STUECK_FAHRT = [[120, 1], [300, 2], [PHP_INT_MAX, 3]];   // bis Minuten Fahrt => Windtage
-const AM_STUECK_WAHL = ['auto' => 'nach Fahrzeit', 'egal' => 'egal', '2' => 'ab 2 Tage', '3' => 'ab 3 Tage'];
+// Seit 13.11.2026 vormittags deutlicher benannt (Feld "Windtage am Stück", vorher "Am Stück")
+const AM_STUECK_WAHL = ['auto' => 'je nach Fahrzeit', 'egal' => 'egal', '2' => 'mindestens 2', '3' => 'mindestens 3'];
 
 /** 'wind', 'bruecke' oder null fuer einen Tag aus region_bewerten() */
 function am_stueck_art(?array $d): ?string
