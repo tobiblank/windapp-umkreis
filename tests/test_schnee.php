@@ -6,6 +6,7 @@
 
 require_once "$ROOT/server/web/lib/schnee.php";
 require_once "$ROOT/server/web/lib/lawine.php";
+require_once "$ROOT/server/web/lib/abruf.php";
 
 echo "Schnee: Katalog\n";
 $sk = schnee_katalog_laden("$ROOT/daten/schneeregionen.json");
@@ -147,6 +148,45 @@ pruefe(webcams_pruefen(['regionen' => [['id' => 'r']], 'webcams' => ['stationen'
        'Katalog: fehlerhafte Webcams werden gemeldet, Webcam ohne km ist erlaubt');
 exec($sCmd("$tmp/schnee_nur", '--nur lawine'), $ausN, $rcN);
 pruefe($rcN === 0 && is_dir("$tmp/schnee_nur/lawine") && !is_dir("$tmp/schnee_nur/vorhersage") && !is_dir("$tmp/schnee_nur/schnee_ensemble"), '--nur lawine: nur der Lagebericht');
+
+echo "Schnee: Abruf auf dem Server (lawine_holen.php)\n";
+$srv = "$tmp/schnee_server";
+$sKatS = schnee_katalog_laden(__DIR__ . '/schneeregionen_test.json');
+$erg = server_abruf($srv, $sKatS, "http://127.0.0.1:$sPort");
+pruefe($erg['lawine'] === 'ok' && $erg['stationen'] === 'ok' && is_file("$srv/lawine/server.ndjson") && is_file("$srv/stationen/server.ndjson")
+       && !glob("$srv/lawine/*.gz") && ($GLOBALS['umkreis_abruf_wiederholungen'] ?? null) === 1,
+       'Server-Abruf: Lagebericht und Stationen in je eine kleine Datei' . ($erg['lawine'] !== 'ok' || $erg['stationen'] !== 'ok' ? ': ' . json_encode($erg) : ''));
+unset($GLOBALS['umkreis_abruf_wiederholungen'], $GLOBALS['umkreis_abruf_warte_fehler']);
+$erg2 = server_abruf($srv, $sKatS, "http://127.0.0.1:$sPort");
+$erg3 = server_abruf($srv, $sKatS, "http://127.0.0.1:$sPort", time() + 25 * 60);
+pruefe($erg2['lawine'] === 'zu frueh' && $erg2['stationen'] === 'zu frueh' && $erg3['lawine'] === 'ok' && $erg3['stationen'] === 'zu frueh',
+       'Server-Abruf: Mindestabstand 20 min (Lagebericht) und 50 min (Stationen)');
+$lagenS = lawine_laden($srv);
+$messS = stationen_laden($srv);
+pruefe(($lagenS['euregio']['alt_stunden'] ?? null) === LAWINE_ALT_STUNDEN_SERVER && ($lagen['euregio']['alt_stunden'] ?? null) === LAWINE_ALT_STUNDEN
+       && array_keys($messS['tirol']['stationen'] ?? []) === ['sta-gut', 'sta-fehler', 'sta-sprung'],
+       'Server-Abruf: lesbar wie die Action-Dateien, kurze Frist für "nicht aktualisiert" nur mit Server-Abruf');
+// Neueste Zeile je Dienst gewinnt, egal aus welcher Datei (Action-Lauf oder Server)
+$mix = "$tmp/schnee_mix";
+@mkdir("$mix/lawine", 0700, true);
+$zl = fn(string $ts, string $id, bool $ok = true) => ['ts' => $ts, 'source' => 'lawine', 'ok' => $ok, 'dienst' => 'x', 'regionen' => ['x'],
+                                                     'tage' => $ok ? [gmdate('Y-m-d') => [['id' => $id, 'von' => '', 'veroeffentlicht' => '']]] : []];
+$tsAlt = gmdate('Y-m-d\TH:i:s\Z', time() - 3 * 3600);
+$tsNeu = gmdate('Y-m-d\TH:i:s\Z', time() - 600);
+file_put_contents("$mix/lawine/" . gmdate('Y-m-d') . '_2359.ndjson.gz', gzencode(json_encode($zl($tsAlt, 'action')) . "\n"));
+server_zeilen_merken($mix, 'lawine', 'dienst', [$zl($tsNeu, 'server')]);
+$lm = lawine_laden($mix);
+pruefe(($lm['x']['bulletins'][0]['id'] ?? '') === 'server' && $lm['x']['ts'] === $tsNeu && lawine_stoerung($lm['x']) === null,
+       'neuester Bericht gewinnt: Server-Zeile neuer als der Action-Lauf mit späterem Dateinamen');
+server_zeilen_merken($mix, 'lawine', 'dienst', [$zl(gmdate('Y-m-d\TH:i:s\Z'), '', false)]);
+$lm = lawine_laden($mix);
+pruefe(($lm['x']['bulletins'][0]['id'] ?? '') === 'server' && $lm['x']['versuch_ok'] === false && substr_count((string)file_get_contents("$mix/lawine/server.ndjson"), "\n") === 2
+       && str_contains(lawine_stoerung($lm['x'])['text'], 'fehlgeschlagen'),
+       'Server-Fehlversuch: letzte gute Zeile bleibt, Hinweis "letzter Abruf fehlgeschlagen"');
+server_zeilen_merken($mix, 'lawine', 'dienst', [$zl($tsAlt, 'server')]);
+$lm = lawine_laden($mix);
+pruefe(str_contains(lawine_stoerung($lm['x'])['text'] ?? '', 'länger nicht aktualisiert') && lawine_stoerung(['ts' => $tsAlt, 'bulletins' => []]) === null,
+       'mit Server-Abruf: Hinweis schon nach 2 h, ohne erst nach 13 h');
 
 echo "Schnee: Bewertung\n";
 $sKat = schnee_katalog_laden(__DIR__ . '/schneeregionen_test.json');
@@ -393,6 +433,26 @@ pruefe(str_contains($hSt, '<p class="karte klein lawine-stoerung">') && preg_mat
 [, $hSt] = holen($wPort, 'schnee_stunden.php?region=schnee-c&tag=' . $t0);
 pruefe(str_contains($hSt, 'class="klein lawine-stoerung"') && str_contains($hSt, 'Stand der Daten:'), 'Stundenseite: Störungshinweis mit Stand');
 unlink($stoerDatei);
+// lawine_holen.php (seit 13.11.2026): nur mit Schluessel aus config.php, nur per POST
+$aSchl = str_repeat('b2', 12);
+$aPort = $port + 9;
+$aServer = proc_open(['php', '-S', "127.0.0.1:$aPort", __DIR__ . '/fake_openmeteo.php'], [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $pipes);
+for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $aPort); $i++) {
+    usleep(100000);
+}
+[$code] = senden($wPort, 'lawine_holen.php', ['schluessel' => $aSchl]);
+$cfgAlt = (string)file_get_contents("$sSite/config.php");
+file_put_contents("$sSite/config.php", '<?php return ' . var_export(['data_dir' => "$tmp/schnee_http", 'abruf_schluessel' => $aSchl,
+                  'test_url_ersatz' => "http://127.0.0.1:$aPort"], true) . ';');
+[$code2] = senden($wPort, 'lawine_holen.php', ['schluessel' => 'falsch']);
+[$code3] = holen($wPort, 'lawine_holen.php');
+[$code4, $antw] = senden($wPort, 'lawine_holen.php', ['schluessel' => $aSchl]);
+$jA = json_decode($antw, true);
+pruefe($code === 404 && $code2 === 404 && $code3 === 404 && $code4 === 200 && ($jA['lawine'] ?? '') === 'ok' && ($jA['stationen'] ?? '') === 'ok'
+       && is_file("$tmp/schnee_http/lawine/server.ndjson"),
+       'lawine_holen.php: ohne oder mit falschem Schlüssel 404, mit Schlüssel holt es Lagebericht und Stationen' . ($code4 === 200 ? '' : " (HTTP $code4: " . substr($antw, 0, 200) . ')'));
+file_put_contents("$sSite/config.php", $cfgAlt);
+proc_terminate($aServer);
 unlink("$sSite/lib/schneeregionen.json");
 [$code] = holen($wPort, 'schnee.php');
 pruefe($code === 503, 'ohne Schnee-Katalog: 503');

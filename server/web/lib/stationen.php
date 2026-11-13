@@ -277,7 +277,11 @@ function snowgrid_lesen(string $body, array $ids, array $meta): ?array
     return $out;
 }
 
-/** Neueste gelungene Zeile je Netz: [netz => ['ts' => ..., 'stationen' => [...]]] */
+/**
+ * Neueste gelungene Zeile je Netz: [netz => ['ts' => ..., 'stationen' => [...]]].
+ * Seit 13.11.2026 auch aus stationen/server.ndjson (Abruf auf dem Server, lib/abruf.php);
+ * je Netz zaehlt die Zeile mit dem neuesten ts.
+ */
 function stationen_laden(string $dataDir, ?int $jetzt = null): array
 {
     $jetzt ??= time();
@@ -287,6 +291,9 @@ function stationen_laden(string $dataDir, ?int $jetzt = null): array
         $dateien = array_merge($dateien, glob("$dataDir/stationen/$d.ndjson") ?: [], glob("$dataDir/stationen/{$d}_*.ndjson.gz") ?: []);
     }
     rsort($dateien);
+    if (is_file("$dataDir/stationen/server.ndjson")) {
+        $dateien[] = "$dataDir/stationen/server.ndjson";
+    }
     $out = [];
     foreach ($dateien as $f) {
         $txt = (string)@file_get_contents($f);
@@ -296,7 +303,8 @@ function stationen_laden(string $dataDir, ?int $jetzt = null): array
         foreach (array_reverse(array_values(array_filter(array_map('trim', explode("\n", $txt))))) as $z) {
             $j = json_decode($z, true);
             $n = $j['netz'] ?? null;
-            if (!is_array($j) || empty($j['ok']) || !is_string($n) || isset($out[$n]) || !is_array($j['stationen'] ?? null)) {
+            if (!is_array($j) || empty($j['ok']) || !is_string($n) || !is_array($j['stationen'] ?? null)
+                || (isset($out[$n]) && $out[$n]['ts'] >= (string)($j['ts'] ?? ''))) {
                 continue;
             }
             $out[$n] = ['ts' => (string)($j['ts'] ?? ''), 'stationen' => $j['stationen']];

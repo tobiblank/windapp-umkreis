@@ -40,6 +40,8 @@ const LAWINE_ASPEKTE = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const LAWINE_ASPEKTE_DE = ['N' => 'N', 'NE' => 'NO', 'E' => 'O', 'SE' => 'SO', 'S' => 'S', 'SW' => 'SW', 'W' => 'W', 'NW' => 'NW'];
 const LAWINE_SUCHTAGE = 2;   // so viele UTC-Tage Sammler-Dateien zurueck lesen
 const LAWINE_ALT_STUNDEN = 13;   // letzter guter Abruf aelter: Hinweis "nicht aktuell" (lawine_stoerung)
+const LAWINE_ALT_STUNDEN_SERVER = 2;  // dasselbe, wenn der Server selbst abruft (lawine_holen.php, alle 30 min)
+const LAWINE_SERVER_AKTIV_TAGE = 3;   // server.ndjson juenger: Server-Abruf gilt als eingerichtet
 const LAWINE_ZEITEN = ['all_day' => '', 'earlier' => 'vormittags', 'later' => 'nachmittags'];
 const LAWINE_HAFTUNG = 'Die Lawinenlage stammt vom Warndienst, ohne Gewähr. Sie ersetzt weder den aktuellen Lagebericht auf dessen Website noch die eigene Beurteilung vor Ort. Wohinfahrma bewertet nur Schnee und Wetter.';
 
@@ -203,6 +205,10 @@ function lawine_url(array $dienst, string $datum): string
  * auch der neueste Abrufversuch ueberhaupt (versuch, versuch_ok), damit die Seite eine
  * Stoerung anzeigen kann (Hinweise des LWD Bayern: Ausfaelle deutlich kennzeichnen).
  * Ein Dienst nur mit fehlgeschlagenen Versuchen steht mit 'ts' => '' und ohne Berichte da.
+ * Seit 13.11.2026 auch lawine/server.ndjson (Abruf auf dem Server, lib/abruf.php); je Dienst
+ * zaehlt die Zeile mit dem neuesten ts, egal aus welcher Datei. Ist der Server-Abruf
+ * eingerichtet (Datei juenger als LAWINE_SERVER_AKTIV_TAGE), gilt fuer den Hinweis
+ * "nicht aktualisiert" die kurze Frist LAWINE_ALT_STUNDEN_SERVER ('alt_stunden').
  */
 function lawine_laden(string $dataDir, ?int $jetzt = null): array
 {
@@ -213,6 +219,11 @@ function lawine_laden(string $dataDir, ?int $jetzt = null): array
         $dateien = array_merge($dateien, glob("$dataDir/lawine/$d.ndjson") ?: [], glob("$dataDir/lawine/{$d}_*.ndjson.gz") ?: []);
     }
     rsort($dateien);
+    $serverF = "$dataDir/lawine/server.ndjson";
+    $server = is_file($serverF) && (int)filemtime($serverF) > $jetzt - LAWINE_SERVER_AKTIV_TAGE * 86400;
+    if (is_file($serverF)) {
+        $dateien[] = $serverF;
+    }
     $out = [];
     $versuch = [];
     foreach ($dateien as $f) {
@@ -227,7 +238,8 @@ function lawine_laden(string $dataDir, ?int $jetzt = null): array
             if (is_array($j) && is_string($d) && (string)($j['ts'] ?? '') > ($versuch[$d][0] ?? '')) {
                 $versuch[$d] = [(string)$j['ts'], !empty($j['ok'])];
             }
-            if (!is_array($j) || empty($j['ok']) || !is_string($d) || isset($out[$d]) || !is_array($j['tage'] ?? null)) {
+            if (!is_array($j) || empty($j['ok']) || !is_string($d) || !is_array($j['tage'] ?? null)
+                || (isset($out[$d]) && $out[$d]['ts'] >= (string)($j['ts'] ?? ''))) {
                 continue;
             }
             $b = [];
@@ -250,13 +262,17 @@ function lawine_laden(string $dataDir, ?int $jetzt = null): array
         $out[$d]['versuch'] = $ts;
         $out[$d]['versuch_ok'] = $ok;
     }
+    foreach ($out as $d => $_) {
+        $out[$d]['alt_stunden'] = $server ? LAWINE_ALT_STUNDEN_SERVER : LAWINE_ALT_STUNDEN;
+    }
     return $out;
 }
 
 /**
  * Stoerung beim Abruf eines Warndiensts (seit 10.11.2026) oder null. Gestoert heisst:
  * gar keine Daten, der letzte Versuch ist fehlgeschlagen oder der letzte gute Abruf ist
- * aelter als LAWINE_ALT_STUNDEN (Laeufe 6:25, 8:40, 18:25 Uhr: laengste Luecke 10 h).
+ * aelter als LAWINE_ALT_STUNDEN (Laeufe 6:25, 8:40, 18:25 Uhr: laengste Luecke 10 h),
+ * seit 13.11.2026 mit Server-Abruf aelter als 'alt_stunden' (LAWINE_ALT_STUNDEN_SERVER).
  * Rueckgabe ['text' => ..., 'stand' => ts|''] fuer den Hinweis auf der Seite.
  */
 function lawine_stoerung(?array $lage, ?int $jetzt = null): ?array
@@ -270,7 +286,7 @@ function lawine_stoerung(?array $lage, ?int $jetzt = null): ?array
     if (isset($lage['versuch_ok']) && !$lage['versuch_ok']) {
         return ['text' => 'Der letzte Abruf beim Warndienst ist fehlgeschlagen. Ein neuerer Bericht kann fehlen.', 'stand' => $stand];
     }
-    if ($jetzt - $t > LAWINE_ALT_STUNDEN * 3600) {
+    if ($jetzt - $t > (int)($lage['alt_stunden'] ?? LAWINE_ALT_STUNDEN) * 3600) {
         return ['text' => 'Die Daten des Warndiensts wurden länger nicht aktualisiert. Ein neuerer Bericht kann fehlen.', 'stand' => $stand];
     }
     return null;

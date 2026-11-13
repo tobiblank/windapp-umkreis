@@ -175,7 +175,7 @@ $tmp = sys_get_temp_dir() . '/umkreis-test-' . getmypid();
 @mkdir("$tmp/web/lib", 0700, true);
 @mkdir("$tmp/daten", 0700, true);
 copy("$ROOT/server/web/lib/regionen.php", "$tmp/web/lib/regionen.php");
-foreach (['schnee.php', 'lawine.php', 'stationen.php', 'bewertung.php'] as $lib) {
+foreach (['schnee.php', 'lawine.php', 'stationen.php', 'bewertung.php', 'abruf.php'] as $lib) {
     copy("$ROOT/server/web/lib/$lib", "$tmp/web/lib/$lib");
 }
 copy(__DIR__ . "/regionen_test.json", "$tmp/regionen.json");

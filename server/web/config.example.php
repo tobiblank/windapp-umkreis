@@ -28,6 +28,14 @@ return [
     // Erzeugen z. B. mit: php -r 'echo bin2hex(random_bytes(20)), "\n";'
     // 'vorrechnen_schluessel' => '...',
 
+    // Optional (seit 13.11.2026): Schluessel fuer lawine_holen.php, mindestens 20 Zeichen,
+    // derselbe Wert als 'wohinfahrma_abruf_schluessel' in der config.php von ammerseewind.de.
+    // Dann holt der Server Lageberichte und Stationen etwa alle 30 Minuten selbst (angestossen
+    // von melden.php dort), statt nur bei den Laeufen der GitHub Action. Ohne: 404, die
+    // Lageberichte kommen wie bisher nur mit der Action.
+    // Erzeugen z. B. mit: php -r 'echo bin2hex(random_bytes(20)), "\n";'
+    // 'abruf_schluessel' => '...',
+
     // Optional (seit 10.11.2026): Ordner fremder, kalibrierter Prognosen je Region (Katalogfeld
     // fremdprognose). Walchensee: der Ordner, in den der Sammler von ammerseewind.de die
     // Walchensee-Vorhersage von Marco Schanda schreibt, also <data_dir von stegen-wind>/walchensee
