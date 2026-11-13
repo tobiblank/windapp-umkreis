@@ -447,8 +447,12 @@ function karte_wert(array $eintrag, ?string $tag): array
  * $flugzeug (seit 9.11.2026, Flugziele im Wind-Modus): statt des Busses ein Flugzeug, das im
  * hohen Bogen hinfliegt; gleiche ids, damit das Skript es wie den Bus bewegt.
  * $zielText: steht nach der Ankunft unter dem Ziel und bleibt (Flug: CO2 hin und zurueck).
+ * $nein (seit 13.11.2026, Schnee-Modus): ['xy' => [x, y], 'text' => 'Naa, Stufe 4!'] fuer die beste
+ * Region, zu der das Maennchen nicht faehrt (Lawinenwarnstufe ab 4): es zeigt erst dorthin,
+ * schuettelt den Kopf (Sprechblase mit dem Text, roter Puls am Punkt) und zeigt dann aufs Ziel,
+ * oder zuckt ohne Ziel mit den Schultern.
  */
-function maennchen_svg(array $heimXY, float $rp, ?array $ziel, string $ankunft, string $titel, bool $flugzeug = false, ?string $zielText = null): string
+function maennchen_svg(array $heimXY, float $rp, ?array $ziel, string $ankunft, string $titel, bool $flugzeug = false, ?string $zielText = null, ?array $nein = null): string
 {
     $h = fn(string $s) => htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     $u = $rp * 0.7;
@@ -456,6 +460,13 @@ function maennchen_svg(array $heimXY, float $rp, ?array $ziel, string $ankunft, 
     $hy = round($heimXY[1], 1);
     $arm = fn(string $id, float $x, float $grad) => '<rect class="arm" id="' . $id . '" x="-0.15" y="0" width="0.3" height="1.4" rx="0.15" transform="translate(' . $x . ' -2.2) rotate(' . $grad . ')"/>';
     $o = '';
+    if ($nein) {
+        $o .= '<circle class="puls nein" id="heimNeinPuls" cx="' . round($nein['xy'][0], 1) . '" cy="' . round($nein['xy'][1], 1) . '" r="' . round($rp, 2) . '" opacity="0"/>' . "\n";
+        if (!$ziel) {
+            $o .= '<path class="blick" id="heimBlick" d="" opacity="0"/>' . "\n";
+        }
+        $o .= maennchen_blase('heimNein', 'juchhu nein', $nein['text']) . "\n";
+    }
     if ($ziel) {
         $zx = round($ziel[0], 1);
         $zy = round($ziel[1], 1);
@@ -510,12 +521,13 @@ function maennchen_svg(array $heimXY, float $rp, ?array $ziel, string $ankunft, 
             $o .= "\n" . '<text class="zieltext" id="heimZieltext" x="' . $zx . '" y="' . round($zy + $rp * 2.7, 2) . '" font-size="' . round($rp * 1.05, 2)
                 . '" stroke-width="' . round($rp * 0.35, 2) . '" opacity="0">' . $h($zielText) . '</text>';
         }
-        $o .= "\n" . '<g class="juchhu" id="heimJuchhu" opacity="0"><path d="M0,0L0.9,-1H4.2Q4.6,-1 4.6,-1.4V-2.6Q4.6,-3 4.2,-3H-0.4Q-0.8,-3 -0.8,-2.6V-1.4Q-0.8,-1 -0.4,-1H0.25Z"/><text x="1.9" y="-1.58" font-size="1.2">Juchhu!</text></g>' . "\n";
+        $o .= "\n" . maennchen_blase('heimJuchhu', 'juchhu', 'Juchhu!', 5.4) . "\n";
     }
     $o .= '<g class="heim" id="heim" transform="translate(' . $hx . ' ' . $hy . ') scale(' . round($u, 3) . ')"'
         . "\n" . '   data-x="' . $hx . '" data-y="' . $hy . '" data-u="' . round($u, 3) . '" data-rp="' . round($rp, 3) . '"'
+        . ($nein ? ' data-nein="' . round($nein['xy'][0], 1) . ',' . round($nein['xy'][1], 1) . '"' : '')
         . ($ziel ? ' data-wohin="' . round($ziel[0], 1) . ',' . round($ziel[1], 1) . '"' : '') . ">\n"
-        . '  <title>' . $h($titel) . ($ziel ? ' · antippen: wohin fahr ma?' : '') . "</title>\n"
+        . '  <title>' . $h($titel) . ($ziel || $nein ? ' · antippen: wohin fahr ma?' : '') . "</title>\n"
         . '  ' . $arm('heimArmL', -0.62, 12) . "\n"
         . '  ' . $arm('heimArmR', 0.62, -12) . "\n"
         . '  <rect class="arm" id="heimOber" x="-0.15" y="0" width="0.3" height="0.55" rx="0.15" opacity="0"/>' . "\n"
@@ -525,6 +537,21 @@ function maennchen_svg(array $heimXY, float $rp, ?array $ziel, string $ankunft, 
         . '  <circle id="heimKopf" cx="0" cy="-3.25" r="0.4"/>' . "\n"
         . '</g>';
     return $o;
+}
+
+/**
+ * Sprechblase ueber dem Kopf des Maennchens, Zipfel bei (0, 0), in Einheiten des Maennchens.
+ * $breite: ohne Angabe nach der Textlaenge geschaetzt. Steht sie seitlich (kein Platz oben),
+ * baut das Skript den Pfad aus data-b neu.
+ */
+function maennchen_blase(string $id, string $klasse, string $text, ?float $breite = null): string
+{
+    $b = $breite ?? round(mb_strlen($text) * 0.62 + 0.9, 1);
+    $r = round($b - 0.8, 2);
+    $r4 = round($r - 0.4, 2);
+    return '<g class="' . $klasse . '" id="' . $id . '" data-b="' . $b . '" opacity="0"><path d="M0,0L0.9,-1H' . $r4 . 'Q' . $r . ',-1 ' . $r . ',-1.4V-2.6Q' . $r . ',-3 ' . $r4
+        . ',-3H-0.4Q-0.8,-3 -0.8,-2.6V-1.4Q-0.8,-1 -0.4,-1H0.25Z"/><text x="' . round(($r - 0.8) / 2, 2) . '" y="-1.58" font-size="1.2">'
+        . htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</text></g>';
 }
 
 /** Schalter "Ton beim Antippen des Maennchens" fuer den Fuss (das Skript zeigt ihn, wenn es ein Ziel gibt) */

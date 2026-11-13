@@ -126,6 +126,12 @@ a.tag { display: block; color: inherit; text-decoration: none; -webkit-tap-highl
 a.tag:active { filter: brightness(.94); }
 .region[data-ziel] { cursor: pointer; }
 .region-kopf h2 .region-link { color: inherit; text-decoration: none; }
+/* Deine Regionen (seit 13.11.2026): Stern hinter dem Namen, Zeile ueber dem Zeitraum */
+.region-kopf h2 .fav { font: inherit; font-size: 18px; line-height: 1; background: none; border: 0; padding: 2px 4px; margin-left: 4px; cursor: pointer; color: transparent; -webkit-text-stroke: 1.2px var(--leise); vertical-align: 1px; }
+.region-kopf h2 .fav[aria-pressed="true"] { color: #f5b400; -webkit-text-stroke: 0; }
+.fav-zeile { margin: 0 4px 10px; }
+.fav-zeile a { font-weight: 600; }
+.fav-zeile [hidden] { display: none; }
 .tag .t { display: block; font-size: 12px; color: var(--leise); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tag .w { display: block; font: 600 28px/1.05 var(--zahlen); font-variant-numeric: tabular-nums; }
 .tag .w small { font-size: 16px; }
@@ -181,6 +187,8 @@ a.tag:active { filter: brightness(.94); }
 .landkarte .juchhu { pointer-events: none; }
 .landkarte .juchhu path { fill: var(--karte); stroke: var(--leise); stroke-width: 1px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
 .landkarte .juchhu text { fill: var(--text); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-weight: 600; text-anchor: middle; }
+.landkarte .puls.nein { stroke: #ff0000; }
+.landkarte .juchhu.nein path { stroke: #ff0000; }
 .landkarte .palme .stamm { fill: none; stroke: #8a5a2b; stroke-width: 0.45; stroke-linecap: round; }
 .landkarte .palme .wedel { fill: none; stroke: #4f8a2a; stroke-width: 0.42; stroke-linecap: round; }
 .landkarte .windsack .mast { stroke: var(--leise); stroke-width: 0.28; stroke-linecap: round; }

@@ -609,14 +609,15 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
 
 <?php // Seit 7.11.2026: drei Ansichten; der Zeitraum gilt nur fuer die Liste, die Sortierung steht im Formular ?>
 <nav class="reiter" aria-label="Ansicht">
-  <a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>"<?= !$woche && !$roadtrip ? ' aria-current="page"' : '' ?>>Liste</a>
-  <a href="<?= h(link_mit(['ansicht' => 'woche', 'nach' => null])) ?>"<?= $woche ? ' aria-current="page"' : '' ?>>Woche</a>
+  <a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>"<?= !$woche && !$roadtrip ? ' aria-current="page"' : '' ?>>Kacheln</a>
+  <a href="<?= h(link_mit(['ansicht' => 'woche', 'nach' => null])) ?>"<?= $woche ? ' aria-current="page"' : '' ?>>Tabelle 7 Tage</a>
   <a href="<?= h(link_mit(['ansicht' => 'roadtrip', 'nach' => null])) ?>"<?= $roadtrip ? ' aria-current="page"' : '' ?>>Roadtrip</a>
 </nav>
 <?php if (!$woche && !$roadtrip): ?>
+<?php $zn = zeitraum_namen($heute, WOCHENTAGE); // Wochentage statt "Heute – Übermorgen" / "Tag 3 – 7" (seit 13.11.2026) ?>
 <nav class="zeitraum klein" aria-label="Zeitraum">
-  <a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>"<?= $ansicht === 'bald' ? ' aria-current="page"' : '' ?>>Heute – Übermorgen</a>
-  <a href="<?= h(link_mit(['ansicht' => 'reise', 'nach' => null])) ?>"<?= $ansicht === 'reise' ? ' aria-current="page"' : '' ?>>Tag 3 – 7</a>
+  <a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>" title="<?= h($zn['bald'][1]) ?>"<?= $ansicht === 'bald' ? ' aria-current="page"' : '' ?>><?= h($zn['bald'][0]) ?></a>
+  <a href="<?= h(link_mit(['ansicht' => 'reise', 'nach' => null])) ?>" title="<?= h($zn['reise'][1]) ?>"<?= $ansicht === 'reise' ? ' aria-current="page"' : '' ?>><?= h($zn['reise'][0]) ?></a>
 </nav>
 <?php endif ?>
 <?php endif ?>

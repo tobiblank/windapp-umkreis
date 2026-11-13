@@ -353,6 +353,9 @@ function lawine_max(array $b): int
     return $b['stufen'] ? max(array_column($b['stufen'], 'stufe')) : 0;
 }
 
+/** Ab dieser Lawinenwarnstufe faehrt das Maennchen auf der Karte nicht hin (seit 13.11.2026) */
+const MAENNCHEN_NEIN_AB = 4;
+
 /**
  * Warnzeichen zu einer Lage (seit 10.11.2026): ab Stufe 3 steht ein Dreieck bei der Region,
  * ab Stufe 4 zusaetzlich rot umrandet. Die Reihenfolge der Rangliste aendert sich nicht.

@@ -328,6 +328,27 @@ pruefe(!str_contains($html, 'name="sport"') && !str_contains($html, 'sport=') &&
 pruefe(str_contains($hs, '✓ Pulvertag') && str_contains($hs, 'Wind am Kamm') && str_contains($hs, '>Schneehöhe<'), 'Stundenseite: Urteil Pulvertag, Schneehöhe und Wind am Kamm als Kennzahl');
 pruefe(!preg_match('/\d+ %(?! Wolken)/u', strip_tags(preg_replace('#<details class="leise klein erklaerung">.*?</details>#s', '', $html))), 'keine Prozent-Chance mehr auf der Seite');
 pruefe(str_contains($html, 'Zahl: Neuschnee in cm'), 'Karte: Zahl ist Neuschnee in cm');
+// Seit 13.11.2026: Maennchen faehrt nicht zu Stufe 4/5, sondern schuettelt den Kopf
+pruefe(!preg_match('/class="heim" id="heim"[^>]* data-nein=/', $html) && !str_contains($html, 'id="heimNein"') && str_contains($html, 'id="heimJuchhu" data-b="5.4"'),
+       'Männchen: bei Stufe 3 am besten Ziel kein Kopfschütteln');
+$mN = maennchen_svg([10, 10], 2.0, [30, 40], 'ski', 'Inning', false, null, ['xy' => [50, 5], 'text' => 'Naa, Stufe 4!']);
+$mN0 = maennchen_svg([10, 10], 2.0, null, 'ski', 'Inning', false, null, ['xy' => [50, 5], 'text' => 'Naa, Stufe 5!']);
+pruefe(preg_match('/data-nein="50,5" data-wohin="30,40">/', $mN) === 1 && str_contains($mN, 'id="heimNeinPuls"') && str_contains($mN, '>Naa, Stufe 4!</text>')
+       && substr_count($mN, 'id="heimBlick"') === 1 && substr_count($mN0, 'id="heimBlick"') === 1 && str_contains($mN0, 'data-nein="50,5">')
+       && !str_contains($mN0, 'data-wohin') && !str_contains($mN0, 'id="heimBus"') && str_contains($mN0, 'antippen: wohin fahr ma?'),
+       'Männchen mit Region über Stufe 3: Puls, Sprechblase, Blicklinie; ohne Ziel kein Bus');
+pruefe(str_contains($html, '>Kacheln</a>') && str_contains($html, '>Tabelle 7 Tage</a>') && preg_match('#>Heute – (So|Mo|Di|Mi|Do|Fr|Sa)</a>#u', $html) === 1
+       && preg_match('#>(So|Mo|Di|Mi|Do|Fr|Sa) – (So|Mo|Di|Mi|Do|Fr|Sa)</a>#u', $html) === 1 && !str_contains($html, 'Tag 3 – 7'),
+       'Ansichten: Kacheln mit Wochentagen, Tabelle 7 Tage');
+// Deine Regionen (seit 13.11.2026)
+pruefe(str_contains($html, 'class="fav" data-id="schnee-a" aria-pressed="false"') && str_contains($html, 'id="favZeile" hidden') && str_contains($html, "'wohinfahrma_fav_schnee'")
+       || str_contains($html, '"wohinfahrma_fav_schnee"'), 'Sterne an den Regionen, Zeile für deine Regionen');
+[$cF, $hF] = holen($wPort, 'schnee.php?km=100&fav=schnee-c,<x>,schnee-a');
+pruefe($cF === 200 && ohne_php_meldung($hF) && str_contains($hF, 'id="r-schnee-a"') && str_contains($hF, 'id="r-schnee-c"') && !str_contains($hF, 'id="r-schnee-b"')
+       && str_contains($hF, '★ Nur deine Regionen (2), ohne Umkreis') && !str_contains($hF, 'class="umkreis"') && !str_contains($hF, '<select name="km">')
+       && str_contains($hF, 'name="fav" value="schnee-a,schnee-c"') && str_contains($hF, 'fav=schnee-a%2Cschnee-c') && !str_contains($hF, '&lt;x&gt;')
+       && str_contains($hF, 'class="fav" data-id="schnee-a" aria-pressed="true"'),
+       'nur deine Regionen: ohne Umkreis, unbekannte ids weg, Auswahl behält fav');
 pruefe(preg_match('#id="r-schnee-a".*?Schneehöhe gemessen heute .*?Gutalm <span class="leise">2.450 m</span> <b>42 cm</b>.*?\(24 h \+5\)#s', $html) === 1 && !str_contains($html, 'Fehlerkopf')
        && str_contains($html, 'Messwerte: <a href="https://lawinen.report/weather/stations"'), 'Liste: gemessene Schneehöhe mit Änderung, Messfehler ausgeblendet, Quelle im Fuß');
 pruefe(preg_match('#id="r-schnee-d".*?Schneehöhe im Modell, Stand \w\w \d+\.\d+\. \(<a href="https://data.hub.geosphere.at/dataset/snowgrid_cl-v2-1d-1km"[^>]*>SNOWGRID ↗</a>\):</span> <span[^>]*>2.350 m <b>18 cm</b>.*?\(Vortag \+3\)#s', $html) === 1

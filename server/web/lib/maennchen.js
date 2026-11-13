@@ -19,6 +19,10 @@
 // nach einem Antippen erlauben und eine Wetterseite nicht von selbst brummen soll. Schalter
 // "Ton" im Fuss, gemerkt in wohinfahrma_ton (Standard an). Zeiten in ms, Laengen in Einheiten
 // des Maennchens.
+// Seit 13.11.2026 (Schnee-Modus, data-nein="x,y"): liegt die beste Region bei Lawinenwarnstufe 4
+// oder 5, zeigt es zuerst dorthin, schuettelt den Kopf ("Naa, Stufe 4!", roter Puls, tiefes
+// "Nö" als Ton) und zeigt dann auf das Ziel mit hoechstens Stufe 3; ohne solches Ziel zuckt es
+// mit den Schultern. Alles nach dem Kopfschuetteln laeuft dann um NEIN_DAUER spaeter.
 (function () {
   var heim = document.getElementById('heim');
   if (!heim || !window.requestAnimationFrame) { return; }
@@ -26,13 +30,16 @@
   var NS = 'http://www.w3.org/2000/svg';
   var X = +heim.dataset.x, Y = +heim.dataset.y, U = +heim.dataset.u, RP = +heim.dataset.rp;
   var ziel = heim.dataset.wohin ? heim.dataset.wohin.split(',').map(Number) : null;
+  var nein = heim.dataset.nein ? heim.dataset.nein.split(',').map(Number) : null;
   function el(id) { return document.getElementById(id); }
   var kopf = el('heimKopf'), armL = el('heimArmL'), armR = el('heimArmR'), ober = el('heimOber'),
       unter = el('heimUnter'), zeig = el('heimZeig'), bus = el('heimBus'), spur = el('heimSpur'),
       puls = el('heimPuls'), fahrer = el('heimFahrer'), blick = el('heimBlick'), ankunft = el('heimAnkunft'),
-      juchhu = el('heimJuchhu'), zieltext = el('heimZieltext');
+      juchhu = el('heimJuchhu'), zieltext = el('heimZieltext'), neinBlase = el('heimNein'), neinPuls = el('heimNeinPuls');
   var ARM = 1.4, SX = 0.62, SY = -2.2, ELLE = [1.05, -2.55];
   var dir = ziel && ziel[0] < X ? -1 : 1;
+  var dirN = nein && nein[0] < X ? -1 : 1;
+  var N0 = 3350, V = nein ? 2200 : 0;   // Kopfschuetteln von N0 bis N0 + V
   var flieger = !!(bus && bus.dataset.art === 'flugzeug');
   var fahrwerk = flieger ? bus.querySelectorAll('.fahrwerk, .rad') : [];
   // Fahrt im Bogen vom Maennchen zum Ziel, der Bus parkt neben dem Punkt. Nur die Entfernung
@@ -130,18 +137,25 @@
   }
   // Juchhu von 4000 bis 4900 ms; alles danach (Bus, Fahrt, Ankunft) liegt seit 8.11.2026 abends
   // um 900 ms spaeter als in der ersten Fassung
-  var ENDE = ziel ? (fahrt ? 10200 : 5300) : 4300;
+  var ENDE = (ziel ? (fahrt ? 10200 : 5300) : 4300) + V;
+  var WEND = 4200 + V;   // Windstriche und Flocken an guten Regionen bis hier
   // Sprechblase ueber dem Kopf; ist darueber kein Platz (Standort am oberen Kartenrand),
   // rechts neben dem Kopf mit dem Zipfel nach links
   var blaseOben = true;
-  if (juchhu) {
-    var vb = svg.viewBox && svg.viewBox.baseVal;
-    if (vb && Y - 7.4 * U < vb.y) {
-      blaseOben = false;
-      juchhu.querySelector('path').setAttribute('d', 'M0,0L0.8,-0.4V-0.6Q0.8,-1 1.2,-1H5.6Q6,-1 6,-0.6V0.6Q6,1 5.6,1H1.2Q0.8,1 0.8,0.6V0.4Z');
-      var tx = juchhu.querySelector('text');
-      tx.setAttribute('x', '3.4'); tx.setAttribute('y', '0.42');
-    }
+  var vb = svg.viewBox && svg.viewBox.baseVal;
+  if (vb && Y - 7.4 * U < vb.y) {
+    blaseOben = false;
+    [juchhu, neinBlase].forEach(function (b) {
+      if (!b) { return; }
+      var r = 0.6 + (+b.dataset.b || 5.4), r4 = (r - 0.4).toFixed(2);
+      b.querySelector('path').setAttribute('d', 'M0,0L0.8,-0.4V-0.6Q0.8,-1 1.2,-1H' + r4 + 'Q' + r + ',-1 ' + r + ',-0.6V0.6Q' + r + ',1 ' + r4 + ',1H1.2Q0.8,1 0.8,0.6V0.4Z');
+      var tx = b.querySelector('text');
+      tx.setAttribute('x', ((0.8 + r) / 2).toFixed(2)); tx.setAttribute('y', '0.42');
+    });
+  }
+  function blasePos(b, op, pop) {
+    b.setAttribute('transform', 'translate(' + (X + (blaseOben ? 0.5 : 1.2) * U) + ' ' + (Y - (blaseOben ? 4.1 : 3.1) * U) + ') scale(' + (U * pop).toFixed(3) + ')');
+    b.setAttribute('opacity', op.toFixed(2));
   }
   function cl(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
   function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
@@ -156,12 +170,12 @@
     schneien.forEach(function (g) {
       g.fl.forEach(function (c, i) {
         var p = (t - i * 260 - g.k * 150) / 1500;
-        if (t > 4200 || p < 0) { c.setAttribute('opacity', 0); return; }
+        if (t > WEND || p < 0) { c.setAttribute('opacity', 0); return; }
         p = p % 1;
         var x = g.x + RP * (((i * 0.618 + g.k * 0.29) % 1) * 3 - 1.5) + RP * 0.35 * Math.sin(t / 300 + i * 2.1);
         var y = g.y + RP * (-2.8 + 4.4 * p);
         c.setAttribute('cx', x.toFixed(2)); c.setAttribute('cy', y.toFixed(2));
-        c.setAttribute('opacity', (Math.sin(Math.PI * p) * (t > 3700 ? cl((4200 - t) / 500) : 1)).toFixed(2));
+        c.setAttribute('opacity', (Math.sin(Math.PI * p) * (t > WEND - 500 ? cl((WEND - t) / 500) : 1)).toFixed(2));
       });
     });
   }
@@ -173,13 +187,13 @@
       var tempo = 0.6 + g.kn / 30, len = RP * (1.1 + g.kn / 30);
       g.striche.forEach(function (l, i) {
         var p = (t - i * 380 - g.k * 120) / (1100 / tempo);
-        if (t > 4200 || p < 0) { l.setAttribute('opacity', 0); return; }
+        if (t > WEND || p < 0) { l.setAttribute('opacity', 0); return; }
         p = p % 1;
         var s = RP * (-3.3 + 6.6 * p), off = RP * [-0.8, 0.35, -0.2, 0.9][i];
         var x1 = g.x + g.vx * s - g.vy * off, y1 = g.y + g.vy * s + g.vx * off;
         l.setAttribute('x1', x1.toFixed(2)); l.setAttribute('y1', y1.toFixed(2));
         l.setAttribute('x2', (x1 + g.vx * len).toFixed(2)); l.setAttribute('y2', (y1 + g.vy * len).toFixed(2));
-        l.setAttribute('opacity', (0.75 * Math.sin(Math.PI * p) * (t > 3700 ? cl((4200 - t) / 500) : 1)).toFixed(2));
+        l.setAttribute('opacity', (0.75 * Math.sin(Math.PI * p) * (t > WEND - 500 ? cl((WEND - t) / 500) : 1)).toFixed(2));
       });
     });
   }
@@ -217,44 +231,47 @@
     }
   }
   function zeichne(t) {
+    // tz: Zeit fuer alles ab dem Zeigen aufs Ziel; steht waehrend des Kopfschuettelns still
+    var tz = !nein || t < N0 ? t : t < N0 + V ? N0 : t - V;
+    var dirB = nein ? dirN : dir;   // Blickrichtung beim Umsehen am Ende
     var sal = seg(t, 300, 650);
     var scan = (t > 650 && t < 1500 ? Math.sin((t - 650) / 850 * Math.PI * 2) : 0)
              + (t > 2000 && t < 2800 ? Math.sin((t - 2000) / 800 * Math.PI * 2) : 0);
     var sx = wende(-Math.cos(seg(t, 1500, 2000) * Math.PI));   // erst nach links, dann nach rechts
-    if (dir < 0 && t > 2800) { sx = wende(Math.cos(seg(t, 2800, 3200) * Math.PI)); }
+    if (dirB < 0 && t > 2800) { sx = wende(Math.cos(seg(t, 2800, 3200) * Math.PI)); }
     var runter = seg(t, 3200, 3450);
     var hk = (0.35 * sal + 0.15 * scan) * (1 - runter);
     sal *= 1 - runter;
-    var zuck = ziel ? 0 : Math.sin(Math.PI * cl((t - 3450) / 700));
-    var hoch = ziel ? seg(t, 4000, 4130) * (1 - seg(t, 4750, 4900)) : 0;   // Juchhu: Arme hoch
-    var sprung = ziel && t > 4000 && t < 4900 ? Math.abs(Math.sin((t - 4000) / 900 * Math.PI * 2)) : 0;
-    var zg = ziel ? seg(t, 3350, 3700) * (1 - hoch) : 0;
-    var bl = ziel ? seg(t, 3500, 3800) * (1 - seg(t, 3900, 4100)) : 0;
+    var zuck = ziel ? 0 : Math.sin(Math.PI * cl((tz - 3450) / 700));
+    var hoch = ziel ? seg(tz, 4000, 4130) * (1 - seg(tz, 4750, 4900)) : 0;   // Juchhu: Arme hoch
+    var sprung = ziel && tz > 4000 && tz < 4900 ? Math.abs(Math.sin((tz - 4000) / 900 * Math.PI * 2)) : 0;
+    var zg = ziel ? seg(tz, 3350, 3700) * (1 - hoch) : 0;
+    var bl = ziel ? seg(tz, 3500, 3800) * (1 - seg(tz, 3900, 4100)) : 0;
     var walk = 0, manOp = 1, busOp = 0, fa = 0, rr = 0;
     if (fahrt) {
-      if (t < 9400) {
-        if (t >= 4000) { zg = 0; }
-        walk = seg(t, 5300, 5700);
-        manOp = 1 - seg(t, 5500, 5750);
+      if (tz < 9400) {
+        if (tz >= 4000) { zg = 0; }
+        walk = seg(tz, 5300, 5700);
+        manOp = 1 - seg(tz, 5500, 5750);
       } else {
-        manOp = seg(t, 9600, 10100);
+        manOp = seg(tz, 9600, 10100);
       }
-      busOp = seg(t, 4900, 5200) * (1 - seg(t, 9400, 9800));
-      fa = seg(t, 5800, 7900);
-      rr = cl((t - 7900) / 700);
+      busOp = seg(tz, 4900, 5200) * (1 - seg(tz, 9400, 9800));
+      fa = seg(tz, 5800, 7900);
+      rr = cl((tz - 7900) / 700);
     }
-    var r1 = ziel ? cl((t - 3600) / 700) : 0;
+    var r1 = ziel ? cl((tz - 3600) / 700) : 0;
     var ring = r1 > 0 && r1 < 1 ? r1 : rr > 0 && rr < 1 ? rr : 0;
-    if (t > 3200 && ziel) { sx = dir; }
+    var n = t - N0, imNein = nein && n > 0 && n < V;
+    if (t > 3200 && nein && (t < N0 + V || !ziel)) { sx = dirN; } else if (t > 3200 && ziel) { sx = dir; }
     heim.setAttribute('transform', 'translate(' + (X + walk * 2.5 * U * dir) + ' ' + (Y - sprung * U) + ') scale(' + (sx * U) + ' ' + U + ')');
     heim.setAttribute('opacity', manOp);
     kopf.setAttribute('cx', hk.toFixed(3));
     arm(armL, -SX, SY, 12 + 50 * zuck + 138 * hoch, true);
     arm(armR, SX, SY, -12 - 50 * zuck - 138 * hoch, (sal < 0.05 && zg < 0.02) || hoch > 0.05);
     if (juchhu) {
-      var jb = t < 4000 ? 0 : t < 4120 ? (t - 4000) / 120 : 1 - seg(t, 4900, 5150), pop = 0.85 + 0.15 * cl((t - 4000) / 150);
-      juchhu.setAttribute('transform', 'translate(' + (X + (blaseOben ? 0.5 : 1.2) * U) + ' ' + (Y - (blaseOben ? 4.1 : 3.1) * U) + ') scale(' + (U * pop).toFixed(3) + ')');
-      juchhu.setAttribute('opacity', jb.toFixed(2));
+      var jb = tz < 4000 ? 0 : tz < 4120 ? (tz - 4000) / 120 : 1 - seg(tz, 4900, 5150);
+      blasePos(juchhu, jb, 0.85 + 0.15 * cl((tz - 4000) / 150));
     }
     arm(ober, SX, SY, grad(ELLE[0] - SX, ELLE[1] - SY), sal >= 0.05);
     arm(unter, ELLE[0], ELLE[1], grad(hk + 0.42 - ELLE[0], -3.35 - ELLE[1]), sal >= 0.05);
@@ -269,10 +286,39 @@
       blick.setAttribute('d', 'M' + hx.toFixed(1) + ',' + hy.toFixed(1) + 'L' + (hx + (ex - hx) * bl).toFixed(1) + ',' + (hy + (ey - hy) * bl).toFixed(1));
       blick.setAttribute('opacity', bl > 0.02 ? 1 : 0);
     }
+    if (nein) {
+      // Kopfschuetteln: zeigen (0 bis 1150), Blicklinie, roter Puls am Punkt (zweimal),
+      // Kopf schuetteln mit Sprechblase (1000 bis 1900)
+      var zgN = imNein ? seg(n, 0, 350) * (1 - seg(n, 900, 1150)) : 0;
+      var blN = imNein ? seg(n, 150, 450) * (1 - seg(n, 900, 1100)) : 0;
+      if (imNein) {
+        var oxN = X + SX * U * dirN, oyN = Y + SY * U, wxN = nein[0] - oxN, wyN = nein[1] - oyN;
+        arm(zeig, SX, SY, grad(Math.abs(wxN), wyN), zgN >= 0.02);
+        zeig.setAttribute('height', (ARM * zgN).toFixed(3));
+        if (zgN >= 0.02) { armR.setAttribute('opacity', 0); }
+        var wlN = Math.sqrt(wxN * wxN + wyN * wyN) || 1, hxN = oxN + wxN / wlN * ARM * U, hyN = oyN + wyN / wlN * ARM * U;
+        var exN = nein[0] - wxN / wlN * RP * 1.3, eyN = nein[1] - wyN / wlN * RP * 1.3;
+        blick.setAttribute('d', 'M' + hxN.toFixed(1) + ',' + hyN.toFixed(1) + 'L' + (hxN + (exN - hxN) * blN).toFixed(1) + ',' + (hyN + (eyN - hyN) * blN).toFixed(1));
+        blick.setAttribute('opacity', blN > 0.02 ? 1 : 0);
+        var schuett = n > 1000 && n < 1900 ? Math.sin((n - 1000) / 900 * Math.PI * 6) * (1 - cl((n - 1700) / 200)) : 0;
+        kopf.setAttribute('cx', (0.3 * schuett).toFixed(3));
+      } else if (!ziel) {
+        arm(zeig, SX, SY, 0, false);
+        blick.setAttribute('opacity', 0);
+      }
+      if (neinPuls) {
+        var rn = n > 250 && n < 1850 ? ((n - 250) / 800) % 1 : 0;
+        neinPuls.setAttribute('r', (RP * (1 + 1.8 * rn)).toFixed(2));
+        neinPuls.setAttribute('opacity', rn > 0 ? (1 - rn).toFixed(2) : 0);
+      }
+      if (neinBlase) {
+        blasePos(neinBlase, n < 1000 ? 0 : n < 1120 ? (n - 1000) / 120 : 1 - seg(n, 1900, 2100), 0.85 + 0.15 * cl((n - 1000) / 150));
+      }
+    }
     if (fahrt) {
       var u = 1 - fa, px = u * u * A[0] + 2 * u * fa * C[0] + fa * fa * B[0], py = u * u * A[1] + 2 * u * fa * C[1] + fa * fa * B[1];
-      var faehrt = t > 5800 && t < 7900;
-      var hop = faehrt && !flieger ? -Math.abs(Math.sin(t / 85)) * 0.25 * U : 0;
+      var faehrt = tz > 5800 && tz < 7900;
+      var hop = faehrt && !flieger ? -Math.abs(Math.sin(tz / 85)) * 0.25 * U : 0;
       var dreh = '', gr = 1;
       if (flieger && faehrt) {   // Nase entlang der Bahn, am Start und bei der Landung waagrecht
         var tx = 2 * u * (C[0] - A[0]) + 2 * fa * (B[0] - C[0]), ty = 2 * u * (C[1] - A[1]) + 2 * fa * (B[1] - C[1]);
@@ -285,17 +331,17 @@
       });
       bus.setAttribute('transform', 'translate(' + px + ' ' + (py + hop) + ')' + dreh + ' scale(' + (dir * U * gr) + ' ' + (U * gr) + ')');
       bus.setAttribute('opacity', busOp);
-      fahrer.setAttribute('opacity', t > 5700 && t < 9400 ? 1 : 0);   // das Maennchen sitzt am Steuer
-      spur.setAttribute('opacity', flieger ? 0 : faehrt ? 0.6 : t >= 7900 && t < 8500 ? 0.6 * (1 - seg(t, 7900, 8500)) : 0);
-      var weg = seg(t, 8400, 9900);   // verwehen nach der Landung, in der Endpose weg
+      fahrer.setAttribute('opacity', tz > 5700 && tz < 9400 ? 1 : 0);   // das Maennchen sitzt am Steuer
+      spur.setAttribute('opacity', flieger ? 0 : faehrt ? 0.6 : tz >= 7900 && tz < 8500 ? 0.6 * (1 - seg(tz, 7900, 8500)) : 0);
+      var weg = seg(tz, 8400, 9900);   // verwehen nach der Landung, in der Endpose weg
       woelkchen.forEach(function (w) {   // bleiben kurz stehen, steigen ein wenig und werden groesser
         var a = cl((fa - w.f) * 5);
         w.g.setAttribute('opacity', (0.85 * a * (1 - weg)).toFixed(2));
         w.g.setAttribute('transform', 'translate(' + w.x.toFixed(2) + ' ' + (w.y - 0.5 * U * a).toFixed(2) + ') scale(' + (U * (1.3 + 0.5 * a)).toFixed(3) + ')');
       });
       spur.style.strokeDashoffset = -t / 40;
-      weht(t, 1 - seg(t, 9400, 9800));
-      if (zieltext) { zieltext.setAttribute('opacity', seg(t, 8200, 8700).toFixed(2)); }
+      weht(tz, 1 - seg(tz, 9400, 9800));
+      if (zieltext) { zieltext.setAttribute('opacity', seg(tz, 8200, 8700).toFixed(2)); }
     }
     if (puls) {
       puls.setAttribute('r', (RP * (1 + 1.8 * ring)).toFixed(2));
@@ -312,7 +358,7 @@
       b.setAttribute('aria-pressed', (b.dataset.ton === 'an') === tonAn ? 'true' : 'false');
     });
   }
-  if (tonBox && ziel) {
+  if (tonBox && (ziel || nein)) {
     tonBox.hidden = false;
     tonZeigen();
     tonBox.addEventListener('click', function (e) {
@@ -379,8 +425,19 @@
     g.gain.setValueAtTime(0.9, t0 + dauer * 0.55); g.gain.linearRampToValueAtTime(0, t0 + dauer + 0.3);
     q.start(t0); q.stop(t0 + dauer + 0.4); knoten.push(q);
   }
+  function noe(t0) {   // "Nö-ö": zwei tiefe, fallende Toene
+    [[0, 0.22, 300, 240], [0.26, 0.38, 260, 170]].forEach(function (z) {
+      var o = ctx.createOscillator(), g = ctx.createGain(), a = t0 + z[0], d = z[1];
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(z[2], a); o.frequency.exponentialRampToValueAtTime(z[3], a + d);
+      g.gain.setValueAtTime(0, a); g.gain.linearRampToValueAtTime(0.9, a + 0.03);
+      g.gain.setValueAtTime(0.9, a + d - 0.08); g.gain.linearRampToValueAtTime(0, a + d);
+      o.connect(g); g.connect(master);
+      o.start(a); o.stop(a + d + 0.02); knoten.push(o);
+    });
+  }
   function tonStart() {   // im Antippen aufrufen, sonst erlaubt der Browser keinen Ton
-    if (!tonAn || !ziel) { return; }
+    if (!tonAn || !(ziel || nein)) { return; }
     var AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) { return; }
     try {
@@ -388,6 +445,9 @@
       if (ctx.state === 'suspended') { ctx.resume(); }
       master = ctx.createGain(); master.gain.value = 0.2; master.connect(ctx.destination);
       var t0 = ctx.currentTime;
+      if (nein) { noe(t0 + (N0 + 1000) / 1000); }   // beim Kopfschuetteln
+      t0 += V / 1000;
+      if (!ziel) { return; }
       pfiff(t0 + 4.0);            // Juchhu
       if (fahrt && flieger) {
         duese(t0 + 5.6, 2.4);     // Flug 5800 bis 7900 ms
