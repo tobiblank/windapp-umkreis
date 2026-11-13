@@ -72,6 +72,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | `windlagen` | Windlagen, die in der ganzen Region tragen; leer = Richtung hängt am Spot |
 | `spots[].windlagen` | ersetzt die Windlagen der Region für diesen Spot (z. B. Herrsching nur West) |
 | `spots[].ablandig` | Sektoren, in denen der Wind ablandig ist; die Stunde zählt dann nicht. Immer am Spot, weil es an der Ausrichtung des Ufers hängt |
+| `spots[].punkt` | optional, `[Breite, Länge]`: Lage des Spots. Ziel des Maps-Knopfs (seit 13.11.2026) und der Fahrzeit, wenn die Region kein `anfahrt` hat. **Maps-Knopf:** je Spot ein Link auf Google Maps, Ziel `spots[].punkt`, sonst `anfahrt` (nur bei genau einem Spot), sonst Suche nach „Spot, Region ohne Klammerzusatz, Land“ (kann danebenliegen; Tooltip sagt das). Region ohne Spots: `anfahrt`, sonst Vorhersagepunkt (`lib/maps.php`) |
 | `charakter` | frei, z. B. „böig“; wird angezeigt |
 | `hinweis` | Herkunft und offene Fragen (nicht auf der Seite) |
 | `links` | optional, `[{name, url}]`: lokale Spezialprognose, auf der Seite als „Genauer: …“ verlinkt; nur `https://` |

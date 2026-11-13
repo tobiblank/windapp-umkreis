@@ -21,6 +21,7 @@ require __DIR__ . '/lib/design.php';
 require __DIR__ . '/lib/stunden.php';
 require __DIR__ . '/lib/neopren.php';
 require __DIR__ . '/lib/spotinfo.php';
+require __DIR__ . '/lib/maps.php';
 
 const TZ_SEITE = 'Europe/Berlin';
 const WOCHENTAGE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
@@ -424,7 +425,7 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
     if (!empty($st['hat_welle'])) {
         $o .= '<p class="klein leise welle-titel">Wellen: Balken = gesamte Welle, Linie = Dünung, Pfeile = wohin die Dünung läuft, Zahlen = Periode in Sekunden</p>' . welle_svg($st, $sport, $mmax);
     }
-    return $o . spotinfo_html($r) . '</section>';
+    return $o . maps_html($r) . spotinfo_html($r) . '</section>';
 }
 ?><!doctype html>
 <html lang="de">

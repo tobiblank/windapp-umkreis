@@ -364,6 +364,7 @@ pruefe(str_contains($html, 'id="heimBus"') && str_contains($html, 'data-art="ski
        && preg_match('/class="heim" id="heim"[^>]* data-wohin="[\d.]+,[\d.]+"/', $html) && preg_match('/data-schneit="[\d.]+,[\d.]+,\d+"/', $html)
        && str_contains($html, 'id="ton"') && strrpos($html, 'class="heim"') > strrpos($html, 'class="punkt '),
        'Karte: Männchen mit Ziel (Pulvertag), Bus mit Ski auf dem Dach, Ski am Ziel, Flocken an guten Regionen, Ton-Schalter');
+pruefe(preg_match('#id="r-schnee-a".*?<p class="maps klein"><a class="maps-knopf" href="https://www.google.com/maps/search/\?api=1&amp;query=[\d.%C-]+"#s', $html) === 1, 'Schnee-Karte: Maps-Knopf');
 if (getenv('UMKREIS_SEITE_OFFEN')) {   // zum Ansehen im Browser: Seite eine Weile offen lassen
     file_put_contents(getenv('UMKREIS_SEITE_OFFEN'), (string)$wPort);
     sleep(90);
@@ -390,6 +391,7 @@ pruefe(str_contains($html, 'class="teilen" hidden') && str_contains($html, 'Abfa
 pruefe(!str_contains($html, 'name="sport"') && !str_contains($html, 'sport=') && str_contains($html, 'Pulvertag:') && str_contains($html, '<b>Pulvertag</b>'),
        'keine Sportart mehr: kein Schalter, keine Links mit sport=, gute Tage heißen Pulvertag');
 [, $hs] = holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t1);
+pruefe(str_contains($hs, '<a class="maps-knopf" href="https://www.google.com/maps/search/?api=1&amp;query='), 'Schnee-Stundenseite: Maps-Knopf');
 pruefe(str_contains($hs, '✓ Pulvertag') && str_contains($hs, 'Wind am Kamm') && str_contains($hs, '>Schneehöhe<'), 'Stundenseite: Urteil Pulvertag, Schneehöhe und Wind am Kamm als Kennzahl');
 pruefe(str_contains($hs, '<span class="t">Temperatur</span><span class="w">−2 / −2°</span><span class="u">Nacht / Tag</span>')
        && preg_match('#id="r-schnee-a".*?<span class="k">Temp</span> −2 / −2°</span>#s', $html) === 1

@@ -24,6 +24,7 @@ require __DIR__ . '/lib/fahrzeit.php';
 require __DIR__ . '/lib/roadtrip.php';
 require __DIR__ . '/lib/neopren.php';
 require __DIR__ . '/lib/spotinfo.php';
+require __DIR__ . '/lib/maps.php';
 require __DIR__ . '/lib/design.php';
 require __DIR__ . '/lib/favoriten.php';
 require __DIR__ . '/lib/amstueck.php';
@@ -1023,6 +1024,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
     <?php if ($st && (!$st['lohnt'] || $st['wind'] >= 2)): ?>
       <p class="stueck-zeile klein<?= $st['lohnt'] ? '' : ' leise' ?>"><?= h(stueck_text($st, $e)) ?></p>
     <?php endif ?>
+    <?= maps_html($r) ?>
     <?= spotinfo_html($r) ?>
     <?php if (!empty($r['links'])): ?>
       <p class="links klein">Genauer:

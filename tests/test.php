@@ -22,6 +22,7 @@ require "$ROOT/server/web/lib/roadtrip.php";
 require "$ROOT/server/web/lib/stunden.php";
 require "$ROOT/server/web/lib/neopren.php";
 require "$ROOT/server/web/lib/amstueck.php";
+require "$ROOT/server/web/lib/maps.php";
 
 $fehler = 0;
 function pruefe(bool $ok, string $was): void
@@ -42,6 +43,18 @@ pruefe(winkel_in_sektor(-10, [340, 20]), 'negative Grad werden umgerechnet');
 pruefe(windlage_fuer(123.0, [])['grob'] === true, 'ohne Windlagen: jede Richtung, grob');
 pruefe(windlage_fuer(40.0, [['name' => 'Bora', 'sektor' => [20, 80]]])['name'] === 'Bora', '40 Grad = Bora');
 pruefe(abs(richtung_mittel([350, 10]) - 0) < 1e-6 || abs(richtung_mittel([350, 10]) - 360) < 1e-6, 'Mittel von 350 und 10 ist 0');
+
+echo "Maps-Knöpfe\n";
+$mz = maps_ziele(['name' => 'Ammersee', 'land' => 'DE', 'punkt' => [48.0, 11.135], 'spots' => [
+    ['name' => 'Stegen', 'punkt' => [48.0489, 11.1614]], ['name' => 'Herrsching']]]);
+pruefe($mz[0] === ['Stegen', 'https://www.google.com/maps/search/?api=1&query=48.0489%2C11.1614', true], 'Spot mit punkt: Koordinaten');
+pruefe($mz[1] === ['Herrsching', 'https://www.google.com/maps/search/?api=1&query=Herrsching%2C%20Ammersee%2C%20Germany', false], 'Spot ohne punkt: Suche Spot, Region, Land');
+$mz = maps_ziele(['name' => 'Zandvoort', 'land' => 'NL', 'punkt' => [52.38, 4.48], 'anfahrt' => [52.375, 4.525], 'spots' => [['name' => 'Zandvoort']]]);
+pruefe($mz === [['Zandvoort', 'https://www.google.com/maps/search/?api=1&query=52.375%2C4.525', true]], 'einziger Spot ohne punkt: anfahrt der Region');
+$mz = maps_ziele(['name' => 'Walchensee', 'land' => 'DE', 'punkt' => [47.59, 11.34], 'spots' => []]);
+pruefe($mz === [['Walchensee', 'https://www.google.com/maps/search/?api=1&query=47.59%2C11.34', true]], 'Region ohne Spots: punkt');
+$mh = maps_html(['name' => 'Walchensee', 'land' => 'DE', 'punkt' => [47.59, 11.34], 'spots' => []]);
+pruefe(str_contains($mh, '<a class="maps-knopf" href="https://www.google.com/maps/search/?api=1&amp;query=47.59%2C11.34"') && str_contains($mh, '</svg>Maps</a>'), 'Region ohne Spots: ein Knopf „Maps“');
 
 echo "Katalog\n";
 $katalog = json_decode(file_get_contents("$ROOT/daten/regionen.json"), true);
@@ -1096,6 +1109,7 @@ pruefe(preg_match('#id="r-adria-nord".*?<span class="wetter">⛅<b>12°</b></spa
 pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'ab 0,8 m Dünung'), 'Rangliste Wellenreiten ohne Fehler');
 [, $html] = holen($sitePort, 'index.php?km=1000');
 pruefe(str_contains($html, '<details class="spotinfo klein"><summary>Spot-Infos (1)') && str_contains($html, 'Testtipp für den Ammersee'), 'Regionskarte: Spot-Infos aufklappbar');
+pruefe(substr_count($html, 'class="maps-knopf"') >= 1 && str_contains($html, 'https://www.google.com/maps/search/?api=1&amp;query='), 'Regionskarte: Maps-Knöpfe');
 [, $html] = holen($sitePort, "index.php?km=1000&nach=$morgen");
 pruefe(str_contains($html, '<select name="nach">') && str_contains($html, '<option value="' . $morgen . '" selected>') && substr_count($html, '<nav class="reiter" aria-label="Ansicht">') === 1
        && str_contains($html, '>Kacheln</a>') && str_contains($html, 'class="zeitraum klein"') && str_contains($html, '<details class="leise klein erklaerung">'),
