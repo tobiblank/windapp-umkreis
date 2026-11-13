@@ -300,6 +300,7 @@ function lawine_stoerung(?array $lage, ?int $jetzt = null): ?array
  * eaws_namen, Teil des Namens). Bei mehreren Mikroregionen gilt die hoechste Stufe.
  * Rueckgabe null (kein Bericht fuer diesen Tag) oder
  *   ['stufe' => max, 'teile' => [stufen], 'probleme' => [...], 'veroeffentlicht', 'von', 'bis',
+ *    'abgerufen' (ts des letzten guten Abrufs beim Dienst, seit 13.11.2026),
  *    'regionen' => [[id, name]], 'ueber_namen' => bool]
  */
 function lawine_lage(array $region, array $lagen, string $tag, ?int $jetzt = null): ?array
@@ -360,6 +361,7 @@ function lawine_lage(array $region, array $lagen, string $tag, ?int $jetzt = nul
         'regionen'        => $regionen,
         'mehrere'         => count($treffer) > 1,
         'ueber_namen'     => !$eaws,
+        'abgerufen'       => (string)($lage['ts'] ?? ''),
     ];
 }
 
@@ -539,12 +541,17 @@ function lawine_zeit_text(string $iso, DateTimeZone $tz, ?int $jetzt = null): st
     return $tag . ' ' . $d->format('G:i');
 }
 
-/** "ausgegeben heute 17:00, gültig bis morgen 17:00" */
+/**
+ * "ausgegeben heute 17:00, gültig bis morgen 17:00, abgerufen heute 17:30". Seit 13.11.2026
+ * mit dem letzten guten Abruf beim Warndienst: zeigt, wie frisch der Stand ist und ob der
+ * Abruf auf dem Server (lawine_holen.php, alle 30 min) laeuft.
+ */
 function lawine_gueltig_text(array $lage, DateTimeZone $tz, ?int $jetzt = null): string
 {
     $aus = lawine_zeit_text($lage['veroeffentlicht'] ?? '', $tz, $jetzt);
     $bis = lawine_zeit_text($lage['bis'] ?? '', $tz, $jetzt);
-    return implode(', ', array_filter([$aus !== '' ? "ausgegeben $aus" : '', $bis !== '' ? "gültig bis $bis" : '']));
+    $ab = lawine_zeit_text($lage['abgerufen'] ?? '', $tz, $jetzt);
+    return implode(', ', array_filter([$aus !== '' ? "ausgegeben $aus" : '', $bis !== '' ? "gültig bis $bis" : '', $ab !== '' ? "abgerufen $ab" : '']));
 }
 
 /**

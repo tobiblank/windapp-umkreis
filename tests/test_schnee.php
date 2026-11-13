@@ -71,6 +71,8 @@ $tzB = new DateTimeZone('Europe/Berlin');
 $jetztB = (new DateTimeImmutable('2026-04-16 18:00', $tzB))->getTimestamp();
 pruefe(lawine_gueltig_text($real[0], $tzB, $jetztB) === 'ausgegeben heute 17:00, gültig bis morgen 17:00' && lawine_zeit_text('', $tzB) === ''
        && lawine_zeit_text('2026-04-20T15:00:00Z', $tzB, $jetztB) === 'Mo 17:00', 'Ausgabe und Gültigkeit in Ortszeit');
+pruefe(lawine_gueltig_text($real[0] + ['abgerufen' => '2026-04-20T15:31:00Z'], $tzB, $jetztB) === 'ausgegeben heute 17:00, gültig bis morgen 17:00, abgerufen Mo 17:31',
+       'Abrufzeit beim Warndienst hinter Ausgabe und Gültigkeit');
 $auszug = lawine_auszug_text(['regionen' => [['DE-BY-30', 'Werdenfelser Alpen'], ['DE-BY-12', 'Allgäuer Alpen Mitte']], 'ueber_namen' => false], ['name' => 'Lawinenwarndienst Bayern']);
 pruefe(str_starts_with($auszug, 'Auszug aus dem Lagebericht (Quelle: Lawinenwarndienst Bayern)') && str_contains($auszug, 'gekürzt und aufbereitet')
        && str_contains($auszug, 'Werdenfelser Alpen, Allgäuer Alpen Mitte') && str_contains($auszug, 'höchsten Stufe'), 'Auszug gekennzeichnet, mehrere Teilgebiete benannt');
@@ -351,7 +353,7 @@ pruefe(preg_match('#id="r-schnee-c".*?class="tag [^"]*warn-hoch"#s', $html) === 
 pruefe(str_contains($html, '<select name="prio">') && str_contains($html, '<option value="pulver" selected>Pulver + Sonne</option>') && str_contains($html, '<select name="nach">')
        && preg_match('#<select name="nach">(.*?)</select>#s', $html, $mNach) && !str_contains($mNach[1], 'value="km"'), 'Auswahl: Tag und Priorität getrennt');
 pruefe(substr_count($html, 'noch die eigene Beurteilung vor Ort') >= 3 && str_contains($html, '<p class="karte klein haftung">'), 'Haftungshinweis oben, je Region und im Fuß');
-pruefe(preg_match('#id="r-schnee-b".*?ausgegeben heute \d+:\d\d, gültig bis \S+ \d+:\d\d.*?Auszug aus dem Lagebericht \(Quelle: LWD Bayern Test\)#s', $html) === 1
+pruefe(preg_match('#id="r-schnee-b".*?ausgegeben heute \d+:\d\d, gültig bis \S+ \d+:\d\d, abgerufen heute \d+:\d\d.*?Auszug aus dem Lagebericht \(Quelle: LWD Bayern Test\)#s', $html) === 1
        && str_contains($html, 'Hinweis von Wohinfahrma: Lawinenwarnstufe 4') && str_contains($html, 'Warndreiecke und ihre Texte sind Hinweise von Wohinfahrma')
        && !str_contains($html, 'lawine-stoerung'),
        'Lawinenlage: Ausgabe und Gültigkeit, Auszug mit Quelle, eigene Hinweise benannt, ohne Störung kein Störungshinweis');
