@@ -18,6 +18,10 @@
  *   Wetter     im Tagesfenster SCHNEE_TAG: mittlere Bewoelkung, Wind am Kamm (700 hPa),
  *              hoechste Nullgradgrenze, Neuschnee am Tag.
  *   Schneehoehe Modellwert snow_depth um SCHNEE_MORGEN Uhr (im Gebirge grob).
+ *   Temperatur (seit 13.11.2026) auf Tourhoehe: tiefste der Nacht davor (SCHNEE_NACHT_AB Uhr
+ *              am Vortag bis SCHNEE_MORGEN Uhr) und hoechste im Tagesfenster. Nur angezeigt,
+ *              geht nicht in die Regel ein; im Fruehjahr sagt sie, ob der Schnee ueber Nacht
+ *              gefroren ist und wie schnell er am Tag aufweicht.
  *   Spanne     Neuschnee (24 h) im ECMWF-Ensemble, 10. bis 90. Perzentil der Laeufe.
  *              Seit 9.11.2026 statt einer Chance in Prozent angezeigt: Die Prozent
  *              fassten mehrere Schwellen zusammen und sagten nicht, was fehlt.
@@ -44,6 +48,7 @@ require_once __DIR__ . '/stationen.php';
 
 const SCHNEE_TAG = [8, 15];           // Ortsstunden [ab, bis): Wetter am Tourtag
 const SCHNEE_MORGEN = 8;              // Neuschnee zaehlt bis zu dieser Ortsstunde
+const SCHNEE_NACHT_AB = 18;           // Ortsstunde am Vortag: ab hier zaehlt die Nacht (tiefste Temperatur)
 const SCHNEE_STUNDEN_NEU = 72;
 const SCHNEE_CM_JE_MM = 0.7;          // Open-Meteo: snowfall in cm = Wasser in mm x 0,7
 const SCHNEE_GRENZE_ABSTAND = 300;    // m: Schneefallgrenze rund 300 m unter der Nullgradgrenze (Faustwert)
@@ -321,10 +326,19 @@ function schnee_tag_minus(string $tag, int $n): string
  * Kennwerte eines Tages aus Stundenwerten ([tag => [stunde => [...]]]):
  *   neu72, neu24 (cm bis SCHNEE_MORGEN Uhr, null bei zu wenigen Stunden), neu_tag (im Fenster), wolken, kamm, boe,
  *   nullgrad (hoechste im Fenster), grenze (tiefste Schneefallgrenze bei Niederschlag in 72 h),
- *   hs (Schneehoehe um SCHNEE_MORGEN), stunden (mit Werten im Fenster)
+ *   hs (Schneehoehe um SCHNEE_MORGEN), stunden (mit Werten im Fenster),
+ *   temp_nacht (tiefste von SCHNEE_NACHT_AB Uhr am Vortag bis SCHNEE_MORGEN Uhr), temp_tag (hoechste im Fenster)
  */
 function schnee_kennwerte(array $st, string $tag, array $fenster): array
 {
+    $nacht = [];
+    foreach ([[schnee_tag_minus($tag, 1), SCHNEE_NACHT_AB, 24], [$tag, 0, SCHNEE_MORGEN]] as [$d, $von, $bis]) {
+        foreach ($st[$d] ?? [] as $h => $w) {
+            if ($h >= $von && $h < $bis && ($w['temp'] ?? null) !== null) {
+                $nacht[] = $w['temp'];
+            }
+        }
+    }
     $summe = 0.0;
     $n = 0;
     $summe24 = 0.0;
@@ -377,7 +391,28 @@ function schnee_kennwerte(array $st, string $tag, array $fenster): array
         'grenze'   => $grenze,
         'hs'       => $hs,
         'stunden'  => count($im),
+        'temp_nacht' => $nacht ? min($nacht) : null,
+        'temp_tag'   => $maxi('temp'),
     ];
+}
+
+/** "−7°" (echtes Minuszeichen, nie "−0"); null: "?" */
+function schnee_grad(?float $t): string
+{
+    if ($t === null) {
+        return '?';
+    }
+    $r = (int)round($t);
+    return ($r < 0 ? "\u{2212}" : '') . abs($r) . '°';
+}
+
+/** Nacht / Tag fuer die Kachel: "−9 / −2°"; null, wenn beides fehlt */
+function schnee_temp_text(array $k): ?string
+{
+    if (($k['temp_nacht'] ?? null) === null && ($k['temp_tag'] ?? null) === null) {
+        return null;
+    }
+    return rtrim(schnee_grad($k['temp_nacht'] ?? null), '°') . ' / ' . schnee_grad($k['temp_tag'] ?? null);
 }
 
 /** Ist der Tag ein Pulvertag? Rueckgabe [geht, grund|null] */

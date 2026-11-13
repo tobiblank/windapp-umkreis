@@ -222,6 +222,19 @@ pruefe(schnee_klasse($aT[$t1]) === 's-go' && schnee_klasse(['det' => ['geht' => 
 $kw = schnee_karte_wert($sBy['schnee-a'], null);
 pruefe($kw['geht'] && $kw['klasse'] === 's-go' && abs($kw['neu'] - array_sum(array_map(fn($d) => (float)($d['det']['neu24'] ?? 0), array_filter($aT, fn($d) => !$d['vorbei'] && !$d['offen'])))) < 0.2,
        'Karte: Summe des Neuschnees im Zeitraum, kräftiges Blau, wenn ein Tag passt');
+// Temperatur (seit 13.11.2026): tiefste der Nacht (Vortag ab 18 Uhr bis 8 Uhr), hoechste im Fenster
+$tSt = [];
+foreach (['2026-03-09' => range(0, 23), '2026-03-10' => range(0, 23)] as $d => $hs) {
+    foreach ($hs as $h) {
+        $tSt[$d][$h] = ['neu' => 0.0, 'temp' => $d === '2026-03-09' ? ($h === 12 ? -20.0 : ($h === 22 ? -6.0 : 2.0)) : ($h === 5 ? -8.0 : ($h === 13 ? 7.5 : ($h === 20 ? 12.0 : 1.0)))];
+    }
+}
+$tk = schnee_kennwerte($tSt, '2026-03-10', SCHNEE_TAG);
+pruefe($tk['temp_nacht'] === -8.0 && $tk['temp_tag'] === 7.5 && schnee_temp_text($tk) === "\u{2212}8 / 8°",
+       'Temperatur: Nacht −8 (Vortagsmittag und Abend nach dem Fenster zählen nicht), Tag 7,5 → „−8 / 8°“');
+pruefe(schnee_grad(-0.4) === '0°' && schnee_grad(-0.6) === "\u{2212}1°" && schnee_grad(null) === '?' && schnee_temp_text(['temp_nacht' => null, 'temp_tag' => null]) === null,
+       'Temperatur: kein „−0“, ohne Werte nichts');
+pruefe(($aT[$t1]['det']['temp_nacht'] ?? null) == -2.0 && ($aT[$t1]['det']['temp_tag'] ?? null) == -2.0, 'Region A: Temperatur aus dem Modellmittel');
 pruefe(($sBy['schnee-a']['tage'][$t3]['det']['grund'] ?? '') === 'zu wenig Neuschnee', 'Region A in drei Tagen: zu wenig Neuschnee');
 pruefe(($sBy['schnee-b']['tage'][$t1]['det']['neu72'] ?? null) == 0.0 && $sBy['schnee-b']['tage'][$t1]['det']['grenze'] == 2800, 'Region B: Regen über der Tourhöhe zählt nicht');
 pruefe(array_key_first($sBy) === 'schnee-a' || array_key_first($sBy) === 'schnee-d', 'Rangliste: Regionen mit Neuschnee vorn');
@@ -368,6 +381,10 @@ pruefe(!str_contains($html, 'name="sport"') && !str_contains($html, 'sport=') &&
        'keine Sportart mehr: kein Schalter, keine Links mit sport=, gute Tage heißen Pulvertag');
 [, $hs] = holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t1);
 pruefe(str_contains($hs, '✓ Pulvertag') && str_contains($hs, 'Wind am Kamm') && str_contains($hs, '>Schneehöhe<'), 'Stundenseite: Urteil Pulvertag, Schneehöhe und Wind am Kamm als Kennzahl');
+pruefe(str_contains($hs, '<span class="t">Temperatur</span><span class="w">−2 / −2°</span><span class="u">Nacht / Tag</span>')
+       && preg_match('#id="r-schnee-a".*?<span class="k">Temp</span> −2 / −2°</span>#s', $html) === 1
+       && preg_match('#id="r-schnee-b".*?<span class="k">Temp</span> 3 / 3°</span>#s', $html) === 1 && str_contains($html, 'Temperatur Nacht / Tag −2 / −2°C'),
+       'Temperatur Nacht / Tag in Kachel, Tooltip und Stundenseite');
 pruefe(!preg_match('/\d+ %(?! Wolken)/u', strip_tags(preg_replace('#<details class="leise klein erklaerung">.*?</details>#s', '', $html))), 'keine Prozent-Chance mehr auf der Seite');
 pruefe(str_contains($html, 'Zahl: Neuschnee in cm'), 'Karte: Zahl ist Neuschnee in cm');
 // Seit 13.11.2026: Maennchen faehrt nicht zu Stufe 4/5, sondern schuettelt den Kopf
