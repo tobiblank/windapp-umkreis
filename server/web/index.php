@@ -646,7 +646,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   </label>
   <?php endif ?>
   <?php if (!$roadtrip): ?>
-  <label title="Windtage hintereinander, die eine Region braucht, damit sich die Fahrt lohnt">Am Stück
+  <label title="So viele Tage mit Wind hintereinander braucht eine Region, damit sich die Fahrt lohnt">Windtage am Stück
     <select name="stueck">
       <?php foreach (AM_STUECK_WAHL as $wert => $name): ?>
         <option value="<?= h((string)$wert) ?>"<?= (string)$wert === $stueck ? ' selected' : '' ?>><?= h($name) ?></option>
@@ -698,7 +698,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   <?php endif ?>
   </p>
   <?php if ($stueckAn): ?>
-  <p>Am Stück: Ein Windtag hat mindestens <?= zahl(100 * AM_STUECK_WINDTAG) ?> % Chance (ohne Ensemble: Fenster nach Modellmittel). Ein einzelner Tag ab <?= zahl(100 * AM_STUECK_BRUECKE) ?> % zwischen zwei Windtagen hält die Strecke zusammen, zählt aber nicht mit. Gezählt wird über alle 7 Tage.
+  <p>Windtage am Stück: Ein Windtag hat mindestens <?= zahl(100 * AM_STUECK_WINDTAG) ?> % Chance (ohne Ensemble: Fenster nach Modellmittel). Ein einzelner Tag ab <?= zahl(100 * AM_STUECK_BRUECKE) ?> % zwischen zwei Windtagen hält die Strecke zusammen, zählt aber nicht mit. Gezählt wird über alle 7 Tage.
   <?= $stueck === 'auto' ? 'Nach Fahrzeit: bis ' . intdiv(AM_STUECK_FAHRT[0][0], 60) . ' h Fahrt reicht 1 Windtag, bis ' . intdiv(AM_STUECK_FAHRT[1][0], 60) . ' h braucht es 2, darüber und bei Flugzielen 3.' : 'Jede Region braucht ' . h($stueck) . ' Windtage am Stück.' ?>
   Regionen, die das nicht schaffen, stehen am Ende. Startwerte, nicht kalibriert.</p>
   <?php endif ?>
