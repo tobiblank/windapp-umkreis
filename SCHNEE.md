@@ -140,6 +140,7 @@ Der Sammler holt je Dienst heute und morgen. HTTP 404 heißt „noch kein Berich
 - **Lesen:** `lawine_laden()` und `stationen_laden()` nehmen je Dienst bzw. Netz die Zeile mit dem neuesten `ts`, egal aus welcher Datei. Vorher galt die Reihenfolge der Dateinamen, und `2026-11-13_1310.ndjson.gz` sortiert hinter `server.ndjson` bzw. einer Tagesdatei.
 - **Im Seitenaufruf nicht lange warten:** eine Wiederholung nach 5 s statt zwei nach 15 s, Zeitlimit 10 s je Abruf, nach 100 s kein weiterer Dienst und kein weiteres Netz (gilt als Fehlversuch). Zwei Anstöße gleichzeitig: der zweite bekommt 409.
 - **Hinweis „nicht aktualisiert“:** Ist `lawine/server.ndjson` jünger als 3 Tage (Server-Abruf eingerichtet), erscheint er schon nach 2 statt 13 Stunden (`LAWINE_ALT_STUNDEN_SERVER`). Fällt der Server-Abruf aus, merkt man es also bald. Liegt er länger als 3 Tage still, gilt wieder die Frist für die Action.
+- **Anzeige:** Seit 13.11.2026 steht bei der Lawinenlage hinter Ausgabe und Gültigkeit „abgerufen heute 17:30“ (letzter guter Abruf beim Dienst, `lawine_gueltig_text()`). Springt die Zeit etwa halbstündlich weiter, läuft der Abruf auf dem Server.
 - **Einrichten:** Schlüssel erzeugen (`php -r 'echo bin2hex(random_bytes(20)), "\n";'`), in die `config.php` von Wohinfahrma als `abruf_schluessel` und in die von ammerseewind.de als `wohinfahrma_abruf_schluessel`. Ohne Schlüssel bleibt alles wie vorher.
 
 ### Hinweise des LWD Bayern zur Weiterverarbeitung (seit 10.11.2026)
