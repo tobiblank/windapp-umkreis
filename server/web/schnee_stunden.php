@@ -15,6 +15,7 @@ require __DIR__ . '/lib/bewertung.php';
 require __DIR__ . '/lib/design.php';
 require __DIR__ . '/lib/schnee.php';
 require __DIR__ . '/lib/lawine.php';
+require __DIR__ . '/lib/maps.php';
 require __DIR__ . '/lib/stunden.php';   // perzentil()
 
 const TZ_SEITE = 'Europe/Berlin';
@@ -314,6 +315,7 @@ $jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
   <?= schnee_svg($reihe, $region, $tag, $b['fenster'], $jetztStunde) ?>
   <p class="klein leise">Oben die Summe je 24 h bis <?= SCHNEE_MORGEN ?> Uhr, wie in den Tagesknöpfen. Liegt die Schneefallgrenze unter der Tourhöhe, fällt dort Schnee.</p>
   <?php endif ?>
+  <?= maps_html($region) ?>
 </section>
 
 <section class="karte lawine-seite">

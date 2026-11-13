@@ -27,6 +27,7 @@ require __DIR__ . '/lib/fahrzeit.php';
 require __DIR__ . '/lib/design.php';
 require __DIR__ . '/lib/schnee.php';
 require __DIR__ . '/lib/lawine.php';
+require __DIR__ . '/lib/maps.php';
 require __DIR__ . '/lib/favoriten.php';
 
 const TZ_SEITE = 'Europe/Berlin';
@@ -765,6 +766,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
     <?= $ansicht === 'bald' ? stationen_html(stationen_region($r, $messungen), $messnetze, $tzSeite, $heute) : '' ?>
     <?= $ansicht === 'bald' ? webcams_html($r, $schnee['webcams'], $messnetze, $messungen) : '' ?>
     <?= lawine_html($r, $lageVon[$r['id']] ?? [], $dienste, $tage, $lagen) ?>
+    <?= maps_html($r) ?>
     <?php if (!empty($r['links'])): ?>
       <p class="links klein">Genauer:
         <?php foreach ($r['links'] as $i => $l): ?><?= $i ? ' · ' : '' ?><a href="<?= h($l['url']) ?>" rel="noopener"><?= h($l['name']) ?> ↗</a><?php endforeach ?>

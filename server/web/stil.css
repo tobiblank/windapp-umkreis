@@ -273,6 +273,10 @@ a.tag:active { filter: brightness(.94); }
 .teilen { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; font: inherit; font-size: 13px; font-weight: 600; color: var(--akzent); background: none; border: 1px solid var(--linie); border-radius: 999px; padding: 1px 10px 1px 8px; cursor: pointer; vertical-align: middle; }
 .teilen[hidden] { display: none; }
 .teilen svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+/* Maps-Knoepfe je Spot (seit 13.11.2026) */
+.maps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 0; }
+.maps-knopf { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--akzent); text-decoration: none; border: 1px solid var(--linie); border-radius: 999px; padding: 1px 10px 1px 8px; }
+.maps-knopf svg { flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 
 /* Hinweis "Als App installieren" */
 .installieren p { margin: 0 0 8px; }
