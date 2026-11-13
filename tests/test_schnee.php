@@ -422,6 +422,9 @@ pruefe(str_contains($html, 'class="s-schnee"') && str_contains($html, 'class="s-
 pruefe(str_contains($html, 'Schneehöhe gemessen') && str_contains($html, 'Sprungjoch'), 'Stundenseite heute: gemessene Schneehöhe');
 pruefe(str_contains($html, 'Webcams:') && str_contains($html, 'https://example.org/cam/gutalm/'), 'Stundenseite heute: Webcams');
 pruefe(!str_contains(holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t1)[1], 'Schneehöhe gemessen'), 'Stundenseite morgen: keine Messung');
+[, $hOhneS] = holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t3);
+pruefe(preg_match('#Kein gültiger Lagebericht für diesen Tag\..*?<span class="leise">abgerufen heute \d+:\d\d</span>#u', $hOhneS) === 1,
+       'ohne gültigen Bericht: trotzdem, wann zuletzt beim Dienst abgerufen wurde');
 [$code] = holen($wPort, 'schnee_stunden.php?region=gibtsnicht');
 pruefe($code === 404, 'Stundenseite: unbekannte Region 404');
 [, $html] = holen($wPort, 'index.php?km=1000');

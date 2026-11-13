@@ -321,7 +321,8 @@ $jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
   <?php else: ?>
     <?php if ($stoerung): ?><p class="klein lawine-stoerung">⚠&#xFE0E; <?= h($stoerung['text'] . ($stoerung['stand'] !== '' ? ' Stand der Daten: ' . lawine_zeit_text($stoerung['stand'], $tzSeite) . '.' : '')) ?> Bitte direkt im Bericht nachsehen: <a href="<?= h($dienst['url_bericht']) ?>" rel="noopener"><?= h($dienst['name']) ?> ↗</a></p><?php endif ?>
     <?php if (!$lage): ?>
-    <p class="klein">Kein gültiger Lagebericht für diesen Tag. Das heißt nicht „keine Gefahr“. <a href="<?= h($dienst['url_bericht']) ?>" rel="noopener"><?= h($dienst['kurz']) ?> ↗</a></p>
+    <?php $ab = lawine_zeit_text((string)($lagenAlle[$region['warndienst']]['ts'] ?? ''), $tzSeite); ?>
+    <p class="klein">Kein gültiger Lagebericht für diesen Tag. Das heißt nicht „keine Gefahr“. <a href="<?= h($dienst['url_bericht']) ?>" rel="noopener"><?= h($dienst['kurz']) ?> ↗</a><?= $ab !== '' ? ' <span class="leise">abgerufen ' . h($ab) . '</span>' : '' ?></p>
     <?php else: ?>
     <p class="klein"><span class="lw lw<?= $lage['stufe'] ?>">Gefahrenstufe <?= $lage['stufe'] ?: '–' ?></span> <?= h(lawine_stufen_text($lage['teile'], true)) ?></p>
     <?php foreach (lawine_probleme_liste($lage['probleme']) as $p): ?>
