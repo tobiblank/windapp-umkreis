@@ -293,6 +293,34 @@ function temp_text(array $d): ?array
     return $luft ? [$luft, 'Wassertemperatur für diesen See nicht bekannt, deshalb keine Neopren-Empfehlung. Gefühlt: Windchill bei Wind im Fenster.'] : null;
 }
 
+/**
+ * Wetter in der Kachel (seit 13.11.2026): Symbol und Luft im Fenster, z. B. "☀️ 12°".
+ * Fenster wie bei der Temperatur: das gefundene, sonst das Tagesfenster. Leer ohne Werte
+ * (auch aus alten Zwischenspeichern ohne 'wetter').
+ */
+function wetter_kachel(array $d): string
+{
+    $w = $d['wetter'] ?? null;
+    $sym = wetter_symbol($w);
+    $grad = grad_text($w['temp'] ?? null);
+    if ($sym === null && $grad === null) {
+        return '';
+    }
+    return '<span class="wetter">' . ($sym ?? '') . ($grad !== null ? '<b>' . h($grad) . '</b>' : '') . '</span>';
+}
+
+/** Tooltip-Teil: "sonnig, Luft 12 °C (8–15 °C) von 9 bis 16 Uhr"; null ohne Werte */
+function wetter_titel(array $d): ?string
+{
+    $w = $d['wetter'] ?? null;
+    if (!$w) {
+        return null;
+    }
+    $f = $d['det']['geht'] ? [$d['det']['von'], $d['det']['bis']] : $d['fenster'];
+    $t = $w['temp'] !== null ? 'Luft ' . zahl($w['temp']) . ' °C' . (round($w['temp_min']) !== round($w['temp_max']) ? ' (' . zahl($w['temp_min']) . '–' . zahl($w['temp_max']) . ' °C)' : '') : null;
+    return ucfirst(implode(', ', array_filter([wetter_wort($w), $t]))) . ' von ' . $f[0] . ' bis ' . $f[1] . ' Uhr';
+}
+
 /** Zeile zu den Windtagen am Stueck (lib/amstueck.php) */
 function stueck_text(array $st, array $e): string
 {
@@ -936,10 +964,12 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
         <?php else: ?>
         <a class="tag <?= stufe($c) ?><?= $nach === $t ? ' gewaehlt' : '' ?>" href="<?= h(stunden_link($r, $t)) ?>" title="<?= h(($c === null ? 'keine Ensemble-Daten' : zahl(100 * $c) . (!empty($d['fremd']) ? ' % laut Vorhersage von ' . $d['fremd']['name'] : ' % der Läufe'))
                                                      . (!empty($d['rest']) ? ', nur noch ' . $d['fenster'][0] . '–' . $d['fenster'][1] . ' Uhr' : '')
-                                                     . ($tr ? '. ' . trend_titel($tr, $tzSeite, $heute) : '')) ?>">
+                                                     . ($tr ? '. ' . trend_titel($tr, $tzSeite, $heute) : '')
+                                                     . (($wt = wetter_titel($d)) !== null ? '. ' . $wt : '')) ?>">
           <span class="t"><?= h(tag_kurz($t, $heute)) ?><?= !empty($d['rest']) && $d['fenster'][0] > region_fenster_ab($r) ? ' ab ' . $d['fenster'][0] : '' ?></span>
           <span class="w"><?= $c === null ? ($d['det']['geht'] ? 'ja' : '–') : zahl(100 * $c) . '<small>%</small>' ?></span>
           <?php if ($pfeil): ?><span class="v <?= $tr['art'] ?>"><?= $tr['art'] === 'steigt' ? '↑' : '↓' ?> von <?= zahl(100 * $tr['werte'][0]) ?></span><?php endif ?>
+          <?= wetter_kachel($d) ?>
         </a>
         <?php endif ?>
       <?php endforeach ?>

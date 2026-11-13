@@ -199,11 +199,12 @@ function vorhersage_stunden(array $eintrag, DateTimeZone $tz): array
     $wc  = modell_reihen($h, 'weather_code');
     $tmp = modell_reihen($h, 'temperature_2m');
     $wol = modell_reihen($h, 'cloud_cover');
+    $nie = modell_reihen($h, 'precipitation');
     $orte = ortszeiten($h['time'], $tz);
     $out = [];
     foreach ($h['time'] as $i => $_) {
         [$tag, $stunde] = $orte[$i];
-        $v = $d = $b = $te = $wo = [];
+        $v = $d = $b = $te = $wo = $ni = [];
         $gew = $codes = 0;
         foreach ($kn as $m => $reihe) {
             if (!isset($reihe[$i])) {
@@ -221,6 +222,9 @@ function vorhersage_stunden(array $eintrag, DateTimeZone $tz): array
             }
             if (isset($wol[$m][$i])) {
                 $wo[] = (float)$wol[$m][$i];
+            }
+            if (isset($nie[$m][$i])) {
+                $ni[] = (float)$nie[$m][$i];
             }
             if (isset($wc[$m][$i])) {
                 $codes++;
@@ -240,6 +244,7 @@ function vorhersage_stunden(array $eintrag, DateTimeZone $tz): array
             'temp'     => $te ? array_sum($te) / count($te) : null,
             'gewitter' => $codes > 0 && $gew * 2 >= $codes,
             'wolken'   => $wo ? array_sum($wo) / count($wo) : null,
+            'nied'     => $ni ? array_sum($ni) / count($ni) : null,   // mm/h, seit 13.11.2026 (Wettersymbol)
             'modelle'  => count($v),
         ];
     }
@@ -453,6 +458,106 @@ function wasser_stunden(?array $eintrag, DateTimeZone $tz): array
         }
     }
     return $out;
+}
+
+// ===================================================================
+// WETTER (seit 13.11.2026): Symbol und Lufttemperatur fuer Kachel und Stunden
+// ===================================================================
+
+const WETTER_SONNIG = 25;        // % Bewoelkung: bis hier sonnig (wie im Schnee-Modus)
+const WETTER_WOLKIG = 60;        // % Bewoelkung: bis hier teils sonnig
+const WETTER_NASS_MM = 0.2;      // mm/h (Modellmittel): ab hier zaehlt die Stunde als nass
+const WETTER_SCHAUER = 0.15;     // Anteil nasser Stunden im Fenster: ab hier Schauer
+const WETTER_REGEN = 0.5;        // ab hier Regen
+const WETTER_SCHNEE_GRAD = 1.0;  // °C: nass und hoechstens so warm = Schnee
+
+/**
+ * Wetter im Fenster eines Tages: ['wolken' (Mittel %), 'nass' (Anteil der Stunden mit Niederschlag),
+ * 'gewitter' (eine Stunde reicht), 'temp' (Mittel), 'temp_min', 'temp_max', 'stunden'] oder null ohne Werte.
+ */
+function wetter_tag(array $stunden, array $fenster): ?array
+{
+    $wo = $te = [];
+    $nass = $n = 0;
+    $gew = false;
+    for ($s = $fenster[0]; $s < $fenster[1]; $s++) {
+        $w = $stunden[$s] ?? null;
+        if ($w === null) {
+            continue;
+        }
+        $n++;
+        if (($w['wolken'] ?? null) !== null) {
+            $wo[] = $w['wolken'];
+        }
+        if (($w['temp'] ?? null) !== null) {
+            $te[] = $w['temp'];
+        }
+        $nass += ($w['nied'] ?? 0) >= WETTER_NASS_MM ? 1 : 0;
+        $gew = $gew || !empty($w['gewitter']);
+    }
+    if ($n === 0) {
+        return null;
+    }
+    return ['wolken' => $wo ? array_sum($wo) / count($wo) : null, 'nass' => $nass / $n, 'gewitter' => $gew,
+            'temp' => $te ? array_sum($te) / count($te) : null, 'temp_min' => $te ? min($te) : null, 'temp_max' => $te ? max($te) : null,
+            'stunden' => $n];
+}
+
+/**
+ * Art des Wetters: gewitter, schnee, regen, schauer, sonnig, wolkig (teils sonnig), bedeckt; null ohne Werte.
+ * $w: wetter_tag() oder eine Stunde (['wolken', 'nied', 'gewitter', 'temp']; nass = nied ab WETTER_NASS_MM).
+ */
+function wetter_art(?array $w): ?string
+{
+    if (!$w) {
+        return null;
+    }
+    if (!empty($w['gewitter'])) {
+        return 'gewitter';
+    }
+    $nass = $w['nass'] ?? ((($w['nied'] ?? 0) >= WETTER_NASS_MM) ? 1.0 : 0.0);
+    $kalt = ($w['temp'] ?? null) !== null && $w['temp'] <= WETTER_SCHNEE_GRAD;
+    if ($nass >= WETTER_REGEN) {
+        return $kalt ? 'schnee' : 'regen';
+    }
+    if ($nass >= WETTER_SCHAUER) {
+        return $kalt ? 'schnee' : 'schauer';
+    }
+    $wo = $w['wolken'] ?? null;
+    return $wo === null ? null : ($wo <= WETTER_SONNIG ? 'sonnig' : ($wo <= WETTER_WOLKIG ? 'wolkig' : 'bedeckt'));
+}
+
+/**
+ * Emoji zur Art. ☀, ☁, ⛈ und die Wolken mit Regen sind von Haus aus Textzeichen;
+ * erst U+FE0F macht sie zum farbigen Emoji (wie im Schnee-Modus).
+ */
+const WETTER_SYMBOLE = [
+    'gewitter' => "\u{26C8}\u{FE0F}", 'schnee' => "\u{1F328}\u{FE0F}", 'regen' => "\u{1F327}\u{FE0F}", 'schauer' => "\u{1F326}\u{FE0F}",
+    'sonnig' => "\u{2600}\u{FE0F}", 'wolkig' => "\u{26C5}", 'bedeckt' => "\u{2601}\u{FE0F}",
+];
+const WETTER_WOERTER = [
+    'gewitter' => 'Gewitter', 'schnee' => 'Schnee', 'regen' => 'Regen', 'schauer' => 'Schauer',
+    'sonnig' => 'sonnig', 'wolkig' => 'teils sonnig', 'bedeckt' => 'bewölkt',
+];
+
+function wetter_symbol(?array $w): ?string
+{
+    return WETTER_SYMBOLE[wetter_art($w) ?? ''] ?? null;
+}
+
+function wetter_wort(?array $w): ?string
+{
+    return WETTER_WOERTER[wetter_art($w) ?? ''] ?? null;
+}
+
+/** "12°" bzw. "−3°" (echtes Minuszeichen, nie "−0"); null: null */
+function grad_text(?float $t): ?string
+{
+    if ($t === null) {
+        return null;
+    }
+    $r = (int)round($t);
+    return ($r < 0 ? "\u{2212}" : '') . abs($r) . '°';
 }
 
 /** Wasser-Eintrag einer Region: Meer aus "wasser", Seen aus "seewasser" (Alplakes) */
@@ -1017,6 +1122,8 @@ function region_bewerten(array $region, array $daten, array $sport, array $tage,
         $temp['wasser_quelle'] = $temp['wasser'] === null ? null : ($meer ? 'meer' : 'see');
         $offen = $fehlt !== null && $sperre === null && !$det['geht'] && $alle[0]['ens'] === null;
         $out[$tag] = $alle[0] + ['fenster' => $fenster, 'rest' => $rest, 'vorbei' => false, 'offen' => $offen, 'alle' => $alle, 'temp' => $temp,
+                                 // Wetter im selben Fenster wie die Temperaturen (seit 13.11.2026)
+                                 'wetter' => wetter_tag($vh[$tag] ?? [], $det['geht'] ? [$det['von'], $det['bis']] : $fenster),
                                  // Wellenreiten: Fenster nach Duenung, dort ist mittel_kn die Hoehe; also Tagesmittel
                                  'wind' => tag_wind($vh[$tag] ?? [], empty($sport['surf']) ? $det : [], $fenster),
                                  'welle' => tag_welle($wd[$tag] ?? [], $det['geht'] ? [$det['von'], $det['bis']] : $fenster)];
