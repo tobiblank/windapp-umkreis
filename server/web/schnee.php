@@ -370,10 +370,13 @@ function lawine_html(array $region, array $lagenTage, array $dienste, array $tag
     }
     $warnungen = '';
     $auszug = null;
+    // Seit 13.11.2026 auch ohne Bericht: wann zuletzt beim Dienst nachgesehen wurde
+    $ab = lawine_zeit_text((string)($lagen[$region['warndienst']]['ts'] ?? ''), $tzSeite);
     foreach ($kurze as $t) {
         $l = $lagenTage[$t] ?? null;
         if (!$l) {
-            $o .= '<p><b>' . h(tag_kurz($t, $heute)) . ':</b> <span class="leise">kein gültiger Lagebericht (heißt nicht „keine Gefahr“)</span> · ' . $link . '</p>';
+            $o .= '<p><b>' . h(tag_kurz($t, $heute)) . ':</b> <span class="leise">kein gültiger Lagebericht (heißt nicht „keine Gefahr“)</span> · ' . $link
+                . ($ab !== '' ? ' <span class="leise">abgerufen ' . h($ab) . '</span>' : '') . '</p>';
             continue;
         }
         $probleme = array_map(fn($p) => h($p['text']) . ($p['aspekte'] && count($p['aspekte']) < 8 ? ' ' . lawine_rose($p['aspekte']) : ''), lawine_probleme_liste($l['probleme']));
