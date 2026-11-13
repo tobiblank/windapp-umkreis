@@ -1059,8 +1059,8 @@ pruefe($code === 200 && ohne_php_meldung($html) && substr_count($html, 'class="s
        && substr_count($html, 'class="s-fahrbar ja"') === 10 && str_contains($html, 'Nördliche Adria') && str_contains($html, 'Ammersee'),
        'Stundenseite: zwei Diagramme im Vergleich, Adria und Ammersee morgen je 5 fahrbare Stunden');
 pruefe(substr_count($html, 'Wind: dicke Linie = Modellmittel') === 2
-       && preg_match('/Wind: dicke Linie[^<]*<\/p><svg class="stunden-bild"/', $html),
-       'Stundenseite: Legende Wind direkt über jedem Winddiagramm (wie bei den Wellen)');
+       && preg_match('/<summary>Was zeigt das Diagramm\?<\/summary><p>Wind: dicke Linie[^<]*<\/p><\/details><svg class="stunden-bild"/', $html),
+       'Stundenseite: Legende Wind eingeklappt direkt über jedem Winddiagramm');
 // Pfeil zeigt, wohin der Wind weht: Pfad zeigt ungedreht nach Sueden, gedreht wird um die Herkunft
 pruefe(preg_match_all('/<g class="s-pfeil" transform="translate\([\d. ]+\) rotate\((\d+)\)"><title>aus (\d+)°/', $html, $pf) > 0
        && $pf[1] === array_map(fn($g) => (string)((int)$g % 360), $pf[2]),
@@ -1080,7 +1080,15 @@ pruefe(str_contains($html, 'Welle 0,8 m (Dünung 0,3 m, 5 s aus ONO)'), 'Detailz
 [$code, $html] = holen($sitePort, "stunden.php?region=adria-nord&tag=$morgen");
 pruefe($code === 200 && str_contains($html, 'welle-bild') && substr_count($html, 'class="s-welle"') > 5, 'Stundenseite am Meer: Wellendiagramm');
 pruefe(substr_count($html, 'class="s-wetter"') > 5 && str_contains($html, '>⛅</text>') && str_contains($html, '<text class="s-temp"') && str_contains($html, '>12°</text>')
-       && str_contains($html, '⛅ teils sonnig · Wasser 14 °C'), 'Stundenseite: Wetter und Luft je Stunde, Wetter in der Tageszeile');
+       && preg_match('#<div class="kz kz-sonne" title="teils sonnig, [^"]+"><span class="t">Wetter</span><span class="w"><span class="symbol">⛅</span></span><span class="u">teils sonnig</span>#', $html) === 1,
+       'Stundenseite: Wetter und Luft je Stunde, Wetter als Kennzahl');
+pruefe(preg_match('#<p class="urteil wind passt">Morgen: <b>[^<]+</b>#', $html) === 1
+       && preg_match('#<div class="kennzahlen"><div class="kz kz-wind"><span class="t">Wind Ø</span><span class="w">\d+<small> kn</small></span><span class="u">Böen bis \d+ kn</span>#', $html) === 1
+       && str_contains($html, '<div class="kz kz-temp"><span class="t">Luft</span><span class="w">12°</span>')
+       && str_contains($html, '<div class="kz kz-wasser"><span class="t">Wasser</span><span class="w">14°</span><span class="u">Meer</span>')
+       && str_contains($html, '<span class="t">Welle</span><span class="w">0,8<small> m</small></span><span class="u">Dünung 0,3 m</span>') && str_contains($html, 'title="Dünung 0,3 m, 5 s, Mittel im Fenster"')
+       && str_contains($html, '<p class="neopren-zeile"><span class="leise">Neopren</span> <b>5/4 mm, Schuhe</b>'),
+       'Stundenseite: Urteil groß, Tageswerte als Kennzahlen (Wind, Wetter, Luft, Wasser, Welle), Neopren eigene Zeile');
 [, $hk] = holen($sitePort, 'index.php?km=1000');
 pruefe(preg_match('#id="r-adria-nord".*?<span class="wetter">⛅<b>12°</b></span>#s', $hk) === 1 && str_contains($hk, 'Teils sonnig, Luft 12 °C von '),
        'Kachel: Wettersymbol und Luft, Tooltip mit Wetter');

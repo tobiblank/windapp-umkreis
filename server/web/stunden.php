@@ -341,6 +341,59 @@ $wind = !empty($sport['surf']) ? 'ab ' . str_replace('.', ',', (string)$sport['w
 $andere = $regionen;
 usort($andere, fn($a, $b) => strcoll($a['name'], $b['name']));
 
+/**
+ * Tageswerte als Kennzahl-Kacheln (seit 13.11.2026, wie im Schnee-Modus; vorher eine
+ * Textzeile): Wind, Wetter, Luft, Wasser, am Meer die Welle, Neopren ueber die ganze Breite.
+ * Farbe nach Bedeutung (stil.css: kz-wind, kz-sonne, kz-temp, kz-wasser).
+ */
+function wind_kennzahlen(array $b, array $sport): string
+{
+    $det = $b['det'];
+    $f = $det['geht'] ? [$det['von'], $det['bis']] : $b['fenster'];
+    $fen = $f[0] . '–' . $f[1] . ' Uhr';
+    $kz = fn(string $art, string $t, string $w, string $u, string $titel = '') => '<div class="kz kz-' . $art . '"' . ($titel !== '' ? ' title="' . h($titel) . '"' : '') . '>'
+        . '<span class="t">' . h($t) . '</span><span class="w">' . $w . '</span><span class="u">' . h($u) . '</span></div>';
+    $k = [];
+    // Wind
+    if ($det['geht'] && !empty($det['regel'])) {
+        $k[] = $kz('wind', 'Wind', h(zahl((float)$det['staerke'][0]) . '–' . zahl((float)$det['staerke'][1])) . '<small> kn</small>', 'typisch (Regel)');
+    } elseif ($det['geht'] && empty($sport['surf'])) {
+        $k[] = $kz('wind', 'Wind Ø', h(zahl($det['mittel_kn'])) . '<small> kn</small>', $det['boe_max'] !== null ? 'Böen bis ' . zahl($det['boe_max']) . ' kn' : $fen);
+    } elseif (($b['temp']['kn'] ?? null) !== null) {
+        $k[] = $kz('wind', 'Wind Ø', h(zahl($b['temp']['kn'])) . '<small> kn</small>', $fen);
+    }
+    // Wetter
+    $w = $b['wetter'] ?? null;
+    if (($wort = wetter_wort($w)) !== null) {
+        $k[] = $kz('sonne', 'Wetter', '<span class="symbol">' . wetter_symbol($w) . '</span>', $wort, $wort . ', ' . $fen);
+    }
+    // Luft und Wasser (Neopren-Faustregel)
+    $n = !empty($b['temp']) ? neopren($b['temp']) : null;
+    if ($n && $n['luft'] !== null) {
+        $gef = $n['gefuehlt'] !== null && $n['gefuehlt'] <= $n['luft'] - 2;
+        $spanne = $w && $w['temp_min'] !== null && round($w['temp_min']) !== round($w['temp_max']) ? grad_text($w['temp_min']) . ' bis ' . grad_text($w['temp_max']) : 'Mittel im Fenster';
+        $k[] = $kz('temp', 'Luft', h(grad_text($n['luft'])), $gef ? 'gefühlt ' . grad_text($n['gefuehlt']) : $spanne,
+                   $gef ? 'Gefühlt: Windchill bei Wind im Fenster' : '');
+    }
+    if ($n) {
+        $see = ($b['temp']['wasser_quelle'] ?? null) === 'see';
+        $k[] = $kz('wasser', 'Wasser', $n['wasser'] !== null ? h(grad_text($n['wasser'])) : '?', $n['wasser'] === null ? 'unbekannt' : ($see ? 'Seemitte, Modell' : 'Meer'),
+                   $see ? 'Seemitte in 1 m Tiefe, Modell Alplakes (Eawag); am Ufer kann es abweichen' : '');
+    }
+    // Welle am Meer
+    if (!empty($b['welle']) && $b['welle']['hoehe'] !== null) {
+        [$dh, $dp] = duenung($b['welle']);
+        $k[] = $kz('wasser', 'Welle', h(number_format($b['welle']['hoehe'], 1, ',', '')) . '<small> m</small>',
+                   $dh !== null ? 'Dünung ' . number_format($dh, 1, ',', '') . ' m' : $fen,
+                   $dh !== null ? 'Dünung ' . number_format($dh, 1, ',', '') . ' m' . ($dp !== null ? ', ' . zahl($dp) . ' s' : '') . ', Mittel im Fenster' : '');
+    }
+    $o = $k ? '<div class="kennzahlen">' . implode('', $k) . '</div>' : '';
+    if ($n && $n['text'] !== null) {
+        $o .= '<p class="neopren-zeile"><span class="leise">Neopren</span> <b>' . h($n['text']) . '</b>' . ($n['waermer'] ? ' <span class="leise">(eine Stufe wärmer wegen Wind)</span>' : '') . '</p>';
+    }
+    return $o;
+}
+
 /** Abschnitt einer Region: Kopf, Diagramm */
 function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag, DateTimeImmutable $heute, float $mmax = 2.0): string
 {
@@ -352,32 +405,21 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
     $c = $b['ens']['chance'] ?? null;
     $o .= '<span class="leise klein fahrzeit">' . ($c === null ? '' : zahl(100 * $c) . ' % Chance') . '<span class="km">' . h($st['spot_name'] ?? 'ganze Region') . '</span></span></div>';
     $det = $b['det'];
-    $o .= '<p class="klein">' . h(tag_kurz($tag, $heute)) . ': ' . (!empty($b['vorbei']) ? 'vorbei'
-        : ($det['geht'] ? h($det['windlage'] ?? 'jede Richtung') . ' · ' . $det['von'] . '–' . $det['bis'] . ' Uhr' : '<span class="leise">' . h($det['grund']) . '</span>')) . '</p>';
+    // Urteil des Tages gross (seit 13.11.2026, vorher eine Zeile im Text)
+    $o .= '<p class="urteil wind ' . (!empty($b['vorbei']) ? 'vorbei' : ($det['geht'] ? 'passt' : 'nein')) . '">' . h(tag_kurz($tag, $heute)) . ': '
+        . (!empty($b['vorbei']) ? '<b>vorbei</b>'
+        : ($det['geht'] ? '<b>' . h($det['windlage'] ?? 'jede Richtung') . '</b> <span class="leise">· ' . $det['von'] . '–' . $det['bis'] . ' Uhr</span>' : '<b>' . h($det['grund']) . '</b>')) . '</p>';
     if (!empty($b['fremd'])) {
         // Seit 10.11.2026: Chance aus einer kalibrierten Spezialprognose, die Kurven bleiben Modellwind
         $fr = $b['fremd'];
         $o .= '<p class="klein">Chance aus der <a href="' . h($fr['url']) . '" rel="noopener">Vorhersage von ' . h($fr['name']) . ' ↗</a>, an Messwerten kalibriert: '
             . h(fremd_text($fr, $heute->getTimezone())) . '. <span class="leise">Die Kurven unten sind weiter Modellwind.</span></p>';
     }
-    if (!empty($b['temp']) && $det['grund'] !== 'noch keine Vorhersage') {
-        $n = neopren($b['temp']);
-        $teile = [];
-        if (($ww = wetter_wort($b['wetter'] ?? null)) !== null) {
-            $teile[] = wetter_symbol($b['wetter']) . ' ' . $ww;
-        }
-        if ($n['wasser'] !== null) {
-            $teile[] = 'Wasser ' . zahl($n['wasser']) . ' °C'
-                     . (($b['temp']['wasser_quelle'] ?? null) === 'see' ? ' (Seemitte, 1 m, Modell Alplakes)' : '');
-        }
-        if ($n['luft'] !== null) {
-            $teile[] = 'Luft ' . zahl($n['luft']) . ' °C' . ($n['gefuehlt'] !== null && $n['gefuehlt'] <= $n['luft'] - 2 ? ', gefühlt ' . zahl($n['gefuehlt']) . ' °C' : '');
-        }
-        $teile[] = $n['text'] !== null ? 'Neopren: ' . $n['text'] . ($n['waermer'] ? ' (eine Stufe wärmer wegen Wind)' : '') : 'Wassertemperatur unbekannt';
-        $o .= '<p class="klein leise">' . h(implode(' · ', $teile)) . '</p>';
+    if (empty($b['vorbei']) && $det['grund'] !== 'noch keine Vorhersage') {
+        $o .= wind_kennzahlen($b, $sport);
     }
-    // Legende direkt ueber dem Diagramm wie bei den Wellen (seit 8.11.2026; vorher nur unten auf der Seite)
-    $o .= '<p class="klein leise welle-titel">Wind: dicke Linie = Modellmittel, dünne = einzelne Modelle, orange gestrichelt = Böen (Modellmittel), Band = 80 % der Ensemble-Läufe, grün gestrichelt = Windfenster, Pfeile = wohin der Wind weht. Grüne Balken = Stunde fahrbar, % = Anteil der Ensemble-Läufe, die sie fahrbar sehen. Darunter Wetter und Lufttemperatur je Stunde (Modellmittel)</p>';
+    // Legende eingeklappt (seit 13.11.2026; vorher ein langer Absatz ueber dem Diagramm)
+    $o .= '<details class="klein leise legende-auf"><summary>Was zeigt das Diagramm?</summary><p>Wind: dicke Linie = Modellmittel, dünne = einzelne Modelle, orange gestrichelt = Böen (Modellmittel), Band = 80 % der Ensemble-Läufe, grün gestrichelt = Windfenster, Pfeile = wohin der Wind weht. Grüne Balken = Stunde fahrbar, % = Anteil der Ensemble-Läufe, die sie fahrbar sehen. Darunter Wetter und Lufttemperatur je Stunde (Modellmittel)</p></details>';
     $o .= stunden_svg($st, $sport, $ymax);
     if (!empty($st['hat_welle'])) {
         $o .= '<p class="klein leise welle-titel">Wellen: Balken = gesamte Welle, Linie = Dünung, Pfeile = wohin die Dünung läuft, Zahlen = Periode in Sekunden</p>' . welle_svg($st, $sport, $mmax);

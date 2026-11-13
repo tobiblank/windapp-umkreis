@@ -420,6 +420,12 @@ details.lawine[open] summary { margin-bottom: 6px; }
 /* Schnee-Stundenseite (neu am 9.11.2026): Urteil, Regeln einzeln, Kennzahlen, ein Diagramm */
 .urteil { margin: 4px 0 8px; font-size: 17px; }
 .urteil.passt b { color: var(--s-go); }
+/* Wind-Stundenseite (seit 13.11.2026): Urteil, Neopren, eingeklappte Legende */
+.urteil.wind.passt b { color: var(--go); } .urteil.wind.nein b { color: var(--leise); }
+.kz .w small { font-size: 13px; }
+.kz .w .symbol { font-size: 20px; line-height: 1.25; }
+.neopren-zeile { margin: -4px 0 12px; padding: 8px 10px; border-radius: 10px; background: var(--kachel); border-left: 3px solid var(--akzent); font-size: 14px; }
+.legende-auf { margin: 0 0 6px; } .legende-auf summary { cursor: pointer; } .legende-auf p { margin: 4px 0 0; }
 .kriterien { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 4px; }
 .kriterien li { display: grid; grid-template-columns: 1.3em minmax(0, 1fr) auto 5.6em; gap: 6px; align-items: baseline; padding: 6px 10px; border-radius: 10px; background: var(--kachel); }
 .kriterien li b { font: 600 16px/1.2 var(--zahlen); font-variant-numeric: tabular-nums; text-align: right; }
@@ -437,7 +443,7 @@ details.lawine[open] summary { margin-bottom: 6px; }
 /* Farbe nach Bedeutung (seit 13.11.2026): Strich oben und Wert in der Farbe der Gruppe */
 .kz[class*="kz-"] { border-top: 3px solid var(--f, transparent); padding-top: 6px; }
 .kz[class*="kz-"] .w { color: var(--f); }
-.kz-schnee { --f: var(--f-schnee); } .kz-temp { --f: var(--f-temp); } .kz-sonne { --f: var(--f-sonne); } .kz-wind { --f: var(--f-wind); }
+.kz-wasser { --f: var(--akzent); } .kz-schnee { --f: var(--f-schnee); } .kz-temp { --f: var(--f-temp); } .kz-sonne { --f: var(--f-sonne); } .kz-wind { --f: var(--f-wind); }
 /* Firn-Hinweis (seit 13.11.2026) */
 .firn-hinweis { margin: 0 0 12px; padding: 8px 10px; border-radius: 10px; background: var(--kachel); border-left: 3px solid var(--f-temp); }
 .firn-hinweis.weich { border-left-color: var(--maybe); }
