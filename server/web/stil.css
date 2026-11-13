@@ -31,6 +31,8 @@
      als "sicher" liest; Gelb, Orange und Rot sind in der Lawinenskala vergeben */
   --s-go: #1b4f9c; --s-maybe: #3570b8; --s-no: #5f80a8;
   --s-go-bg: #d6e4f8; --s-maybe-bg: #e3ecf8; --s-no-bg: #edf1f7;
+  /* Kennzahlen nach Bedeutung (seit 13.11.2026): Schnee, Temperatur, Sonne, Wind */
+  --f-schnee: #1b5fc0; --f-temp: #c0531a; --f-sonne: #a07400; --f-wind: #0f7f86;
   --zahlen: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
   color-scheme: light;
 }
@@ -50,6 +52,7 @@
     --akzent-auf: #08202a;
     --s-go: #8cbcff; --s-maybe: #a9c8f2; --s-no: #8ea4c2;
     --s-go-bg: #1c3557; --s-maybe-bg: #1b2c44; --s-no-bg: #1a2735;
+    --f-schnee: #8cbcff; --f-temp: #ff9e6e; --f-sonne: #f5cf5c; --f-wind: #5fd3d8;
     color-scheme: dark;
   }
 }
@@ -66,6 +69,7 @@
     --akzent-auf: #08202a;
     --s-go: #8cbcff; --s-maybe: #a9c8f2; --s-no: #8ea4c2;
     --s-go-bg: #1c3557; --s-maybe-bg: #1b2c44; --s-no-bg: #1a2735;
+    --f-schnee: #8cbcff; --f-temp: #ff9e6e; --f-sonne: #f5cf5c; --f-wind: #5fd3d8;
     color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -425,6 +429,15 @@ details.lawine[open] summary { margin-bottom: 6px; }
 .kz .t { font-size: 11px; color: var(--leise); }
 .kz .w { font: 600 21px/1.2 var(--zahlen); font-variant-numeric: tabular-nums; }
 .kz .u { font-size: 11px; color: var(--leise); }
+/* Farbe nach Bedeutung (seit 13.11.2026): Strich oben und Wert in der Farbe der Gruppe */
+.kz[class*="kz-"] { border-top: 3px solid var(--f, transparent); padding-top: 6px; }
+.kz[class*="kz-"] .w { color: var(--f); }
+.kz-schnee { --f: var(--f-schnee); } .kz-temp { --f: var(--f-temp); } .kz-sonne { --f: var(--f-sonne); } .kz-wind { --f: var(--f-wind); }
+/* Firn-Hinweis (seit 13.11.2026) */
+.firn-hinweis { margin: 0 0 12px; padding: 8px 10px; border-radius: 10px; background: var(--kachel); border-left: 3px solid var(--f-temp); }
+.firn-hinweis.weich { border-left-color: var(--maybe); }
+.tag .firn { display: block; margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--f-temp); white-space: nowrap; }
+.tag .firn.weich { color: var(--maybe); }
 .diagramm-titel { margin: 14px 0 4px; }
 .legende { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 2px; color: var(--leise); }
 .legende i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
