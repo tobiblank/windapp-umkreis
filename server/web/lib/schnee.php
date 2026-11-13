@@ -65,6 +65,16 @@ const SCHNEE_WOLKIG = 60;             // % Bewoelkung: bis hier "teils sonnig"
  * wolken_max: Grenze "teils sonnig" (SCHNEE_WOLKIG), also wie das Wettersymbol.
  */
 const SCHNEE_REGEL = ['name' => 'Pulvertag', 'neu_min' => 10, 'wolken_max' => SCHNEE_WOLKIG];
+/**
+ * Firn (seit 13.11.2026), nur im Fruehjahr (SCHNEE_FIRN_MONATE), Startwerte ohne Quelle:
+ * Firn moeglich, wenn es auf Tourhoehe nachts friert (tiefste <= SCHNEE_FIRN_NACHT), am Tag
+ * ueber 0 geht (hoechste >= SCHNEE_FIRN_TAG), der Tag hoechstens teils sonnig ist und kein
+ * frischer Pulver darueber liegt (Neuschnee 72 h unter SCHNEE_REGEL['neu_min']).
+ * "kein Frost": tiefste der Nacht ueber 0, der Schnee friert nicht durch.
+ */
+const SCHNEE_FIRN_MONATE = [3, 4, 5, 6];
+const SCHNEE_FIRN_NACHT = -1.0;
+const SCHNEE_FIRN_TAG = 1.0;
 const SCHNEE_KAMM_HINWEIS = 50;       // km/h in 700 hPa: ab hier Hinweis "Wind am Kamm" (Startwert ohne Quelle)
 
 const SCHNEE_FORMATE = ['json', 'xml'];
@@ -430,6 +440,29 @@ function schnee_tag_geht(array $k, array $regel = SCHNEE_REGEL): array
     return [true, null];
 }
 
+/**
+ * Firn-Hinweis eines Tages (seit 13.11.2026, nur Hinweis, aendert weder Farbe noch Platz).
+ * Rueckgabe ['art' => 'firn'|'weich', 'kurz' (Kachel), 'text' (Satz)] oder null.
+ */
+function schnee_firn(array $k, string $tag): ?array
+{
+    if (!in_array((int)substr($tag, 5, 2), SCHNEE_FIRN_MONATE, true) || ($k['temp_nacht'] ?? null) === null) {
+        return null;
+    }
+    $n = schnee_grad($k['temp_nacht']);
+    if ($k['temp_nacht'] > 0) {
+        return ['art' => 'weich', 'kurz' => 'kein Frost',
+                'text' => "Nacht ohne Frost auf Tourhöhe (tiefste $n): Der Schnee friert nicht durch und trägt schlecht. Nass- und Gleitschnee im Lagebericht beachten."];
+    }
+    $tagT = $k['temp_tag'] ?? null;
+    if ($k['temp_nacht'] <= SCHNEE_FIRN_NACHT && $tagT !== null && $tagT >= SCHNEE_FIRN_TAG
+        && ($k['wolken'] === null || $k['wolken'] <= SCHNEE_WOLKIG) && ($k['neu72'] === null || $k['neu72'] < SCHNEE_REGEL['neu_min'])) {
+        return ['art' => 'firn', 'kurz' => 'Firn',
+                'text' => "Firn möglich: nachts gefroren ($n), am Tag über 0 (" . schnee_grad($tagT) . '). Früh los, mit Sonne und Wärme weicht er auf, Südhänge zuerst.'];
+    }
+    return null;
+}
+
 /** Wind am Kamm so stark, dass er als Hinweis dabeisteht (schliesst nichts aus) */
 function schnee_kamm_stark(array $k): bool
 {
@@ -541,6 +574,7 @@ function schnee_region_bewerten(array $region, array $daten, array $tage, ?DateT
                                // Pulver: Neuschnee 72 h an einem Pulvertag, sonst 0 (fuer die Rangliste)
                                'pulver' => $geht && !$vorbei && !$offen ? (float)$k['neu72'] : 0.0,
                                'kamm_stark' => schnee_kamm_stark($k),
+                               'firn' => $vorbei || $offen ? null : schnee_firn($k, $tag),
                                'von' => $fenster[0], 'bis' => $fenster[1]],
             'ens'     => $ens,
         ];

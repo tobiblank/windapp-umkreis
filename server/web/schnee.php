@@ -292,6 +292,7 @@ function kachel_titel(array $d): string
         ($tt = schnee_temp_text($k)) !== null ? 'Temperatur Nacht / Tag ' . $tt . 'C' : null,
         $k['kamm'] !== null ? 'Wind am Kamm ' . zahl($k['kamm']) . ' km/h' . ($k['kamm_stark'] ? ' (stark)' : '') : null,
         $k['geht'] ? 'Pulvertag' : 'kein Pulvertag: ' . $k['grund'],
+        !empty($k['firn']) ? $k['firn']['text'] : null,
     ]));
 }
 
@@ -515,7 +516,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
   „Neu“ je Tag: Niederschlag der 24 Stunden bis <?= SCHNEE_MORGEN ?> Uhr, der auf Tourhöhe als Schnee fällt (Schneefallgrenze unter der Tourhöhe; 1 mm Wasser = <?= zahl(SCHNEE_CM_JE_MM, 1) ?> cm Schnee). So lassen sich die Tage addieren. Darunter die Spanne aus dem ECMWF-Ensemble (80 % der 51 Läufe liegen darin).
   „Pulvertag“ (kräftiges Blau): mindestens <?= SCHNEE_REGEL['neu_min'] ?> cm Neuschnee in den 72 Stunden davor, damit auch der schöne Tag nach dem Schneefall zählt, und von <?= SCHNEE_TAG[0] ?> bis <?= SCHNEE_TAG[1] ?> Uhr höchstens teils sonnig (⛅, bis <?= SCHNEE_REGEL['wolken_max'] ?> % Wolken). Sonst hellt das Blau mit dem Neuschnee ab (ab 10 cm, ab 3 cm).
   Reihenfolge nach der gewählten Priorität: „Pulver + Sonne“ = der beste Pulvertag, also am meisten Neuschnee an einem schönen Tag, dann Neuschnee im Zeitraum. „Neuschnee“ = Neuschnee in Stufen (ab <?= implode(', ab ', SCHNEE_NEU_STUFEN) ?> cm), innerhalb einer Stufe zuerst die Sonne. „Fahrzeit“ = die nächste zuerst.
-  „Temp“: Temperatur auf Tourhöhe, tiefste in der Nacht davor (<?= SCHNEE_NACHT_AB ?>–<?= SCHNEE_MORGEN ?> Uhr) / höchste am Tag (<?= SCHNEE_TAG[0] ?>–<?= SCHNEE_TAG[1] ?> Uhr). Im Frühjahr: Friert es nachts, trägt der Firn am Morgen; je wärmer am Tag, desto früher weicht er auf. Am Talort ist es meist wärmer, bei Inversion auch kälter.
+  „Temp“: Temperatur auf Tourhöhe, tiefste in der Nacht davor (<?= SCHNEE_NACHT_AB ?>–<?= SCHNEE_MORGEN ?> Uhr) / höchste am Tag (<?= SCHNEE_TAG[0] ?>–<?= SCHNEE_TAG[1] ?> Uhr). Im Frühjahr: Friert es nachts, trägt der Firn am Morgen; je wärmer am Tag, desto früher weicht er auf. Am Talort ist es meist wärmer, bei Inversion auch kälter. Von März bis Juni steht „Firn“ dabei, wenn es nachts auf höchstens <?= schnee_grad(SCHNEE_FIRN_NACHT) ?> abkühlt, am Tag mindestens <?= schnee_grad(SCHNEE_FIRN_TAG) ?> erreicht, der Tag höchstens teils sonnig ist und kein frischer Pulver liegt; „kein Frost“, wenn die Nacht über 0° bleibt.
   Schneehöhe und Wind am Kamm (700 hPa, etwa 3000 m) schließen nichts aus, sie stehen nur dabei; 💨 ab <?= SCHNEE_KAMM_HINWEIS ?> km/h am Kamm. Ob genug Schnee für eine Tour liegt, siehst du an der Schneehöhe (Modell, im Gebirge grob) und an den Messstationen. Die Schwellen sind Startwerte, nicht kalibriert.
   </p>
   <p>Blau statt Grün: Ein gutes Feld heißt „guter Schnee“, nie „sicher“. Die Lawinenstufe steht in den offiziellen Farben daneben, nur für Tage mit Lagebericht: „LWS 3“ = Lawinenwarnstufe, im Bericht „Gefahrenstufe 3“. ⚠&#xFE0E; ab Stufe 3, weil bei Stufe 3 die meisten tödlichen Unfälle passieren (Bayerische Alpen seit 1993/94: 48 % laut Lawinenwarndienst Bayern); ab Stufe 4 zusätzlich rot umrandet. Am Platz in der Rangliste ändert das nichts.</p>
@@ -733,6 +734,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
           <span class="zeile"><span class="k">Neu</span> <?= h(cm($d['det']['neu24'])) ?></span>
           <span class="zeile"><span class="k">Höhe</span> <?= h(cm($d['det']['hs'])) ?></span>
           <span class="zeile" title="<?= h('Auf ' . zahl((float)$r['hoehe_tour']) . ' m: tiefste in der Nacht (' . SCHNEE_NACHT_AB . '–' . SCHNEE_MORGEN . ' Uhr) / höchste am Tag (' . $d['det']['von'] . '–' . $d['det']['bis'] . ' Uhr)') ?>"><span class="k">Temp</span> <?= h(schnee_temp_text($d['det']) ?? '?') ?></span>
+          <?php if ($fi = $d['det']['firn'] ?? null): ?><span class="firn<?= $fi['art'] === 'weich' ? ' weich' : '' ?>" title="<?= h($fi['text']) ?>"><?= h($fi['kurz']) ?></span><?php endif ?>
           <?= $lwZeile ?>
           <span class="chance"><?= h(spanne_text($d) ?? ($d['det']['geht'] ? 'Pulver' : '')) ?></span>
         </a>

@@ -234,6 +234,16 @@ pruefe($tk['temp_nacht'] === -8.0 && $tk['temp_tag'] === 7.5 && schnee_temp_text
        'Temperatur: Nacht −8 (Vortagsmittag und Abend nach dem Fenster zählen nicht), Tag 7,5 → „−8 / 8°“');
 pruefe(schnee_grad(-0.4) === '0°' && schnee_grad(-0.6) === "\u{2212}1°" && schnee_grad(null) === '?' && schnee_temp_text(['temp_nacht' => null, 'temp_tag' => null]) === null,
        'Temperatur: kein „−0“, ohne Werte nichts');
+// Firn (seit 13.11.2026): nur Maerz bis Juni
+$fk = ['temp_nacht' => -5.0, 'temp_tag' => 4.0, 'wolken' => 10.0, 'neu72' => 2.0];
+pruefe((schnee_firn($fk, '2026-04-10')['art'] ?? null) === 'firn' && str_contains(schnee_firn($fk, '2026-04-10')['text'], "\u{2212}5°") && schnee_firn($fk, '2026-01-10') === null,
+       'Firn: nachts gefroren, am Tag über 0, sonnig, kein Pulver; im Januar kein Hinweis');
+pruefe(schnee_firn(['temp_tag' => -1.0] + $fk, '2026-04-10') === null && schnee_firn(['neu72' => 15.0] + $fk, '2026-04-10') === null
+       && schnee_firn(['wolken' => 90.0] + $fk, '2026-04-10') === null && schnee_firn(['temp_nacht' => -0.5] + $fk, '2026-04-10') === null,
+       'Firn: nicht bei Frost am Tag, frischem Pulver, Wolken oder kaum Frost in der Nacht');
+pruefe((schnee_firn(['temp_nacht' => 2.0] + $fk, '2026-05-02')['kurz'] ?? null) === 'kein Frost' && schnee_firn(['temp_nacht' => null] + $fk, '2026-05-02') === null,
+       'Nacht über 0: „kein Frost“, ohne Werte nichts');
+pruefe(array_key_exists('firn', $aT[$t1]['det']), 'Bewertung trägt den Firn-Hinweis je Tag');
 pruefe(($aT[$t1]['det']['temp_nacht'] ?? null) == -2.0 && ($aT[$t1]['det']['temp_tag'] ?? null) == -2.0, 'Region A: Temperatur aus dem Modellmittel');
 pruefe(($sBy['schnee-a']['tage'][$t3]['det']['grund'] ?? '') === 'zu wenig Neuschnee', 'Region A in drei Tagen: zu wenig Neuschnee');
 pruefe(($sBy['schnee-b']['tage'][$t1]['det']['neu72'] ?? null) == 0.0 && $sBy['schnee-b']['tage'][$t1]['det']['grenze'] == 2800, 'Region B: Regen über der Tourhöhe zählt nicht');
@@ -385,6 +395,8 @@ pruefe(str_contains($hs, '<span class="t">Temperatur</span><span class="w">−2 
        && preg_match('#id="r-schnee-a".*?<span class="k">Temp</span> −2 / −2°</span>#s', $html) === 1
        && preg_match('#id="r-schnee-b".*?<span class="k">Temp</span> 3 / 3°</span>#s', $html) === 1 && str_contains($html, 'Temperatur Nacht / Tag −2 / −2°C'),
        'Temperatur Nacht / Tag in Kachel, Tooltip und Stundenseite');
+pruefe(preg_match('#<div class="kz kz-schnee"><span class="t">Neuschnee 24 h.*?<div class="kz kz-temp"[^>]*><span class="t">Temperatur.*?<div class="kz kz-sonne"><span class="t">Himmel.*?<div class="kz kz-wind"><span class="t">Wind am Kamm#s', $hs) === 1,
+       'Stundenseite: Kennzahlen nach Bedeutung gruppiert und gefärbt (Schnee, Temperatur, Sonne, Wind)');
 pruefe(!preg_match('/\d+ %(?! Wolken)/u', strip_tags(preg_replace('#<details class="leise klein erklaerung">.*?</details>#s', '', $html))), 'keine Prozent-Chance mehr auf der Seite');
 pruefe(str_contains($html, 'Zahl: Neuschnee in cm'), 'Karte: Zahl ist Neuschnee in cm');
 // Seit 13.11.2026: Maennchen faehrt nicht zu Stufe 4/5, sondern schuettelt den Kopf

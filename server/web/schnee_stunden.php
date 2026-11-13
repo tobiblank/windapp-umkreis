@@ -295,15 +295,16 @@ $jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
     <li class="<?= $c['ok'] === null ? 'unbekannt' : ($c['ok'] ? 'ja' : 'nein') ?>"><span class="zeichen" aria-hidden="true"><?= $c['ok'] === null ? '?' : ($c['ok'] ? '✓' : '✗') ?></span><span><?= h($c['name']) ?></span><b><?= h($c['wert']) ?></b><span class="leise"><?= h($c['soll']) ?></span></li>
     <?php endforeach ?>
   </ul>
+  <?php if (!$b['vorbei'] && ($fi = $k['firn'] ?? null)): ?><p class="klein firn-hinweis<?= $fi['art'] === 'weich' ? ' weich' : '' ?>"><?= h($fi['text']) ?></p><?php endif ?>
   <div class="kennzahlen">
-    <div class="kz"><span class="t">Neuschnee 24 h</span><span class="w"><?= h(cm($k['neu24'])) ?></span><span class="u"<?= $e && $e['neu24_p10'] !== null ? ' title="80 % der 51 Ensemble-Läufe, Mitte ' . h(cm($e['neu24_p50'])) . '"' : '' ?>><?= $e && $e['neu24_p10'] !== null ? (round($e['neu24_p10']) == round($e['neu24_p90']) ? 'Ensemble einig' : 'Spanne ' . h(zahl(round($e['neu24_p10']))) . '–' . h(cm($e['neu24_p90']))) : 'bis ' . SCHNEE_MORGEN . ' Uhr' ?></span></div>
-    <div class="kz"><span class="t">Schneefallgrenze</span><span class="w"><?= h(meter($k['grenze'])) ?></span><span class="u"><?= $k['grenze'] === null ? 'kein Niederschlag' : 'tiefste in 72 h' ?></span></div>
-    <div class="kz" title="Auf Tourhöhe: tiefste <?= SCHNEE_NACHT_AB ?>–<?= SCHNEE_MORGEN ?> Uhr, höchste <?= $k['von'] ?>–<?= $k['bis'] ?> Uhr"><span class="t">Temperatur</span><span class="w"><?= h(schnee_temp_text($k) ?? '?') ?></span><span class="u">Nacht / Tag</span></div>
-    <div class="kz"><span class="t">Nullgrad</span><span class="w"><?= h(meter($k['nullgrad'])) ?></span><span class="u">höchste am Tag</span></div>
-    <div class="kz"><span class="t">Schneehöhe</span><span class="w"><?= h(cm($k['hs'])) ?></span><span class="u">Modell, grob</span></div>
-    <div class="kz"><span class="t">Himmel</span><span class="w"><?= h(schnee_himmel($k['wolken']) ?? '?') ?></span><span class="u"><?= SCHNEE_TAG[0] ?>–<?= SCHNEE_TAG[1] ?> Uhr</span></div>
-    <div class="kz"><span class="t">Wind am Kamm<?= $k['kamm_stark'] ? ' 💨' : '' ?></span><span class="w"><?= $k['kamm'] === null ? '?' : zahl($k['kamm']) ?></span><span class="u">km/h, 700 hPa</span></div>
-    <div class="kz"><span class="t">Böen im Tal</span><span class="w"><?= $k['boe'] === null ? '?' : zahl($k['boe']) ?></span><span class="u">km/h, höchste</span></div>
+    <div class="kz kz-schnee"><span class="t">Neuschnee 24 h</span><span class="w"><?= h(cm($k['neu24'])) ?></span><span class="u"<?= $e && $e['neu24_p10'] !== null ? ' title="80 % der 51 Ensemble-Läufe, Mitte ' . h(cm($e['neu24_p50'])) . '"' : '' ?>><?= $e && $e['neu24_p10'] !== null ? (round($e['neu24_p10']) == round($e['neu24_p90']) ? 'Ensemble einig' : 'Spanne ' . h(zahl(round($e['neu24_p10']))) . '–' . h(cm($e['neu24_p90']))) : 'bis ' . SCHNEE_MORGEN . ' Uhr' ?></span></div>
+    <div class="kz kz-schnee"><span class="t">Schneehöhe</span><span class="w"><?= h(cm($k['hs'])) ?></span><span class="u">Modell, grob</span></div>
+    <div class="kz kz-schnee"><span class="t">Schneefallgrenze</span><span class="w"><?= h(meter($k['grenze'])) ?></span><span class="u"><?= $k['grenze'] === null ? 'kein Niederschlag' : 'tiefste in 72 h' ?></span></div>
+    <div class="kz kz-temp" title="Auf Tourhöhe: tiefste <?= SCHNEE_NACHT_AB ?>–<?= SCHNEE_MORGEN ?> Uhr, höchste <?= $k['von'] ?>–<?= $k['bis'] ?> Uhr"><span class="t">Temperatur</span><span class="w"><?= h(schnee_temp_text($k) ?? '?') ?></span><span class="u">Nacht / Tag</span></div>
+    <div class="kz kz-temp"><span class="t">Nullgrad</span><span class="w"><?= h(meter($k['nullgrad'])) ?></span><span class="u">höchste am Tag</span></div>
+    <div class="kz kz-sonne"><span class="t">Himmel</span><span class="w"><?= h(schnee_himmel($k['wolken']) ?? '?') ?></span><span class="u"><?= SCHNEE_TAG[0] ?>–<?= SCHNEE_TAG[1] ?> Uhr</span></div>
+    <div class="kz kz-wind"><span class="t">Wind am Kamm<?= $k['kamm_stark'] ? ' 💨' : '' ?></span><span class="w"><?= $k['kamm'] === null ? '?' : zahl($k['kamm']) ?></span><span class="u">km/h, 700 hPa</span></div>
+    <div class="kz kz-wind"><span class="t">Böen im Tal</span><span class="w"><?= $k['boe'] === null ? '?' : zahl($k['boe']) ?></span><span class="u">km/h, höchste</span></div>
   </div>
   <?php $gemessen = $tag === $heute->format('Y-m-d') ? stationen_laden($dataDir) : []; ?>
   <?= $tag === $heute->format('Y-m-d') ? stationen_html(stationen_region($region, $gemessen), $schnee['messnetze'], $tzSeite, $heute) : '' ?>
