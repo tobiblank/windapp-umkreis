@@ -55,3 +55,20 @@ function stil_url(): string
     $t = @filemtime(__DIR__ . '/../stil.css');
     return 'stil.css' . ($t ? '?v=' . $t : '');
 }
+
+/**
+ * Namen der Ansichten (seit 13.11.2026, nach Rueckmeldung eines Nutzers: "Tag 3 – 7" und
+ * "Woche" waren nicht zu unterscheiden). Die Zeitraeume der Kacheln heissen nach den
+ * Wochentagen ("Heute – So", "Mo – Do"), die Tabelle "Tabelle 7 Tage".
+ * Rueckgabe ['bald' => [Name, Titel], 'reise' => [Name, Titel]]
+ */
+function zeitraum_namen(DateTimeImmutable $heute, array $wochentage): array
+{
+    $tag = fn(int $i) => $heute->modify("+$i day");
+    $wt = fn(int $i) => $wochentage[(int)$tag($i)->format('w')];
+    $datum = fn(int $i) => $wt($i) . ' ' . $tag($i)->format('j.n.');
+    return [
+        'bald'  => ['Heute – ' . $wt(2), 'Heute bis ' . $datum(2)],
+        'reise' => [$wt(3) . ' – ' . $wt(6), $datum(3) . ' bis ' . $datum(6)],
+    ];
+}

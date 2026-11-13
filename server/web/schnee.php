@@ -12,6 +12,9 @@
  *   nach    summe | YYYY-MM-DD (Tag); km aus alten Links heisst prio=km
  *   prio    pulver | neu | km (seit 10.11.2026, SCHNEE_PRIOS in lib/schnee.php)
  *   region + nach=YYYY-MM-DD: geteilte Vorhersage einer Region
+ *   fav     "id,id,…" (seit 13.11.2026): nur diese Regionen, ohne Umkreis. Die Sterne an den
+ *           Regionen merkt sich der Browser (FAV_SCHLUESSEL), der Link "Nur deine Regionen"
+ *           schreibt sie in die Adresse; der Server merkt sich nichts.
  *
  * Die Lawinenwarnstufe geht nie in Bewertung, Sortierung oder Farbe ein. Seit 10.11.2026
  * steht ab Stufe 3 ein Warndreieck bei der Region, ab Stufe 4 rot umrandet (lawine_warnung()).
@@ -32,6 +35,7 @@ const HEIM_STANDARD = [48.07, 11.15];      // Inning am Ammersee
 const UMKREISE = [100, 200, 300, 400, 600, 800];
 const WOCHENTAGE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 const HAFTUNG = LAWINE_HAFTUNG;
+const FAV_SCHLUESSEL = 'wohinfahrma_fav_schnee';
 
 function h(?string $s): string
 {
@@ -124,6 +128,13 @@ if ($geteilt && is_string($_GET['nach'] ?? null) && preg_match('/^\d{4}-\d{2}-\d
     }
 }
 
+// Deine Regionen (seit 13.11.2026): nur bekannte ids, Reihenfolge wie im Katalog
+$fav = [];
+if (!$geteilt && is_string($_GET['fav'] ?? null)) {
+    $gewuenscht = array_flip(explode(',', $_GET['fav']));
+    $fav = array_values(array_filter(array_column($regionen, 'id'), fn($id) => isset($gewuenscht[$id])));
+}
+
 [$von, $bis] = match ($ansicht) { 'reise' => [3, 6], 'woche' => [0, 6], default => [0, 2] };
 $tage = [];
 for ($i = $von; $i <= $bis; $i++) {
@@ -150,11 +161,12 @@ function tag_datum(string $tag, DateTimeZone $tz): string
 // --- Rechnen ----------------------------------------------------------
 $jetzt = new DateTimeImmutable('now');
 $dataDir = rtrim($cfg['data_dir'], '/');
-$imUmkreis = $geteilt ? [$geteilt['id']] : array_column(array_filter($regionen, fn($r) => entfernung_km($heim, $r['punkt']) <= $km), 'id');
+$imUmkreis = $geteilt ? [$geteilt['id']] : ($fav ?: array_column(array_filter($regionen, fn($r) => entfernung_km($heim, $r['punkt']) <= $km), 'id'));
 $stand = daten_laden($dataDir, ['schnee_vorhersage', 'schnee_ensemble'], nur: $imUmkreis);
 $liste = $geteilt
     ? schnee_rangliste([$geteilt], $stand, $heim, INF, $tage, $jetzt)
-    : schnee_rangliste($regionen, $stand, $heim, (float)$km, $tage, $jetzt);
+    : ($fav ? schnee_rangliste(array_values(array_filter($regionen, fn($r) => in_array($r['id'], $fav, true))), $stand, $heim, INF, $tage, $jetzt)
+            : schnee_rangliste($regionen, $stand, $heim, (float)$km, $tage, $jetzt));
 $lagen = lawine_laden($dataDir);
 $messungen = stationen_laden($dataDir);
 $messnetze = $schnee['messnetze'];
@@ -177,7 +189,7 @@ $fahrtUmweg = fahrt_umweg($fahrzeiten, $alleRegionen);
 foreach ($liste as $i => $e) {
     $liste[$i]['fahrt'] = fahrzeit($e['region'], $heim, (float)$e['km'], $fahrzeiten, $fahrtModell, $fahrtUmweg);
 }
-if (!$geteilt) {
+if (!$geteilt && !$fav) {
     $liste = array_values(array_filter($liste, fn($e) => im_umkreis($e, (float)$km)));
 }
 $liste = schnee_sortieren($liste, $nach, $prio);
@@ -226,8 +238,11 @@ function spanne_text(array $d): ?string
 
 function link_mit(array $aenderung): string
 {
-    global $km, $ansicht, $heim, $eigenerOrt, $nach, $prio;
+    global $km, $ansicht, $heim, $eigenerOrt, $nach, $prio, $fav;
     $p = ['km' => $km, 'ansicht' => $ansicht];
+    if ($fav) {
+        $p['fav'] = implode(',', $fav);
+    }
     if ($nach !== 'summe') {
         $p['nach'] = $nach;
     }
@@ -438,6 +453,9 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
 </p>
 <?php else: ?>
 <form class="wahl karte steuer" method="get" id="wahl" action="schnee.php">
+  <?php if ($fav): ?>
+  <input type="hidden" name="km" value="<?= $km ?>"><input type="hidden" name="fav" value="<?= h(implode(',', $fav)) ?>">
+  <?php else: ?>
   <label>Umkreis
     <select name="km">
       <?php foreach (UMKREISE as $u): ?>
@@ -445,6 +463,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
       <?php endforeach ?>
     </select>
   </label>
+  <?php endif ?>
   <?php if (!$woche): ?>
   <label>Tag
     <select name="nach">
@@ -473,13 +492,20 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
 </form>
 
 <nav class="reiter" aria-label="Ansicht">
-  <a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>"<?= !$woche ? ' aria-current="page"' : '' ?>>Liste</a>
-  <a href="<?= h(link_mit(['ansicht' => 'woche', 'nach' => null])) ?>"<?= $woche ? ' aria-current="page"' : '' ?>>Woche</a>
+  <a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>"<?= !$woche ? ' aria-current="page"' : '' ?>>Kacheln</a>
+  <a href="<?= h(link_mit(['ansicht' => 'woche', 'nach' => null])) ?>"<?= $woche ? ' aria-current="page"' : '' ?>>Tabelle 7 Tage</a>
 </nav>
+<?php // Deine Regionen (seit 13.11.2026): mit fav= vom Server, sonst zeigt das Skript den Link ?>
+<?php if ($fav): ?>
+<p class="fav-zeile klein">★ Nur deine Regionen (<?= count($fav) ?>), ohne Umkreis · <a href="<?= h(link_mit(['fav' => null])) ?>">Alle Regionen</a></p>
+<?php else: ?>
+<p class="fav-zeile klein leise" id="favZeile" hidden><a id="favLink" href="#"></a><span id="favTipp">Tipp: ☆ bei einer Region antippen, dann kannst du nur deine Regionen anzeigen.</span></p>
+<?php endif ?>
 <?php if (!$woche): ?>
+<?php $zn = zeitraum_namen($heute, WOCHENTAGE); // Wochentage statt "Heute – Übermorgen" / "Tag 3 – 7" (seit 13.11.2026) ?>
 <nav class="zeitraum klein" aria-label="Zeitraum">
-  <a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>"<?= $ansicht === 'bald' ? ' aria-current="page"' : '' ?>>Heute – Übermorgen</a>
-  <a href="<?= h(link_mit(['ansicht' => 'reise', 'nach' => null])) ?>"<?= $ansicht === 'reise' ? ' aria-current="page"' : '' ?>>Tag 3 – 7</a>
+  <a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>" title="<?= h($zn['bald'][1]) ?>"<?= $ansicht === 'bald' ? ' aria-current="page"' : '' ?>><?= h($zn['bald'][0]) ?></a>
+  <a href="<?= h(link_mit(['ansicht' => 'reise', 'nach' => null])) ?>" title="<?= h($zn['reise'][1]) ?>"<?= $ansicht === 'reise' ? ' aria-current="page"' : '' ?>><?= h($zn['reise'][0]) ?></a>
 </nav>
 <?php endif ?>
 <?php endif ?>
@@ -535,6 +561,15 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
         $zellen[] = ['a' => $a, 'b' => $b, 'neu' => array_sum($w), 'z' => $z];
     }
     $u = $rp * 0.7;
+    // Hoechste Lawinenwarnstufe eines Punkts: am gewaehlten Tag, sonst ueber alle Tage mit Bericht
+    // (meist heute und morgen); dieselbe Stufe wie das Warndreieck auf der Karte
+    $stufeVon = function (array $p) use ($kartenTag, $tage, $lageVon): int {
+        $s = 0;
+        foreach ($kartenTag ? [$kartenTag] : $tage as $t) {
+            $s = max($s, (int)($lageVon[$p['e']['region']['id']][$t]['stufe'] ?? 0));
+        }
+        return $s;
+    };
 ?>
 <details class="karte landkarte" id="landkarte" open>
   <summary><b>Karte</b> <span class="leise klein">Neuschnee <?= $kartenTag ? h(tag_kurz($kartenTag, $heute)) : 'im Zeitraum' ?></span></summary>
@@ -558,7 +593,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
       <?php endforeach ?>
     </g>
     <?php endif ?>
-    <circle class="umkreis" cx="<?= round($heimXY[0], 1) ?>" cy="<?= round($heimXY[1], 1) ?>" r="<?= round(karte_km((float)$km, $heim[0]), 1) ?>"/>
+    <?php if (!$fav): ?><circle class="umkreis" cx="<?= round($heimXY[0], 1) ?>" cy="<?= round($heimXY[1], 1) ?>" r="<?= round(karte_km((float)$km, $heim[0]), 1) ?>"/><?php endif ?>
     <?php foreach ($punkte as $nr => $p):
         $r = $p['e']['region'];
         $n = $p['wert']['neu'];
@@ -567,10 +602,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
         $zahl = $n !== null && $n >= 0.5;
         $rk = $zahl ? $rp : $rp * 0.55;
         $fuellung = $n === null ? '' : ' style="fill: ' . schneefarbe((float)$n) . '"';
-        $stufeMax = 0;
-        foreach ($kartenTag ? [$kartenTag] : $tage as $t) {
-            $stufeMax = max($stufeMax, (int)($lageVon[$r['id']][$t]['stufe'] ?? 0));
-        }
+        $stufeMax = $stufeVon($p);
         $warn = lawine_warnung($stufeMax ? ['stufe' => $stufeMax] : null);
         $titel = ($warn ? '⚠ ' : '') . $r['name'] . ': Neuschnee ' . cm($n) . ($kartenTag ? '' : ' im Zeitraum')
                . ($p['wert']['geht'] ? ' · Pulvertag' . ($kartenTag ? '' : ' ' . tag_kurz($p['wert']['tag'], $heute)) : '')
@@ -591,20 +623,37 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
         // beste Region mit Pulvertag (bei "alle Tage" die mit dem meisten Neuschnee am besten
         // Pulvertag, sonst am gewaehlten Tag), steigt in den Bus mit Ski auf dem Dach und faehrt
         // hin; am Ziel stecken Ski im Schnee. Ohne Pulvertag: umsehen und Schultern zucken.
+        // Seit 13.11.2026 (Wunsch Tobias): Es faehrt nur zu Regionen unter MAENNCHEN_NEIN_AB
+        // (Lawinenwarnstufe 4). Liegt die beste Region darueber, zeigt es erst hin, schuettelt den
+        // Kopf ("Naa, Stufe 4!") und faehrt zur besten Region mit hoechstens Stufe 3 (oder zuckt
+        // mit den Schultern). Die Rangliste aendert sich dadurch nicht.
         $ziel = null;
+        $nein = null;
         foreach ($punkte as $p) {
-            if ($p['wert']['geht'] && (!$ziel || $p['wert']['rang'] > $ziel['wert']['rang'])) {
+            if (!$p['wert']['geht']) {
+                continue;
+            }
+            $s = $stufeVon($p);
+            if ($s >= MAENNCHEN_NEIN_AB) {
+                if (!$nein || $p['wert']['rang'] > $nein['wert']['rang']) {
+                    $nein = $p + ['stufe' => $s];
+                }
+            } elseif (!$ziel || $p['wert']['rang'] > $ziel['wert']['rang']) {
                 $ziel = $p;
             }
         }
+        if ($nein && $ziel && $ziel['wert']['rang'] >= $nein['wert']['rang']) {
+            $nein = null;   // das Ziel ist ohnehin besser: kein Kopfschuetteln
+        }
     ?>
-    <?= maennchen_svg($heimXY, $rp, $ziel['xy'] ?? null, 'ski', $eigenerOrt ? 'Dein Standort' : 'Inning am Ammersee') ?>
+    <?= maennchen_svg($heimXY, $rp, $ziel['xy'] ?? null, 'ski', $eigenerOrt ? 'Dein Standort' : 'Inning am Ammersee', false, null,
+                      $nein ? ['xy' => $nein['xy'], 'text' => 'Naa, Stufe ' . $nein['stufe'] . '!'] : null) ?>
   </svg>
   <?= schneeskala_legende() ?>
   <?php if ($zellen): $rts = new DateTimeImmutable($raster['ts']); ?>
   <p class="leise klein landkarte-fuss">Fläche: Neuschnee auf <?= zahl(SCHNEE_RASTER_HOEHE) ?> m<?= $kartenTag ? '' : ' im Zeitraum' ?>, Raster rund 25 km, ein Modell, Stand <?= h(tag_kurz($rts->setTimezone($tzSeite)->format('Y-m-d'), $heute)) ?> <?= $rts->setTimezone($tzSeite)->format('G:i') ?> Uhr. Grob: Täler und einzelne Kämme verschwimmen. <button type="button" class="textknopf" id="feldKnopf" aria-pressed="true" hidden>Fläche ein/aus</button></p>
   <?php endif ?>
-  <p class="leise klein landkarte-fuss">Punkte, Farbe und Zahl: Neuschnee in cm auf Tourhöhe der Region<?= $kartenTag ? ' (24 h bis ' . SCHNEE_MORGEN . ' Uhr)' : ', alle Tage im Zeitraum zusammen' ?>. Ring: <?= $kartenTag ? 'Pulvertag' : 'mindestens ein Pulvertag' ?>. ⚠&#xFE0E; Lawinenwarnstufe ab 3 (orange) bzw. ab 4 (rot)<?= $kartenTag ? '' : ', heute oder morgen' ?>. Männchen: <?= $eigenerOrt ? 'dein Standort' : 'Inning' ?>, antippen: wohin fahr ma? Punkt antippen: Stunden der Region. Kreis: <?= zahl($km) ?> km Luftlinie; der Umkreis zählt die Straße. Karte: Natural Earth.</p>
+  <p class="leise klein landkarte-fuss">Punkte, Farbe und Zahl: Neuschnee in cm auf Tourhöhe der Region<?= $kartenTag ? ' (24 h bis ' . SCHNEE_MORGEN . ' Uhr)' : ', alle Tage im Zeitraum zusammen' ?>. Ring: <?= $kartenTag ? 'Pulvertag' : 'mindestens ein Pulvertag' ?>. ⚠&#xFE0E; Lawinenwarnstufe ab 3 (orange) bzw. ab 4 (rot)<?= $kartenTag ? '' : ', heute oder morgen' ?>. Männchen: <?= $eigenerOrt ? 'dein Standort' : 'Inning' ?>, antippen: wohin fahr ma? Punkt antippen: Stunden der Region.<?= $fav ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße.' ?> Karte: Natural Earth.</p>
 </details>
 <?php endif ?>
 
@@ -612,6 +661,8 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
   <p class="karte">Noch keine Schneedaten. Der Sammler läuft zweimal am Tag, gegen 6:30 und 18:30 Uhr.</p>
 <?php elseif (!$liste && $geteilt): ?>
   <p class="karte">Für <?= h($geteilt['name']) ?> gibt es gerade keine Vorhersagedaten. <a href="schnee.php">Zur Rangliste</a></p>
+<?php elseif (!$liste && $fav): ?>
+  <p class="karte">Für deine Regionen gibt es gerade keine Vorhersagedaten. <a href="<?= h(link_mit(['fav' => null])) ?>">Alle Regionen</a></p>
 <?php elseif (!$liste): ?>
   <p class="karte">Keine Schnee-Region im Umkreis von <?= zahl($km) ?> km. <a href="<?= h(link_mit(['km' => UMKREISE[count(UMKREISE) - 1]])) ?>">Umkreis vergrößern</a></p>
 <?php endif ?>
@@ -657,7 +708,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
 ?>
   <article class="karte region beste-<?= beste_stufe($e) ?><?= $guteTage ? '' : ' still' ?>" id="r-<?= h($r['id']) ?>" data-ziel="<?= h($kartenZiel) ?>">
     <div class="region-kopf">
-      <h2><a class="region-link" href="<?= h($kartenZiel) ?>"><?= h($r['name']) ?></a></h2>
+      <h2><a class="region-link" href="<?= h($kartenZiel) ?>"><?= h($r['name']) ?></a><?php if (!$geteilt): ?><button type="button" class="fav" data-id="<?= h($r['id']) ?>" aria-pressed="<?= in_array($r['id'], $fav, true) ? 'true' : 'false' ?>" title="Zu deinen Regionen" aria-label="<?= h($r['name']) ?> zu deinen Regionen" hidden>★</button><?php endif ?></h2>
       <?php if (!$geteilt): ?><span class="leise klein fahrzeit"><?= h(fahrzeit_text($e['fahrt'])) ?> Fahrt<span class="km">Tour ab <?= zahl((float)$r['hoehe_tour']) ?> m</span></span><?php endif ?>
     </div>
     <div class="tage" style="--n: <?= count($tage) ?>">
@@ -783,6 +834,45 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
       }
     });
   });
+})();
+// Deine Regionen (seit 13.11.2026): Sterne im Browser gemerkt (nur ids), Link "Nur deine Regionen"
+// mit fav= in der Adresse; die Seite selbst merkt sich sonst keine Auswahl
+(function () {
+  var S = <?= json_encode(FAV_SCHLUESSEL) ?>, ids = [], knoepfe = document.querySelectorAll('.fav[data-id]');
+  try { ids = JSON.parse(localStorage.getItem(S) || '[]'); } catch (e) { ids = []; }
+  if (!Array.isArray(ids)) { ids = []; }
+  var zeile = document.getElementById('favZeile'), link = document.getElementById('favLink'), tipp = document.getElementById('favTipp');
+  function zeigen() {
+    knoepfe.forEach(function (k) {
+      var an = ids.indexOf(k.dataset.id) >= 0;
+      k.setAttribute('aria-pressed', an ? 'true' : 'false');
+      k.title = an ? 'Aus deinen Regionen nehmen' : 'Zu deinen Regionen';
+      k.hidden = false;
+    });
+    if (!zeile) { return; }
+    zeile.hidden = !knoepfe.length && !ids.length;
+    link.hidden = !ids.length;
+    tipp.hidden = !!ids.length;
+    var u = new URL(location.href);
+    u.searchParams.set('fav', ids.join(','));
+    u.searchParams.delete('km');
+    link.href = 'schnee.php' + u.search;
+    link.textContent = '★ Nur deine Regionen (' + ids.length + ')';
+  }
+  // Mit fav= in der Adresse (z. B. aus einem Lesezeichen) und leerem Speicher: die Sterne der Seite
+  if (!ids.length) {
+    knoepfe.forEach(function (k) { if (k.getAttribute('aria-pressed') === 'true') { ids.push(k.dataset.id); } });
+  }
+  knoepfe.forEach(function (k) {
+    k.addEventListener('click', function (e) {
+      e.preventDefault();
+      var i = ids.indexOf(k.dataset.id);
+      if (i >= 0) { ids.splice(i, 1); } else { ids.push(k.dataset.id); }
+      try { localStorage.setItem(S, JSON.stringify(ids)); } catch (e2) {}
+      zeigen();
+    });
+  });
+  zeigen();
 })();
 // Regionskarte antippen: Stundenseite; Links, Knoepfe und Textauswahl behalten ihre Wirkung
 document.addEventListener('click', function (e) {

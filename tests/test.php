@@ -995,7 +995,7 @@ pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, '<table c
        && substr_count($html, '<th scope="row"') === 2 && !str_contains($html, 'class="karte region'),
        'Woche: Matrix mit 7 Tagen, eine Zeile je Region, keine Regionskarten');
 pruefe(preg_match('/id="r-adria-nord"|#r-adria-nord">Nördliche Adria/', $html) && preg_match('/<td class="go"[^>]*>.*?>100</s', $html)
-       && str_contains($html, '>Woche</a>'), 'Woche: Adria morgen 100 %, verlinkt');
+       && str_contains($html, '>Tabelle 7 Tage</a>'), 'Woche: Adria morgen 100 %, verlinkt');
 [, $html] = holen($sitePort, "index.php?km=1000&ansicht=woche&nach=$morgen");
 pruefe(str_contains($html, 'class="m-aktiv"') && ohne_php_meldung($html), 'Woche nach einem Tag sortiert: Spalte markiert');
 [$code, $html] = holen($sitePort, "stunden.php?region=adria-nord&tag=$morgen&vergleich=ammersee");
@@ -1029,7 +1029,7 @@ pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'ab 0,8 m
 pruefe(str_contains($html, '<details class="spotinfo klein"><summary>Spot-Infos (1)') && str_contains($html, 'Testtipp für den Ammersee'), 'Regionskarte: Spot-Infos aufklappbar');
 [, $html] = holen($sitePort, "index.php?km=1000&nach=$morgen");
 pruefe(str_contains($html, '<select name="nach">') && str_contains($html, '<option value="' . $morgen . '" selected>') && substr_count($html, '<nav class="reiter" aria-label="Ansicht">') === 1
-       && str_contains($html, '>Liste</a>') && str_contains($html, 'class="zeitraum klein"') && str_contains($html, '<details class="leise klein erklaerung">'),
+       && str_contains($html, '>Kacheln</a>') && str_contains($html, 'class="zeitraum klein"') && str_contains($html, '<details class="leise klein erklaerung">'),
        'Bedienung: Sortierung im Formular, drei Ansichten, Zeitraum nur in der Liste, Erklärung eingeklappt');
 [, $html] = holen($sitePort, 'index.php?km=1000&ansicht=woche');
 pruefe(!str_contains($html, '<select name="nach">') && !str_contains($html, 'class="zeitraum klein"'), 'Woche: ohne Sortierfeld und Zeitraum');
