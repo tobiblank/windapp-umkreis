@@ -430,6 +430,24 @@ pruefe(count($stA['modelle']) >= 2 && abs($stA['stunden'][$detA['von']]['ens_ant
        && $stA['stunden'][$detA['von']]['ens_p10'] <= $stA['stunden'][$detA['von']]['ens_p90'], 'je Stunde Modelle, Anteil der Läufe, Spanne p10 bis p90');
 pruefe($stA['von'] === $stA['fenster'][0] - STUNDEN_RAND && perzentil([1, 2, 3, 4], 0.5) === 2.5, 'gezeigt: Fenster mit Rand; Perzentil interpoliert');
 pruefe(region_stunden($adriaR, ['vorhersage' => null], $kite, $morgen) === null, 'ohne Vorhersage: keine Stundenwerte');
+// Wetter (seit 13.11.2026): Symbol und Luft je Stunde und Tag
+$wz = $stA['stunden'][$detA['von']]['wetter'] ?? null;
+pruefe($wz && $wz['temp'] == 12.0 && $wz['wolken'] == 40 && $wz['nied'] == 0.0 && wetter_art($wz) === 'wolkig', 'Stunde: Luft 12 °C, 40 % Wolken, trocken = teils sonnig');
+$wtA = $stA['bewertung']['wetter'] ?? null;
+pruefe($wtA && $wtA['temp'] == 12.0 && $wtA['nass'] == 0.0 && !$wtA['gewitter'] && wetter_symbol($wtA) === '⛅', 'Tag: Wetter im Fenster');
+$wSt = [];
+for ($s = 9; $s < 17; $s++) {
+    $wSt[$s] = ['wolken' => 90.0, 'nied' => $s < 11 ? 1.0 : 0.0, 'gewitter' => false, 'temp' => 8.0 + $s / 4];
+}
+$wTag = wetter_tag($wSt, [9, 17]);
+pruefe(abs($wTag['nass'] - 0.25) < 1e-9 && wetter_art($wTag) === 'schauer' && $wTag['temp_min'] == 10.25 && $wTag['temp_max'] == 12.0,
+       'Tag: 2 von 8 Stunden nass = Schauer, Temperatur min/max');
+pruefe(wetter_art(['nass' => 0.6, 'temp' => 0.5, 'wolken' => 100.0]) === 'schnee' && wetter_art(['nass' => 0.6, 'temp' => 8.0]) === 'regen'
+       && wetter_art(['nass' => 0.0, 'gewitter' => true]) === 'gewitter' && wetter_art(['nass' => 0.0, 'wolken' => 10.0]) === 'sonnig'
+       && wetter_art(['nass' => 0.0, 'wolken' => 80.0]) === 'bedeckt' && wetter_art(['nied' => 0.5, 'temp' => 15.0]) === 'regen'
+       && wetter_art(null) === null && wetter_tag([], [9, 17]) === null,
+       'Wetterart: Gewitter, Schnee, Regen, sonnig, bewölkt; Stunde nach Niederschlag');
+pruefe(grad_text(-0.4) === '0°' && grad_text(-2.6) === "\u{2212}3°" && grad_text(null) === null, 'Grad: kein „−0“, echtes Minus');
 
 // ---------------------------------------------------------------
 echo "Wasser und Neopren\n";
@@ -1061,6 +1079,11 @@ pruefe(str_contains($html, 'Seemodell von Alplakes (Eawag), Seemitte in 1 m Tief
 pruefe(str_contains($html, 'Welle 0,8 m (Dünung 0,3 m, 5 s aus ONO)'), 'Detailzeile am Meer: Welle mit Dünung');
 [$code, $html] = holen($sitePort, "stunden.php?region=adria-nord&tag=$morgen");
 pruefe($code === 200 && str_contains($html, 'welle-bild') && substr_count($html, 'class="s-welle"') > 5, 'Stundenseite am Meer: Wellendiagramm');
+pruefe(substr_count($html, 'class="s-wetter"') > 5 && str_contains($html, '>⛅</text>') && str_contains($html, '<text class="s-temp"') && str_contains($html, '>12°</text>')
+       && str_contains($html, '⛅ teils sonnig · Wasser 14 °C'), 'Stundenseite: Wetter und Luft je Stunde, Wetter in der Tageszeile');
+[, $hk] = holen($sitePort, 'index.php?km=1000');
+pruefe(preg_match('#id="r-adria-nord".*?<span class="wetter">⛅<b>12°</b></span>#s', $hk) === 1 && str_contains($hk, 'Teils sonnig, Luft 12 °C von '),
+       'Kachel: Wettersymbol und Luft, Tooltip mit Wetter');
 [$code, $html] = holen($sitePort, "index.php?km=1000&sport=wellenreiten");
 pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'ab 0,8 m Dünung'), 'Rangliste Wellenreiten ohne Fehler');
 [, $html] = holen($sitePort, 'index.php?km=1000');

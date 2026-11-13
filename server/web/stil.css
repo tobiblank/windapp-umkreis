@@ -154,6 +154,11 @@ a.tag:active { filter: brightness(.94); }
 .tag .v { display: block; margin-top: 2px; font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tag .v.steigt { color: var(--go-text); }
 .tag .v.faellt { color: var(--no); }
+/* Wetter in der Kachel und unter dem Stundendiagramm (seit 13.11.2026) */
+.tag .wetter { display: block; margin-top: 3px; font-size: 16px; line-height: 1.25; white-space: nowrap; }
+.tag .wetter b { margin-left: 4px; font: 600 15px/1 var(--zahlen); font-variant-numeric: tabular-nums; color: var(--text); vertical-align: 1px; }
+.stunden-bild .s-wetter { font-size: 12px; }
+.stunden-bild .s-temp { fill: var(--text); font-size: 9px; font-weight: 600; }
 .verlauf { color: var(--leise); white-space: nowrap; }
 .abfahrt { white-space: nowrap; }
 .temp { white-space: nowrap; }

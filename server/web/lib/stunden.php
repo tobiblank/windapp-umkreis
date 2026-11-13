@@ -83,7 +83,10 @@ function region_stunden(array $region, array $daten, array $sport, string $tag, 
         $w = $vh[$tag][$s] ?? null;
         $zeile = ['kn' => null, 'boe' => null, 'richtung' => null, 'modelle' => $proModell[$s] ?? [],
                   'ens_p10' => null, 'ens_p50' => null, 'ens_p90' => null, 'ens_anteil' => null,
-                  'fahrbar' => false, 'grund' => null, 'regel' => false, 'welle' => $wd[$tag][$s] ?? null];
+                  'fahrbar' => false, 'grund' => null, 'regel' => false, 'welle' => $wd[$tag][$s] ?? null,
+                  // Wetter der Stunde (seit 13.11.2026): Symbol und Luft unter dem Diagramm
+                  'wetter' => $w === null ? null : ['wolken' => $w['wolken'] ?? null, 'nied' => $w['nied'] ?? null,
+                                                    'gewitter' => !empty($w['gewitter']), 'temp' => $w['temp'] ?? null]];
         if ($w !== null) {
             $w['welle'] = $ws[$tag][$s] ?? null;
             $w['welle_info'] = $wd[$tag][$s] ?? null;
