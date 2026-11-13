@@ -79,7 +79,8 @@ Wunsch eines Nutzers: eigene Berge festlegen. Umgesetzt als Favoriten aus dem Ka
 - Stern ☆/★ hinter dem Namen jeder Region; der Browser merkt sich die ids (`wohinfahrma_fav_schnee`, localStorage). Die Seite merkt sich sonst weiter keine Auswahl.
 - Mit mindestens einem Stern steht über dem Zeitraum „★ Nur deine Regionen (n)“; der Link setzt `fav=id,id,…`. Dann zeigt die Seite nur diese Regionen, **ohne Umkreis** (Auswahl Umkreis und Kreis auf der Karte fallen weg), Karte und Männchen ebenfalls. Unbekannte ids fallen weg. „Alle Regionen“ führt zurück. Ein Lesezeichen mit `fav=` funktioniert auch auf einem anderen Gerät.
 - Kein Cookie; Datenschutz Abschnitt 5 ergänzt (ids in der Adresse, damit in den Logfiles).
-- Nicht gebaut: eigene Punkte mit Koordinaten (bräuchten Tourhöhe, EAWS-Mikroregion, Fahrzeit und einen Platz im Sammler), Favoriten im Wind-Modus.
+- Gemeinsamer Code mit dem Wind-Modus (seit 13.11.2026 dort ebenfalls, siehe README) in `lib/favoriten.php`. Ändern sich die Sterne, während „Nur deine Regionen“ aktiv ist, erscheint „Auswahl aktualisieren“.
+- Nicht gebaut: eigene Punkte mit Koordinaten (bräuchten Tourhöhe, EAWS-Mikroregion, Fahrzeit und einen Platz im Sammler).
 
 ## Pulvertag (eine Regel für alle)
 
