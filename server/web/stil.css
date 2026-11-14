@@ -425,7 +425,7 @@ details.lawine[open] summary { margin-bottom: 6px; }
 .urteil { margin: 4px 0 8px; font-size: 17px; }
 .urteil.passt b { color: var(--s-go); }
 /* Wind-Stundenseite (seit 13.11.2026): Urteil, Neopren, eingeklappte Legende */
-.urteil.wind.passt b { color: var(--go); } .urteil.wind.nein b { color: var(--leise); }
+.urteil.wind.passt b { color: var(--go); } .urteil.wind.nein b { color: var(--leise); } .urteil.wind.vielleicht b { color: var(--maybe); }
 .kz .w small { font-size: 13px; }
 .kz .w .symbol { font-size: 20px; line-height: 1.25; }
 .neopren-zeile { margin: -4px 0 12px; padding: 8px 10px; border-radius: 10px; background: var(--kachel); border-left: 3px solid var(--akzent); font-size: 14px; }

@@ -410,15 +410,21 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
     $c = $b['ens']['chance'] ?? null;
     $o .= '<span class="leise klein fahrzeit">' . ($c === null ? '' : zahl(100 * $c) . ' % Chance') . '<span class="km">' . h($st['spot_name'] ?? 'ganze Region') . '</span></span></div>';
     $det = $b['det'];
-    // Urteil des Tages gross (seit 13.11.2026, vorher eine Zeile im Text)
-    $o .= '<p class="urteil wind ' . (!empty($b['vorbei']) ? 'vorbei' : ($det['geht'] ? 'passt' : 'nein')) . '">' . h(tag_kurz($tag, $heute)) . ': '
-        . (!empty($b['vorbei']) ? '<b>vorbei</b>'
-        : ($det['geht'] ? '<b>' . h($det['windlage'] ?? 'jede Richtung') . '</b> <span class="leise">· ' . $det['von'] . '–' . $det['bis'] . ' Uhr</span>' : '<b>' . h($det['grund']) . '</b>')) . '</p>';
-    if (!empty($b['fremd'])) {
-        // Seit 10.11.2026: Chance aus einer kalibrierten Spezialprognose, die Kurven bleiben Modellwind
-        $fr = $b['fremd'];
-        $o .= '<p class="klein">Chance aus der <a href="' . h($fr['url']) . '" rel="noopener">Vorhersage von ' . h($fr['name']) . ' ↗</a>, an Messwerten kalibriert: '
-            . h(fremd_text($fr, $heute->getTimezone())) . '. <span class="leise">Die Kurven unten sind weiter Modellwind.</span></p>';
+    $modell = $det['geht'] ? '<b>' . h($det['windlage'] ?? 'jede Richtung') . '</b> <span class="leise">· ' . $det['von'] . '–' . $det['bis'] . ' Uhr</span>' : '<b>' . h($det['grund']) . '</b>';
+    $fr = !empty($b['vorbei']) ? null : ($b['fremd'] ?? null);
+    // Urteil des Tages gross (seit 13.11.2026, vorher eine Zeile im Text). Seit 14.11.2026:
+    // Mit kalibrierter Spezialprognose kommt das Urteil aus ihr, wie die Chance oben rechts;
+    // vorher stand hier das Urteil des Modellmittels ("zu wenig Wind" neben 92 % Chance).
+    if ($fr !== null) {
+        $klasse = ['go' => 'passt', 'lohnt' => 'passt', 'maybe' => 'vielleicht'][$fr['stufe']] ?? 'nein';
+        $o .= '<p class="urteil wind ' . $klasse . '">' . h(tag_kurz($tag, $heute)) . ': <b>' . h(FREMD_STUFEN[$fr['stufe']] ?? $fr['stufe']) . '</b>'
+            . ($fr['peak_kt'] !== null ? ' <span class="leise">· Spitze ' . zahl($fr['peak_kt']) . ' kn</span>' : '') . '</p>';
+        $o .= '<p class="klein">Urteil und Chance aus der <a href="' . h($fr['url']) . '" rel="noopener">Vorhersage von ' . h($fr['name']) . ' ↗</a>, an Messwerten kalibriert · Stand '
+            . (new DateTimeImmutable('@' . $fr['stand']))->setTimezone($heute->getTimezone())->format('G:i') . '. '
+            . '<span class="leise">Wind-Kachel, Kurven und Stunden-% unten sind roher Modellwind, das Modell allein sagt: </span>' . $modell . '<span class="leise">.</span></p>';
+    } else {
+        $o .= '<p class="urteil wind ' . (!empty($b['vorbei']) ? 'vorbei' : ($det['geht'] ? 'passt' : 'nein')) . '">' . h(tag_kurz($tag, $heute)) . ': '
+            . (!empty($b['vorbei']) ? '<b>vorbei</b>' : $modell) . '</p>';
     }
     if (empty($b['vorbei']) && $det['grund'] !== 'noch keine Vorhersage') {
         $o .= wind_kennzahlen($b, $sport);
