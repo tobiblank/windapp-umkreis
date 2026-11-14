@@ -1322,6 +1322,8 @@ const FREMD_HEUTE_FRISCH_S = 2 * 3600;
 /**
  * Exportdatei von ammerseewind.de pruefen: version 1, erzeugt hoechstens FREMD_FRISCH_S alt.
  * Rueckgabe wie fremdprognose_auswerten(), je Tag mit 'chancen' [art => 0..1] statt 'chance'.
+ * Seit 14.11.2026, falls die Datei sie hat: 'stunden' [stunde => kn, kalibriert],
+ * 'beste' [art => [von, bis]], 'staerkste' (Stunde) und als peak_kt die Spitze.
  */
 function fremdprognose_ammerseewind(array $j, ?int $jetzt = null): ?array
 {
@@ -1341,9 +1343,25 @@ function fremdprognose_ammerseewind(array $j, ?int $jetzt = null): ?array
                 $ch[$art] = max(0.0, min(1.0, (float)$c));
             }
         }
-        if ($ch) {
-            $tage[$tag] = ['chancen' => $ch, 'peak_kt' => null];
+        if (!$ch) {
+            continue;
         }
+        $stunden = [];
+        foreach ((array)($d['stunden'] ?? []) as $h => $kn) {
+            if (is_numeric($h) && (int)$h >= 0 && (int)$h <= 23 && is_numeric($kn)) {
+                $stunden[(int)$h] = max(0.0, (float)$kn);
+            }
+        }
+        ksort($stunden);
+        $beste = [];
+        foreach ((array)($d['beste'] ?? []) as $art => $b) {
+            if (is_string($art) && is_array($b) && count($b) === 2 && is_int($b[0] ?? null) && is_int($b[1] ?? null) && $b[0] < $b[1]) {
+                $beste[$art] = [$b[0], $b[1]];
+            }
+        }
+        $tage[$tag] = ['chancen' => $ch, 'peak_kt' => is_numeric($d['spitze'] ?? null) ? (float)$d['spitze'] : null,
+                       'stunden' => $stunden, 'beste' => $beste,
+                       'staerkste' => is_int($d['staerkste'] ?? null) ? $d['staerkste'] : null];
     }
     return $tage ? ['stand' => $stand, 'tage' => $tage, 'format' => 'ammerseewind'] : null;
 }
@@ -1407,7 +1425,9 @@ function fremd_gilt(array $sport): bool
 /**
  * Chance der fremden Prognose in die Bewertung je Tag (region_bewerten) einsetzen.
  * Nicht an vergangenen Tagen, bei Sperre und heute ab FREMD_HEUTE_BIS Uhr Ortszeit;
- * dort bleibt der eigene Wert. Der Tag bekommt 'fremd' => [name, url, stufe, peak_kt, stand].
+ * dort bleibt der eigene Wert. Der Tag bekommt 'fremd' => [name, url, stufe, peak_kt, stand],
+ * von ammerseewind.de seit 14.11.2026 dazu 'stunden' (kalibriert), 'beste' [von, bis] der
+ * Sportart oder null und 'staerkste'.
  */
 function fremd_einmischen(array $region, array $proTag, array $sport, ?DateTimeImmutable $jetzt = null): array
 {
@@ -1437,15 +1457,20 @@ function fremd_einmischen(array $region, array $proTag, array $sport, ?DateTimeI
         $proTag[$tag]['ens'] = ['chance' => $chance, 'laeufe' => 0];
         $proTag[$tag]['offen'] = false;
         $proTag[$tag]['fremd'] = ['name' => $q['name'], 'url' => $q['url'], 'stufe' => $stufe,
-                                  'peak_kt' => $f['peak_kt'], 'stand' => $p['stand']];
+                                  'peak_kt' => $f['peak_kt'], 'stand' => $p['stand'],
+                                  'stunden' => $f['stunden'] ?? [], 'staerkste' => $f['staerkste'] ?? null,
+                                  'beste' => $aw ? ($f['beste'][$sport['ammerseewind']] ?? null) : null];
     }
     return $proTag;
 }
 
-/** "GO · Spitze 17 kn · Stand 6:10" fuer die Seite */
+/** "GO · Spitze 17 kn · Stand 6:10" fuer die Seite, mit bester Zeit "lohnt sich · 11–16 Uhr · Spitze 18 kn · Stand 9:40" */
 function fremd_text(array $fr, DateTimeZone $tz): string
 {
     $teile = [FREMD_STUFEN[$fr['stufe']] ?? $fr['stufe']];
+    if (!empty($fr['beste'])) {
+        $teile[] = $fr['beste'][0] . '–' . $fr['beste'][1] . ' Uhr';   // beste Zeit (seit 14.11.2026)
+    }
     if ($fr['peak_kt'] !== null) {
         $teile[] = 'Spitze ' . (string)round($fr['peak_kt']) . ' kn';
     }

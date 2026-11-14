@@ -942,6 +942,30 @@ pruefe(str_contains($html, '>Modell, nicht kalibriert: Stunde fahrbar, % der Lä
        'Stundenseite mit fremder Prognose: Stunden-% als Modell gekennzeichnet, ohne Ampelfarben');
 [$code, $html] = holen($sitePort, 'fremd/index.php?km=100&ansicht=woche');
 pruefe($code === 200 && ohne_php_meldung($html), 'Woche mit fremder Prognose: keine PHP-Meldung');
+// ammerseewind.de mit kalibrierten Stunden und bester Zeit (seit 14.11.2026)
+exec('cp -r ' . escapeshellarg("$ROOT/server/web") . ' ' . escapeshellarg("$site/kal"));
+foreach ($fKat['regionen'] as $k => $fr0) {
+    if ($fr0['id'] === 'ammersee') {
+        $fKat['regionen'][$k]['fremdprognose'] = ['name' => 'ammerseewind.de (kalibriert für Stegen)', 'url' => 'https://ammerseewind.de/', 'format' => 'ammerseewind'];
+    }
+}
+file_put_contents("$site/kal/lib/regionen.json", json_encode($fKat));
+$kTag = (new DateTimeImmutable('today +2 day', $fBer))->format('Y-m-d');
+$kStunden = ['9' => 10.0, '10' => 12.0, '11' => 14.5, '12' => 15.5, '13' => 16.5, '14' => 15.0, '15' => 13.0, '16' => 11.0];
+file_put_contents("$tmp/kal-export.json", json_encode(['version' => 1, 'erzeugt' => gmdate('Y-m-d\TH:i:s\Z'), 'tage' => [
+    $kTag => ['von' => 9, 'bis' => 17, 'chance' => ['directional' => 0.92, 'twintip' => 0.9], 'stunden' => $kStunden,
+              'staerkste' => 13, 'spitze' => 16.5, 'beste' => ['directional' => [11, 15], 'twintip' => [11, 15]]]]]));
+file_put_contents("$site/kal/config.php", '<?php return ' . var_export(['data_dir' => "$tmp/action", 'cache_dir' => "$tmp/kal/cache", 'fremdprognosen' => ['ammersee' => "$tmp/kal-export.json"]], true) . ';');
+[$code, $html] = holen($sitePort, "kal/stunden.php?region=ammersee&sport=kite_directional&tag=$kTag");
+pruefe($code === 200 && ohne_php_meldung($html)
+       && preg_match('#<p class="urteil wind passt">[^<]+: <b>lohnt sich</b> <span class="leise">· 11–15 Uhr</span> <span class="leise">· Spitze 17 kn</span></p>#', $html) === 1
+       && str_contains($html, 'Urteil, Zeiten, Wind-Kachel und grüne Linie aus der')
+       && preg_match('#<div class="kz kz-wind" title="Kalibriert \(Messwerte\), Mittel 11–15 Uhr[^"]*"><span class="t">Wind Ø</span><span class="w">15<small> kn</small>#', $html) === 1
+       && str_contains($html, '<polyline class="s-kal"') && str_contains($html, '>Grüne Linie und Balken kalibriert · % Modell-Läufe, nicht kalibriert</text>')
+       && str_contains($html, '<title>13 Uhr: 17 kn kalibriert, fahrbar</title>') && str_contains($html, '<title>10 Uhr: 12 kn kalibriert, nicht fahrbar</title>'),
+       'Stundenseite mit ammerseewind.de: beste Zeit im Urteil, Wind-Kachel, grüne Linie und Balken kalibriert');
+[$code, $html] = holen($sitePort, 'kal/index.php?km=100&sport=kite_directional');
+pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'lohnt sich · 11–15 Uhr · Spitze 17 kn · Stand '), 'Rangliste: beste Zeit aus ammerseewind.de in der Detailzeile');
 
 // Vorrechnen (seit 8.11.2026): nur mit Schluessel aus config.php, nur per POST
 function senden(int $port, string $pfad, array $felder): array
@@ -1255,6 +1279,20 @@ $ax = fremd_einmischen($aRegion, $fProTag, SPORTARTEN['kite_twintip'], $fUm('10:
 pruefe(abs($ax['2030-07-10']['ens']['chance'] - 0.62) < 1e-9 && abs($ax['2030-07-11']['ens']['chance'] - 0.05) < 1e-9, 'Twintip: Zahl der Sportart');
 pruefe(($ax['2030-07-10']['fremd']['stufe'] ?? '') === 'lohnt' && ($ax['2030-07-11']['fremd']['stufe'] ?? '') === 'no', 'Stufen wie in den Mails von ammerseewind.de');
 pruefe(fremd_text($ax['2030-07-10']['fremd'], new DateTimeZone('Europe/Berlin')) === 'lohnt sich · Stand 9:40', 'Text ohne Spitze');
+pruefe(($ax['2030-07-10']['fremd']['stunden'] ?? null) === [] && array_key_exists('beste', $ax['2030-07-10']['fremd']) && $ax['2030-07-10']['fremd']['beste'] === null, 'alter Export ohne Stunden: leer, keine beste Zeit');
+$aNeu = $aExport();
+$aNeu['tage']['2030-07-10'] += ['stunden' => ['9' => 11.2, '13' => 16.8, '25' => 3, 'x' => 4], 'staerkste' => 13, 'spitze' => 16.8,
+                                'beste' => ['twintip' => [12, 15], 'wing' => [15, 12], 'segeln' => 'x']];
+file_put_contents("$aDir/export/wohinfahrma.json", json_encode($aNeu));
+fremdprognosen_laden(['fremdprognosen' => ['walchensee' => "$aDir/walchensee"]], [$aRegion], $fJetzt);
+$aK = fremd_einmischen($aRegion, $fProTag, SPORTARTEN['kite_twintip'], $fUm('10:00'))['2030-07-10']['fremd'] ?? [];
+pruefe(($aK['stunden'] ?? null) === [9 => 11.2, 13 => 16.8] && ($aK['beste'] ?? null) === [12, 15] && ($aK['staerkste'] ?? null) === 13 && ($aK['peak_kt'] ?? null) === 16.8,
+       'Export mit Stunden: kalibrierter Wind je Stunde, beste Zeit der Sportart, Spitze; ungültige Einträge weggelassen');
+pruefe(fremd_text($aK, new DateTimeZone('Europe/Berlin')) === 'lohnt sich · 12–15 Uhr · Spitze 17 kn · Stand 9:40', 'Text mit bester Zeit und Spitze');
+$aW = fremd_einmischen($aRegion, $fProTag, SPORTARTEN['wingfoil'], $fUm('10:00'))['2030-07-10']['fremd'] ?? [];
+pruefe(array_key_exists('beste', $aW) && $aW['beste'] === null && $aW['stunden'] === [9 => 11.2, 13 => 16.8], 'ungültige beste Zeit (von > bis): keine, Stunden trotzdem da');
+file_put_contents("$aDir/export/wohinfahrma.json", json_encode($aExport()));
+fremdprognosen_laden(['fremdprognosen' => ['walchensee' => "$aDir/walchensee"]], [$aRegion], $fJetzt);
 $ay = fremd_einmischen($aRegion, $fProTag, SPORTARTEN['segeln'], $fUm('10:00'));
 pruefe(abs($ay['2030-07-10']['ens']['chance'] - 0.3) < 1e-9, 'Segeln: auch von ammerseewind.de');
 $az = fremd_einmischen($aRegion, $fProTag, SPORTARTEN['kitefoil'], $fUm('10:00'));
