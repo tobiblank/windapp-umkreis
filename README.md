@@ -15,6 +15,11 @@ Windys Windalarm fragt „Ist Spot X gut?“. Diese App fragt umgekehrt „**Wo*
 
 Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird **pro Spot** mit dessen Richtungen; die Region bekommt den Wert ihres besten Spots. Eine Region ohne Spots wird mit ihren eigenen Windlagen bewertet. Eine Region ganz ohne Windlagen bekommt keinen Richtungsfilter und ist als „grob“ markiert.
 
+## Arbeitsregeln (für Claude, Wunsch Tobias)
+
+- **Projektwissen immer aktuell halten** (seit 14.11.2026): Nach jeder Änderung an `README.md` oder `SCHNEE.md` die Datei ohne Rückfrage ins Projektwissen übernehmen (`README.md` → `claude/konzept-windapp-umkreis.md`, `SCHNEE.md` → `claude/konzept-schnee.md`). Ergebnisse aus Chats, die den Stand ändern (Entscheidungen, verschickte Anfragen, Antworten, Freigaben, neue Adressen), erst in die Datei im Repo eintragen und dann übernehmen, nicht nur im Chat stehen lassen. Das Repo ist die Quelle; das Projektwissen ist die Kopie. Nur bei echter Änderung schreiben, nicht für Umformulierungen.
+- **Neue Schnee-Region:** Lawinenlage prüfen und bei Bedarf Anfrage entwerfen, siehe `SCHNEE.md`, „Neue Region: Lawinenlage prüfen“.
+
 ## Stand
 
 | Baustein | Status |
