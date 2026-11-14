@@ -180,10 +180,10 @@ Weder Österreich noch Italien hat einen gemeinsamen Warndienst, der Freigaben e
 
 | Dienst | Adresse | Quelle der Adresse | Anfrage |
 |---|---|---|---|
-| LWD Tirol (`AT-07`) | lawine@tirol.gv.at | – | 8.11.2026, Antwort steht aus |
+| LWD Tirol (`AT-07`) | lawine@tirol.gv.at | – | 8.11.2026, Antwort steht aus; Erinnerung entworfen 14.11.2026, noch nicht gesendet |
 | LWD Bayern (`DE-BY`) | – | – | freigegeben 10.11.2026 |
-| SLF (`CH-`) | data@slf.ch | – | CC BY 4.0; IMIS-Rückfrage 10.11.2026 (DATA-2406), Antwort steht aus |
-| LWD Salzburg (`AT-05`) | lawine.salzburg@geosphere.at | Abwesenheitsnotiz von lawine@salzburg.gv.at (14.11.2026: „keine Weiterleitung“); die Adresse im Impressum nicht mehr nehmen | 14.11.2026 an lawine@salzburg.gv.at gesendet, Auto-Antwort mit neuer Adresse; erneuter Versand an die GeoSphere-Adresse offen |
+| SLF (`CH-`) | data@slf.ch | – | CC BY 4.0; IMIS-Rückfrage 10.11.2026 (DATA-2406), Antwort steht aus; Erinnerung entworfen 14.11.2026, noch nicht gesendet |
+| LWD Salzburg (`AT-05`) | lawine.salzburg@geosphere.at | Abwesenheitsnotiz von lawine@salzburg.gv.at (14.11.2026: „keine Weiterleitung“); die Adresse im Impressum nicht mehr nehmen | 14.11.2026 an lawine@salzburg.gv.at gesendet, Auto-Antwort mit neuer Adresse; am selben Tag an die GeoSphere-Adresse erneut gesendet, Antwort steht aus |
 | LWD Kärnten (`AT-02`) | abt3.katastrophenschutz@ktn.gv.at | lawinenwarndienst.ktn.gv.at (die ältere lawine@ktn.gv.at nicht nehmen) | 14.11.2026 gesendet, Antwort steht aus |
 | LWD Steiermark (`AT-06`) | katastrophenschutz@stmk.gv.at | Lagebericht 2024, Impressum lawis.at | 14.11.2026 gesendet, Antwort steht aus |
 | LWD Vorarlberg (`AT-08`) | lawinenwarndienst@lwz-vorarlberg.at | Lageberichte 2024 | 14.11.2026 gesendet, Antwort steht aus |
