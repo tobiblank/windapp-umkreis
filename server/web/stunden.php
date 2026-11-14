@@ -480,7 +480,15 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
         $o .= wind_kennzahlen($b, $sport);
     }
     // Legende eingeklappt (seit 13.11.2026; vorher ein langer Absatz ueber dem Diagramm)
-    $o .= '<details class="klein leise legende-auf"><summary>Was zeigt das Diagramm?</summary><p>Wind: dicke Linie = Modellmittel, dünne = einzelne Modelle, orange gestrichelt = Böen (Modellmittel), Band = 80 % der Ensemble-Läufe, grün gestrichelt = Windfenster, Pfeile = wohin der Wind weht. Grüne Balken = Stunde fahrbar, % = Anteil der Ensemble-Läufe, die sie fahrbar sehen (beides Modell, nicht kalibriert; wo es eine kalibrierte Vorhersage gibt, kommen blaue Linie = kalibrierter Wind und die Balken aus ihr). Darunter Wetter und Lufttemperatur je Stunde (Modellmittel)</p></details>';
+    // Seit 14.11.2026 je nach Quelle: mit kalibrierten Stunden (ammerseewind.de) blaue Linie und
+    // Balken daraus, mit fremder Chance ohne Stunden (Walchensee) Balken und % als Modell markiert
+    $kalLeg = $fr !== null && !empty($fr['stunden']);
+    $o .= '<details class="klein leise legende-auf"><summary>Was zeigt das Diagramm?</summary><p>Wind: '
+        . ($kalLeg ? 'blaue Linie = kalibrierter Wind (Vorhersage oben), weiße = Modellmittel' : 'dicke Linie = Modellmittel')
+        . ', dünne = einzelne Modelle, orange gestrichelt = Böen (Modellmittel), Band = 80 % der Ensemble-Läufe, grün gestrichelt = Windfenster, Pfeile = wohin der Wind weht. '
+        . ($kalLeg ? 'Grüne Balken = Stunde fahrbar nach dem kalibrierten Wind, % = Anteil der Ensemble-Läufe, die sie fahrbar sehen (Modell, nicht kalibriert).'
+          : 'Grüne Balken = Stunde fahrbar, % = Anteil der Ensemble-Läufe, die sie fahrbar sehen' . ($fr !== null ? ' (beides Modell, nicht kalibriert).' : '.'))
+        . ' Darunter Wetter und Lufttemperatur je Stunde (Modellmittel)</p></details>';
     $o .= stunden_svg($st, $sport, $ymax, $fr !== null, $fr['stunden'] ?? null);
     if (!empty($st['hat_welle'])) {
         $o .= '<p class="klein leise welle-titel">Wellen: Balken = gesamte Welle, Linie = Dünung, Pfeile = wohin die Dünung läuft, Zahlen = Periode in Sekunden</p>' . welle_svg($st, $sport, $mmax);

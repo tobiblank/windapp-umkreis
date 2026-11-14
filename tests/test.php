@@ -940,6 +940,8 @@ pruefe(preg_match('#<p class="urteil wind passt">[^<]+: <b>GO</b> <span class="l
 pruefe(str_contains($html, '>Modell, nicht kalibriert: Stunde fahrbar, % der Läufe</text>') && str_contains($html, '<text class="s-anteil modell"')
        && !preg_match('#class="s-anteil (go|maybe|no)"#', $html),
        'Stundenseite mit fremder Prognose: Stunden-% als Modell gekennzeichnet, ohne Ampelfarben');
+pruefe(str_contains($html, 'Grüne Balken = Stunde fahrbar, % = Anteil der Ensemble-Läufe, die sie fahrbar sehen (beides Modell, nicht kalibriert).') && !str_contains($html, 'blaue Linie'),
+       'Legende mit fremder Chance ohne Stunden (Walchensee): Balken und % als Modell, keine blaue Linie');
 [$code, $html] = holen($sitePort, 'fremd/index.php?km=100&ansicht=woche');
 pruefe($code === 200 && ohne_php_meldung($html), 'Woche mit fremder Prognose: keine PHP-Meldung');
 // ammerseewind.de mit kalibrierten Stunden und bester Zeit (seit 14.11.2026)
@@ -964,6 +966,9 @@ pruefe($code === 200 && ohne_php_meldung($html)
        && str_contains($html, '<polyline class="s-kal"') && str_contains($html, '>Blaue Linie und Balken kalibriert · % Modell-Läufe, nicht kalibriert</text>')
        && str_contains($html, '<title>13 Uhr: 17 kn kalibriert, fahrbar</title>') && str_contains($html, '<title>10 Uhr: 12 kn kalibriert, nicht fahrbar</title>'),
        'Stundenseite mit ammerseewind.de: beste Zeit im Urteil, Wind-Kachel, blaue Linie und Balken kalibriert');
+pruefe(str_contains($html, '<p>Wind: blaue Linie = kalibrierter Wind (Vorhersage oben), weiße = Modellmittel, dünne')
+       && str_contains($html, 'Grüne Balken = Stunde fahrbar nach dem kalibrierten Wind, % = Anteil der Ensemble-Läufe, die sie fahrbar sehen (Modell, nicht kalibriert).'),
+       'Legende mit kalibrierten Stunden: blaue Linie, Balken kalibriert, % Modell');
 [$code, $html] = holen($sitePort, 'kal/index.php?km=100&sport=kite_directional');
 pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'lohnt sich · 11–15 Uhr · Spitze 17 kn · Stand '), 'Rangliste: beste Zeit aus ammerseewind.de in der Detailzeile');
 
@@ -1154,7 +1159,8 @@ pruefe(preg_match('#<p class="urteil wind passt">Morgen: <b>[^<]+</b>#', $html) 
        'Stundenseite: Urteil groß, Tageswerte als Kennzahlen (Wind, Wetter, Luft, Wasser, Welle), Neopren eigene Zeile');
 $tag3 = (new DateTimeImmutable('+3 days', new DateTimeZone('Europe/Berlin')))->format('Y-m-d');
 [, $html] = holen($sitePort, "stunden.php?region=ammersee&tag=$tag3");
-pruefe(!str_contains($html, 'nicht kalibriert: Stunde fahrbar'), 'Stundenseite ohne fremde Prognose: kein Modell-Hinweis im Diagramm');
+pruefe(!str_contains($html, 'nicht kalibriert: Stunde fahrbar') && preg_match('#<details class="klein leise legende-auf">.*?kalibriert.*?</details>#s', $html) === 0,
+       'Stundenseite ohne fremde Prognose: kein Modell-Hinweis im Diagramm, Legende ohne „kalibriert“');
 pruefe(str_contains($html, '<div class="kz kz-wind" title="Mittel und höchste Böe 9–17 Uhr"><span class="t">Wind Ø</span><span class="w">6<small> kn</small></span><span class="u">Böen bis 10 kn</span>'),
        'Stundenseite: Wind-Kachel zeigt die Böen auch an Tagen ohne Fenster (zu wenig Wind)');
 [, $hk] = holen($sitePort, 'index.php?km=1000');
