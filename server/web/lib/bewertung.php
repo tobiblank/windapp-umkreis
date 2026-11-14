@@ -1323,7 +1323,7 @@ const FREMD_HEUTE_FRISCH_S = 2 * 3600;
  * Exportdatei von ammerseewind.de pruefen: version 1, erzeugt hoechstens FREMD_FRISCH_S alt.
  * Rueckgabe wie fremdprognose_auswerten(), je Tag mit 'chancen' [art => 0..1] statt 'chance'.
  * Seit 14.11.2026, falls die Datei sie hat: 'stunden' [stunde => kn, kalibriert],
- * 'beste' [art => [von, bis]], 'staerkste' (Stunde) und als peak_kt die Spitze.
+ * 'beste' [art => [von, bis]], 'staerkste' (Stunde) und als peak_kt die Spitze (staerkste Stunde, Mittelwind).
  */
 function fremdprognose_ammerseewind(array $j, ?int $jetzt = null): ?array
 {
@@ -1464,7 +1464,7 @@ function fremd_einmischen(array $region, array $proTag, array $sport, ?DateTimeI
     return $proTag;
 }
 
-/** "GO · Spitze 17 kn · Stand 6:10" fuer die Seite, mit bester Zeit "lohnt sich · 11–16 Uhr · Spitze 18 kn · Stand 9:40" */
+/** "GO · Mittelwind bis 17 kn · Stand 6:10" fuer die Seite, mit bester Zeit "lohnt sich · 11–16 Uhr · Mittelwind bis 18 kn · Stand 9:40" */
 function fremd_text(array $fr, DateTimeZone $tz): string
 {
     $teile = [FREMD_STUFEN[$fr['stufe']] ?? $fr['stufe']];
@@ -1472,7 +1472,7 @@ function fremd_text(array $fr, DateTimeZone $tz): string
         $teile[] = $fr['beste'][0] . '–' . $fr['beste'][1] . ' Uhr';   // beste Zeit (seit 14.11.2026)
     }
     if ($fr['peak_kt'] !== null) {
-        $teile[] = 'Spitze ' . (string)round($fr['peak_kt']) . ' kn';
+        $teile[] = 'Mittelwind bis ' . (string)round($fr['peak_kt']) . ' kn';   // bis 14.11.2026 "Spitze", las sich wie Boeen
     }
     $teile[] = 'Stand ' . (new DateTimeImmutable('@' . $fr['stand']))->setTimezone($tz)->format('G:i');
     return implode(' · ', $teile);

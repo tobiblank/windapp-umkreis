@@ -466,7 +466,7 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
               : (($fr['staerkste'] ?? null) !== null ? 'stärkste Stunde ' . $fr['staerkste'] . ' Uhr' : null);
         $o .= '<p class="urteil wind ' . $klasse . '">' . h(tag_kurz($tag, $heute)) . ': <b>' . h(FREMD_STUFEN[$fr['stufe']] ?? $fr['stufe']) . '</b>'
             . ($zeit !== null ? ' <span class="leise">· ' . h($zeit) . '</span>' : '')
-            . ($fr['peak_kt'] !== null ? ' <span class="leise">· Spitze ' . zahl($fr['peak_kt']) . ' kn</span>' : '') . '</p>';
+            . ($fr['peak_kt'] !== null ? ' <span class="leise">· Mittelwind bis ' . zahl($fr['peak_kt']) . ' kn</span>' : '') . '</p>';
         $kalibriert = !empty($fr['stunden']);
         $o .= '<p class="klein">' . ($kalibriert ? 'Urteil, Zeiten, Wind-Kachel und blaue Linie' : 'Urteil und Chance') . ' aus der <a href="' . h($fr['url']) . '" rel="noopener">Vorhersage von ' . h($fr['name']) . ' ↗</a>, an Messwerten kalibriert · Stand '
             . (new DateTimeImmutable('@' . $fr['stand']))->setTimezone($heute->getTimezone())->format('G:i') . '. '
