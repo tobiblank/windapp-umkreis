@@ -933,7 +933,10 @@ pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'Vorhersa
 [$code, $html] = holen($sitePort, 'fremd/index.php?km=100&sport=segeln');
 pruefe($code === 200 && ohne_php_meldung($html) && !str_contains($html, 'Vorhersage von Marco Schanda ↗'), 'Seite: Segeln ohne fremde Prognose');
 [$code, $html] = holen($sitePort, 'fremd/stunden.php?region=ammersee&sport=kite_twintip&tag=' . $fTage[1]['date']);
-pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'Chance aus der <a href="https://walchenseewindpredictor.onrender.com/"'), 'Stundenseite nennt die fremde Prognose');
+pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'Urteil und Chance aus der <a href="https://walchenseewindpredictor.onrender.com/"'), 'Stundenseite nennt die fremde Prognose');
+pruefe(preg_match('#<p class="urteil wind passt">[^<]+: <b>GO</b> <span class="leise">· Spitze 18 kn</span></p>#', $html) === 1
+       && preg_match('#das Modell allein sagt: </span><b>[^<]+</b>#', $html) === 1,
+       'Stundenseite: Urteil aus der fremden Prognose (wie die Chance), Modell-Urteil nur als Hinweis');
 [$code, $html] = holen($sitePort, 'fremd/index.php?km=100&ansicht=woche');
 pruefe($code === 200 && ohne_php_meldung($html), 'Woche mit fremder Prognose: keine PHP-Meldung');
 
