@@ -569,13 +569,15 @@ function wasser_eintrag(array $stand, string $id): ?array
 /**
  * Luft, Wasser und Wind im Fenster eines Tages (seit 7.11.2026, fuer die
  * Neopren-Faustregel): Mittel ueber das Fenster des Tages (das gefundene
- * Fenster, wenn es eins gibt, sonst das Tagesfenster).
- * Rueckgabe ['luft' => ?float, 'wasser' => ?float, 'kn' => ?float]
+ * Fenster, wenn es eins gibt, sonst das Tagesfenster). Dazu seit 14.11.2026 die
+ * hoechste Boe im Fenster (wie boe_max in tag_bewerten: hoechstes Modell), fuer
+ * die Wind-Kachel der Stundenseite an Tagen ohne Fenster.
+ * Rueckgabe ['luft' => ?float, 'wasser' => ?float, 'kn' => ?float, 'boe' => ?float]
  */
 function tag_temperaturen(array $stunden, array $wasser, array $fenster): array
 {
     [$ab, $bis] = $fenster;
-    $l = $w = $k = [];
+    $l = $w = $k = $b = [];
     for ($s = $ab; $s < $bis; $s++) {
         if (isset($stunden[$s]['temp'])) {
             $l[] = $stunden[$s]['temp'];
@@ -583,12 +585,15 @@ function tag_temperaturen(array $stunden, array $wasser, array $fenster): array
         if (isset($stunden[$s]['kn'])) {
             $k[] = $stunden[$s]['kn'];
         }
+        if (isset($stunden[$s]['boe_max'])) {
+            $b[] = $stunden[$s]['boe_max'];
+        }
         if (isset($wasser[$s])) {
             $w[] = $wasser[$s];
         }
     }
     $m = fn(array $a) => $a ? array_sum($a) / count($a) : null;
-    return ['luft' => $m($l), 'wasser' => $m($w), 'kn' => $m($k)];
+    return ['luft' => $m($l), 'wasser' => $m($w), 'kn' => $m($k), 'boe' => $b ? round(max($b), 1) : null];
 }
 
 /**
