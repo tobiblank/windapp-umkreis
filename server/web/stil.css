@@ -321,6 +321,7 @@ a.tag:active { filter: brightness(.94); }
 .stunden-bild .s-modell { fill: none; stroke: var(--leise); stroke-width: .8; opacity: .55; }
 .stunden-bild .s-boe { fill: none; stroke: var(--maybe); stroke-width: 1.2; stroke-dasharray: 3 2; }
 .stunden-bild .s-mittel { fill: none; stroke: var(--text); stroke-width: 2.2; stroke-linejoin: round; }
+.stunden-bild .s-kal { fill: none; stroke: var(--go); stroke-width: 2.6; stroke-linejoin: round; }   /* kalibriert (seit 14.11.2026) */
 .stunden-bild .s-pfeil path { fill: none; stroke: var(--text); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .stunden-bild .s-fahrbar { fill: var(--nix-bg); }
 .stunden-bild .s-fahrbar.ja { fill: var(--go); }

@@ -175,8 +175,11 @@ function stufe(?float $c): string
  * Fahrbar-Balken und Stunden-% "Modell, nicht kalibriert" und die % sind neutral grau, damit
  * sie nicht wie die kalibrierte Chance oben aussehen.
  */
-function stunden_svg(array $st, array $sport, float $ymax, bool $modellHinweis = false): string
+function stunden_svg(array $st, array $sport, float $ymax, bool $modellHinweis = false, ?array $kal = null): string
 {
+    // $kal (seit 14.11.2026): kalibrierter Wind je Stunde [stunde => kn] (ammerseewind.de);
+    // dann gruene Linie, und die Fahrbar-Balken kommen daraus statt aus dem Modellmittel
+    $kal = $kal ?: null;
     $W = 360;
     $L = 28;
     $R = 6;
@@ -236,6 +239,17 @@ function stunden_svg(array $st, array $sport, float $ymax, bool $modellHinweis =
     }
     $o[] = $linie(fn($z) => $z['boe'], 's-boe', 'Böen (Modellmittel)');
     $o[] = $linie(fn($z) => $z['kn'], 's-mittel', 'Wind (Modellmittel)');
+    if ($kal !== null) {
+        $p = [];
+        foreach ($st['stunden'] as $s => $_) {
+            if (isset($kal[$s])) {
+                $p[] = $r($xm($s)) . ',' . $r($y($kal[$s]));
+            }
+        }
+        if (count($p) > 1) {
+            $o[] = '<polyline class="s-kal" points="' . implode(' ', $p) . '"><title>Wind kalibriert (Messwerte)</title></polyline>';
+        }
+    }
     // Richtungspfeile: zeigen, wohin der Wind weht. Der Pfad zeigt ungedreht nach
     // Sueden (wie Wind aus Norden), also um die Herkunft drehen, nicht um +180.
     // Bis 8.11.2026 stand hier +180: Die Pfeile zeigten, woher der Wind kommt,
@@ -251,12 +265,21 @@ function stunden_svg(array $st, array $sport, float $ymax, bool $modellHinweis =
     }
     // Fahrbar (Modellmittel) und Anteil der Ensemble-Laeufe
     if ($modellHinweis) {
-        $o[] = '<text class="s-achse s-hinweis" x="' . $L . '" y="' . ($unten + 13) . '">Modell, nicht kalibriert: Stunde fahrbar, % der Läufe</text>';
+        $o[] = '<text class="s-achse s-hinweis" x="' . $L . '" y="' . ($unten + 13) . '">'
+             . ($kal !== null ? 'Grüne Linie und Balken kalibriert · % Modell-Läufe, nicht kalibriert' : 'Modell, nicht kalibriert: Stunde fahrbar, % der Läufe') . '</text>';
     }
     $u = $unten + $dz;
     foreach ($st['stunden'] as $s => $z) {
-        $o[] = '<rect class="s-fahrbar' . ($z['fahrbar'] ? ' ja' : '') . '" x="' . $r($x($s) + 1) . '" y="' . ($u + 4) . '" width="' . $r($bw - 2) . '" height="6" rx="2">'
-             . '<title>' . h($s . ' Uhr: ' . ($z['fahrbar'] ? 'fahrbar' . ($z['regel'] ? ' (Regel)' : '') : ($z['grund'] ?? 'außerhalb des Fensters'))) . '</title></rect>';
+        if ($kal !== null) {
+            $kk = $kal[$s] ?? null;
+            $ja = $kk !== null && $s >= $st['fenster'][0] && $s < $st['fenster'][1] && $kk >= $sport['min'] && (!isset($sport['max']) || $kk <= $sport['max']);
+            $titel = $s . ' Uhr: ' . ($kk === null ? 'keine kalibrierte Zahl' : zahl($kk) . ' kn kalibriert, ' . ($ja ? 'fahrbar' : 'nicht fahrbar'));
+        } else {
+            $ja = $z['fahrbar'];
+            $titel = $s . ' Uhr: ' . ($z['fahrbar'] ? 'fahrbar' . ($z['regel'] ? ' (Regel)' : '') : ($z['grund'] ?? 'außerhalb des Fensters'));
+        }
+        $o[] = '<rect class="s-fahrbar' . ($ja ? ' ja' : '') . '" x="' . $r($x($s) + 1) . '" y="' . ($u + 4) . '" width="' . $r($bw - 2) . '" height="6" rx="2">'
+             . '<title>' . h($titel) . '</title></rect>';
         if ($z['ens_anteil'] !== null) {
             $o[] = '<text class="s-anteil ' . ($modellHinweis ? 'modell' : stufe($z['ens_anteil'])) . '" x="' . $r($xm($s)) . '" y="' . ($u + 24) . '" text-anchor="middle">' . zahl(100 * $z['ens_anteil']) . '</text>';
         }
@@ -365,8 +388,19 @@ function wind_kennzahlen(array $b, array $sport): string
     $kz = fn(string $art, string $t, string $w, string $u, string $titel = '') => '<div class="kz kz-' . $art . '"' . ($titel !== '' ? ' title="' . h($titel) . '"' : '') . '>'
         . '<span class="t">' . h($t) . '</span><span class="w">' . $w . '</span><span class="u">' . h($u) . '</span></div>';
     $k = [];
+    $boe = $det['geht'] ? ($det['boe_max'] ?? null) : ($b['temp']['boe'] ?? null);
+    $fr = $b['fremd'] ?? null;
     // Wind
-    if ($det['geht'] && !empty($det['regel'])) {
+    if (!empty($fr['stunden']) && empty($sport['surf'])) {
+        // Seit 14.11.2026: kalibrierter Wind (ammerseewind.de), Mittel ueber die beste Zeit,
+        // sonst ueber das Tagesfenster; Boeen weiter aus dem Modell
+        $kf = $fr['beste'] ?? $b['fenster'];
+        $kw = array_filter($fr['stunden'], fn($s) => $s >= $kf[0] && $s < $kf[1], ARRAY_FILTER_USE_KEY);
+        if ($kw) {
+            $k[] = $kz('wind', 'Wind Ø', h(zahl(array_sum($kw) / count($kw))) . '<small> kn</small>', $boe !== null ? 'Böen bis ' . zahl($boe) . ' kn' : $kf[0] . '–' . $kf[1] . ' Uhr',
+                       'Kalibriert (Messwerte), Mittel ' . $kf[0] . '–' . $kf[1] . ' Uhr' . ($boe !== null ? '; Böen aus dem Modell' : ''));
+        }
+    } elseif ($det['geht'] && !empty($det['regel'])) {
         $k[] = $kz('wind', 'Wind', h(zahl((float)$det['staerke'][0]) . '–' . zahl((float)$det['staerke'][1])) . '<small> kn</small>', 'typisch (Regel)');
     } elseif ($det['geht'] && empty($sport['surf'])) {
         $k[] = $kz('wind', 'Wind Ø', h(zahl($det['mittel_kn'])) . '<small> kn</small>', $det['boe_max'] !== null ? 'Böen bis ' . zahl($det['boe_max']) . ' kn' : $fen);
@@ -427,11 +461,17 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
     // vorher stand hier das Urteil des Modellmittels ("zu wenig Wind" neben 92 % Chance).
     if ($fr !== null) {
         $klasse = ['go' => 'passt', 'lohnt' => 'passt', 'maybe' => 'vielleicht'][$fr['stufe']] ?? 'nein';
+        // Seit 14.11.2026 mit bester Zeit (ammerseewind.de), sonst der staerksten Stunde
+        $zeit = !empty($fr['beste']) ? $fr['beste'][0] . '–' . $fr['beste'][1] . ' Uhr'
+              : (($fr['staerkste'] ?? null) !== null ? 'stärkste Stunde ' . $fr['staerkste'] . ' Uhr' : null);
         $o .= '<p class="urteil wind ' . $klasse . '">' . h(tag_kurz($tag, $heute)) . ': <b>' . h(FREMD_STUFEN[$fr['stufe']] ?? $fr['stufe']) . '</b>'
+            . ($zeit !== null ? ' <span class="leise">· ' . h($zeit) . '</span>' : '')
             . ($fr['peak_kt'] !== null ? ' <span class="leise">· Spitze ' . zahl($fr['peak_kt']) . ' kn</span>' : '') . '</p>';
-        $o .= '<p class="klein">Urteil und Chance aus der <a href="' . h($fr['url']) . '" rel="noopener">Vorhersage von ' . h($fr['name']) . ' ↗</a>, an Messwerten kalibriert · Stand '
+        $kalibriert = !empty($fr['stunden']);
+        $o .= '<p class="klein">' . ($kalibriert ? 'Urteil, Zeiten, Wind-Kachel und grüne Linie' : 'Urteil und Chance') . ' aus der <a href="' . h($fr['url']) . '" rel="noopener">Vorhersage von ' . h($fr['name']) . ' ↗</a>, an Messwerten kalibriert · Stand '
             . (new DateTimeImmutable('@' . $fr['stand']))->setTimezone($heute->getTimezone())->format('G:i') . '. '
-            . '<span class="leise">Wind-Kachel, Kurven und Stunden-% unten sind roher Modellwind, das Modell allein sagt: </span>' . $modell . '<span class="leise">.</span></p>';
+            . '<span class="leise">' . ($kalibriert ? 'Übrige Kurven, Böen und Stunden-% sind roher Modellwind' : 'Wind-Kachel, Kurven und Stunden-% unten sind roher Modellwind')
+            . ', das Modell allein sagt: </span>' . $modell . '<span class="leise">.</span></p>';
     } else {
         $o .= '<p class="urteil wind ' . (!empty($b['vorbei']) ? 'vorbei' : ($det['geht'] ? 'passt' : 'nein')) . '">' . h(tag_kurz($tag, $heute)) . ': '
             . (!empty($b['vorbei']) ? '<b>vorbei</b>' : $modell) . '</p>';
@@ -440,8 +480,8 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
         $o .= wind_kennzahlen($b, $sport);
     }
     // Legende eingeklappt (seit 13.11.2026; vorher ein langer Absatz ueber dem Diagramm)
-    $o .= '<details class="klein leise legende-auf"><summary>Was zeigt das Diagramm?</summary><p>Wind: dicke Linie = Modellmittel, dünne = einzelne Modelle, orange gestrichelt = Böen (Modellmittel), Band = 80 % der Ensemble-Läufe, grün gestrichelt = Windfenster, Pfeile = wohin der Wind weht. Grüne Balken = Stunde fahrbar, % = Anteil der Ensemble-Läufe, die sie fahrbar sehen (beides Modell, nicht kalibriert). Darunter Wetter und Lufttemperatur je Stunde (Modellmittel)</p></details>';
-    $o .= stunden_svg($st, $sport, $ymax, $fr !== null);
+    $o .= '<details class="klein leise legende-auf"><summary>Was zeigt das Diagramm?</summary><p>Wind: dicke Linie = Modellmittel, dünne = einzelne Modelle, orange gestrichelt = Böen (Modellmittel), Band = 80 % der Ensemble-Läufe, grün gestrichelt = Windfenster, Pfeile = wohin der Wind weht. Grüne Balken = Stunde fahrbar, % = Anteil der Ensemble-Läufe, die sie fahrbar sehen (beides Modell, nicht kalibriert; wo es eine kalibrierte Vorhersage gibt, kommen grüne Linie und Balken aus ihr). Darunter Wetter und Lufttemperatur je Stunde (Modellmittel)</p></details>';
+    $o .= stunden_svg($st, $sport, $ymax, $fr !== null, $fr['stunden'] ?? null);
     if (!empty($st['hat_welle'])) {
         $o .= '<p class="klein leise welle-titel">Wellen: Balken = gesamte Welle, Linie = Dünung, Pfeile = wohin die Dünung läuft, Zahlen = Periode in Sekunden</p>' . welle_svg($st, $sport, $mmax);
     }
