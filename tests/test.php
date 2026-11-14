@@ -1122,6 +1122,10 @@ pruefe(preg_match('#<p class="urteil wind passt">Morgen: <b>[^<]+</b>#', $html) 
        && str_contains($html, '<span class="t">Welle</span><span class="w">0,8<small> m</small></span><span class="u">Dünung 0,3 m</span>') && str_contains($html, 'title="Dünung 0,3 m, 5 s, Mittel im Fenster"')
        && str_contains($html, '<p class="neopren-zeile"><span class="leise">Neopren</span> <b>5/4 mm, Schuhe</b>'),
        'Stundenseite: Urteil groß, Tageswerte als Kennzahlen (Wind, Wetter, Luft, Wasser, Welle), Neopren eigene Zeile');
+$tag3 = (new DateTimeImmutable('+3 days', new DateTimeZone('Europe/Berlin')))->format('Y-m-d');
+[, $html] = holen($sitePort, "stunden.php?region=ammersee&tag=$tag3");
+pruefe(str_contains($html, '<div class="kz kz-wind" title="Mittel und höchste Böe 9–17 Uhr"><span class="t">Wind Ø</span><span class="w">6<small> kn</small></span><span class="u">Böen bis 10 kn</span>'),
+       'Stundenseite: Wind-Kachel zeigt die Böen auch an Tagen ohne Fenster (zu wenig Wind)');
 [, $hk] = holen($sitePort, 'index.php?km=1000');
 pruefe(preg_match('#id="r-adria-nord".*?<span class="wetter">⛅<b>12°</b></span>#s', $hk) === 1 && str_contains($hk, 'Teils sonnig, Luft 12 °C von '),
        'Kachel: Wettersymbol und Luft, Tooltip mit Wetter');

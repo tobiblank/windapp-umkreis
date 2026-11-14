@@ -361,7 +361,11 @@ function wind_kennzahlen(array $b, array $sport): string
     } elseif ($det['geht'] && empty($sport['surf'])) {
         $k[] = $kz('wind', 'Wind Ø', h(zahl($det['mittel_kn'])) . '<small> kn</small>', $det['boe_max'] !== null ? 'Böen bis ' . zahl($det['boe_max']) . ' kn' : $fen);
     } elseif (($b['temp']['kn'] ?? null) !== null) {
-        $k[] = $kz('wind', 'Wind Ø', h(zahl($b['temp']['kn'])) . '<small> kn</small>', $fen);
+        // Ohne Fenster (zu wenig Wind, Boeen zu stark, Wellenreiten) seit 14.11.2026 auch
+        // die Boeen, das Zeitfenster steht dann im Tooltip
+        $boe = $b['temp']['boe'] ?? null;
+        $k[] = $kz('wind', 'Wind Ø', h(zahl($b['temp']['kn'])) . '<small> kn</small>', $boe !== null ? 'Böen bis ' . zahl($boe) . ' kn' : $fen,
+                   $boe !== null ? 'Mittel und höchste Böe ' . $fen : '');
     }
     // Wetter
     $w = $b['wetter'] ?? null;
