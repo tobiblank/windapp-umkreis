@@ -959,11 +959,11 @@ file_put_contents("$site/kal/config.php", '<?php return ' . var_export(['data_di
 [$code, $html] = holen($sitePort, "kal/stunden.php?region=ammersee&sport=kite_directional&tag=$kTag");
 pruefe($code === 200 && ohne_php_meldung($html)
        && preg_match('#<p class="urteil wind passt">[^<]+: <b>lohnt sich</b> <span class="leise">· 11–15 Uhr</span> <span class="leise">· Spitze 17 kn</span></p>#', $html) === 1
-       && str_contains($html, 'Urteil, Zeiten, Wind-Kachel und grüne Linie aus der')
+       && str_contains($html, 'Urteil, Zeiten, Wind-Kachel und blaue Linie aus der')
        && preg_match('#<div class="kz kz-wind" title="Kalibriert \(Messwerte\), Mittel 11–15 Uhr[^"]*"><span class="t">Wind Ø</span><span class="w">15<small> kn</small>#', $html) === 1
-       && str_contains($html, '<polyline class="s-kal"') && str_contains($html, '>Grüne Linie und Balken kalibriert · % Modell-Läufe, nicht kalibriert</text>')
+       && str_contains($html, '<polyline class="s-kal"') && str_contains($html, '>Blaue Linie und Balken kalibriert · % Modell-Läufe, nicht kalibriert</text>')
        && str_contains($html, '<title>13 Uhr: 17 kn kalibriert, fahrbar</title>') && str_contains($html, '<title>10 Uhr: 12 kn kalibriert, nicht fahrbar</title>'),
-       'Stundenseite mit ammerseewind.de: beste Zeit im Urteil, Wind-Kachel, grüne Linie und Balken kalibriert');
+       'Stundenseite mit ammerseewind.de: beste Zeit im Urteil, Wind-Kachel, blaue Linie und Balken kalibriert');
 [$code, $html] = holen($sitePort, 'kal/index.php?km=100&sport=kite_directional');
 pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'lohnt sich · 11–15 Uhr · Spitze 17 kn · Stand '), 'Rangliste: beste Zeit aus ammerseewind.de in der Detailzeile');
 
