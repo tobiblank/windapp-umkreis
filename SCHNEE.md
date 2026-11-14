@@ -170,8 +170,37 @@ Echte Berichte prüft die Action „Lagebericht prüfen“ (`tools/lawine_pruefe
 | Euregio | `static.avalanche.report/bulletins/{datum}/{datum}_EUREGIO_de_CAAMLv6.json` (Schema aus dem Verzeichnis von 2019; Host für 2026 ungeprüft) | Südtirol CC BY, Trentino CC BY 4.0; Tirol, Kärnten offen | `IT-32-BZ`, `IT-32-TN` |
 | Bayern | `static.lawinen-warnung.eu/bulletins/{datum}/{datum}_DE-BY_de_CAAMLv6.xml` (Struktur an echten Dateien vom 20.12.2025 und 17.4.2026 gesehen) | Weiterverarbeitung erlaubt (Mail 10.11.2026), Hinweise siehe oben | `DE-BY` (seit 10.11.2026) |
 | Salzburg, Kärnten, Steiermark (seit 9.11.2026), Vorarlberg (seit 10.11.2026, Kleinwalsertal) | `static.avalanche.report/eaws_bulletins/{datum}/{datum}-AT-05.json` (bzw. AT-02, AT-06, AT-08), EAWS-Sammlung, Format wie CAAML ohne Versionsangabe; ob `lawine_lesen()` es liest, ungeprüft | offen | – |
+| Lombardei (Livigno, `IT-25`) | EAWS-Sammlung unter `IT-25` | offen | – |
 
 Anfrage an den LWD Tirol läuft (angefragt 8.11.2026, Antwort steht aus); nach Antwort nur `freigegeben` ergänzen (`AT-07`). LWD Bayern hat am 10.11.2026 geantwortet (siehe oben). Beim SLF im Verteiler „Avalanche Bulletin“ angemeldet (info@dablank.de, bestätigt am 9.11.2026, Vorgang DATA-2406). Im selben Vorgang am 10.11.2026 angefragt, ob die IMIS-Schneehöhen (Oberengadin, ein- bis zweimal am Tag über `measurement-api.slf.ch`, mit Quellenangabe) angezeigt werden dürfen; Antwort steht aus.
+
+Weder Österreich noch Italien hat einen gemeinsamen Warndienst, der Freigaben erteilt: Zuständig ist je Bundesland bzw. Region der eigene Dienst. lawinen.at und das gemeinsame Ausgabetool von Salzburg, Kärnten, Steiermark, Ober- und Niederösterreich bündeln nur die Anzeige; in Italien koordiniert AINEVA, den Bericht gibt aber jede Region heraus (Südtirol und Trentino über die Euregio). Eine Freigabe gilt deshalb nur für den Dienst, der sie gibt.
+
+### Kontakte der Warndienste (Stand 14.11.2026)
+
+| Dienst | Adresse | Quelle der Adresse | Anfrage |
+|---|---|---|---|
+| LWD Tirol (`AT-07`) | lawine@tirol.gv.at | – | 8.11.2026, Antwort steht aus |
+| LWD Bayern (`DE-BY`) | – | – | freigegeben 10.11.2026 |
+| SLF (`CH-`) | data@slf.ch | – | CC BY 4.0; IMIS-Rückfrage 10.11.2026 (DATA-2406), Antwort steht aus |
+| LWD Salzburg (`AT-05`) | lawine@salzburg.gv.at | Impressum lawine.salzburg.at | Entwurf 14.11.2026, Versand offen |
+| LWD Kärnten (`AT-02`) | abt3.katastrophenschutz@ktn.gv.at | lawinenwarndienst.ktn.gv.at (die ältere lawine@ktn.gv.at nicht nehmen) | Entwurf 14.11.2026, Versand offen |
+| LWD Steiermark (`AT-06`) | katastrophenschutz@stmk.gv.at | Lagebericht 2024, Impressum lawis.at | Entwurf 14.11.2026, Versand offen |
+| LWD Vorarlberg (`AT-08`) | lawinenwarndienst@lwz-vorarlberg.at | Lageberichte 2024 | Entwurf 14.11.2026, Versand offen |
+| ARPA Lombardia, Bormio (`IT-25`, Livigno) | nivometeo@arpalombardia.it | Bollettino Dezember 2025 | Entwurf 14.11.2026 (italienisch), Versand offen |
+
+Nach dem Versand das Datum eintragen; nach einer Freigabe `freigegeben` im Katalog ergänzen.
+
+### Neue Region: Lawinenlage prüfen (Arbeitsregel seit 14.11.2026, Wunsch Tobias)
+
+Bei jeder neuen Schnee-Region, ohne eigene Rückfrage:
+
+1. Mikroregion bestimmen (`eaws`, Action „EAWS-Regionen zuordnen“) und den zuständigen Warndienst (`warndienst`).
+2. Prüfen, ob der Dienst im Katalog unter `lawinendienste` steht und das Präfix in `freigegeben` enthalten ist. Wenn ja: fertig.
+3. Wenn nein: Gibt es einen maschinenlesbaren Bericht (CAAML, EAWS-Sammlung), und unter welcher Lizenz? Steht eine offene Lizenz (z. B. CC BY) beim Dienst selbst, mit Quelle freigeben und hier vermerken.
+4. Sonst: Adresse des Diensts recherchieren (bevorzugt aktuelles Impressum oder Kontaktseite, sonst Lagebericht), Quelle angeben, in die Kontakttabelle eintragen. Vorher prüfen, ob der Dienst schon angefragt ist (Tabelle oben), damit keine doppelte Anfrage entsteht.
+5. Anfrage als Mail entwerfen, nach dem Muster der Anfragen vom 14.11.2026: Seite und Zweck, betroffene Regionen, Frage nach Erlaubnis und Lizenz, Umfang (nur Stufe und Probleme, Texte verlinkt, Quellenangabe mit Ausgabe- und Gültigkeitszeit, Abruf dreimal am Tag, Haftungshinweis), Verweis auf die bestehenden Freigaben, bis zur Antwort nur Link. Sprache des Diensts (Italien: italienisch, Frankreich: französisch), Absender Tobias Blank, wohinfahrma.de. Tobias verschickt selbst.
+6. Bis zur Freigabe bleibt der Dienst ohne `freigegeben`; die Seite zeigt nur den Link zum Bericht.
 
 ### Mikroregionen
 
