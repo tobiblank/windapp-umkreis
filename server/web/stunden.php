@@ -170,7 +170,12 @@ function stufe(?float $c): string
 /**
  * Diagramm als SVG. Masse in Einheiten der viewBox (360 breit); Farben aus stil.css.
  */
-function stunden_svg(array $st, array $sport, float $ymax): string
+/**
+ * $modellHinweis (seit 14.11.2026): Region mit kalibrierter Spezialprognose. Dann steht ueber
+ * Fahrbar-Balken und Stunden-% "Modell, nicht kalibriert" und die % sind neutral grau, damit
+ * sie nicht wie die kalibrierte Chance oben aussehen.
+ */
+function stunden_svg(array $st, array $sport, float $ymax, bool $modellHinweis = false): string
 {
     $W = 360;
     $L = 28;
@@ -187,7 +192,8 @@ function stunden_svg(array $st, array $sport, float $ymax): string
     $o = [];
     // Seit 13.11.2026 zwei Zeilen mehr unter dem Diagramm: Wettersymbol und Luft je Stunde
     $mitWetter = (bool)array_filter(array_column($st['stunden'], 'wetter'));
-    $yUhr = $unten + ($mitWetter ? 74 : 42);
+    $dz = $modellHinweis ? 14 : 0;   // Platz fuer den Hinweis unter dem Diagramm
+    $yUhr = $unten + $dz + ($mitWetter ? 74 : 42);
     $o[] = '<svg class="stunden-bild" viewBox="0 0 ' . $W . ' ' . ($yUhr + 10) . '" role="img" aria-label="Wind je Stunde">';
     // Tagesfenster
     [$fa, $fb] = $st['fenster'];
@@ -244,28 +250,32 @@ function stunden_svg(array $st, array $sport, float $ymax): string
              . '<path d="M0 -6 L0 6 M-3.5 2.5 L0 6 L3.5 2.5"/></g>';
     }
     // Fahrbar (Modellmittel) und Anteil der Ensemble-Laeufe
+    if ($modellHinweis) {
+        $o[] = '<text class="s-achse s-hinweis" x="' . $L . '" y="' . ($unten + 13) . '">Modell, nicht kalibriert: Stunde fahrbar, % der Läufe</text>';
+    }
+    $u = $unten + $dz;
     foreach ($st['stunden'] as $s => $z) {
-        $o[] = '<rect class="s-fahrbar' . ($z['fahrbar'] ? ' ja' : '') . '" x="' . $r($x($s) + 1) . '" y="' . ($unten + 4) . '" width="' . $r($bw - 2) . '" height="6" rx="2">'
+        $o[] = '<rect class="s-fahrbar' . ($z['fahrbar'] ? ' ja' : '') . '" x="' . $r($x($s) + 1) . '" y="' . ($u + 4) . '" width="' . $r($bw - 2) . '" height="6" rx="2">'
              . '<title>' . h($s . ' Uhr: ' . ($z['fahrbar'] ? 'fahrbar' . ($z['regel'] ? ' (Regel)' : '') : ($z['grund'] ?? 'außerhalb des Fensters'))) . '</title></rect>';
         if ($z['ens_anteil'] !== null) {
-            $o[] = '<text class="s-anteil ' . stufe($z['ens_anteil']) . '" x="' . $r($xm($s)) . '" y="' . ($unten + 24) . '" text-anchor="middle">' . zahl(100 * $z['ens_anteil']) . '</text>';
+            $o[] = '<text class="s-anteil ' . ($modellHinweis ? 'modell' : stufe($z['ens_anteil'])) . '" x="' . $r($xm($s)) . '" y="' . ($u + 24) . '" text-anchor="middle">' . zahl(100 * $z['ens_anteil']) . '</text>';
         }
         $wt = $z['wetter'] ?? null;
         if ($wt !== null && ($sym = wetter_symbol($wt)) !== null) {
-            $o[] = '<text class="s-wetter" x="' . $r($xm($s)) . '" y="' . ($unten + 44) . '" text-anchor="middle"><title>' . h($s . ' Uhr: ' . wetter_wort($wt)
+            $o[] = '<text class="s-wetter" x="' . $r($xm($s)) . '" y="' . ($u + 44) . '" text-anchor="middle"><title>' . h($s . ' Uhr: ' . wetter_wort($wt)
                  . ($wt['nied'] !== null && $wt['nied'] >= WETTER_NASS_MM ? ', ' . number_format($wt['nied'], 1, ',', '') . ' mm' : '')
                  . ($wt['wolken'] !== null ? ', ' . zahl($wt['wolken']) . ' % Wolken' : '')) . '</title>' . $sym . '</text>';
         }
         if ($wt !== null && ($g = grad_text($wt['temp'])) !== null) {
-            $o[] = '<text class="s-temp" x="' . $r($xm($s)) . '" y="' . ($unten + 60) . '" text-anchor="middle">' . h($g) . '</text>';
+            $o[] = '<text class="s-temp" x="' . $r($xm($s)) . '" y="' . ($u + 60) . '" text-anchor="middle">' . h($g) . '</text>';
         }
         if (($s - $st['von']) % 2 === 0) {
             $o[] = '<text class="s-achse" x="' . $r($xm($s)) . '" y="' . $yUhr . '" text-anchor="middle">' . $s . '</text>';
         }
     }
-    $o[] = '<text class="s-achse" x="' . ($L - 4) . '" y="' . ($unten + 24) . '" text-anchor="end">%</text>';
+    $o[] = '<text class="s-achse" x="' . ($L - 4) . '" y="' . ($u + 24) . '" text-anchor="end">%</text>';
     if ($mitWetter) {
-        $o[] = '<text class="s-achse" x="' . ($L - 4) . '" y="' . ($unten + 60) . '" text-anchor="end">°C</text>';
+        $o[] = '<text class="s-achse" x="' . ($L - 4) . '" y="' . ($u + 60) . '" text-anchor="end">°C</text>';
     }
     $o[] = '<text class="s-achse" x="' . ($L - 4) . '" y="' . $yUhr . '" text-anchor="end">Uhr</text>';
     $o[] = '</svg>';
@@ -430,8 +440,8 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
         $o .= wind_kennzahlen($b, $sport);
     }
     // Legende eingeklappt (seit 13.11.2026; vorher ein langer Absatz ueber dem Diagramm)
-    $o .= '<details class="klein leise legende-auf"><summary>Was zeigt das Diagramm?</summary><p>Wind: dicke Linie = Modellmittel, dünne = einzelne Modelle, orange gestrichelt = Böen (Modellmittel), Band = 80 % der Ensemble-Läufe, grün gestrichelt = Windfenster, Pfeile = wohin der Wind weht. Grüne Balken = Stunde fahrbar, % = Anteil der Ensemble-Läufe, die sie fahrbar sehen. Darunter Wetter und Lufttemperatur je Stunde (Modellmittel)</p></details>';
-    $o .= stunden_svg($st, $sport, $ymax);
+    $o .= '<details class="klein leise legende-auf"><summary>Was zeigt das Diagramm?</summary><p>Wind: dicke Linie = Modellmittel, dünne = einzelne Modelle, orange gestrichelt = Böen (Modellmittel), Band = 80 % der Ensemble-Läufe, grün gestrichelt = Windfenster, Pfeile = wohin der Wind weht. Grüne Balken = Stunde fahrbar, % = Anteil der Ensemble-Läufe, die sie fahrbar sehen (beides Modell, nicht kalibriert). Darunter Wetter und Lufttemperatur je Stunde (Modellmittel)</p></details>';
+    $o .= stunden_svg($st, $sport, $ymax, $fr !== null);
     if (!empty($st['hat_welle'])) {
         $o .= '<p class="klein leise welle-titel">Wellen: Balken = gesamte Welle, Linie = Dünung, Pfeile = wohin die Dünung läuft, Zahlen = Periode in Sekunden</p>' . welle_svg($st, $sport, $mmax);
     }
