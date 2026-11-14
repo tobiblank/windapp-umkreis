@@ -937,6 +937,9 @@ pruefe($code === 200 && ohne_php_meldung($html) && str_contains($html, 'Urteil u
 pruefe(preg_match('#<p class="urteil wind passt">[^<]+: <b>GO</b> <span class="leise">· Spitze 18 kn</span></p>#', $html) === 1
        && preg_match('#das Modell allein sagt: </span><b>[^<]+</b>#', $html) === 1,
        'Stundenseite: Urteil aus der fremden Prognose (wie die Chance), Modell-Urteil nur als Hinweis');
+pruefe(str_contains($html, '>Modell, nicht kalibriert: Stunde fahrbar, % der Läufe</text>') && str_contains($html, '<text class="s-anteil modell"')
+       && !preg_match('#class="s-anteil (go|maybe|no)"#', $html),
+       'Stundenseite mit fremder Prognose: Stunden-% als Modell gekennzeichnet, ohne Ampelfarben');
 [$code, $html] = holen($sitePort, 'fremd/index.php?km=100&ansicht=woche');
 pruefe($code === 200 && ohne_php_meldung($html), 'Woche mit fremder Prognose: keine PHP-Meldung');
 
@@ -1127,6 +1130,7 @@ pruefe(preg_match('#<p class="urteil wind passt">Morgen: <b>[^<]+</b>#', $html) 
        'Stundenseite: Urteil groß, Tageswerte als Kennzahlen (Wind, Wetter, Luft, Wasser, Welle), Neopren eigene Zeile');
 $tag3 = (new DateTimeImmutable('+3 days', new DateTimeZone('Europe/Berlin')))->format('Y-m-d');
 [, $html] = holen($sitePort, "stunden.php?region=ammersee&tag=$tag3");
+pruefe(!str_contains($html, 'nicht kalibriert: Stunde fahrbar'), 'Stundenseite ohne fremde Prognose: kein Modell-Hinweis im Diagramm');
 pruefe(str_contains($html, '<div class="kz kz-wind" title="Mittel und höchste Böe 9–17 Uhr"><span class="t">Wind Ø</span><span class="w">6<small> kn</small></span><span class="u">Böen bis 10 kn</span>'),
        'Stundenseite: Wind-Kachel zeigt die Böen auch an Tagen ohne Fenster (zu wenig Wind)');
 [, $hk] = holen($sitePort, 'index.php?km=1000');
