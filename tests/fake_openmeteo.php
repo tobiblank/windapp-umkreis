@@ -23,6 +23,15 @@
 
 $pfad = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
+// Seit 14.11.2026: Umgebung FAKE_AUSFALL=<Datei mit einer Zahl n>: die naechsten n Anfragen an
+// /v1/forecast antworten 503 (prueft das Nachholen im Action-Lauf)
+$ausfall = getenv('FAKE_AUSFALL');
+if ($ausfall && $pfad === '/v1/forecast' && (int)@file_get_contents($ausfall) > 0) {
+    file_put_contents($ausfall, (string)((int)file_get_contents($ausfall) - 1));
+    http_response_code(503);
+    exit;
+}
+
 // Ersatz fuer Alplakes (seit 8.11.2026): /simulations/1d/point/simstrat/{see}/{von}/{bis}/{tiefe}
 // Wie die echte API alle 3 Stunden, ein paar Sekunden nach der vollen Stunde, von gestern
 // 1 Uhr UTC bis in 4 Tagen. Ammersee: abwechselnd 10 und 13 Grad (prueft das Fuellen der
