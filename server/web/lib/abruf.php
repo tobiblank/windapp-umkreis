@@ -31,7 +31,9 @@ function fetch(string $url, int $timeout): array
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CONNECTTIMEOUT => 5,
+        // Seit 14.11.2026 bis 15 s statt 5 s: Von GitHub aus brach am 13.11. der TLS-Aufbau zu
+        // api.open-meteo.com mehrfach nach 5 s ab ("SSL connection timeout"), danach klappte es.
+        CURLOPT_CONNECTTIMEOUT => min(15, $timeout),
         CURLOPT_TIMEOUT        => $timeout,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_MAXREDIRS      => 3,

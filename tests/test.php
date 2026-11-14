@@ -13,6 +13,7 @@ $ROOT = dirname(__DIR__);
 putenv('UMKREIS_WARTE_429=0');
 putenv('UMKREIS_WARTE_FEHLER=0');
 putenv('UMKREIS_PAUSE_ENSEMBLE=0');
+putenv('UMKREIS_PAUSE_NACHHOLEN=0');
 require "$ROOT/server/web/lib/regionen.php";
 require "$ROOT/server/web/lib/bewertung.php";
 require "$ROOT/server/web/lib/vorrechnen.php";
@@ -429,6 +430,25 @@ exec($cmd, $ausK, $rcK);
 pruefe($rcK === 1 && str_contains(implode("\n", $ausK), 'vorhersage: Abruf fehlgeschlagen'), 'Action bei Fehler: Meldung und Exit 1');
 exec($cmd . ' --debug', $ausW);
 pruefe(str_contains(implode("\n", $ausW), 'keine Antwort, warte 0 s (2. Wiederholung)'), 'Action bei Fehler: zwei Wiederholungen je Teil');
+pruefe(substr_count(implode("\n", $ausW), '(1. Wiederholung)') === 3 && preg_match('/Nachholen: \d+ Teile nach \d+ s, uebersprungen/', implode("\n", $ausW)) === 1,
+       'Ausfall: nach drei Teilen ohne Antwort keine Wiederholungen mehr, kein Nachholen');
+// Nachholen (seit 14.11.2026): die ersten drei Vorhersage-Anfragen scheitern (503), der Teil
+// wird am Ende des Laufs noch einmal geholt
+$ausfallF = "$tmp/ausfall";
+file_put_contents($ausfallF, '3');
+$portN = $port + 11;
+$serverN = proc_open(['php', '-S', "127.0.0.1:$portN", __DIR__ . '/fake_openmeteo.php'], [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $pipesN, null,
+                     array_merge(getenv(), ['FAKE_AUSFALL' => $ausfallF]));
+for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $portN); $i++) {
+    usleep(100000);
+}
+exec('UMKREIS_TEST_URL=' . escapeshellarg("http://127.0.0.1:$portN") . ' php ' . escapeshellarg("$ROOT/server/sammler.php")
+     . ' --action ' . escapeshellarg(__DIR__ . "/regionen_test.json") . ' ' . escapeshellarg("$tmp/action_n") . ' --debug 2>&1', $ausN, $rcN);
+proc_terminate($serverN);
+$standN = daten_laden("$tmp/action_n", ['vorhersage']);
+pruefe($rcN === 0 && str_contains(implode("\n", $ausN), 'vorhersage/0: nachgeholt') && count($standN['vorhersage']) === count($standA['vorhersage'])
+       && count(glob("$tmp/action_n/vorhersage/*.ndjson.gz")) === 1 && !glob("$tmp/action_n/vorhersage/*.ndjson"),
+       'Action: fehlgeschlagener Teil am Ende nachgeholt, kein Fehler, Datei gezippt' . ($rcN === 0 ? '' : ': ' . implode(' | ', array_slice($ausN, -4))));
 proc_terminate($server);
 
 // ---------------------------------------------------------------

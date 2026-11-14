@@ -73,6 +73,7 @@ if ($i !== false) {
     $CFG = ['regionen_datei' => $argv[$i + 1], 'data_dir' => $argv[$i + 2]];
 }
 $LAUF = $ACTION ? gmdate('Y-m-d_Hi') : null;
+$START = microtime(true);
 // Schnee-Katalog (seit 8.11.2026): --schnee <datei>; nur bestimmte Quellen: --nur a,b
 $j = array_search('--schnee', $argv ?? [], true);
 $SCHNEE_DATEI = $j !== false ? ($argv[$j + 1] ?? null) : null;
@@ -532,6 +533,79 @@ function alte_zippen(string $dataDir, string $quelle): void
 $probleme = [];
 $bericht  = [];
 
+/**
+ * Einen Teil (bis zu $TEIL_GROESSE Regionen) von Open-Meteo bzw. Alplakes holen und als
+ * Zeile anhaengen. true: geholt (oder unveraendert), false: Fehler (Zeile mit ok=false
+ * steht in der Datei). Seit 14.11.2026 eigene Funktion, damit der Action-Lauf
+ * fehlgeschlagene Teile am Ende noch einmal holen kann.
+ */
+$folgeFehler = 0;
+$teilAbrufen = function (string $name, array $q, int $teilNr, array $teil, string $url) use (
+    &$bericht, &$probleme, &$folgeFehler, $DATA_DIR, $LAUF, $ACTION, $TIMEOUT, $OM_LIMIT, $OM_WARNUNG_AB
+): bool {
+    $ids = array_column($teil, 'id');
+    $r = abruf($url, $TIMEOUT, "$name/$teilNr", $bericht);
+    // Mehrere Teile hintereinander ohne Antwort: Ausfall, nicht mehr jeweils zweimal
+    // wiederholen (sonst laeuft die Action bei einem Ausfall in ihr Zeitlimit)
+    $folgeFehler = $r['http'] === 0 ? $folgeFehler + 1 : 0;
+    if ($folgeFehler >= 3) {
+        $GLOBALS['umkreis_abruf_wiederholungen'] = 0;
+    } else {
+        unset($GLOBALS['umkreis_abruf_wiederholungen']);
+    }
+
+    // Im Action-Modus nicht zaehlen: kein bleibender Zustand, Abrufe von GitHub-IPs
+    $omHeute = $ACTION ? 0.0 : om_zaehlen($DATA_DIR, om_gewicht($q['query'], count($teil)));
+    if (!$ACTION && $omHeute >= $OM_LIMIT * $OM_WARNUNG_AB) {
+        $warnStempel = "$DATA_DIR/.state/openmeteo.warnung";
+        if (@file_get_contents($warnStempel) !== gmdate('Y-m-d')) {
+            $probleme[] = sprintf('Open-Meteo: heute geschaetzt %d von %d freien Aufrufen (%d %%)',
+                                  $omHeute, $OM_LIMIT, round(100 * $omHeute / $OM_LIMIT));
+            @file_put_contents($warnStempel, gmdate('Y-m-d'));
+        }
+    }
+
+    $liste = ($r['http'] >= 200 && $r['http'] < 300) ? antwort_liste($r['body'], count($teil)) : null;
+    $ok = $liste !== null;
+    if ($ok && $name === 'schnee_raster') {
+        $liste = array_map(fn($e, $p) => schnee_raster_eintrag($e, $p['punkt']), $liste, $teil);
+    }
+
+    $zeile = [
+        'ts'       => gmdate('Y-m-d\TH:i:s\Z'),
+        'source'   => $name,
+        'ok'       => $ok,
+        'http'     => $r['http'],
+        'ms'       => $r['ms'],
+        'regionen' => $ids,
+    ];
+
+    if ($ok) {
+        $fp = fingerabdruck($liste);
+        $fpDatei = "$DATA_DIR/.state/$name.$teilNr.fp";
+        if (!$ACTION && @file_get_contents($fpDatei) === $fp . '|' . implode(',', $ids)) {
+            $bericht[] = "$name/$teilNr: unveraendert";
+            return true;
+        }
+        $zeile['payload'] = $liste;
+        if (!anhaengen($DATA_DIR, $name, $zeile, $LAUF)) {
+            $probleme[] = "$name: Schreiben in $DATA_DIR fehlgeschlagen";
+            return false;
+        }
+        @file_put_contents($fpDatei, $fp . '|' . implode(',', $ids));
+        $bericht[] = sprintf('%s/%d: ok, %d Regionen, %d KB, %d ms', $name, $teilNr, count($ids), $r['bytes'] / 1024, $r['ms']);
+        return true;
+    } else {
+        $zeile['err'] = $r['err'] !== '' ? $r['err'] : substr(preg_replace('/\s+/', ' ', $r['body']), 0, 300);
+        anhaengen($DATA_DIR, $name, $zeile, $LAUF);
+        $bericht[] = "$name/$teilNr: FEHLER http={$r['http']} {$zeile['err']}";
+        return false;
+    }
+};
+$nachholen = [];   // Action: [name, q, teilNr, teil, url] der fehlgeschlagenen Teile
+$quelleOk = [];    // Action: Quelle ohne Fehler (nach dem Nachholen)
+
+
 foreach (quellen($KATALOG, $MODELLE, $SCHNEE, $SCHNEE_MODELLE) as $name => $q) {
     if (!$q['regionen'] || ($NUR !== null && !in_array($name, $NUR, true))) {
         continue;
@@ -633,63 +707,18 @@ foreach (quellen($KATALOG, $MODELLE, $SCHNEE, $SCHNEE_MODELLE) as $name => $q) {
             $bericht[] = "$name/$teilNr: Pause $pause s (Minutenlimit)";
             sleep($pause);
         }
-        $r = abruf($url, $TIMEOUT, "$name/$teilNr", $bericht);
-
-        // Im Action-Modus nicht zaehlen: kein bleibender Zustand, Abrufe von GitHub-IPs
-        $omHeute = $ACTION ? 0.0 : om_zaehlen($DATA_DIR, om_gewicht($q['query'], count($teil)));
-        if (!$ACTION && $omHeute >= $OM_LIMIT * $OM_WARNUNG_AB) {
-            $warnStempel = "$DATA_DIR/.state/openmeteo.warnung";
-            if (@file_get_contents($warnStempel) !== gmdate('Y-m-d')) {
-                $probleme[] = sprintf('Open-Meteo: heute geschaetzt %d von %d freien Aufrufen (%d %%)',
-                                      $omHeute, $OM_LIMIT, round(100 * $omHeute / $OM_LIMIT));
-                @file_put_contents($warnStempel, gmdate('Y-m-d'));
-            }
-        }
-
-        $liste = ($r['http'] >= 200 && $r['http'] < 300) ? antwort_liste($r['body'], count($teil)) : null;
-        $ok = $liste !== null;
-        if ($ok && $name === 'schnee_raster') {
-            $liste = array_map(fn($e, $p) => schnee_raster_eintrag($e, $p['punkt']), $liste, $teil);
-        }
-
-        $zeile = [
-            'ts'       => gmdate('Y-m-d\TH:i:s\Z'),
-            'source'   => $name,
-            'ok'       => $ok,
-            'http'     => $r['http'],
-            'ms'       => $r['ms'],
-            'regionen' => $ids,
-        ];
-
-        if ($ok) {
-            $fp = fingerabdruck($liste);
-            $fpDatei = "$DATA_DIR/.state/$name.$teilNr.fp";
-            if (!$ACTION && @file_get_contents($fpDatei) === $fp . '|' . implode(',', $ids)) {
-                $bericht[] = "$name/$teilNr: unveraendert";
-                continue;
-            }
-            $zeile['payload'] = $liste;
-            if (!anhaengen($DATA_DIR, $name, $zeile, $LAUF)) {
-                $probleme[] = "$name: Schreiben in $DATA_DIR fehlgeschlagen";
+        if (!$teilAbrufen($name, $q, $teilNr, $teil, $url)) {
+            if ($ACTION) {
+                $nachholen[] = [$name, $q, $teilNr, $teil, $url];
+            } else {
                 $alleOk = false;
-                continue;
             }
-            @file_put_contents($fpDatei, $fp . '|' . implode(',', $ids));
-            $bericht[] = sprintf('%s/%d: ok, %d Regionen, %d KB, %d ms', $name, $teilNr, count($ids), $r['bytes'] / 1024, $r['ms']);
-        } else {
-            $alleOk = false;
-            $zeile['err'] = $r['err'] !== '' ? $r['err'] : substr(preg_replace('/\s+/', ' ', $r['body']), 0, 300);
-            anhaengen($DATA_DIR, $name, $zeile, $LAUF);
-            $bericht[] = "$name/$teilNr: FEHLER http={$r['http']} {$zeile['err']}";
         }
     }
 
     if ($ACTION) {
-        // Ein Lauf, kein zweiter Versuch: jeder Fehler wird gemeldet
-        if (!$alleOk) {
-            $probleme[] = "$name: Abruf fehlgeschlagen (Einzelheiten in der Datei dieses Laufs)";
-        }
-        lauf_zippen($DATA_DIR, $name, $LAUF);
+        // Gemeldet und gezippt wird nach dem Nachholen (unten)
+        $quelleOk[$name] = $alleOk;
         continue;
     }
     if ($alleOk) {
@@ -704,6 +733,46 @@ foreach (quellen($KATALOG, $MODELLE, $SCHNEE, $SCHNEE_MODELLE) as $name => $q) {
         }
     }
     alte_zippen($DATA_DIR, $name);
+}
+
+// Action: fehlgeschlagene Teile am Ende noch einmal holen (seit 14.11.2026). Am 13.11.2026
+// scheiterten zweimal die ersten Vorhersage-Teile eines Laufs ("SSL connection timeout"),
+// die Abrufe danach klappten; ohne Vorhersage fehlten Regionen bis zum naechsten Lauf.
+// Nicht bei einem grossen Ausfall (mehr als NACHHOLEN_MAX Teile) oder spaet im Lauf.
+const NACHHOLEN_MAX = 8;
+const NACHHOLEN_BIS_S = 18 * 60;   // Action-Zeitlimit 30 min
+if ($ACTION && $nachholen) {
+    $dauer = (int)(microtime(true) - $START);
+    if (count($nachholen) > NACHHOLEN_MAX || $dauer > NACHHOLEN_BIS_S) {
+        $bericht[] = sprintf('Nachholen: %d Teile nach %d s, uebersprungen', count($nachholen), $dauer);
+        foreach ($nachholen as [$name]) {
+            $quelleOk[$name] = false;
+        }
+    } else {
+        $pause = umkreis_wartezeit('UMKREIS_PAUSE_NACHHOLEN', 61);
+        $bericht[] = 'Nachholen: ' . count($nachholen) . " Teil(e), vorher $pause s Pause";
+        sleep($pause);
+        $folgeFehler = 0;
+        unset($GLOBALS['umkreis_abruf_wiederholungen']);
+        foreach ($nachholen as $i => [$name, $q, $teilNr, $teil, $url]) {
+            if ($i > 0 && (str_ends_with($name, 'ensemble') || $name === 'schnee_raster')) {
+                $pause = umkreis_wartezeit('UMKREIS_PAUSE_ENSEMBLE', 61);
+                $bericht[] = "$name/$teilNr: Pause $pause s (Minutenlimit)";
+                sleep($pause);
+            }
+            if ($teilAbrufen($name, $q, $teilNr, $teil, $url)) {
+                $bericht[] = "$name/$teilNr: nachgeholt";
+            } else {
+                $quelleOk[$name] = false;
+            }
+        }
+    }
+}
+foreach ($quelleOk as $name => $ok) {
+    if (!$ok) {
+        $probleme[] = "$name: Abruf fehlgeschlagen (Einzelheiten in der Datei dieses Laufs)";
+    }
+    lauf_zippen($DATA_DIR, $name, $LAUF);
 }
 
 if ($DEBUG) {
