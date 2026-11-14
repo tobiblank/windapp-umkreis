@@ -183,11 +183,11 @@ Weder Österreich noch Italien hat einen gemeinsamen Warndienst, der Freigaben e
 | LWD Tirol (`AT-07`) | lawine@tirol.gv.at | – | 8.11.2026, Antwort steht aus |
 | LWD Bayern (`DE-BY`) | – | – | freigegeben 10.11.2026 |
 | SLF (`CH-`) | data@slf.ch | – | CC BY 4.0; IMIS-Rückfrage 10.11.2026 (DATA-2406), Antwort steht aus |
-| LWD Salzburg (`AT-05`) | lawine@salzburg.gv.at | Impressum lawine.salzburg.at | Entwurf 14.11.2026, Versand offen |
-| LWD Kärnten (`AT-02`) | abt3.katastrophenschutz@ktn.gv.at | lawinenwarndienst.ktn.gv.at (die ältere lawine@ktn.gv.at nicht nehmen) | Entwurf 14.11.2026, Versand offen |
-| LWD Steiermark (`AT-06`) | katastrophenschutz@stmk.gv.at | Lagebericht 2024, Impressum lawis.at | Entwurf 14.11.2026, Versand offen |
-| LWD Vorarlberg (`AT-08`) | lawinenwarndienst@lwz-vorarlberg.at | Lageberichte 2024 | Entwurf 14.11.2026, Versand offen |
-| ARPA Lombardia, Bormio (`IT-25`, Livigno) | nivometeo@arpalombardia.it | Bollettino Dezember 2025 | Entwurf 14.11.2026 (italienisch), Versand offen |
+| LWD Salzburg (`AT-05`) | lawine.salzburg@geosphere.at | Abwesenheitsnotiz von lawine@salzburg.gv.at (14.11.2026: „keine Weiterleitung“); die Adresse im Impressum nicht mehr nehmen | 14.11.2026 an lawine@salzburg.gv.at gesendet, Auto-Antwort mit neuer Adresse; erneuter Versand an die GeoSphere-Adresse offen |
+| LWD Kärnten (`AT-02`) | abt3.katastrophenschutz@ktn.gv.at | lawinenwarndienst.ktn.gv.at (die ältere lawine@ktn.gv.at nicht nehmen) | 14.11.2026 gesendet, Antwort steht aus |
+| LWD Steiermark (`AT-06`) | katastrophenschutz@stmk.gv.at | Lagebericht 2024, Impressum lawis.at | 14.11.2026 gesendet, Antwort steht aus |
+| LWD Vorarlberg (`AT-08`) | lawinenwarndienst@lwz-vorarlberg.at | Lageberichte 2024 | 14.11.2026 gesendet, Antwort steht aus |
+| ARPA Lombardia, Bormio (`IT-25`, Livigno) | nivometeo@arpalombardia.it | Bollettino Dezember 2025 | 14.11.2026 gesendet (italienisch), Antwort steht aus |
 
 Nach dem Versand das Datum eintragen; nach einer Freigabe `freigegeben` im Katalog ergänzen.
 
@@ -198,7 +198,7 @@ Bei jeder neuen Schnee-Region, ohne eigene Rückfrage:
 1. Mikroregion bestimmen (`eaws`, Action „EAWS-Regionen zuordnen“) und den zuständigen Warndienst (`warndienst`).
 2. Prüfen, ob der Dienst im Katalog unter `lawinendienste` steht und das Präfix in `freigegeben` enthalten ist. Wenn ja: fertig.
 3. Wenn nein: Gibt es einen maschinenlesbaren Bericht (CAAML, EAWS-Sammlung), und unter welcher Lizenz? Steht eine offene Lizenz (z. B. CC BY) beim Dienst selbst, mit Quelle freigeben und hier vermerken.
-4. Sonst: Adresse des Diensts recherchieren (bevorzugt aktuelles Impressum oder Kontaktseite, sonst Lagebericht), Quelle angeben, in die Kontakttabelle eintragen. Vorher prüfen, ob der Dienst schon angefragt ist (Tabelle oben), damit keine doppelte Anfrage entsteht.
+4. Sonst: Adresse des Diensts recherchieren (bevorzugt aktuelles Impressum oder Kontaktseite, sonst Lagebericht); eine Adresse aus dem Impressum kann trotzdem veraltet sein (Salzburg, 14.11.2026), Quelle angeben, in die Kontakttabelle eintragen. Vorher prüfen, ob der Dienst schon angefragt ist (Tabelle oben), damit keine doppelte Anfrage entsteht.
 5. Anfrage als Mail entwerfen, nach dem Muster der Anfragen vom 14.11.2026: Seite und Zweck, betroffene Regionen, Frage nach Erlaubnis und Lizenz, Umfang (nur Stufe und Probleme, Texte verlinkt, Quellenangabe mit Ausgabe- und Gültigkeitszeit, Abruf dreimal am Tag, Haftungshinweis), Verweis auf die bestehenden Freigaben, bis zur Antwort nur Link. Sprache des Diensts (Italien: italienisch, Frankreich: französisch), Absender Tobias Blank, wohinfahrma.de. Tobias verschickt selbst.
 6. Bis zur Freigabe bleibt der Dienst ohne `freigegeben`; die Seite zeigt nur den Link zum Bericht.
 
