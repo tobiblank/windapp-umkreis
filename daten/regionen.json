@@ -1,5 +1,5 @@
 {
-  "stand": "2026-11-08",
+  "stand": "2026-11-15",
   "druckpunkte": {
     "bozen": {"name": "Bozen", "punkt": [46.5, 11.35]},
     "innsbruck": {"name": "Innsbruck", "punkt": [47.26, 11.39]},
@@ -1221,6 +1221,93 @@
       "spots": [
         {"id": "meia-praia", "name": "Meia Praia (Lagos)", "windlagen": [{"name": "West bis Südwest (Thermik)", "sektor": [200, 290], "charakter": "nachmittags, side"}], "ablandig": [[300, 60]]},
         {"id": "ria-de-alvor", "name": "Ria de Alvor (Lagune)", "ablandig": [[20, 120]]}
+      ]
+    },
+    {
+      "id": "leipziger-neuseenland",
+      "name": "Leipziger Neuseenland",
+      "land": "DE",
+      "typ": "see",
+      "punkt": [51.22, 12.39],
+      "zeitzone": "Europe/Berlin",
+      "infos": [
+        {"art": "zone", "text": "Kiten in Sachsen nur auf genehmigten Strecken; im Neuseenland laut Bericht von 2019 nur am Hainer See. Auf Cospudener, Markkleeberger, Störmthaler und Zwenkauer See seit 2013 verboten.", "quelle": "l-iz.de (2013, 2019)"},
+        {"art": "tipp", "text": "Windsurf- und Wingfoilen sind in Sachsen seit 2024 dem Windsurfen gleichgestellt und erlaubt; Kite-Foilen nur auf Kitestrecken.", "quelle": "medienservice.sachsen.de (2024)"},
+        {"art": "niveau", "text": "Cospudener See: bei West bis Nordwest auflandig, gut zum Lernen, viel Kabbel. Hainer See: bei Ost Kabbelwelle, bei West Flachwasser im Lee der Landzunge, nur für Könner; man treibt über den ganzen See ab.", "quelle": "surf-magazin.de"},
+        {"art": "saison", "text": "Beste Windzeit im Binnenland Oktober bis März (Westwetterlagen).", "quelle": "surf-magazin.de"}
+      ],
+      "hinweis": "Von Claude am 15.11.2026 eingetragen, ungeprüft. Quelle: surf-magazin.de, Spot-Guide Neuseenland Leipzig (Spots, Koordinaten, Windrichtungen). Cospudener See: Südwest und Nordwest gehen, Ost ablandig. Markkleeberger See Nordstrand: Ost und Süd. Hainer See Kahnsdorf: Ost und West. Sektorgrenzen und ablandig aus der Uferlage geschätzt. Ein Vorhersagepunkt für alle drei Seen (rund 10 km auseinander). Kitesperre nicht als sperre eingetragen, weil sie nur einzelne Seen betrifft und der Hainer See ausgenommen ist; Stand der Ausnahme (2019) nicht aktuell geprüft. Geiseltalsee eigene Region.",
+      "windlagen": [],
+      "spots": [
+        {"id": "cospudener-see", "name": "Cospudener See (Nordstrand)", "punkt": [51.2652, 12.3445], "windlagen": [{"name": "Südwest bis Nord", "sektor": [200, 10], "charakter": "auflandig bis side, Kabbel"}], "ablandig": [[30, 160]]},
+        {"id": "markkleeberger-see", "name": "Markkleeberger See (Nordstrand)", "punkt": [51.2715, 12.3957], "windlagen": [{"name": "Ost bis Süd", "sektor": [60, 200]}], "ablandig": [[300, 50]]},
+        {"id": "hainer-see", "name": "Hainer See (Kahnsdorf)", "punkt": [51.1725, 12.4345], "windlagen": [{"name": "Ost", "sektor": [50, 130], "charakter": "Kabbelwelle"}, {"name": "West", "sektor": [230, 310], "charakter": "Flachwasser im Lee, Könner"}]}
+      ]
+    },
+    {
+      "id": "geiseltalsee",
+      "name": "Geiseltalsee",
+      "land": "DE",
+      "typ": "see",
+      "punkt": [51.305, 11.95],
+      "zeitzone": "Europe/Berlin",
+      "infos": [
+        {"art": "zone", "text": "Kitesurfen seit der geänderten Allgemeinverfügung 2026 erlaubt, nur in einem Teil des Sees (Berichte nennen den nördlichen bzw. östlichen Seebereich); Zone vor Ort prüfen.", "quelle": "berliner-zeitung.de, saale-unstrut-tourismus.de (2026)"},
+        {"art": "niveau", "text": "Bump & Jump, für Fortgeschrittene; ab 6 Bft baut sich Welle auf. Am Spot nur Parkplatz, kein Verleih.", "quelle": "surf-magazin.de"}
+      ],
+      "hinweis": "Von Claude am 15.11.2026 eingetragen, ungeprüft. surf-magazin.de: Westwind stark und konstant, von den Hügeln verstärkt; Spot bei 51.3139, 11.9130. Coallakers (surf-magazin.de): Hauptwindrichtungen Südwest bis West, Sessions auch bei Ost. Sektor geschätzt, ablandig nicht bekannt. Kitezone laut zwei Quellen uneinheitlich (Nord bzw. Ost).",
+      "windlagen": [{"name": "Südwest bis Nordwest", "sektor": [200, 320]}],
+      "spots": [
+        {"id": "geiseltalsee-west", "name": "Geiseltalsee (Westteil)", "punkt": [51.3139, 11.913]}
+      ]
+    },
+    {
+      "id": "lausitz-senftenberg",
+      "name": "Lausitzer Seenland West (Senftenberger, Geierswalder See)",
+      "land": "DE",
+      "typ": "see",
+      "punkt": [51.505, 14.06],
+      "zeitzone": "Europe/Berlin",
+      "infos": [
+        {"art": "zone", "text": "Senftenberger See: rund 60 % gesperrt, zwischen den Bojen bleiben; Kiten nur auf genehmigten Strecken. Geierswalder See: Kiten nur am Ostufer. Partwitzer See: Kiten verboten (Naturschutz).", "quelle": "surf-magazin.de, lbv.brandenburg.de (Befahrensregeln 26.06.2026)"},
+        {"art": "niveau", "text": "Geierswalder See, Koschendamm: für Einsteiger bei mäßigem Wind.", "quelle": "surf-magazin.de"}
+      ],
+      "hinweis": "Von Claude am 15.11.2026 eingetragen, ungeprüft. Quelle: surf-magazin.de, Spot-Guide Lausitzer Seenland. Buchwalde: West am besten, Ost geht, Süd längste Schläge, Süd auflandig (Nordufer). Niemtsch: Nord bis Ost ideal. Koschendamm: Südwest bis Nordwest. Sektorgrenzen geschätzt; ablandig nur bei Buchwalde aus der Uferlage. Bärwalder See eigene Region (rund 30 km östlich).",
+      "windlagen": [],
+      "spots": [
+        {"id": "buchwalde", "name": "Senftenberger See (Buchwalde)", "punkt": [51.5119, 14.0254], "windlagen": [{"name": "Ost über Süd bis West", "sektor": [60, 300]}], "ablandig": [[320, 40]]},
+        {"id": "niemtsch", "name": "Senftenberger See (Niemtsch)", "punkt": [51.4994, 13.9861], "windlagen": [{"name": "Nord bis Ost", "sektor": [340, 100]}]},
+        {"id": "koschendamm", "name": "Geierswalder See (Koschendamm)", "punkt": [51.497, 14.131], "windlagen": [{"name": "Südwest bis Nordwest", "sektor": [215, 325]}]}
+      ]
+    },
+    {
+      "id": "baerwalder-see",
+      "name": "Bärwalder See (Lausitz)",
+      "land": "DE",
+      "typ": "see",
+      "punkt": [51.38, 14.53],
+      "zeitzone": "Europe/Berlin",
+      "infos": [
+        {"art": "zone", "text": "Einer der wenigen Seen in Sachsen mit genehmigter Kitestrecke: Kiten am Westufer (Merzdorfer Ufer), Kitestrand am Nordwestufer; Verein Kitesurf Lausitz e.V. Mittlere Zone gesperrt.", "quelle": "surf-magazin.de, reiseland-brandenburg.de, medienservice.sachsen.de"},
+        {"art": "niveau", "text": "Klitten: mäßige Bedingungen, laut Insidern gut für Foil-Einsteiger.", "quelle": "surf-magazin.de"}
+      ],
+      "hinweis": "Von Claude am 15.11.2026 eingetragen, ungeprüft. surf-magazin.de: Klitten (Ostufer, 51.3594, 14.5589) geht bei West bis Nord gut, an guten Tagen auch Süd. Kitestrand (Westufer) nicht als eigener Spot, weil Lage und Ablandig-Sektor nicht bekannt sind. Punkt (Seemitte) geschätzt.",
+      "windlagen": [{"name": "West bis Nord", "sektor": [250, 10]}],
+      "spots": [
+        {"id": "klitten", "name": "Klitten (Ostufer)", "punkt": [51.3594, 14.5589], "ablandig": [[60, 180]]}
+      ]
+    },
+    {
+      "id": "brombachsee",
+      "name": "Brombachsee (Franken)",
+      "land": "DE",
+      "typ": "see",
+      "punkt": [49.125, 10.93],
+      "zeitzone": "Europe/Berlin",
+      "hinweis": "Von Claude am 15.11.2026 eingetragen, ungeprüft. Spot Allmannsdorf am Ostende des Großen Brombachsees (Webcam addicted-sports.com: Windsurf- und Kitespot). unplug-kitesurf.com: empfohlen bei West, Flachwasser bis Kabbel, Strand Sand und Gras. Sektor und ablandig aus der Lage geschätzt. Regeln für Kiter (Zonen, Zweckverband Brombachsee) nicht geprüft.",
+      "windlagen": [{"name": "Südwest bis Nordwest", "sektor": [225, 315]}],
+      "spots": [
+        {"id": "allmannsdorf", "name": "Allmannsdorf", "punkt": [49.1328, 10.9574], "ablandig": [[45, 135]]}
       ]
     }
   ]
