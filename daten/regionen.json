@@ -1321,14 +1321,14 @@
       "name": "Premantura / Medulin (Istrien)",
       "land": "HR",
       "typ": "meer",
-      "punkt": [44.805, 13.945],
+      "punkt": [44.79, 13.97],
       "zeitzone": "Europe/Zagreb",
       "infos": [
         {"art": "niveau", "text": "Stupice: Bora auflandig, flach bis kleine Welle, ohne Welle-Erfahrung machbar. Kamenjak: bei starkem Scirocco Bump & Jump und Riffwelle, kraftvoll.", "quelle": "surf-magazin.de (Spot Guide Istrien)"},
         {"art": "gefahr", "text": "Kamenjak: Einstieg über Felsplatte mit Seeigeln, Untiefen in der Brandungszone; Naturschutzgebiet mit Eintritt.", "quelle": "surf-magazin.de"},
         {"art": "tipp", "text": "Ližnjan (Bucht Kuje): Bora am stärksten und konstantesten, bei voller Bora bis etwa 2 m Welle am Außenriff, Flachwasser im Lee.", "quelle": "surf-magazin.de"}
       ],
-      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. Quelle vor allem surf-magazin.de, Spot Guide Istrien (keine Koordinaten im Artikel). Stupice (Ostseite Premantura): Bora auflandig, Scirocco side von rechts, mit Westanteil böig und abgedeckt. Kamenjak: Hauptwind Scirocco (SSE). Ližnjan: Bora. croatiawise.com: im Sommer Maestral (nicht eingetragen, Spot unklar). Lage der Spots und Sektoren aus der Karte geschätzt.",
+      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. Quelle vor allem surf-magazin.de, Spot Guide Istrien (keine Koordinaten im Artikel). Stupice (Ostseite Premantura): Bora auflandig, Scirocco side von rechts, mit Westanteil böig und abgedeckt. Kamenjak: Hauptwind Scirocco (SSE). Ližnjan: Bora. croatiawise.com: im Sommer Maestral (nicht eingetragen, Spot unklar). Lage der Spots und Sektoren aus der Karte geschätzt. Punkt am 15.11.2026 über die Höhe laut Open-Meteo aufs Wasser gelegt (44.805, 13.945 lag mit 3 m an Land).",
       "windlagen": [],
       "spots": [
         {"id": "stupice", "name": "Premantura (Stupice)", "punkt": [44.795, 13.92], "windlagen": [{"name": "Bora", "sektor": [20, 80], "charakter": "auflandig"}, {"name": "Scirocco", "sektor": [120, 180], "charakter": "side von rechts"}], "ablandig": [[220, 320]]},
@@ -1341,13 +1341,13 @@
       "name": "Nin (Zadar)",
       "land": "HR",
       "typ": "meer",
-      "punkt": [44.265, 15.15],
+      "punkt": [44.27, 15.17],
       "zeitzone": "Europe/Zagreb",
       "thermik": true,
       "infos": [
         {"art": "niveau", "text": "Lange, flache Sandlagune, sehr gut zum Lernen; weit hüft- bis kniehoch.", "quelle": "wannakitesurf.com, seabreeze.com.au"}
       ],
-      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. wannakitesurf.com (Nin – Sabunike): meist thermischer Maestral aus NW, 10–15 kn; bester Wind Bura (stark, aus NO). surf-magazin.de (Dugi Otok): Jugo aus S bis SO vor Wetterwechsel. thermik=true wegen Maestral. Sektoren geschätzt, ablandig nicht bekannt. Punkt im Ninski zaljev nicht auf der Karte kontrolliert.",
+      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. wannakitesurf.com (Nin – Sabunike): meist thermischer Maestral aus NW, 10–15 kn; bester Wind Bura (stark, aus NO). surf-magazin.de (Dugi Otok): Jugo aus S bis SO vor Wetterwechsel. thermik=true wegen Maestral. Sektoren geschätzt, ablandig nicht bekannt. Punkt am 15.11.2026 über die Höhe laut Open-Meteo aufs Wasser gelegt (44.265, 15.15 lag mit 9 m an Land).",
       "windlagen": [
         {"name": "Bura", "sektor": [20, 80], "charakter": "stark, böig"},
         {"name": "Maestral", "sektor": [290, 340], "charakter": "Sommer nachmittags, 10–15 kn"},
