@@ -227,7 +227,7 @@ Seit 7.11.2026. Die Wellendaten der Marine API (Quelle `welle`, nur Meer) sammel
 
 Seit 7.11.2026. Katalogfeld `infos` je Region (siehe Tabelle oben), angezeigt als aufklappbarer Block „Spot-Infos (n)“ in der Regionskarte und auf der Stundenseite (`lib/spotinfo.php`), Reihenfolge Sperre, Zone, Achtung, Niveau, Saison, Tipp; eine Sperre steht schon im zugeklappten Titel.
 
-- **Inhalt:** nur, was mit Quelle schon im `hinweis` stand (15 Regionen, z. B. Urnersee Kitesperre Nov/Dez, Tarifa Kitezonen 15.6.–15.9., Zandvoort Zonen und Strömung, Famara bei Hochwasser ohne Strand, Lago di Santa Croce Kiteverbot am Poetto). Nichts dazuerfunden; auf der Seite als „Stand 7.11.2026, nicht aktuell geprüft“ gekennzeichnet.
+- **Inhalt:** nur, was mit Quelle schon im `hinweis` stand (15 Regionen, z. B. Urnersee Kitesperre Nov/Dez, Tarifa Kitezonen 15.6.–15.9., Zandvoort Zonen und Strömung, Famara bei Hochwasser ohne Strand, Lago di Santa Croce Kiteverbot am Poetto). Nichts dazuerfunden; auf der Seite als „nicht laufend geprüft“ gekennzeichnet (bis 15.11.2026 „Stand 7.11.2026“, das passte für später eingetragene Infos nicht mehr).
 - **Sperren:** `region_sperre()` prüft Monat und Gruppe der Sportart (neues Feld `gruppe` in `SPORTARTEN`); ein gesperrter Tag geht nicht, die Ensemble-Chance ist 0, und die Karte nennt statt „Kein passender Tag“ den Grund.
 - **Pflege:** Neue Infos mit Quelle eintragen; ohne Quelle lieber weglassen.
 

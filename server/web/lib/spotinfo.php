@@ -23,5 +23,5 @@ function spotinfo_html(array $region, bool $offen = false): string
         $o .= '<li><span class="marker info-' . $e($i['art']) . '">' . $e(INFO_NAMEN[$i['art']] ?? $i['art']) . '</span> ' . $e($i['text'])
             . (!empty($i['quelle']) ? ' <span class="leise">(' . $e($i['quelle']) . ')</span>' : '') . '</li>';
     }
-    return $o . '</ul><p class="leise">Aus Spotführern übernommen, Stand 7.11.2026, nicht aktuell geprüft. Vor Ort gelten die Regeln vor Ort.</p></details>';
+    return $o . '</ul><p class="leise">Aus Spotführern und Behördenseiten übernommen (Quelle je Eintrag), nicht laufend geprüft. Vor Ort gelten die Regeln vor Ort.</p></details>';
 }
