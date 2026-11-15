@@ -1495,9 +1495,9 @@
       "infos": [
         {"art": "niveau", "text": "Golf von Follonica gut zum Lernen; im Sommer meist thermischer Wind. Schulen am Puntone di Scarlino, Saison etwa Mai bis Oktober.", "quelle": "maremmaguide.com, yumping.com (SurfrelaX)"}
       ],
-      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. maremmaguide.com: im Sommer meist Thermik im Golf, Puntone als Lernspot. Windrichtung der Thermik in keiner Quelle genannt; Sektor Südwest bis West aus der Öffnung des Golfs geschätzt. ablandig geschätzt. Spot-Lage nach windy.app (Puntone). thermik=true.",
+      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. maremmaguide.com: im Sommer meist Thermik im Golf, Puntone als Lernspot. Thermik kommt laut Tobias aus Nordwest (15.11.2026); Sektor 290–350 um NW herum geschätzt. Bis dahin Südwest bis West aus der Öffnung des Golfs geschätzt (falsch). ablandig geschätzt. Spot-Lage nach windy.app (Puntone). thermik=true.",
       "windlagen": [
-        {"name": "Thermik / Libeccio", "sektor": [200, 290], "charakter": "Sommer nachmittags"}
+        {"name": "Thermik", "sektor": [290, 350], "charakter": "aus Nordwest, Sommer nachmittags"}
       ],
       "spots": [
         {"id": "puntone", "name": "Puntone di Scarlino", "punkt": [42.8962, 10.7846], "ablandig": [[20, 120]]}
