@@ -153,11 +153,17 @@
       "punkt": [43.04, 6.05],
       "anfahrt": [43.065, 6.13],
       "zeitzone": "Europe/Paris",
-      "hinweis": "Entwurf (Claude), ungeprüft: Mistral aus allgemeinem Wissen, Ostwind-Lagen fehlen, Sektorgrenzen geschätzt, Punkt vor Giens nicht auf der Karte kontrolliert. Anfahrt (Almanarre) ungefähr, von Claude am 7.11.2026 für die Fahrzeit gesetzt.",
-      "windlagen": [
-        {"name": "Mistral", "sektor": [260, 320]}
+      "infos": [
+        {"art": "tipp", "text": "Mistral (W bis NW) ist der Hauptwind an der Almanarre; bei Ostwind auf die andere Seite der Landzunge an die Plage de la Bergerie, dort mit Welle.", "quelle": "se.kiteforum.com, waterwind.it"},
+        {"art": "gefahr", "text": "Bei Ostwind ist es an der Almanarre flach, aber ablandig.", "quelle": "se.kiteforum.com"},
+        {"art": "niveau", "text": "Bei vollem Mistral baut sich in der Bucht Windwelle bis etwa 2 m auf.", "quelle": "windy.app (Nutzerbericht)"}
       ],
-      "spots": []
+      "hinweis": "Mistral bis 7.11.2026 aus allgemeinem Wissen; am 15.11.2026 von Claude ausgebaut (Wunsch Tobias), ungeprüft. se.kiteforum.com (L'Almanarre): Hauptrichtungen E, SE, SSE, S, W, WNW, NW; Mistral am häufigsten, Ost flach, aber ablandig, mit Ost besser zur Bergerie. waterwind.it (Bergerie bei Ost): Ost unbeständiger als der Mistral, dreht in der Bucht zwischen NO und SO. surf-magazin.de: Mistral meist West bis Nordwest. ultimatefrance.com: beste Richtungen E, SE, SW, W (ohne Spot-Unterscheidung). Sektoren und ablandig aus der Uferlage geschätzt (Almanarre nach Westen offen, Bergerie nach Osten). Punkt vor Giens (Westseite) nicht auf der Karte kontrolliert; für die Bergerie liegt er auf der falschen Seite der Landzunge. Anfahrt (Almanarre) ungefähr.",
+      "windlagen": [],
+      "spots": [
+        {"id": "almanarre", "name": "L'Almanarre", "punkt": [43.065, 6.13], "windlagen": [{"name": "Mistral", "sektor": [260, 330], "charakter": "Hauptwind, etwas böig, Windwelle"}, {"name": "Süd bis Südwest", "sektor": [170, 260]}], "ablandig": [[30, 140]]},
+        {"id": "bergerie", "name": "La Bergerie (Ostseite)", "punkt": [43.06, 6.155], "windlagen": [{"name": "Ost", "sektor": [50, 140], "charakter": "unbeständiger als Mistral, Welle"}], "ablandig": [[220, 340]]}
+      ]
     },
     {
       "id": "fehmarn",
@@ -1308,6 +1314,257 @@
       "windlagen": [{"name": "Südwest bis Nordwest", "sektor": [225, 315]}],
       "spots": [
         {"id": "allmannsdorf", "name": "Allmannsdorf", "punkt": [49.1328, 10.9574], "ablandig": [[45, 135]]}
+      ]
+    },
+    {
+      "id": "premantura",
+      "name": "Premantura / Medulin (Istrien)",
+      "land": "HR",
+      "typ": "meer",
+      "punkt": [44.805, 13.945],
+      "zeitzone": "Europe/Zagreb",
+      "infos": [
+        {"art": "niveau", "text": "Stupice: Bora auflandig, flach bis kleine Welle, ohne Welle-Erfahrung machbar. Kamenjak: bei starkem Scirocco Bump & Jump und Riffwelle, kraftvoll.", "quelle": "surf-magazin.de (Spot Guide Istrien)"},
+        {"art": "gefahr", "text": "Kamenjak: Einstieg über Felsplatte mit Seeigeln, Untiefen in der Brandungszone; Naturschutzgebiet mit Eintritt.", "quelle": "surf-magazin.de"},
+        {"art": "tipp", "text": "Ližnjan (Bucht Kuje): Bora am stärksten und konstantesten, bei voller Bora bis etwa 2 m Welle am Außenriff, Flachwasser im Lee.", "quelle": "surf-magazin.de"}
+      ],
+      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. Quelle vor allem surf-magazin.de, Spot Guide Istrien (keine Koordinaten im Artikel). Stupice (Ostseite Premantura): Bora auflandig, Scirocco side von rechts, mit Westanteil böig und abgedeckt. Kamenjak: Hauptwind Scirocco (SSE). Ližnjan: Bora. croatiawise.com: im Sommer Maestral (nicht eingetragen, Spot unklar). Lage der Spots und Sektoren aus der Karte geschätzt.",
+      "windlagen": [],
+      "spots": [
+        {"id": "stupice", "name": "Premantura (Stupice)", "punkt": [44.795, 13.92], "windlagen": [{"name": "Bora", "sektor": [20, 80], "charakter": "auflandig"}, {"name": "Scirocco", "sektor": [120, 180], "charakter": "side von rechts"}], "ablandig": [[220, 320]]},
+        {"id": "kamenjak", "name": "Kamenjak", "punkt": [44.77, 13.915], "windlagen": [{"name": "Scirocco", "sektor": [130, 190], "charakter": "Bump & Jump, Riffwelle"}]},
+        {"id": "liznjan", "name": "Ližnjan (Bucht Kuje)", "punkt": [44.825, 13.965], "windlagen": [{"name": "Bora", "sektor": [20, 80], "charakter": "Bump & Jump, Welle am Außenriff"}]}
+      ]
+    },
+    {
+      "id": "nin",
+      "name": "Nin (Zadar)",
+      "land": "HR",
+      "typ": "meer",
+      "punkt": [44.265, 15.15],
+      "zeitzone": "Europe/Zagreb",
+      "thermik": true,
+      "infos": [
+        {"art": "niveau", "text": "Lange, flache Sandlagune, sehr gut zum Lernen; weit hüft- bis kniehoch.", "quelle": "wannakitesurf.com, seabreeze.com.au"}
+      ],
+      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. wannakitesurf.com (Nin – Sabunike): meist thermischer Maestral aus NW, 10–15 kn; bester Wind Bura (stark, aus NO). surf-magazin.de (Dugi Otok): Jugo aus S bis SO vor Wetterwechsel. thermik=true wegen Maestral. Sektoren geschätzt, ablandig nicht bekannt. Punkt im Ninski zaljev nicht auf der Karte kontrolliert.",
+      "windlagen": [
+        {"name": "Bura", "sektor": [20, 80], "charakter": "stark, böig"},
+        {"name": "Maestral", "sektor": [290, 340], "charakter": "Sommer nachmittags, 10–15 kn"},
+        {"name": "Jugo", "sektor": [110, 170]}
+      ],
+      "spots": [
+        {"id": "sabunike", "name": "Sabunike / Ždrijac", "punkt": [44.255, 15.165]}
+      ]
+    },
+    {
+      "id": "bol",
+      "name": "Bol (Brač)",
+      "land": "HR",
+      "typ": "meer",
+      "punkt": [43.24, 16.65],
+      "zeitzone": "Europe/Zagreb",
+      "thermik": true,
+      "infos": [
+        {"art": "zone", "text": "Kein Kiten am Hauptstrand Zlatni Rat im Juli und August; starten und landen dann nur an der Kiteschule (Gebühr).", "quelle": "unplug-kitesurf.com"},
+        {"art": "tipp", "text": "Maestral meist ab etwa 13 Uhr, am stärksten gegen 16 Uhr; im Kanal Brač–Hvar verstärkt. Bei Bora (ablandig, böig in Bol) lieber nach Povlja an der Nordostküste.", "quelle": "mediterraneaonline.eu, bol.hr, surf-magazin.de"}
+      ],
+      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. Maestral aus W bis NW am Nachmittag (Wikipedia, mediterraneaonline.eu, bol.hr: 15–25 kn, Venturi im Kanal). surf-magazin.de (Brač): Bora in Bol ablandig und böig. se.kiteforum.com (Sumartin, Ostende Brač): beste Richtungen SE, W, WNW, NW; nach August starke SE- und NE-Winde. Jugo daher als zweite Lage, ob er in Bol trägt, ungeprüft. Kitesperre Juli/August am Zlatni Rat laut unplug-kitesurf.com (Stand unbekannt) als Zone, nicht als Sperre, weil an der Schule gestartet werden darf. Insel: Fahrzeit mit Fähre (Split–Supetar) unsicher. thermik=true.",
+      "windlagen": [
+        {"name": "Maestral", "sektor": [260, 330], "charakter": "Sommer nachmittags"},
+        {"name": "Jugo", "sektor": [110, 160]}
+      ],
+      "spots": [
+        {"id": "zlatni-rat", "name": "Zlatni Rat", "punkt": [43.256, 16.634], "ablandig": [[340, 80]]}
+      ]
+    },
+    {
+      "id": "viganj",
+      "name": "Viganj (Pelješac)",
+      "land": "HR",
+      "typ": "meer",
+      "punkt": [42.972, 17.09],
+      "zeitzone": "Europe/Zagreb",
+      "thermik": true,
+      "infos": [
+        {"art": "tipp", "text": "Maestral wird im engen Kanal zwischen Pelješac und Korčula verstärkt, meist ab frühem Nachmittag 10–18 kn (Juli/August oft mehr); morgens leicht. Auch Jugo wird im Kanal verstärkt.", "quelle": "surf-magazin.de, soulwindsurf.blogspot.com, surf-store.com"},
+        {"art": "niveau", "text": "Kieselstrand, side-shore; flach in Ufernähe, weiter draußen Kabbel. Freeride und Freestyle.", "quelle": "ikointl.com"}
+      ],
+      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. Maestral (NW) Hauptwind, Jugo (S/SO) ebenfalls verstärkt, Bora möglich (soulwindsurf.blogspot.com). surf-magazin.de: Windsystem wie die Ora am Gardasee, gutes Frühjahrsrevier, von München rund 11 Stunden. ikointl.com: sideshore. Sektoren geschätzt; ablandig (Nord/Nordost, Ufer nach Süden) geschätzt. Punkt im Kanal nicht auf der Karte kontrolliert. thermik=true.",
+      "windlagen": [
+        {"name": "Maestral", "sektor": [270, 340], "charakter": "Thermik, nachmittags"},
+        {"name": "Jugo", "sektor": [100, 170]}
+      ],
+      "spots": [
+        {"id": "viganj", "name": "Viganj", "punkt": [42.981, 17.104], "ablandig": [[0, 80]]}
+      ]
+    },
+    {
+      "id": "ravenna",
+      "name": "Ravenna (Marina di Ravenna, Lido di Dante)",
+      "land": "IT",
+      "typ": "meer",
+      "punkt": [44.42, 12.36],
+      "zeitzone": "Europe/Rome",
+      "infos": [
+        {"art": "tipp", "text": "Bei starker Bora (NO) ist Marina di Ravenna der beste Spot der Emilia-Romagna; die Wellen brechen dort an den Molen am besten.", "quelle": "kite-and-windsurfing-guide.com"},
+        {"art": "saison", "text": "Scirocco April bis September meist 10–20 kn, in den übrigen Monaten Bora 20–30 kn.", "quelle": "se.kiteforum.com, unplug-kitesurf.com (Lido di Classe, Cervia)"}
+      ],
+      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. kite-and-windsurfing-guide.com: Bora und Scirocco bringen an den Stränden der Romagna mäßige Welle, am besten an den Molen von Marina di Ravenna. se.kiteforum.com (Lido di Classe), unplug (Cervia): sideshore NNW und SSE. turismo.ra.it nennt als Spots die Südmole Marina di Ravenna, die Lamone-Mündung und Lido di Dante. Küste nach Osten offen, ablandig geschätzt. Punkt nicht auf der Karte kontrolliert.",
+      "windlagen": [
+        {"name": "Bora", "sektor": [20, 80], "charakter": "Winter, stark, Welle"},
+        {"name": "Scirocco", "sektor": [110, 170], "charakter": "Sommer, 10–20 kn"}
+      ],
+      "spots": [
+        {"id": "marina-di-ravenna", "name": "Marina di Ravenna (Südmole)", "ablandig": [[200, 340]]},
+        {"id": "lido-di-dante", "name": "Lido di Dante", "punkt": [44.385, 12.3197], "ablandig": [[200, 340]]}
+      ]
+    },
+    {
+      "id": "marche",
+      "name": "Marken (Civitanova, Porto Potenza)",
+      "land": "IT",
+      "typ": "meer",
+      "punkt": [43.33, 13.78],
+      "anfahrt": [43.3, 13.73],
+      "zeitzone": "Europe/Rome",
+      "infos": [
+        {"art": "niveau", "text": "Civitanova: meist mäßiger Wind, zum entspannten Cruisen; üblich 14er Kite und 6,5er Segel. Porto Potenza etwas windiger.", "quelle": "kite-and-windsurfing-guide.com"},
+        {"art": "zone", "text": "Marzocca/Montemarciano (nördlich von Ancona): in der Hochsaison Kiten nur in der ausgewiesenen Zone.", "quelle": "kite-and-windsurfing-guide.com"}
+      ],
+      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. kite-and-windsurfing-guide.com: Civitanova bei NNW und SO cross-shore, bei starkem oder auflandigem Wind kleiner Shorebreak; Start am Kiesstrand an der südlichen Promenade („Civitanova Kite Beach“). Porto Potenza: gute Welle bei starkem Nord bis Nordost. Im Sommer oft Thermik um 15 kn (Marzocca). Sektoren und ablandig (Küste nach ONO offen) geschätzt. Anfahrt (Civitanova) ungefähr; Punkt nicht auf der Karte kontrolliert.",
+      "windlagen": [
+        {"name": "Tramontana / Bora", "sektor": [330, 60], "charakter": "Welle"},
+        {"name": "Scirocco", "sektor": [110, 170], "charakter": "cross-shore"}
+      ],
+      "spots": [
+        {"id": "civitanova", "name": "Civitanova Kite Beach", "ablandig": [[190, 300]]},
+        {"id": "porto-potenza", "name": "Porto Potenza", "ablandig": [[190, 300]]}
+      ]
+    },
+    {
+      "id": "abruzzo",
+      "name": "Abruzzen (Fossacesia, Francavilla)",
+      "land": "IT",
+      "typ": "meer",
+      "punkt": [42.27, 14.58],
+      "anfahrt": [42.247, 14.522],
+      "zeitzone": "Europe/Rome",
+      "infos": [
+        {"art": "tipp", "text": "Fossacesia: im Sommer bei Hochdruck nachmittags Thermik aus OSO, im Frühjahr viele Tage über 10 kn; weißer Kieselstrand.", "quelle": "kite-and-windsurfing-guide.com"},
+        {"art": "zone", "text": "Pescara Portanuova (südlich der Marina): in der Hochsaison Kiteverbot, Strand zu schmal.", "quelle": "kite-and-windsurfing-guide.com"}
+      ],
+      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. kite-and-windsurfing-guide.com: Fossacesia OSO-Thermik im Sommer; Termoli (Rio Vivo, Molise) gute Welle bei Nord bis Nordost. se.kiteforum.com (Francavilla): flach bis kleine Welle, im Sommer voll. Das Kiteverbot in Pescara betrifft nur einen Spot und steht deshalb als Zone, nicht als Sperre. Sektoren und ablandig (Küste nach NO offen) geschätzt. Anfahrt (Fossacesia Marina) ungefähr.",
+      "windlagen": [
+        {"name": "Thermik", "sektor": [90, 140], "charakter": "Sommer nachmittags"},
+        {"name": "Tramontana / Bora", "sektor": [340, 60], "charakter": "Welle"}
+      ],
+      "spots": [
+        {"id": "fossacesia", "name": "Fossacesia Marina", "ablandig": [[180, 300]]}
+      ]
+    },
+    {
+      "id": "vada",
+      "name": "Vada / Rosignano (Toskana)",
+      "land": "IT",
+      "typ": "meer",
+      "punkt": [43.35, 10.42],
+      "anfahrt": [43.36, 10.445],
+      "zeitzone": "Europe/Rome",
+      "infos": [
+        {"art": "tipp", "text": "Pietrabianca: bei Scirocco (einziger Wind über Backbord), Libeccio auflandig, Maestrale fast side-shore; geht bei Thermik und bei Tiefdruck.", "quelle": "visittuscany.com"}
+      ],
+      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. visittuscany.com (Costa degli Etruschi): in Pietrabianca bei Vada Windsurfen bei Thermik und Tiefdruck; Scirocco läuft in den kleinen Golf, Libeccio auflandig, Maestrale fast side. waterwind.it: Spots Lillatro, Spiagge Bianche, Pietrabianca, Vada Centro. Sektoren und ablandig (Küste nach W offen) geschätzt. Anfahrt (Pietrabianca) ungefähr.",
+      "windlagen": [
+        {"name": "Scirocco", "sektor": [130, 190]},
+        {"name": "Libeccio", "sektor": [200, 260], "charakter": "auflandig"},
+        {"name": "Maestrale", "sektor": [280, 340], "charakter": "fast side"}
+      ],
+      "spots": [
+        {"id": "pietrabianca", "name": "Pietrabianca / Spiagge Bianche", "ablandig": [[20, 110]]}
+      ]
+    },
+    {
+      "id": "follonica",
+      "name": "Golf von Follonica (Puntone)",
+      "land": "IT",
+      "typ": "meer",
+      "punkt": [42.88, 10.76],
+      "zeitzone": "Europe/Rome",
+      "thermik": true,
+      "infos": [
+        {"art": "niveau", "text": "Golf von Follonica gut zum Lernen; im Sommer meist thermischer Wind. Schulen am Puntone di Scarlino, Saison etwa Mai bis Oktober.", "quelle": "maremmaguide.com, yumping.com (SurfrelaX)"}
+      ],
+      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. maremmaguide.com: im Sommer meist Thermik im Golf, Puntone als Lernspot. Windrichtung der Thermik in keiner Quelle genannt; Sektor Südwest bis West aus der Öffnung des Golfs geschätzt. ablandig geschätzt. Spot-Lage nach windy.app (Puntone). thermik=true.",
+      "windlagen": [
+        {"name": "Thermik / Libeccio", "sektor": [200, 290], "charakter": "Sommer nachmittags"}
+      ],
+      "spots": [
+        {"id": "puntone", "name": "Puntone di Scarlino", "punkt": [42.8962, 10.7846], "ablandig": [[20, 120]]}
+      ]
+    },
+    {
+      "id": "marina-di-grosseto",
+      "name": "Marina di Grosseto (Fiumara)",
+      "land": "IT",
+      "typ": "meer",
+      "punkt": [42.72, 10.93],
+      "anfahrt": [42.735, 10.965],
+      "zeitzone": "Europe/Rome",
+      "thermik": true,
+      "infos": [
+        {"art": "tipp", "text": "Im Sommer ab dem frühen Nachmittag oft Thermik aus NW mit 14–20 kn.", "quelle": "ikointl.com (Kite's Angels Beach)"},
+        {"art": "niveau", "text": "Langer, breiter Sandstrand am WWF-Gebiet San Felice zwischen Marina di Grosseto und Castiglione della Pescaia; mehrere Schulen.", "quelle": "ikointl.com, arttrav.com"}
+      ],
+      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. ikointl.com (Kite's Angels Beach): Sommerthermik NW 14–20 kn. rove.me: Fiumara Beach wegen regelmäßiger Nachmittagsthermik. Libeccio als zweite Lage geschätzt (Küste nach SW offen), nicht aus einer Quelle. ablandig geschätzt. Talamone liegt rund 25 km südlich. Anfahrt (Fiumara) ungefähr. thermik=true.",
+      "windlagen": [
+        {"name": "Maestrale / Thermik", "sektor": [280, 340], "charakter": "Sommer nachmittags"},
+        {"name": "Libeccio", "sektor": [200, 280]}
+      ],
+      "spots": [
+        {"id": "fiumara", "name": "Fiumara (Kite Beach)", "ablandig": [[20, 120]]}
+      ]
+    },
+    {
+      "id": "lazio-nord",
+      "name": "Latium Nord (Santa Marinella, Santa Severa)",
+      "land": "IT",
+      "typ": "meer",
+      "punkt": [42.0, 11.92],
+      "anfahrt": [42.0165, 11.9567],
+      "zeitzone": "Europe/Rome",
+      "infos": [
+        {"art": "gefahr", "text": "Banzai (zwischen Santa Marinella und Santa Severa): bei starkem SO oder NW lange Wellen bis 3 m über Felsgrund, gefährlich, nur für Könner.", "quelle": "kite-and-windsurfing-guide.com"}
+      ],
+      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. kite-and-windsurfing-guide.com: Banzai bei starkem Südost oder Nordwest; Marina San Nicola: Libeccio dort weniger auflandig als in Campo di Mare. italia.it: von Santa Marinella bis Ostia viele Kitespots. Sektoren und ablandig (Küste nach SW offen) geschätzt. Anfahrt (Santa Severa) ungefähr.",
+      "windlagen": [
+        {"name": "Scirocco", "sektor": [120, 170], "charakter": "Welle"},
+        {"name": "Libeccio", "sektor": [200, 260], "charakter": "auflandig"},
+        {"name": "Maestrale", "sektor": [290, 340], "charakter": "Welle"}
+      ],
+      "spots": [
+        {"id": "santa-severa", "name": "Santa Severa / Banzai", "ablandig": [[20, 110]]}
+      ]
+    },
+    {
+      "id": "latina",
+      "name": "Latina (Foce Verde, Bufalara)",
+      "land": "IT",
+      "typ": "meer",
+      "punkt": [41.38, 12.85],
+      "anfahrt": [41.43, 12.8],
+      "zeitzone": "Europe/Rome",
+      "infos": [
+        {"art": "tipp", "text": "Bufalara (Ende der Küstenstraße südlich von Latina, nach Capo Portiere): viel Platz, geht bei Süd bis Südost oder West bis Nordwest; bei starkem Tiefdruckwind ganzjährig große Welle.", "quelle": "kite-and-windsurfing-guide.com"}
+      ],
+      "hinweis": "Von Claude am 15.11.2026 eingetragen (Wunsch Tobias), ungeprüft. kite-and-windsurfing-guide.com (Sabaudia, Bufalara): Süd bis Südost oder West bis Nordwest. windy.app (Foce Verde, Nutzerbericht): bester Spot im Latium bei WSW bis W, side, 1–3 m Welle. rove.me: Westwind macht die Bucht von Latina zum Windsurfrevier. Sektoren und ablandig (Küste nach SW offen) geschätzt. Lage der Spots ungefähr, Anfahrt (Foce Verde) ungefähr. Sabaudia und Torre Paola (rund 15 km südöstlich) nicht eigens eingetragen.",
+      "windlagen": [
+        {"name": "West bis Nordwest", "sektor": [240, 330], "charakter": "side, Welle"},
+        {"name": "Süd bis Südost", "sektor": [130, 200]}
+      ],
+      "spots": [
+        {"id": "foce-verde", "name": "Foce Verde", "punkt": [41.43, 12.8], "windlagen": [{"name": "West bis Westsüdwest", "sektor": [240, 290], "charakter": "side, Welle"}], "ablandig": [[20, 120]]},
+        {"id": "bufalara", "name": "Bufalara", "ablandig": [[20, 120]]}
       ]
     }
   ]
