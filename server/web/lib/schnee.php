@@ -480,7 +480,7 @@ function schnee_kriterien(array $k, array $regel = SCHNEE_REGEL): array
     return [
         ['name' => 'Neuschnee 72 h', 'wert' => $z($k['neu72']) . ' cm', 'soll' => 'ab ' . $regel['neu_min'] . ' cm', 'grund' => 'zu wenig Neuschnee',
          'ok' => $k['neu72'] === null ? null : $k['neu72'] >= $regel['neu_min']],
-        ['name' => 'Wolken ' . SCHNEE_TAG[0] . '–' . SCHNEE_TAG[1] . ' Uhr', 'wert' => $z($k['wolken']) . ' %', 'soll' => 'bis ' . $regel['wolken_max'] . ' % (⛅)', 'grund' => 'zu bewölkt',
+        ['name' => 'Wolken ' . SCHNEE_TAG[0] . '–' . SCHNEE_TAG[1] . ' Uhr', 'wert' => $z($k['wolken']) . ' %', 'soll' => 'bis ' . $regel['wolken_max'] . ' % ⛅', 'grund' => 'zu bewölkt',
          'ok' => $k['wolken'] === null ? null : $k['wolken'] <= $regel['wolken_max']],
     ];
 }

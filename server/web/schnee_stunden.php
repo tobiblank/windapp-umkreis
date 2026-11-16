@@ -293,7 +293,7 @@ $jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
     <?php endif ?></p>
   <ul class="kriterien klein">
     <?php foreach ($kriterien as $c): ?>
-    <li class="<?= $c['ok'] === null ? 'unbekannt' : ($c['ok'] ? 'ja' : 'nein') ?>"><span class="zeichen" aria-hidden="true"><?= $c['ok'] === null ? '?' : ($c['ok'] ? '✓' : '✗') ?></span><span><?= h($c['name']) ?></span><b><?= h($c['wert']) ?></b><span class="leise"><?= h($c['soll']) ?></span></li>
+    <li class="<?= $c['ok'] === null ? 'unbekannt' : ($c['ok'] ? 'ja' : 'nein') ?>"><span class="t"><span class="zeichen" aria-hidden="true"><?= $c['ok'] === null ? '?' : ($c['ok'] ? '✓' : '✗') ?></span> <?= h($c['name']) ?></span><b><?= h($c['wert']) ?></b><span class="u">Regel: <?= h($c['soll']) ?></span></li>
     <?php endforeach ?>
   </ul>
   <?php if (!$b['vorbei'] && ($fi = $k['firn'] ?? null)): ?><p class="klein firn-hinweis<?= $fi['art'] === 'weich' ? ' weich' : '' ?>"><?= h($fi['text']) ?></p><?php endif ?>
@@ -313,7 +313,7 @@ $jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
   <h3 class="klein diagramm-titel">Die drei Tage davor und der Tag</h3>
   <p class="legende klein"><span><i class="l-schnee"></i>Schnee</span><span><i class="l-regen"></i>Regen auf Tourhöhe</span><span><i class="l-sfg"></i>Schneefallgrenze</span><span><i class="l-fenster"></i>Tourenfenster</span></p>
   <?= schnee_svg($reihe, $region, $tag, $b['fenster'], $jetztStunde) ?>
-  <p class="klein leise">Oben die Summe je 24 h bis <?= SCHNEE_MORGEN ?> Uhr, wie in den Tagesknöpfen. Liegt die Schneefallgrenze unter der Tourhöhe, fällt dort Schnee.</p>
+  <p class="klein leise">Oben die Summe je 24 h bis <?= SCHNEE_MORGEN ?> Uhr, wie in den Tagesknöpfen; die drei Abschnitte vor dem Tourtag zusammen sind der Neuschnee 72 h<?= $k['neu72'] !== null ? ' (' . h(cm($k['neu72'])) . ')' : '' ?>. Liegt die Schneefallgrenze unter der Tourhöhe, fällt dort Schnee.</p>
   <?php endif ?>
   <?= maps_html($region) ?>
 </section>

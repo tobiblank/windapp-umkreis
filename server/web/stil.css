@@ -431,14 +431,18 @@ details.lawine[open] summary { margin-bottom: 6px; }
 .kz .w .symbol { font-size: 20px; line-height: 1.25; }
 .neopren-zeile { margin: -4px 0 12px; padding: 8px 10px; border-radius: 10px; background: var(--kachel); border-left: 3px solid var(--akzent); font-size: 14px; }
 .legende-auf { margin: 0 0 6px; } .legende-auf summary { cursor: pointer; } .legende-auf p { margin: 4px 0 0; }
-.kriterien { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 4px; }
-.kriterien li { display: grid; grid-template-columns: 1.3em minmax(0, 1fr) auto 5.6em; gap: 6px; align-items: baseline; padding: 6px 10px; border-radius: 10px; background: var(--kachel); }
-.kriterien li b { font: 600 16px/1.2 var(--zahlen); font-variant-numeric: tabular-nums; text-align: right; }
-.kriterien li .leise { text-align: right; }
+/* Die beiden Regeln des Pulvertags als grosse Kacheln (seit 16.11.2026, vorher kleine Zeilen: Neuschnee 72 h ging unter) */
+.kriterien { list-style: none; margin: 0 0 6px; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.kriterien li { background: var(--kachel); border-radius: 12px; padding: 8px 8px 9px; text-align: center; min-width: 0; border: 2px solid transparent; }
+.kriterien li > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kriterien .t { font-size: 12px; color: var(--leise); }
+.kriterien li b { display: block; font: 600 34px/1.15 var(--zahlen); font-variant-numeric: tabular-nums; }
+.kriterien .u { font-size: 11px; color: var(--leise); }
 .kriterien .zeichen { font-weight: 700; }
-.kriterien li.ja .zeichen { color: var(--s-go); }
+.kriterien li.ja { border-color: var(--s-go); background: var(--s-go-bg); }
+.kriterien li.ja .zeichen, .kriterien li.ja b { color: var(--s-go); }
 .kriterien li.nein .zeichen, .kriterien li.nein b { color: var(--maybe); }
-.kriterien li.unbekannt .zeichen { color: var(--leise); }
+.kriterien li.unbekannt .zeichen, .kriterien li.unbekannt b { color: var(--leise); }
 .kennzahlen { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0 0 12px; }
 .kz { background: var(--kachel); border-radius: 12px; padding: 8px 6px; text-align: center; min-width: 0; }
 .kz span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
