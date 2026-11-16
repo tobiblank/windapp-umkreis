@@ -87,7 +87,7 @@
       "lizenz": "Open Data über AINEVA (Bedingungen auf bollettini.aineva.it/more/open-data); Quelle Centro Regionale Neve e Valanghe di ARPA Lombardia nennen",
       "praefixe": ["IT-25"],
       "freigegeben": ["IT-25"],
-      "hinweis": "Seit 9.11.2026 für Livigno. Seit 16.11.2026 freigegeben: Mail der Segreteria von ARPA Lombardia verweist auf die Open-Data-Seite von AINEVA (Zugang und Lizenz); die Daten gehören dem Centro Regionale Neve e Valanghe di ARPA Lombardia, das als Quelle genannt werden muss. Die AINEVA-Seite war von hier nicht abrufbar, Lizenztext deshalb ungeprüft. Abruf weiter über die EAWS-Sammlung; ob lawine_lesen() sie liest, prüft die Action „Lagebericht prüfen“."
+      "hinweis": "Seit 9.11.2026 für Livigno. Seit 16.11.2026 freigegeben: Mail der Segreteria von ARPA Lombardia verweist auf die Open-Data-Seite von AINEVA (Zugang und Lizenz); die Daten gehören dem Centro Regionale Neve e Valanghe di ARPA Lombardia, das als Quelle genannt werden muss. Die AINEVA-Seite war von hier nicht abrufbar, Lizenztext deshalb ungeprüft. Abruf weiter über die EAWS-Sammlung; Die Action „Lagebericht prüfen“ las am 16.11.2026 die Dateien vom 27.3. und 17.4.2026 fehlerfrei, sie nennen aber nur IT-25-SO-01 bis -04 (Retiche, ohne Namen bei SO-04), nie IT-25-SO-LI: Für Livigno kommt deshalb vermutlich keine Stufe an. Welche Zone Livigno abdeckt, ist offen (nicht raten)."
     }
   },
   "messnetze": {
