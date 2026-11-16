@@ -13,8 +13,10 @@ $sk = schnee_katalog_laden("$ROOT/daten/schneeregionen.json");
 pruefe(count($sk['regionen']) >= 8, 'echter Schnee-Katalog gültig, mindestens 8 Regionen');
 $windIds = array_column(regionen_laden("$ROOT/daten/regionen.json"), 'id');
 pruefe(!array_intersect($windIds, array_column($sk['regionen'], 'id')), 'ids von Wind- und Schnee-Katalog verschieden (gemeinsame fahrzeiten.json)');
-pruefe(($sk['lawinendienste']['bayern']['freigegeben'] ?? null) === ['DE-BY'] && !in_array('AT-07', $sk['lawinendienste']['euregio']['freigegeben'], true),
-       'Bayern freigegeben (Mail der Lawinenwarnzentrale, 10.11.2026), Tirol nicht, solange die Lizenz offen ist');
+$frei = fn(string $d) => $sk['lawinendienste'][$d]['freigegeben'] ?? null;
+pruefe($frei('bayern') === ['DE-BY'] && in_array('AT-07', $frei('euregio'), true) && $frei('salzburg') === ['AT-05'] && $frei('kaernten') === ['AT-02']
+       && $frei('lombardia') === ['IT-25'] && $frei('steiermark') === [] && $frei('vorarlberg') === [],
+       'freigegeben: Bayern (10.11.2026), Tirol, Salzburg, Kärnten, Lombardei (Mails bis 16.11.2026); Steiermark und Vorarlberg noch nicht');
 pruefe(schnee_katalog_laden(__DIR__ . '/schneeregionen_test.json')['regionen'][0]['typ'] === 'schnee', 'Testkatalog gültig, typ schnee gesetzt');
 $kaputt = json_decode(file_get_contents(__DIR__ . '/schneeregionen_test.json'), true);
 $kaputt['lawinendienste']['slf']['freigegeben'] = ['AT-'];
@@ -321,8 +323,9 @@ pruefe(lawine_stoerung(null)['stand'] === '' && lawine_stoerung(['ts' => gmdate(
 pruefe(!lawine_freigegeben($sR['schnee-d'], $sKat['lawinendienste']) && lawine_freigegeben($sR['schnee-b'], $sKat['lawinendienste']), 'Freigabe je Warndienst');
 $skId = fn(string $id) => array_values(array_filter($sk['regionen'], fn($r) => $r['id'] === $id))[0];
 pruefe(lawine_freigegeben($skId('werdenfels'), $sk['lawinendienste']) && lawine_freigegeben($skId('oberengadin'), $sk['lawinendienste'])
-       && !lawine_freigegeben($skId('stubai'), $sk['lawinendienste']) && !lawine_freigegeben($skId('gastein-rauris'), $sk['lawinendienste']),
-       'echter Katalog: Werdenfels (Bayern) und Oberengadin (SLF) mit Stufe, Stubai (Tirol) und Gastein (Salzburg) nur Link');
+       && lawine_freigegeben($skId('stubai'), $sk['lawinendienste']) && lawine_freigegeben($skId('gastein-rauris'), $sk['lawinendienste'])
+       && !lawine_freigegeben($skId('kleinwalsertal'), $sk['lawinendienste']),
+       'echter Katalog: Werdenfels (Bayern), Oberengadin (SLF), Stubai (Tirol) und Gastein (Salzburg) mit Stufe, Kleinwalsertal (Vorarlberg) nur Link');
 
 echo "Schnee: Fahrzeiten mit zwei Katalogen\n";
 $oPort = $port + 6;

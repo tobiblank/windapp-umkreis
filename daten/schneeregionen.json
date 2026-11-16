@@ -18,10 +18,10 @@
       "url_bericht": "https://lawinen.report",
       "abruf": "https://static.avalanche.report/bulletins/{datum}/{datum}_EUREGIO_de_CAAMLv6.json",
       "format": "json",
-      "lizenz": "Südtirol CC BY, Trentino CC BY 4.0 (Open-Data-Portale der Länder); Tirol und Kärnten ungeklärt",
+      "lizenz": "CC BY 4.0 (Tirol laut Mail der Euregio, Südtirol und Trentino laut Open-Data-Portalen der Länder)",
       "praefixe": ["AT-07", "IT-32-BZ", "IT-32-TN"],
-      "freigegeben": ["IT-32-BZ", "IT-32-TN"],
-      "hinweis": "Dateiname nach dem Schema im Verzeichnis avalanche.report/bulletins/2019-01-16/ (<datum>_EUREGIO_de_CAAMLv6.json); Host static.avalanche.report für 2026 ungeprüft. AT-07 (Tirol) erst nach Antwort des LWD Tirol freigeben."
+      "freigegeben": ["AT-07", "IT-32-BZ", "IT-32-TN"],
+      "hinweis": "Dateiname nach dem Schema im Verzeichnis avalanche.report/bulletins/2019-01-16/ (<datum>_EUREGIO_de_CAAMLv6.json); Host static.avalanche.report laut Mail der Euregio (Fynn Renner, eingegangen bis 16.11.2026) der richtige und dauerhafte Abrufweg, beschrieben auf lawinen.report/more/open-data. Tiroler und Kärntner Berichte CC BY 4.0. Ausgabe täglich 17 Uhr, Aktualisierungen jederzeit möglich, Abruf nach Fair-use-Prinzip. Tirol (AT-07) seitdem freigegeben."
     },
     "bayern": {
       "name": "Lawinenwarndienst Bayern",
@@ -38,23 +38,23 @@
       "name": "Lawinenwarndienst Salzburg",
       "kurz": "LWD Salzburg",
       "url_bericht": "https://lawine.salzburg.at",
-      "abruf": "https://static.avalanche.report/eaws_bulletins/{datum}/{datum}-AT-05.json",
+      "abruf": "https://static.lawinen-warnung.eu/bulletins/{datum}/{datum}_GEOSPHERE_de_CAAMLv6.json",
       "format": "json",
-      "lizenz": "ungeklärt",
+      "lizenz": "Verwertung privat und kommerziell erlaubt (Mail LWD Salzburg, Mag. Michael Reisecker, eingegangen bis 16.11.2026)",
       "praefixe": ["AT-05"],
-      "freigegeben": [],
-      "hinweis": "Regions-IDs und Website am 9.11.2026 an static.avalanche.report/eaws_bulletins/2026-04-04/2026-04-04-AT-05.json gesehen (EAWS-Sammlung, Format wie CAAML, Version nicht angegeben; ob lawine_lesen() es liest, ungeprüft). Lizenz offen, bis dahin nur Link; wird ohne Freigabe nie abgerufen."
+      "freigegeben": ["AT-05"],
+      "hinweis": "Regions-IDs und Website am 9.11.2026 an static.avalanche.report/eaws_bulletins/2026-04-04/2026-04-04-AT-05.json gesehen (EAWS-Sammlung, Format wie CAAML, Version nicht angegeben; ob lawine_lesen() es liest, ungeprüft). Seit 16.11.2026 freigegeben (Mail LWD Salzburg: Lawinenprognose privat und kommerziell verwertbar, Lizenz soll bis Saisonstart auf der Website stehen). Abruf seitdem über die gemeinsame Datei GEOSPHERE auf static.lawinen-warnung.eu (CAAML v6, enthält auch andere Länder; gespeichert wird nur AT-05). Die Datei gibt es laut Websuche als _en_CAAMLv6.json und .xml; die deutsche Fassung prüft die Action „Lagebericht prüfen“. Kontakt: lawine.salzburg@geosphere.at (lawine@salzburg.gv.at leitet nicht weiter)."
     },
     "kaernten": {
       "name": "Lawinenwarndienst Kärnten",
       "kurz": "LWD Kärnten",
       "url_bericht": "https://lawinenwarndienst.ktn.gv.at",
-      "abruf": "https://static.avalanche.report/eaws_bulletins/{datum}/{datum}-AT-02.json",
+      "abruf": "https://static.avalanche.report/bulletins/{datum}/{datum}_AT-02_de_CAAMLv6.json",
       "format": "json",
-      "lizenz": "ungeklärt",
+      "lizenz": "CC BY 4.0 (laut Mail der Euregio; LWD Kärnten verweist auf lawinenwarndienst.ktn.gv.at/info/opendata)",
       "praefixe": ["AT-02"],
-      "freigegeben": [],
-      "hinweis": "Regions-IDs und Website am 9.11.2026 an 2026-04-04-AT-02.json der EAWS-Sammlung gesehen. Lizenz offen, bis dahin nur Link."
+      "freigegeben": ["AT-02"],
+      "hinweis": "Regions-IDs und Website am 9.11.2026 an 2026-04-04-AT-02.json der EAWS-Sammlung gesehen. Seit 16.11.2026 freigegeben: Kärntner Berichte CC BY 4.0 laut Mail der Euregio; der LWD Kärnten (Leonardo Zoltan) verweist auf seine Open-Data-Seite. Kärnten erstellt den Bericht auf avalanche.report; Abruf seitdem wie Euregio über static.avalanche.report (CAAML v6 JSON, laut Websuche gibt es <datum>_AT-02_en_CAAMLv6.json; die deutsche Fassung prüft die Action „Lagebericht prüfen“)."
     },
     "steiermark": {
       "name": "Lawinenwarndienst Steiermark",
@@ -79,15 +79,15 @@
       "hinweis": "Seit 10.11.2026 für das Kleinwalsertal. Datei 2026-03-25-AT-08.json in der EAWS-Sammlung per Websuche gesehen (Regionen AT-08-02 Allgäuer Alpen West u. a.), wie Salzburg. Lizenz offen, bis dahin nur Link; wird ohne Freigabe nie abgerufen."
     },
     "lombardia": {
-      "name": "ARPA Lombardia, Centro Nivometeorologico",
+      "name": "Centro Regionale Neve e Valanghe di ARPA Lombardia",
       "kurz": "ARPA Lombardia",
-      "url_bericht": "https://www.arpalombardia.it/temi-ambientali/neve-e-valanghe/",
+      "url_bericht": "https://www.arpalombardia.it/temi-ambientali/neve-e-ghiacciai/bollettino-neve-e-valanghe/",
       "abruf": "https://static.avalanche.report/eaws_bulletins/{datum}/{datum}-IT-25.json",
       "format": "json",
-      "lizenz": "ungeklärt",
+      "lizenz": "Open Data über AINEVA (Bedingungen auf bollettini.aineva.it/more/open-data); Quelle Centro Regionale Neve e Valanghe di ARPA Lombardia nennen",
       "praefixe": ["IT-25"],
-      "freigegeben": [],
-      "hinweis": "Seit 9.11.2026 für Livigno. Datei in der EAWS-Sammlung ungeprüft; Lizenz offen, bis dahin nur Link."
+      "freigegeben": ["IT-25"],
+      "hinweis": "Seit 9.11.2026 für Livigno. Seit 16.11.2026 freigegeben: Mail der Segreteria von ARPA Lombardia verweist auf die Open-Data-Seite von AINEVA (Zugang und Lizenz); die Daten gehören dem Centro Regionale Neve e Valanghe di ARPA Lombardia, das als Quelle genannt werden muss. Die AINEVA-Seite war von hier nicht abrufbar, Lizenztext deshalb ungeprüft. Abruf weiter über die EAWS-Sammlung; ob lawine_lesen() sie liest, prüft die Action „Lagebericht prüfen“."
     }
   },
   "messnetze": {
