@@ -15,8 +15,8 @@ $windIds = array_column(regionen_laden("$ROOT/daten/regionen.json"), 'id');
 pruefe(!array_intersect($windIds, array_column($sk['regionen'], 'id')), 'ids von Wind- und Schnee-Katalog verschieden (gemeinsame fahrzeiten.json)');
 $frei = fn(string $d) => $sk['lawinendienste'][$d]['freigegeben'] ?? null;
 pruefe($frei('bayern') === ['DE-BY'] && in_array('AT-07', $frei('euregio'), true) && $frei('salzburg') === ['AT-05'] && $frei('kaernten') === ['AT-02']
-       && $frei('lombardia') === ['IT-25'] && $frei('steiermark') === [] && $frei('vorarlberg') === [],
-       'freigegeben: Bayern (10.11.2026), Tirol, Salzburg, Kärnten, Lombardei (Mails bis 16.11.2026); Steiermark und Vorarlberg noch nicht');
+       && $frei('lombardia') === ['IT-25'] && $frei('vorarlberg') === ['AT-08'] && $frei('steiermark') === [],
+       'freigegeben: Bayern (10.11.2026), Tirol, Salzburg, Kärnten, Lombardei (Mails bis 16.11.2026), Vorarlberg (17.11.2026); Steiermark noch nicht');
 pruefe(schnee_katalog_laden(__DIR__ . '/schneeregionen_test.json')['regionen'][0]['typ'] === 'schnee', 'Testkatalog gültig, typ schnee gesetzt');
 $kaputt = json_decode(file_get_contents(__DIR__ . '/schneeregionen_test.json'), true);
 $kaputt['lawinendienste']['slf']['freigegeben'] = ['AT-'];
@@ -324,8 +324,8 @@ pruefe(!lawine_freigegeben($sR['schnee-d'], $sKat['lawinendienste']) && lawine_f
 $skId = fn(string $id) => array_values(array_filter($sk['regionen'], fn($r) => $r['id'] === $id))[0];
 pruefe(lawine_freigegeben($skId('werdenfels'), $sk['lawinendienste']) && lawine_freigegeben($skId('oberengadin'), $sk['lawinendienste'])
        && lawine_freigegeben($skId('stubai'), $sk['lawinendienste']) && lawine_freigegeben($skId('gastein-rauris'), $sk['lawinendienste'])
-       && !lawine_freigegeben($skId('kleinwalsertal'), $sk['lawinendienste']),
-       'echter Katalog: Werdenfels (Bayern), Oberengadin (SLF), Stubai (Tirol) und Gastein (Salzburg) mit Stufe, Kleinwalsertal (Vorarlberg) nur Link');
+       && lawine_freigegeben($skId('kleinwalsertal'), $sk['lawinendienste']) && !lawine_freigegeben($skId('soelktaeler'), $sk['lawinendienste']),
+       'echter Katalog: Werdenfels, Oberengadin, Stubai, Gastein und Kleinwalsertal mit Stufe, Sölktäler (Steiermark) nur Link');
 
 echo "Schnee: Fahrzeiten mit zwei Katalogen\n";
 $oPort = $port + 6;

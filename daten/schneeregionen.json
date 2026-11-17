@@ -70,13 +70,13 @@
     "vorarlberg": {
       "name": "Lawinenwarndienst Vorarlberg",
       "kurz": "LWD Vorarlberg",
-      "url_bericht": "https://warnung.vorarlberg.at",
-      "abruf": "https://static.avalanche.report/eaws_bulletins/{datum}/{datum}-AT-08.json",
+      "url_bericht": "https://www.vorarlberg.at/lawine",
+      "abruf": "https://static.lawinen-warnung.eu/bulletins/{datum}/{datum}_GEOSPHERE_de_CAAMLv6.json",
       "format": "json",
-      "lizenz": "ungeklärt",
+      "lizenz": "frei nutzbar laut Mail des LWD Vorarlberg (Andreas Pecl, 17.11.2026); Bedingungen laut vorarlberg.at/impressum",
       "praefixe": ["AT-08"],
-      "freigegeben": [],
-      "hinweis": "Seit 10.11.2026 für das Kleinwalsertal. Datei 2026-03-25-AT-08.json in der EAWS-Sammlung per Websuche gesehen (Regionen AT-08-02 Allgäuer Alpen West u. a.), wie Salzburg. Lizenz offen, bis dahin nur Link; wird ohne Freigabe nie abgerufen."
+      "freigegeben": ["AT-08"],
+      "hinweis": "Seit 10.11.2026 für das Kleinwalsertal. Datei 2026-03-25-AT-08.json in der EAWS-Sammlung per Websuche gesehen (Regionen AT-08-02 Allgäuer Alpen West u. a.), wie Salzburg. Seit 17.11.2026 freigegeben (Mail LWD Vorarlberg, Andreas Pecl: Daten frei nutzbar, Nutzungsbedingungen im Impressum des Landes; Bedingungen: Quellenangabe „Lawinenwarndienst Vorarlberg“ mit anklickbarem Link, Veröffentlichung und Gültigkeitsende aus validTime, abgelaufene Daten nicht als aktuell, ausbleibende Aktualisierung kennzeichnen, amtliche Stufe unverändert in offiziellen Farben und nicht mit eigenen Kennzahlen vermischt, Hinweis, dass die App weder Bericht noch eigene Beurteilung ersetzt; möchte informiert werden, wenn die Anwendung online ist). Abruf wie Salzburg über die gemeinsame Datei GEOSPHERE auf static.lawinen-warnung.eu (Vorarlberg erstellt den Bericht auf derselben Plattform, PDF auf avalanche-warnings.eu); gespeichert wird nur AT-08. Link zum Bericht laut Fuß der Vorarlberger PDFs www.vorarlberg.at/lawine."
     },
     "lombardia": {
       "name": "Centro Regionale Neve e Valanghe di ARPA Lombardia",
