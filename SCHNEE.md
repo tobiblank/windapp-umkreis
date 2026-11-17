@@ -172,11 +172,24 @@ Echte Berichte prüft die Action „Lagebericht prüfen“ (`tools/lawine_pruefe
 | Salzburg | seit 16.11.2026 `static.lawinen-warnung.eu/bulletins/{datum}/{datum}_GEOSPHERE_de_CAAMLv6.json` (gemeinsame Datei mehrerer Länder, gespeichert wird nur `AT-05`; am 16.11.2026 mit den Dateien vom 27.3. und 17.4.2026 geprüft, alle Salzburger Mikroregionen mit Stufe) | Verwertung privat und kommerziell erlaubt (Mail LWD Salzburg), Lizenz soll bis Saisonstart auf der Website stehen | `AT-05` (seit 16.11.2026) |
 | Kärnten | seit 16.11.2026 `static.avalanche.report/bulletins/{datum}/{datum}_AT-02_de_CAAMLv6.json` (Kärnten arbeitet auf avalanche.report; am 16.11.2026 mit den Dateien vom 27.3. und 17.4.2026 geprüft, Nassfeld `AT-02-15-02` enthalten) | CC BY 4.0 (Mail der Euregio; LWD Kärnten verweist auf lawinenwarndienst.ktn.gv.at/info/opendata) | `AT-02` (seit 16.11.2026) |
 | Lombardei (Livigno) | EAWS-Sammlung `static.avalanche.report/eaws_bulletins/{datum}/{datum}-IT-25.json`; am 16.11.2026 mit den Dateien vom 27.3. und 17.4.2026 fehlerfrei gelesen, dort aber nur `IT-25-SO-01` bis `-04`, nie `IT-25-SO-LI`: Livigno bekommt so vermutlich keine Stufe (offen, siehe Nächste Schritte) | Open Data über AINEVA (bollettini.aineva.it/more/open-data, Lizenztext von hier nicht abrufbar); Quelle Centro Regionale Neve e Valanghe di ARPA Lombardia nennen (Mail ARPA Lombardia) | `IT-25` (seit 16.11.2026) |
-| Steiermark (seit 9.11.2026), Vorarlberg (seit 10.11.2026, Kleinwalsertal) | `static.avalanche.report/eaws_bulletins/{datum}/{datum}-AT-06.json` bzw. `-AT-08.json`, EAWS-Sammlung | offen (angefragt 14.11.2026) | – |
+| Vorarlberg (Kleinwalsertal) | seit 17.11.2026 dieselbe GEOSPHERE-Datei wie Salzburg, gespeichert nur `AT-08`; am 17.11.2026 mit den Dateien vom 27.3. und 17.4.2026 geprüft, `AT-08-02` (Kleinwalsertal) enthalten | frei nutzbar, Bedingungen laut vorarlberg.at/impressum (Mail LWD Vorarlberg, 17.11.2026), Auflagen siehe unten | `AT-08` (seit 17.11.2026) |
+| Steiermark (seit 9.11.2026) | `static.avalanche.report/eaws_bulletins/{datum}/{datum}-AT-06.json`, EAWS-Sammlung | offen (angefragt 14.11.2026) | – |
 
 LWD Tirol hat über die Euregio geantwortet (eingegangen bis 16.11.2026, Fynn Renner): Tiroler und Kärntner Berichte CC BY 4.0, Abrufweg static.avalanche.report, Ausgabe täglich 17 Uhr, Aktualisierungen jederzeit, Abruf nach Fair-use-Prinzip. `AT-07` seit 16.11.2026 freigegeben. LWD Bayern hat am 10.11.2026 geantwortet (siehe oben). Beim SLF im Verteiler „Avalanche Bulletin“ angemeldet (info@dablank.de, bestätigt am 9.11.2026, Vorgang DATA-2406). Im selben Vorgang am 10.11.2026 angefragt, ob die IMIS-Schneehöhen (Oberengadin, ein- bis zweimal am Tag über `measurement-api.slf.ch`, mit Quellenangabe) angezeigt werden dürfen; Antwort steht aus.
 
 Weder Österreich noch Italien hat einen gemeinsamen Warndienst, der Freigaben erteilt: Zuständig ist je Bundesland bzw. Region der eigene Dienst. lawinen.at und das gemeinsame Ausgabetool von Salzburg, Kärnten, Steiermark, Ober- und Niederösterreich bündeln nur die Anzeige; in Italien koordiniert AINEVA, den Bericht gibt aber jede Region heraus (Südtirol und Trentino über die Euregio). Eine Freigabe gilt deshalb nur für den Dienst, der sie gibt.
+
+### Auflagen des LWD Vorarlberg (17.11.2026)
+
+Laut Mail „gleichermaßen wie mit den Nachbarwarndiensten“, deckt sich mit den Hinweisen des LWD Bayern (oben):
+
+| Auflage | Umsetzung |
+|---|---|
+| Quellenangabe „Lawinenwarndienst Vorarlberg“ mit anklickbarem Link | Name und Link `www.vorarlberg.at/lawine` bei der Region, auf der Stundenseite, im Impressum |
+| Veröffentlichung und Gültigkeitsende aus `validTime` | `lawine_gueltig_text()` |
+| Abgelaufene Daten nicht als aktuell; ausbleibende Aktualisierung kennzeichnen | Abgelaufene Berichte werden nicht gezeigt; `lawine_stoerung()` meldet Fehlabruf oder Stand älter als 13 h |
+| Amtliche Stufe unverändert in offiziellen Farben, nicht mit eigenen Kennzahlen vermischt | EAWS-Farben, eigenes Abzeichen, geht in keine Bewertung ein; Warndreieck als „Hinweis von Wohinfahrma“ getrennt |
+| Hinweis, dass die App weder Bericht noch eigene Beurteilung ersetzt | `LAWINE_HAFTUNG` |
 
 ### Kontakte der Warndienste (Stand 14.11.2026)
 
@@ -188,7 +201,7 @@ Weder Österreich noch Italien hat einen gemeinsamen Warndienst, der Freigaben e
 | LWD Salzburg (`AT-05`) | lawine.salzburg@geosphere.at | Abwesenheitsnotiz von lawine@salzburg.gv.at (14.11.2026: „keine Weiterleitung“); die Adresse im Impressum nicht mehr nehmen | 14.11.2026; Antwort bis 16.11.2026 (Mag. Michael Reisecker): privat und kommerziell verwertbar, freigegeben |
 | LWD Kärnten (`AT-02`) | abt3.katastrophenschutz@ktn.gv.at | lawinenwarndienst.ktn.gv.at (die ältere lawine@ktn.gv.at nicht nehmen) | 14.11.2026; Antwort bis 16.11.2026 (Leonardo Zoltan): Verweis auf lawinenwarndienst.ktn.gv.at/info/opendata; CC BY 4.0 laut Euregio, freigegeben |
 | LWD Steiermark (`AT-06`) | katastrophenschutz@stmk.gv.at | Lagebericht 2024, Impressum lawis.at | 14.11.2026 gesendet, Antwort steht aus |
-| LWD Vorarlberg (`AT-08`) | lawinenwarndienst@lwz-vorarlberg.at | Lageberichte 2024 | 14.11.2026 gesendet, Antwort steht aus |
+| LWD Vorarlberg (`AT-08`) | lawinenwarndienst@lwz-vorarlberg.at (Antwort von andreas.pecl@lwz-vorarlberg.at) | Lageberichte 2024 | 14.11.2026; Antwort 17.11.2026 (Andreas Pecl): frei nutzbar, freigegeben; möchte informiert werden, wenn die Anwendung online ist |
 | ARPA Lombardia, Bormio (`IT-25`, Livigno) | nivometeo@arpalombardia.it | Bollettino Dezember 2025 | 14.11.2026; Antwort bis 16.11.2026 (Segreteria): Open Data über AINEVA, Quelle nennen; freigegeben |
 
 Nach dem Versand das Datum eintragen; nach einer Freigabe `freigegeben` im Katalog ergänzen.
@@ -238,7 +251,7 @@ Für die Rechnung nur Stufe und strukturierte Felder; Texte der Berichte nicht k
 ## Nächste Schritte
 
 1. ~~Erster echter Lauf~~ (abgeglichen 11.11.2026); Lageberichte und Zuordnung Oberengadin prüfen, sobald die Saison beginnt
-2. ~~Tirol freigeben~~ (16.11.2026, dazu Salzburg, Kärnten, Lombardei). Offen: Steiermark, Vorarlberg; Lizenztext von AINEVA und Kärnten selbst lesen; Livigno: welche Zone im Lombardei-Bericht (nur `IT-25-SO-01` bis `-04` gesehen, nicht `IT-25-SO-LI`), bei ARPA Lombardia oder im AINEVA-Bericht nachsehen; Bayern: Messdaten erst über die angekündigte Schnittstelle
+2. ~~Tirol freigeben~~ (16.11.2026, dazu Salzburg, Kärnten, Lombardei; Vorarlberg 17.11.2026). Offen: Steiermark; LWD Vorarlberg Bescheid geben, dass die Anzeige online ist; Lizenztext von AINEVA und Kärnten selbst lesen; Livigno: welche Zone im Lombardei-Bericht (nur `IT-25-SO-01` bis `-04` gesehen, nicht `IT-25-SO-LI`), bei ARPA Lombardia oder im AINEVA-Bericht nachsehen; Bayern: Messdaten erst über die angekündigte Schnittstelle
 3. Schwellen (`SCHNEE_REGEL`, `SCHNEE_KAMM_HINWEIS`) und Tourhöhen aus eigener Erfahrung anpassen
 4. Weitere Messstationen (SLF IMIS nach Antwort auf die Rückfrage vom 10.11.2026, Vorgang DATA-2406)
 5. Verlauf über die Abrufe
