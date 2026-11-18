@@ -32,7 +32,7 @@
       "lizenz": "Weiterverarbeitung erlaubt, ohne Gewähr",
       "praefixe": ["DE-BY"],
       "freigegeben": ["DE-BY"],
-      "hinweis": "Datei und Regions-IDs am 8.11.2026 an 2025-12-20_DE-BY_de_CAAMLv6.xml gesehen (CAAML v6, XML). Freigabe per Mail der Lawinenwarnzentrale Bayern (Dr. Thomas Feistl) am 10.11.2026: Einbindung über die CAAML-Dateien, Hinweise zur Weiterverarbeitung auf lawinenwarndienst.bayern.de/presse/ beachten (Quellenangabe mit Link, Ausgabe- und Gültigkeitszeit, keine veralteten Daten als aktuell, Kürzungen und eigene Hinweise kennzeichnen, Störungen anzeigen, angemessen abrufen). Messdaten nur von der Website; eine Datenschnittstelle ist angekündigt."
+      "hinweis": "Datei und Regions-IDs am 8.11.2026 an 2025-12-20_DE-BY_de_CAAMLv6.xml gesehen (CAAML v6, XML). Freigabe per Mail der Lawinenwarnzentrale Bayern am 10.11.2026: Einbindung über die CAAML-Dateien, Hinweise zur Weiterverarbeitung auf lawinenwarndienst.bayern.de/presse/ beachten (Quellenangabe mit Link, Ausgabe- und Gültigkeitszeit, keine veralteten Daten als aktuell, Kürzungen und eigene Hinweise kennzeichnen, Störungen anzeigen, angemessen abrufen). Messdaten nur von der Website; eine Datenschnittstelle ist angekündigt."
     },
     "salzburg": {
       "name": "Lawinenwarndienst Salzburg",
@@ -40,7 +40,7 @@
       "url_bericht": "https://lawine.salzburg.at",
       "abruf": "https://static.lawinen-warnung.eu/bulletins/{datum}/{datum}_GEOSPHERE_de_CAAMLv6.json",
       "format": "json",
-      "lizenz": "Verwertung privat und kommerziell erlaubt (Mail LWD Salzburg, Mag. Michael Reisecker, eingegangen bis 16.11.2026)",
+      "lizenz": "Verwertung privat und kommerziell erlaubt (Mail LWD Salzburg, eingegangen bis 16.11.2026)",
       "praefixe": ["AT-05"],
       "freigegeben": ["AT-05"],
       "hinweis": "Regions-IDs und Website am 9.11.2026 an static.avalanche.report/eaws_bulletins/2026-04-04/2026-04-04-AT-05.json gesehen (EAWS-Sammlung, Format wie CAAML, Version nicht angegeben; ob lawine_lesen() es liest, ungeprüft). Seit 16.11.2026 freigegeben (Mail LWD Salzburg: Lawinenprognose privat und kommerziell verwertbar, Lizenz soll bis Saisonstart auf der Website stehen). Abruf seitdem über die gemeinsame Datei GEOSPHERE auf static.lawinen-warnung.eu (CAAML v6, enthält auch andere Länder; gespeichert wird nur AT-05). Die Datei gibt es laut Websuche als _en_CAAMLv6.json und .xml; die deutsche Fassung prüft die Action „Lagebericht prüfen“. Kontakt: lawine.salzburg@geosphere.at (lawine@salzburg.gv.at leitet nicht weiter)."
@@ -54,7 +54,7 @@
       "lizenz": "CC BY 4.0 (laut Mail der Euregio; LWD Kärnten verweist auf lawinenwarndienst.ktn.gv.at/info/opendata)",
       "praefixe": ["AT-02"],
       "freigegeben": ["AT-02"],
-      "hinweis": "Regions-IDs und Website am 9.11.2026 an 2026-04-04-AT-02.json der EAWS-Sammlung gesehen. Seit 16.11.2026 freigegeben: Kärntner Berichte CC BY 4.0 laut Mail der Euregio; der LWD Kärnten (Leonardo Zoltan) verweist auf seine Open-Data-Seite. Kärnten erstellt den Bericht auf avalanche.report; Abruf seitdem wie Euregio über static.avalanche.report (CAAML v6 JSON, laut Websuche gibt es <datum>_AT-02_en_CAAMLv6.json; die deutsche Fassung prüft die Action „Lagebericht prüfen“)."
+      "hinweis": "Regions-IDs und Website am 9.11.2026 an 2026-04-04-AT-02.json der EAWS-Sammlung gesehen. Seit 16.11.2026 freigegeben: Kärntner Berichte CC BY 4.0 laut Mail der Euregio; der LWD Kärnten verweist auf seine Open-Data-Seite. Kärnten erstellt den Bericht auf avalanche.report; Abruf seitdem wie Euregio über static.avalanche.report (CAAML v6 JSON, laut Websuche gibt es <datum>_AT-02_en_CAAMLv6.json; die deutsche Fassung prüft die Action „Lagebericht prüfen“)."
     },
     "steiermark": {
       "name": "Lawinenwarndienst Steiermark",
@@ -73,10 +73,10 @@
       "url_bericht": "https://www.vorarlberg.at/lawine",
       "abruf": "https://static.lawinen-warnung.eu/bulletins/{datum}/{datum}_GEOSPHERE_de_CAAMLv6.json",
       "format": "json",
-      "lizenz": "frei nutzbar laut Mail des LWD Vorarlberg (Andreas Pecl, 17.11.2026); Bedingungen laut vorarlberg.at/impressum",
+      "lizenz": "frei nutzbar laut Mail des LWD Vorarlberg (17.11.2026); Bedingungen laut vorarlberg.at/impressum",
       "praefixe": ["AT-08"],
       "freigegeben": ["AT-08"],
-      "hinweis": "Seit 10.11.2026 für das Kleinwalsertal. Datei 2026-03-25-AT-08.json in der EAWS-Sammlung per Websuche gesehen (Regionen AT-08-02 Allgäuer Alpen West u. a.), wie Salzburg. Seit 17.11.2026 freigegeben (Mail LWD Vorarlberg, Andreas Pecl: Daten frei nutzbar, Nutzungsbedingungen im Impressum des Landes; Bedingungen: Quellenangabe „Lawinenwarndienst Vorarlberg“ mit anklickbarem Link, Veröffentlichung und Gültigkeitsende aus validTime, abgelaufene Daten nicht als aktuell, ausbleibende Aktualisierung kennzeichnen, amtliche Stufe unverändert in offiziellen Farben und nicht mit eigenen Kennzahlen vermischt, Hinweis, dass die App weder Bericht noch eigene Beurteilung ersetzt; möchte informiert werden, wenn die Anwendung online ist). Abruf wie Salzburg über die gemeinsame Datei GEOSPHERE auf static.lawinen-warnung.eu (Vorarlberg erstellt den Bericht auf derselben Plattform, PDF auf avalanche-warnings.eu); gespeichert wird nur AT-08. Link zum Bericht laut Fuß der Vorarlberger PDFs www.vorarlberg.at/lawine."
+      "hinweis": "Seit 10.11.2026 für das Kleinwalsertal. Datei 2026-03-25-AT-08.json in der EAWS-Sammlung per Websuche gesehen (Regionen AT-08-02 Allgäuer Alpen West u. a.), wie Salzburg. Seit 17.11.2026 freigegeben (Mail LWD Vorarlberg: Daten frei nutzbar, Nutzungsbedingungen im Impressum des Landes; Bedingungen: Quellenangabe „Lawinenwarndienst Vorarlberg“ mit anklickbarem Link, Veröffentlichung und Gültigkeitsende aus validTime, abgelaufene Daten nicht als aktuell, ausbleibende Aktualisierung kennzeichnen, amtliche Stufe unverändert in offiziellen Farben und nicht mit eigenen Kennzahlen vermischt, Hinweis, dass die App weder Bericht noch eigene Beurteilung ersetzt; möchte informiert werden, wenn die Anwendung online ist). Abruf wie Salzburg über die gemeinsame Datei GEOSPHERE auf static.lawinen-warnung.eu (Vorarlberg erstellt den Bericht auf derselben Plattform, PDF auf avalanche-warnings.eu); gespeichert wird nur AT-08. Link zum Bericht laut Fuß der Vorarlberger PDFs www.vorarlberg.at/lawine."
     },
     "lombardia": {
       "name": "Centro Regionale Neve e Valanghe di ARPA Lombardia",

@@ -148,7 +148,7 @@ Der Sammler holt je Dienst heute und morgen. HTTP 404 heißt „noch kein Berich
 
 ### Hinweise des LWD Bayern zur Weiterverarbeitung (seit 10.11.2026)
 
-Freigabe per Mail der Lawinenwarnzentrale Bayern (Dr. Thomas Feistl, 10.11.2026): Einbindung über die CAAML-Dateien, Hinweise auf `lawinenwarndienst.bayern.de/presse/` beachten. Messdaten nur von der Website; eine Datenschnittstelle ist angekündigt. Umgesetzt für alle Dienste, nicht nur Bayern:
+Freigabe per Mail der Lawinenwarnzentrale Bayern (10.11.2026): Einbindung über die CAAML-Dateien, Hinweise auf `lawinenwarndienst.bayern.de/presse/` beachten. Messdaten nur von der Website; eine Datenschnittstelle ist angekündigt. Umgesetzt für alle Dienste, nicht nur Bayern:
 
 | Hinweis | Umsetzung |
 |---|---|
@@ -198,10 +198,10 @@ Laut Mail „gleichermaßen wie mit den Nachbarwarndiensten“, deckt sich mit d
 | LWD Tirol (`AT-07`) | lawine@tirol.gv.at | – | 8.11.2026; Antwort der Euregio bis 16.11.2026: CC BY 4.0, freigegeben (Erinnerung damit hinfällig) |
 | LWD Bayern (`DE-BY`) | – | – | freigegeben 10.11.2026 |
 | SLF (`CH-`) | data@slf.ch | – | CC BY 4.0; IMIS-Rückfrage 10.11.2026 (DATA-2406), Antwort steht aus; Erinnerung entworfen 14.11.2026, noch nicht gesendet |
-| LWD Salzburg (`AT-05`) | lawine.salzburg@geosphere.at | Abwesenheitsnotiz von lawine@salzburg.gv.at (14.11.2026: „keine Weiterleitung“); die Adresse im Impressum nicht mehr nehmen | 14.11.2026; Antwort bis 16.11.2026 (Mag. Michael Reisecker): privat und kommerziell verwertbar, freigegeben |
-| LWD Kärnten (`AT-02`) | abt3.katastrophenschutz@ktn.gv.at | lawinenwarndienst.ktn.gv.at (die ältere lawine@ktn.gv.at nicht nehmen) | 14.11.2026; Antwort bis 16.11.2026 (Leonardo Zoltan): Verweis auf lawinenwarndienst.ktn.gv.at/info/opendata; CC BY 4.0 laut Euregio, freigegeben |
+| LWD Salzburg (`AT-05`) | lawine.salzburg@geosphere.at | Abwesenheitsnotiz von lawine@salzburg.gv.at (14.11.2026: „keine Weiterleitung“); die Adresse im Impressum nicht mehr nehmen | 14.11.2026; Antwort bis 16.11.2026: privat und kommerziell verwertbar, freigegeben |
+| LWD Kärnten (`AT-02`) | abt3.katastrophenschutz@ktn.gv.at | lawinenwarndienst.ktn.gv.at (die ältere lawine@ktn.gv.at nicht nehmen) | 14.11.2026; Antwort bis 16.11.2026: Verweis auf lawinenwarndienst.ktn.gv.at/info/opendata; CC BY 4.0 laut Euregio, freigegeben |
 | LWD Steiermark (`AT-06`) | katastrophenschutz@stmk.gv.at | Lagebericht 2024, Impressum lawis.at | 14.11.2026 gesendet, Antwort steht aus |
-| LWD Vorarlberg (`AT-08`) | lawinenwarndienst@lwz-vorarlberg.at (Antwort von andreas.pecl@lwz-vorarlberg.at) | Lageberichte 2024 | 14.11.2026; Antwort 17.11.2026 (Andreas Pecl): frei nutzbar, freigegeben; möchte informiert werden, wenn die Anwendung online ist |
+| LWD Vorarlberg (`AT-08`) | lawinenwarndienst@lwz-vorarlberg.at | Lageberichte 2024 | 14.11.2026; Antwort 17.11.2026: frei nutzbar, freigegeben; möchte informiert werden, wenn die Anwendung online ist |
 | ARPA Lombardia, Bormio (`IT-25`, Livigno) | nivometeo@arpalombardia.it | Bollettino Dezember 2025 | 14.11.2026; Antwort bis 16.11.2026 (Segreteria): Open Data über AINEVA, Quelle nennen; freigegeben |
 
 Nach dem Versand das Datum eintragen; nach einer Freigabe `freigegeben` im Katalog ergänzen.
