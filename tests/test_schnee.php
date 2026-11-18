@@ -111,6 +111,18 @@ $gestern = gmdate('Y-m-d', time() - 86400);
 pruefe($rs && count($rs['zellen']) === count($rp) && count($rp) > 200 && count($rp) < 400 && $west && $ost
        && ($west['neu'][gmdate('Y-m-d')] ?? 0) > 10 && ($ost['neu'][gmdate('Y-m-d')] ?? -1) == 0 && !isset($west['hourly']) && !isset($west['neu'][$gestern]),
        'Neuschnee-Raster: alle Punkte, nur Tageswerte gespeichert, Schnee nur unter der Schneefallgrenze');
+pruefe(($west['hs'][gmdate('Y-m-d')] ?? null) === 80 && ($ost['hs'][gmdate('Y-m-d')] ?? null) === 10,
+       'Raster: Schneehöhe im Modell je Tag in cm gespeichert (seit 18.11.2026)');
+$rd = "$tmp/relief";
+@mkdir($rd);
+pruefe(relief_svg([0, 0, 560, 614], $rd) === '', 'Relief: ohne relief.json nichts');
+file_put_contents("$rd/relief.json", json_encode(['datei' => 'relief.webp', 'z' => 8, 'x' => [131, 140], 'y' => [88, 93]]));
+file_put_contents("$rd/relief.webp", 'x');
+$rel = relief_svg([0, 0, 560, 614], $rd);
+$ecke = karte_punkt(rad2deg(atan(sinh(M_PI * (1 - 2 * 88 / 256)))), 131 / 256 * 360 - 180);
+pruefe(preg_match('#<image class="relief" href="relief\.webp\?v=\d+" x="([\d.]+)" y="([\d.]+)" width="([\d.]+)"#', $rel, $mr) === 1
+       && abs((float)$mr[1] - $ecke[0]) < 0.01 && abs((float)$mr[2] - $ecke[1]) < 0.01 && abs((float)$mr[3] - 10 / 256 * 360 * KARTE_K) < 0.01
+       && relief_svg([400, 0, 50, 50], $rd) === '', 'Relief: Ecken aus den Kacheln, außerhalb des Ausschnitts nichts');
 pruefe(schnee_im_umriss(47.27, 11.39) && schnee_im_umriss(46.5, 9.84) && !schnee_im_umriss(48.14, 11.58) && !schnee_im_umriss(45.46, 9.19),
        'Alpenumriss: Innsbruck und Engadin drin, München und Mailand nicht');
 $lagen = lawine_laden("$tmp/schnee");
@@ -368,9 +380,9 @@ pruefe(str_contains($html, 'id="heimBus"') && str_contains($html, 'data-art="ski
        && str_contains($html, 'id="ton"') && strrpos($html, 'class="heim"') > strrpos($html, 'class="punkt '),
        'Karte: Männchen mit Ziel (Pulvertag), Bus mit Ski auf dem Dach, Ski am Ziel, Flocken an guten Regionen, Ton-Schalter');
 pruefe(preg_match('#id="r-schnee-a".*?<p class="maps klein"><a class="maps-knopf" href="https://www.google.com/maps/search/\?api=1&amp;query=[\d.%C-]+"#s', $html) === 1, 'Schnee-Karte: Maps-Knopf');
-if (getenv('UMKREIS_SEITE_OFFEN')) {   // zum Ansehen im Browser: Seite eine Weile offen lassen
-    file_put_contents(getenv('UMKREIS_SEITE_OFFEN'), (string)$wPort);
-    sleep(90);
+if (getenv('UMKREIS_SCHNEE_OFFEN')) {   // zum Ansehen im Browser: Schnee-Seite eine Weile offen lassen (Sekunden in UMKREIS_SEITE_SEK)
+    file_put_contents(getenv('UMKREIS_SCHNEE_OFFEN'), (string)$wPort);
+    sleep((int)(getenv('UMKREIS_SEITE_SEK') ?: 90));
 }
 pruefe(str_contains($html, 'class="lw lw3 warn-erheblich"') && str_contains($html, 'class="lw lw2"') && str_contains($html, 'Zuordnung über den Namen'), 'Lawinen-Abzeichen in EAWS-Farben, Hinweis auf Namenszuordnung');
 pruefe(preg_match('#id="r-schnee-c".*?class="tag [^"]*warn-hoch"#s', $html) === 1 && str_contains($html, 'class="lw lw4 warn-hoch"') && str_contains($html, '<span class="warn" aria-label="Warnung">⚠')
@@ -388,8 +400,11 @@ pruefe(preg_match('#id="r-schnee-d".*?Lawinenlage: <a href="https://example.org/
        'nicht freigegebener Dienst: nur Link, keine Stufe');
 pruefe(str_contains($html, '<nav class="modus" aria-label="Modus"><a href="./">Wind</a><a href="schnee.php" aria-current="page">Schnee</a>'), 'Schalter Wind · Schnee');
 pruefe(str_contains($html, '<details class="karte landkarte" id="landkarte" open>') && str_contains($html, 'class="punkt s-go"'), 'Karte mit blauen Punkten');
-pruefe(str_contains($html, 'class="windfeld schneefeld schneeraster"') && str_contains($html, 'Neuschnee auf 2.000 m') && str_contains($html, 'id="feldKnopf"'),
+pruefe(str_contains($html, 'class="windfeld schneefeld schneeraster feld-neu"') && str_contains($html, 'Neuschnee auf 2.000 m') && str_contains($html, 'id="feldWahl"'),
        'Karte mit Neuschnee-Raster und Schalter');
+pruefe(str_contains($html, 'class="windfeld schneefeld schneeraster feld-hs"') && str_contains($html, 'data-feld="hs"') && str_contains($html, 'Schneehöhe im Modell: 80 cm')
+       && str_contains($html, 'class="windskala hsskala"') && str_contains($html, 'Fläche: Schneehöhe im Modell'),
+       'Karte: Schneehöhe als zweite Fläche mit eigener Legende und Wahl');
 pruefe(str_contains($html, 'class="teilen" hidden') && str_contains($html, 'Abfahrt bis'), 'gute Tage: Teilen und Abfahrt');
 pruefe(!str_contains($html, 'name="sport"') && !str_contains($html, 'sport=') && str_contains($html, 'Pulvertag:') && str_contains($html, '<b>Pulvertag</b>'),
        'keine Sportart mehr: kein Schalter, keine Links mit sport=, gute Tage heißen Pulvertag');

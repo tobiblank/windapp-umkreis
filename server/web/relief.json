@@ -1,0 +1,23 @@
+{
+ "datei": "relief.webp",
+ "z": 8,
+ "x": [
+  131,
+  140
+ ],
+ "y": [
+  88,
+  93
+ ],
+ "pixel": [
+  2560,
+  1536
+ ],
+ "quelle": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+ "gebaut": "2026-11-18",
+ "einstellungen": {
+  "ueberhoehung": 2.0,
+  "azimut": 315.0,
+  "sonnenhoehe": 45.0
+ }
+}

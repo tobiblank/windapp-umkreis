@@ -763,20 +763,26 @@ function schnee_raster_punkte(): array
 }
 
 /**
- * Eintrag von Open-Meteo -> Neuschnee je Tag auf SCHNEE_RASTER_HOEHE.
- * Rueckgabe ['latitude', 'longitude' (angefragt), 'neu' => [YYYY-MM-DD => cm]] (Tage ohne genug Stunden fehlen)
+ * Eintrag von Open-Meteo -> Neuschnee je Tag auf SCHNEE_RASTER_HOEHE und (seit 18.11.2026)
+ * Schneehoehe im Modell um SCHNEE_MORGEN Uhr.
+ * Rueckgabe ['latitude', 'longitude' (angefragt), 'neu' => [YYYY-MM-DD => cm], 'hs' => [YYYY-MM-DD => cm]]
+ * (Tage ohne genug Stunden bzw. ohne Schneehoehe fehlen; 'hs' fehlt in Laeufen vor dem 18.11.2026)
  */
 function schnee_raster_eintrag(array $e, array $punkt): array
 {
     $st = schnee_stunden($e, new DateTimeZone(SCHNEE_RASTER_TZ), SCHNEE_RASTER_HOEHE);
     $neu = [];
+    $hs = [];
     foreach (array_keys($st) as $tag) {
-        $v = schnee_kennwerte($st, $tag, SCHNEE_TAG)['neu24'];
-        if ($v !== null) {
-            $neu[$tag] = round($v, 1);
+        $k = schnee_kennwerte($st, $tag, SCHNEE_TAG);
+        if ($k['neu24'] !== null) {
+            $neu[$tag] = round($k['neu24'], 1);
+        }
+        if ($k['hs'] !== null) {
+            $hs[$tag] = (int)round(max(0.0, $k['hs']));
         }
     }
-    return ['latitude' => $punkt[0], 'longitude' => $punkt[1], 'neu' => $neu];
+    return ['latitude' => $punkt[0], 'longitude' => $punkt[1], 'neu' => $neu, 'hs' => $hs];
 }
 
 /**
