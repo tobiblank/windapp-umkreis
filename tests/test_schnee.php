@@ -380,9 +380,9 @@ pruefe(str_contains($html, 'id="heimBus"') && str_contains($html, 'data-art="ski
        && str_contains($html, 'id="ton"') && strrpos($html, 'class="heim"') > strrpos($html, 'class="punkt '),
        'Karte: Männchen mit Ziel (Pulvertag), Bus mit Ski auf dem Dach, Ski am Ziel, Flocken an guten Regionen, Ton-Schalter');
 pruefe(preg_match('#id="r-schnee-a".*?<p class="maps klein"><a class="maps-knopf" href="https://www.google.com/maps/search/\?api=1&amp;query=[\d.%C-]+"#s', $html) === 1, 'Schnee-Karte: Maps-Knopf');
-if (getenv('UMKREIS_SEITE_OFFEN')) {   // zum Ansehen im Browser: Seite eine Weile offen lassen
-    file_put_contents(getenv('UMKREIS_SEITE_OFFEN'), (string)$wPort);
-    sleep(90);
+if (getenv('UMKREIS_SCHNEE_OFFEN')) {   // zum Ansehen im Browser: Schnee-Seite eine Weile offen lassen (Sekunden in UMKREIS_SEITE_SEK)
+    file_put_contents(getenv('UMKREIS_SCHNEE_OFFEN'), (string)$wPort);
+    sleep((int)(getenv('UMKREIS_SEITE_SEK') ?: 90));
 }
 pruefe(str_contains($html, 'class="lw lw3 warn-erheblich"') && str_contains($html, 'class="lw lw2"') && str_contains($html, 'Zuordnung über den Namen'), 'Lawinen-Abzeichen in EAWS-Farben, Hinweis auf Namenszuordnung');
 pruefe(preg_match('#id="r-schnee-c".*?class="tag [^"]*warn-hoch"#s', $html) === 1 && str_contains($html, 'class="lw lw4 warn-hoch"') && str_contains($html, '<span class="warn" aria-label="Warnung">⚠')
