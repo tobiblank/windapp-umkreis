@@ -111,6 +111,8 @@ $gestern = gmdate('Y-m-d', time() - 86400);
 pruefe($rs && count($rs['zellen']) === count($rp) && count($rp) > 200 && count($rp) < 400 && $west && $ost
        && ($west['neu'][gmdate('Y-m-d')] ?? 0) > 10 && ($ost['neu'][gmdate('Y-m-d')] ?? -1) == 0 && !isset($west['hourly']) && !isset($west['neu'][$gestern]),
        'Neuschnee-Raster: alle Punkte, nur Tageswerte gespeichert, Schnee nur unter der Schneefallgrenze');
+pruefe(($west['hs'][gmdate('Y-m-d')] ?? null) === 80 && ($ost['hs'][gmdate('Y-m-d')] ?? null) === 10,
+       'Raster: Schneehöhe im Modell je Tag in cm gespeichert (seit 18.11.2026)');
 pruefe(schnee_im_umriss(47.27, 11.39) && schnee_im_umriss(46.5, 9.84) && !schnee_im_umriss(48.14, 11.58) && !schnee_im_umriss(45.46, 9.19),
        'Alpenumriss: Innsbruck und Engadin drin, München und Mailand nicht');
 $lagen = lawine_laden("$tmp/schnee");
@@ -388,8 +390,11 @@ pruefe(preg_match('#id="r-schnee-d".*?Lawinenlage: <a href="https://example.org/
        'nicht freigegebener Dienst: nur Link, keine Stufe');
 pruefe(str_contains($html, '<nav class="modus" aria-label="Modus"><a href="./">Wind</a><a href="schnee.php" aria-current="page">Schnee</a>'), 'Schalter Wind · Schnee');
 pruefe(str_contains($html, '<details class="karte landkarte" id="landkarte" open>') && str_contains($html, 'class="punkt s-go"'), 'Karte mit blauen Punkten');
-pruefe(str_contains($html, 'class="windfeld schneefeld schneeraster"') && str_contains($html, 'Neuschnee auf 2.000 m') && str_contains($html, 'id="feldKnopf"'),
+pruefe(str_contains($html, 'class="windfeld schneefeld schneeraster feld-neu"') && str_contains($html, 'Neuschnee auf 2.000 m') && str_contains($html, 'id="feldWahl"'),
        'Karte mit Neuschnee-Raster und Schalter');
+pruefe(str_contains($html, 'class="windfeld schneefeld schneeraster feld-hs"') && str_contains($html, 'data-feld="hs"') && str_contains($html, 'Schneehöhe im Modell: 80 cm')
+       && str_contains($html, 'class="windskala hsskala"') && str_contains($html, 'Fläche: Schneehöhe im Modell'),
+       'Karte: Schneehöhe als zweite Fläche mit eigener Legende und Wahl');
 pruefe(str_contains($html, 'class="teilen" hidden') && str_contains($html, 'Abfahrt bis'), 'gute Tage: Teilen und Abfahrt');
 pruefe(!str_contains($html, 'name="sport"') && !str_contains($html, 'sport=') && str_contains($html, 'Pulvertag:') && str_contains($html, '<b>Pulvertag</b>'),
        'keine Sportart mehr: kein Schalter, keine Links mit sport=, gute Tage heißen Pulvertag');

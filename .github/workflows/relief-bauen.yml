@@ -1,0 +1,50 @@
+name: Relief bauen
+
+# Seit 18.11.2026: rechnet den Hangschatten der Alpen fuer die Schnee-Karte
+# (tools/relief_bauen.py) und legt server/web/relief.webp und relief.json in den
+# Branch, auf dem die Action laeuft. Laeuft bei Aenderungen am Skript und von Hand.
+# Ein Commit dieser Action stoesst kein Deploy an (GITHUB_TOKEN); das Bild kommt
+# mit dem naechsten Deploy auf main auf den Server.
+
+on:
+  push:
+    paths:
+      - "tools/relief_bauen.py"
+      - ".github/workflows/relief-bauen.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: relief-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bauen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Pakete
+        run: pip install --quiet numpy pillow
+
+      - name: Bauen
+        run: python3 tools/relief_bauen.py server/web/relief.webp
+
+      - name: In den Branch legen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add server/web/relief.webp server/web/relief.json
+          if git diff --cached --quiet -- server/web/relief.webp; then
+            echo "Bild unveraendert."
+            exit 0
+          fi
+          git commit -m "Relief neu gebaut (Action Relief bauen)"
+          git push

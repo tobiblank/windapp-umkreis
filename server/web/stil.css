@@ -422,6 +422,14 @@ details.lawine[open] summary { margin-bottom: 6px; }
 .landkarte .punkt.s-go circle { stroke: var(--text); stroke-width: 2.5px; }
 .landkarte .schneefeld ~ .punkt text.zahl { fill: #ffffff; }
 .landkarte .schneefeld ~ .punkt text.zahl.dunkel { fill: #10222b; }
+/* Flaeche Schneehoehe (seit 18.11.2026): nur mit feld-hs-an; dann statt des Neuschnees */
+.landkarte .feld-hs, .landkarte .hs-legende, .landkarte .fuss-hs { display: none; }
+.landkarte.feld-hs-an .feld-hs, .landkarte.feld-hs-an .hs-legende, .landkarte.feld-hs-an .fuss-hs { display: block; }
+.landkarte.feld-hs-an .feld-neu, .landkarte.feld-hs-an .fuss-neu, .landkarte.ohne-feld .fuss-neu { display: none; }
+.landkarte.feld-hs-an .hs-legende .windskala { display: block; }
+.landkarte .hs-legende .landkarte-fuss { margin-top: 10px; }
+.feldwahl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 0; }
+.feldwahl .feldknopf { margin-top: 0; }
 /* Schnee-Stundenseite (neu am 9.11.2026): Urteil, Regeln einzeln, Kennzahlen, ein Diagramm */
 .urteil { margin: 4px 0 8px; font-size: 17px; }
 .urteil.passt b { color: var(--s-go); }

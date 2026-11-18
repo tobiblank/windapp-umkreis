@@ -257,7 +257,7 @@ function wert(int $ort, string $var, int $i, float $faktor): ?float
 $liste = [];
 $lons = explode(',', $q['longitude'] ?? '');
 // Neuschnee-Raster (seit 9.11.2026): westlich von 11 Grad wie Schneeregion A (Schnee), oestlich wie B (Regen)
-$raster = ($q['hourly'] ?? '') === 'precipitation,snowfall,snowfall_height,freezing_level_height' && !isset($q['models']);
+$raster = str_starts_with($q['hourly'] ?? '', 'precipitation,snowfall,snowfall_height,freezing_level_height') && !isset($q['models']);
 foreach ($lats as $nr => $lat) {
     // Testorte nach Breite erkennen (die Abrufe sind nach Typ getrennt)
     $ort = match (true) {

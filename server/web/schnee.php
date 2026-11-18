@@ -544,10 +544,15 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
     // (am gewaehlten Tag oder Summe im Zeitraum; heute nicht mehr, wenn das Tourenfenster vorbei ist)
     $raster = schnee_raster_laden($dataDir);
     $rasterTage = $kartenTag ? [$kartenTag] : array_values(array_filter($tage, fn($t) => !array_filter($liste, fn($e) => !empty($e['tage'][$t]['vorbei']))));
+    // Schneehoehe (seit 18.11.2026): Modellwert um SCHNEE_MORGEN Uhr am gewaehlten Tag, sonst am
+    // ersten Tag des Zeitraums; keine Summe ueber Tage
+    $hsTag = $kartenTag ?? ($rasterTage[0] ?? null);
     $zellen = [];
+    $hsZellen = 0;
     foreach ($raster['zellen'] ?? [] as $z) {
         $w = array_intersect_key($z['neu'], array_flip($rasterTage));
-        if (!$w) {
+        $hsWert = $hsTag !== null ? ($z['hs'][$hsTag] ?? null) : null;
+        if (!$w && $hsWert === null) {
             continue;
         }
         $h = SCHNEE_RASTER_SCHRITT / 2;
@@ -556,7 +561,8 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
         if ($b[0] < $vx || $a[0] > $vx + $vw || $b[1] < $vy || $a[1] > $vy + $vh) {
             continue;
         }
-        $zellen[] = ['a' => $a, 'b' => $b, 'neu' => array_sum($w), 'z' => $z];
+        $hsZellen += $hsWert !== null ? 1 : 0;
+        $zellen[] = ['a' => $a, 'b' => $b, 'neu' => $w ? array_sum($w) : 0.0, 'hs' => $hsWert, 'z' => $z];
     }
     $u = $rp * 0.7;
     // Hoechste Lawinenwarnstufe eines Punkts: am gewaehlten Tag, sonst ueber alle Tage mit Bericht
@@ -578,11 +584,18 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
           // wie das Windfeld im Wind-Modus; bewusst kein Feld zwischen den Regionen. ?>
     <?php if ($zellen): // Raster: jede Zelle mit ihrem eigenen Wert, leicht weichgezeichnet ?>
     <defs><filter id="weich" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="<?= round(($zellen[0]['b'][0] - $zellen[0]['a'][0]) * 0.35, 2) ?>"/></filter></defs>
-    <g class="windfeld schneefeld schneeraster" filter="url(#weich)">
+    <g class="windfeld schneefeld schneeraster feld-neu" filter="url(#weich)">
       <?php foreach ($zellen as $c): if ($c['neu'] < 0.5) { continue; } ?>
       <rect x="<?= round($c['a'][0], 2) ?>" y="<?= round($c['a'][1], 2) ?>" width="<?= round($c['b'][0] - $c['a'][0] + 0.05, 2) ?>" height="<?= round($c['b'][1] - $c['a'][1] + 0.05, 2) ?>" style="fill: <?= schneefarbe((float)$c['neu']) ?>"/>
       <?php endforeach ?>
     </g>
+    <?php if ($hsZellen): // Schneehoehe (seit 18.11.2026), nur sichtbar, wenn im Schalter gewaehlt ?>
+    <g class="windfeld schneefeld schneeraster feld-hs" filter="url(#weich)">
+      <?php foreach ($zellen as $c): if ($c['hs'] === null || $c['hs'] < SCHNEEHOEHE_AB) { continue; } ?>
+      <rect x="<?= round($c['a'][0], 2) ?>" y="<?= round($c['a'][1], 2) ?>" width="<?= round($c['b'][0] - $c['a'][0] + 0.05, 2) ?>" height="<?= round($c['b'][1] - $c['a'][1] + 0.05, 2) ?>" style="fill: <?= schneehoehe_farbe((float)$c['hs']) ?>"><title>Schneehöhe im Modell: <?= zahl($c['hs']) ?> cm</title></rect>
+      <?php endforeach ?>
+    </g>
+    <?php endif ?>
     <?php else: // ohne Raster: weicher Fleck je Region in der Farbe ihres Neuschnees ?>
     <defs><filter id="weich" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="<?= round($rp * 0.9, 2) ?>"/></filter></defs>
     <g class="windfeld schneefeld" filter="url(#weich)">
@@ -648,8 +661,14 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
                       $nein ? ['xy' => $nein['xy'], 'text' => 'Naa, Stufe ' . $nein['stufe'] . '!'] : null) ?>
   </svg>
   <?= schneeskala_legende() ?>
-  <?php if ($zellen): $rts = new DateTimeImmutable($raster['ts']); ?>
-  <p class="leise klein landkarte-fuss">Fläche: Neuschnee auf <?= zahl(SCHNEE_RASTER_HOEHE) ?> m<?= $kartenTag ? '' : ' im Zeitraum' ?>, Raster rund 25 km, ein Modell, Stand <?= h(tag_kurz($rts->setTimezone($tzSeite)->format('Y-m-d'), $heute)) ?> <?= $rts->setTimezone($tzSeite)->format('G:i') ?> Uhr. Grob: Täler und einzelne Kämme verschwimmen. <button type="button" class="textknopf" id="feldKnopf" aria-pressed="true" hidden>Fläche ein/aus</button></p>
+  <?php if ($zellen): $rts = new DateTimeImmutable($raster['ts']); $stand = h(tag_kurz($rts->setTimezone($tzSeite)->format('Y-m-d'), $heute)) . ' ' . $rts->setTimezone($tzSeite)->format('G:i') . ' Uhr'; ?>
+  <?php if ($hsZellen): ?><div class="hs-legende"><p class="leise klein landkarte-fuss">Fläche Schneehöhe:</p><?= schneehoehe_legende() ?></div><?php endif ?>
+  <p class="feldwahl" id="feldWahl" hidden><span class="leise klein">Fläche</span>
+    <button type="button" class="feldknopf" data-feld="neu" aria-pressed="true">Neuschnee</button><?php if ($hsZellen): ?>
+    <button type="button" class="feldknopf" data-feld="hs" aria-pressed="false">Schneehöhe</button><?php endif ?>
+    <button type="button" class="feldknopf" data-feld="aus" aria-pressed="false">aus</button></p>
+  <p class="leise klein landkarte-fuss fuss-neu">Fläche: Neuschnee auf <?= zahl(SCHNEE_RASTER_HOEHE) ?> m<?= $kartenTag ? '' : ' im Zeitraum' ?>, Raster rund 25 km, ein Modell, Stand <?= $stand ?>. Grob: Täler und einzelne Kämme verschwimmen.</p>
+  <?php if ($hsZellen): ?><p class="leise klein landkarte-fuss fuss-hs">Fläche: Schneehöhe im Modell <?= h(tag_kurz($hsTag, $heute)) ?> <?= SCHNEE_MORGEN ?> Uhr, Raster rund 25 km, ein Modell, Stand <?= $stand ?>. Kein Messwert: Das Modell rechnet je Zelle mit einer mittleren Geländehöhe und liegt im Gebirge oft deutlich unter den Messstationen. Für „wo liegt mehr, wo weniger“, nicht für Zentimeter.</p><?php endif ?>
   <?php endif ?>
   <p class="leise klein landkarte-fuss">Punkte, Farbe und Zahl: Neuschnee in cm auf Tourhöhe der Region<?= $kartenTag ? ' (24 h bis ' . SCHNEE_MORGEN . ' Uhr)' : ', alle Tage im Zeitraum zusammen' ?>. Ring: <?= $kartenTag ? 'Pulvertag' : 'mindestens ein Pulvertag' ?>. ⚠&#xFE0E; Lawinenwarnstufe ab 3 (orange) bzw. ab 4 (rot)<?= $kartenTag ? '' : ', heute oder morgen' ?>. Männchen: <?= $eigenerOrt ? 'dein Standort' : 'Inning' ?>, antippen: wohin fahr ma? Punkt antippen: Stunden der Region.<?= $fav ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße.' ?> Karte: Natural Earth.</p>
 </details>
@@ -792,23 +811,29 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
 
 <script>
 <?php readfile(__DIR__ . '/lib/maennchen.js') ?>
-// Neuschnee-Flaeche der Karte an oder aus (seit 9.11.2026), Standard an, gemerkt (wie index.php)
+// Flaeche der Karte (seit 9.11.2026 Neuschnee an/aus, seit 18.11.2026 Neuschnee, Schneehoehe
+// oder aus), Standard Neuschnee, gemerkt; alter Wert "an" heisst Neuschnee
 (function () {
-  var k = document.getElementById('landkarte'), knopf = document.getElementById('feldKnopf');
-  if (!k || !knopf) { return; }
+  var k = document.getElementById('landkarte'), wahl = document.getElementById('feldWahl');
+  if (!k || !wahl) { return; }
   var SCHLUESSEL = 'wohinfahrma_schneefeld';
-  function setzen(an) {
-    k.classList.toggle('ohne-feld', !an);
-    knopf.setAttribute('aria-pressed', an ? 'true' : 'false');
+  var knoepfe = wahl.querySelectorAll('button[data-feld]');
+  function setzen(feld) {
+    if (!wahl.querySelector('button[data-feld="' + feld + '"]')) { feld = 'neu'; }
+    k.classList.toggle('ohne-feld', feld === 'aus');
+    k.classList.toggle('feld-hs-an', feld === 'hs');
+    knoepfe.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.feld === feld ? 'true' : 'false'); });
+    return feld;
   }
-  var an = true;
-  try { an = localStorage.getItem(SCHLUESSEL) !== 'aus'; } catch (e) {}
-  setzen(an);
-  knopf.hidden = false;
-  knopf.addEventListener('click', function () {
-    an = !an;
-    setzen(an);
-    try { localStorage.setItem(SCHLUESSEL, an ? 'an' : 'aus'); } catch (e) {}
+  var feld = 'neu';
+  try { var g = localStorage.getItem(SCHLUESSEL); feld = g === 'aus' ? 'aus' : (g === 'hs' ? 'hs' : 'neu'); } catch (e) {}
+  feld = setzen(feld);
+  wahl.hidden = false;
+  knoepfe.forEach(function (b) {
+    b.addEventListener('click', function () {
+      feld = setzen(b.dataset.feld);
+      try { localStorage.setItem(SCHLUESSEL, feld === 'neu' ? 'an' : feld); } catch (e) {}
+    });
   });
 })();
 // Teilen: Web Share (Handy) oder in die Zwischenablage; ohne beides bleibt der Knopf verborgen (wie index.php)

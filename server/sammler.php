@@ -168,13 +168,14 @@ function quellen_schnee(array $schnee, string $modelle): array
                         . '&models=ecmwf_ifs025&past_days=3&forecast_days=8&timezone=UTC',
         ],
         // Neuschnee-Raster fuer die Karte (seit 9.11.2026): rund 300 Gitterpunkte, ein Modell
-        // (best_match), nur die Groessen fuer Neuschnee; gespeichert wird je Punkt nur der
-        // Neuschnee je Tag (schnee_raster_eintrag()). past_days=1 fuer die 24 h bis heute 8 Uhr.
+        // (best_match), nur die Groessen fuer Neuschnee, seit 18.11.2026 dazu snow_depth;
+        // gespeichert wird je Punkt nur Neuschnee und Schneehoehe je Tag (schnee_raster_eintrag()).
+        // past_days=1 fuer die 24 h bis heute 8 Uhr.
         'schnee_raster' => [
             'every'    => 360,
             'regionen' => schnee_raster_punkte(),
             'basis'    => 'https://api.open-meteo.com/v1/forecast',
-            'query'    => 'hourly=precipitation,snowfall,snowfall_height,freezing_level_height&past_days=1&forecast_days=8&timezone=UTC',
+            'query'    => 'hourly=precipitation,snowfall,snowfall_height,freezing_level_height,snow_depth&past_days=1&forecast_days=8&timezone=UTC',
             'teil'     => SCHNEE_RASTER_TEIL,
         ],
         'lawine' => [
