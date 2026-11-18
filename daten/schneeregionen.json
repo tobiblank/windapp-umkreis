@@ -21,7 +21,7 @@
       "lizenz": "CC BY 4.0 (Tirol laut Mail der Euregio, Südtirol und Trentino laut Open-Data-Portalen der Länder)",
       "praefixe": ["AT-07", "IT-32-BZ", "IT-32-TN"],
       "freigegeben": ["AT-07", "IT-32-BZ", "IT-32-TN"],
-      "hinweis": "Dateiname nach dem Schema im Verzeichnis avalanche.report/bulletins/2019-01-16/ (<datum>_EUREGIO_de_CAAMLv6.json); Host static.avalanche.report laut Mail der Euregio (Fynn Renner, eingegangen bis 16.11.2026) der richtige und dauerhafte Abrufweg, beschrieben auf lawinen.report/more/open-data. Tiroler und Kärntner Berichte CC BY 4.0. Ausgabe täglich 17 Uhr, Aktualisierungen jederzeit möglich, Abruf nach Fair-use-Prinzip. Tirol (AT-07) seitdem freigegeben."
+      "hinweis": "Dateiname nach dem Schema im Verzeichnis avalanche.report/bulletins/2019-01-16/ (<datum>_EUREGIO_de_CAAMLv6.json); Host static.avalanche.report laut Mail der Euregio (eingegangen bis 16.11.2026) der richtige und dauerhafte Abrufweg, beschrieben auf lawinen.report/more/open-data. Tiroler und Kärntner Berichte CC BY 4.0. Ausgabe täglich 17 Uhr, Aktualisierungen jederzeit möglich, Abruf nach Fair-use-Prinzip. Tirol (AT-07) seitdem freigegeben."
     },
     "bayern": {
       "name": "Lawinenwarndienst Bayern",
