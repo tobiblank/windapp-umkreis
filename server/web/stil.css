@@ -172,6 +172,8 @@ a.tag:active { filter: brightness(.94); }
 .landkarte-bild { display: block; width: 100%; height: auto; margin-top: 10px; border-radius: 12px; overflow: hidden; touch-action: manipulation; }
 .landkarte .meer { fill: var(--meer); }
 .landkarte .land { fill: var(--land); stroke: var(--grenze); stroke-width: 0.6px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+/* Hangschatten (seit 18.11.2026): Graubild, 128 = eben; hard-light dunkelt und hellt auf hell und dunkel */
+.landkarte .relief { mix-blend-mode: hard-light; pointer-events: none; }
 .landkarte .umkreis { fill: none; stroke: var(--leise); stroke-width: 1px; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; opacity: .7; }
 .landkarte .heim { fill: var(--akzent); stroke: var(--karte); stroke-width: 2.5px; stroke-linejoin: round; paint-order: stroke; }
 .landkarte .heim > *, .landkarte .bus > * { vector-effect: non-scaling-stroke; }

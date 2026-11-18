@@ -113,6 +113,16 @@ pruefe($rs && count($rs['zellen']) === count($rp) && count($rp) > 200 && count($
        'Neuschnee-Raster: alle Punkte, nur Tageswerte gespeichert, Schnee nur unter der Schneefallgrenze');
 pruefe(($west['hs'][gmdate('Y-m-d')] ?? null) === 80 && ($ost['hs'][gmdate('Y-m-d')] ?? null) === 10,
        'Raster: Schneehöhe im Modell je Tag in cm gespeichert (seit 18.11.2026)');
+$rd = "$tmp/relief";
+@mkdir($rd);
+pruefe(relief_svg([0, 0, 560, 614], $rd) === '', 'Relief: ohne relief.json nichts');
+file_put_contents("$rd/relief.json", json_encode(['datei' => 'relief.webp', 'z' => 8, 'x' => [131, 140], 'y' => [88, 93]]));
+file_put_contents("$rd/relief.webp", 'x');
+$rel = relief_svg([0, 0, 560, 614], $rd);
+$ecke = karte_punkt(rad2deg(atan(sinh(M_PI * (1 - 2 * 88 / 256)))), 131 / 256 * 360 - 180);
+pruefe(preg_match('#<image class="relief" href="relief\.webp\?v=\d+" x="([\d.]+)" y="([\d.]+)" width="([\d.]+)"#', $rel, $mr) === 1
+       && abs((float)$mr[1] - $ecke[0]) < 0.01 && abs((float)$mr[2] - $ecke[1]) < 0.01 && abs((float)$mr[3] - 10 / 256 * 360 * KARTE_K) < 0.01
+       && relief_svg([400, 0, 50, 50], $rd) === '', 'Relief: Ecken aus den Kacheln, außerhalb des Ausschnitts nichts');
 pruefe(schnee_im_umriss(47.27, 11.39) && schnee_im_umriss(46.5, 9.84) && !schnee_im_umriss(48.14, 11.58) && !schnee_im_umriss(45.46, 9.19),
        'Alpenumriss: Innsbruck und Engadin drin, München und Mailand nicht');
 $lagen = lawine_laden("$tmp/schnee");

@@ -3,10 +3,10 @@
 Hangschatten der Alpen fuer die Schnee-Karte (seit 18.11.2026).
 
 Laedt Hoehenkacheln (Terrarium, Mapzen Terrain Tiles auf AWS Open Data) in einer
-Zoomstufe, rechnet einen Hangschatten und speichert ihn als WebP mit Alpha:
-Schatten schwarz, Sonnenhaenge weiss, ebenes Gelaende durchsichtig. So wirkt das
-Bild auf heller und dunkler Karte. Die Seite legt es unter die Flaechen
-(lib/karte.php, relief_svg()).
+Zoomstufe, rechnet einen Hangschatten und speichert ihn als Graubild (WebP):
+128 = eben, dunkler = Schatten, heller = Sonnenhang. Die Seite legt es mit
+mix-blend-mode: hard-light unter die Flaechen (lib/karte.php, relief_svg()); so
+wirkt es auf heller und dunkler Karte.
 
 Die Kacheln sind Web-Mercator wie karte.svg (tools/karte_bauen.py): das Bild
 braucht keine Umprojektion, nur die Lage der Ecken. Die steht in relief.json.
@@ -36,9 +36,10 @@ URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
 UEBERHOEHUNG = 2.0          # bei 425 m je Pixel wirken echte Hangneigungen zu flach
 SONNE_AZIMUT = 315.0        # Licht von Nordwesten, wie ueblich
 SONNE_HOEHE = 45.0
-SCHATTEN_MAX = 0.75         # Deckkraft der tiefsten Schatten
-LICHT_MAX = 0.45            # Deckkraft der hellsten Sonnenhaenge
+SCHATTEN_MAX = 0.75         # Staerke der tiefsten Schatten (1 = schwarz)
+LICHT_MAX = 0.45            # Staerke der hellsten Sonnenhaenge (1 = weiss)
 RAND_PX = 80                # weicher Rand, damit das Bild nicht mit einer Kante endet
+QUALITAET = 50              # WebP; rund 450 KB
 
 
 def kachel(x, y):
@@ -86,6 +87,9 @@ def main(ziel):
     licht = (-dzdx * lx - dzdn * ln + lz) / betrag
     abw = licht - math.sin(alt)                         # 0 = eben
 
+    # Grau mit 128 = eben: dunkler = Schatten, heller = Sonnenhang. Die Seite legt das Bild
+    # mit mix-blend-mode: hard-light auf die Karte; 128 aendert dort nichts. Ein Graubild
+    # ist rund sechsmal kleiner als Schwarz/Weiss mit Alpha (getestet 18.11.2026: 2,9 MB).
     schatten = np.clip(-abw / 0.55, 0, 1) ** 0.8 * SCHATTEN_MAX
     hell = np.clip(abw / 0.3, 0, 1) ** 0.9 * LICHT_MAX
 
@@ -95,13 +99,9 @@ def main(ziel):
     rand = np.clip(rand / RAND_PX, 0, 1)
     rand = rand * rand * (3 - 2 * rand)
 
-    alpha = np.maximum(schatten, hell) * rand
-    grau = np.where(hell > schatten, 255, 0)
-    rgba = np.zeros((hoehe_px, breite_px, 4), dtype=np.uint8)
-    rgba[:, :, 0] = rgba[:, :, 1] = rgba[:, :, 2] = grau
-    rgba[:, :, 3] = np.round(alpha * 255).astype(np.uint8)
-
-    Image.fromarray(rgba, 'RGBA').save(ziel, 'WEBP', quality=75, alpha_quality=70, method=6)
+    wert = 128 + (hell - schatten) * 127 * rand
+    grau = np.clip(np.round(wert), 0, 255).astype(np.uint8)
+    Image.fromarray(grau, 'L').save(ziel, 'WEBP', quality=QUALITAET, method=6)
     meta = {
         'datei': os.path.basename(ziel),
         'z': Z, 'x': [X0, X1], 'y': [Y0, Y1],

@@ -580,6 +580,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
   <svg class="landkarte-bild" viewBox="<?= "$vx $vy $vw $vh" ?>" role="img" aria-label="Karte der Schnee-Regionen im Umkreis">
     <rect class="meer" x="<?= $vx ?>" y="<?= $vy ?>" width="<?= $vw ?>" height="<?= $vh ?>"/>
     <use href="karte.svg#land" class="land"/>
+    <?= relief_svg([$vx, $vy, $vw, $vh]) // Hangschatten der Alpen (seit 18.11.2026) ?>
     <?php // Farbfeld (seit 9.11.2026): weicher Fleck je Region in der Farbe ihres Neuschnees,
           // wie das Windfeld im Wind-Modus; bewusst kein Feld zwischen den Regionen. ?>
     <?php if ($zellen): // Raster: jede Zelle mit ihrem eigenen Wert, leicht weichgezeichnet ?>
@@ -670,7 +671,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
   <p class="leise klein landkarte-fuss fuss-neu">Fläche: Neuschnee auf <?= zahl(SCHNEE_RASTER_HOEHE) ?> m<?= $kartenTag ? '' : ' im Zeitraum' ?>, Raster rund 25 km, ein Modell, Stand <?= $stand ?>. Grob: Täler und einzelne Kämme verschwimmen.</p>
   <?php if ($hsZellen): ?><p class="leise klein landkarte-fuss fuss-hs">Fläche: Schneehöhe im Modell <?= h(tag_kurz($hsTag, $heute)) ?> <?= SCHNEE_MORGEN ?> Uhr, Raster rund 25 km, ein Modell, Stand <?= $stand ?>. Kein Messwert: Das Modell rechnet je Zelle mit einer mittleren Geländehöhe und liegt im Gebirge oft deutlich unter den Messstationen. Für „wo liegt mehr, wo weniger“, nicht für Zentimeter.</p><?php endif ?>
   <?php endif ?>
-  <p class="leise klein landkarte-fuss">Punkte, Farbe und Zahl: Neuschnee in cm auf Tourhöhe der Region<?= $kartenTag ? ' (24 h bis ' . SCHNEE_MORGEN . ' Uhr)' : ', alle Tage im Zeitraum zusammen' ?>. Ring: <?= $kartenTag ? 'Pulvertag' : 'mindestens ein Pulvertag' ?>. ⚠&#xFE0E; Lawinenwarnstufe ab 3 (orange) bzw. ab 4 (rot)<?= $kartenTag ? '' : ', heute oder morgen' ?>. Männchen: <?= $eigenerOrt ? 'dein Standort' : 'Inning' ?>, antippen: wohin fahr ma? Punkt antippen: Stunden der Region.<?= $fav ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße.' ?> Karte: Natural Earth.</p>
+  <p class="leise klein landkarte-fuss">Punkte, Farbe und Zahl: Neuschnee in cm auf Tourhöhe der Region<?= $kartenTag ? ' (24 h bis ' . SCHNEE_MORGEN . ' Uhr)' : ', alle Tage im Zeitraum zusammen' ?>. Ring: <?= $kartenTag ? 'Pulvertag' : 'mindestens ein Pulvertag' ?>. ⚠&#xFE0E; Lawinenwarnstufe ab 3 (orange) bzw. ab 4 (rot)<?= $kartenTag ? '' : ', heute oder morgen' ?>. Männchen: <?= $eigenerOrt ? 'dein Standort' : 'Inning' ?>, antippen: wohin fahr ma? Punkt antippen: Stunden der Region.<?= $fav ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße.' ?> Karte: Natural Earth; Relief: Mapzen Terrain Tiles (EU-DEM, Copernicus; SRTM und GMTED2010, USGS; ETOPO1, NOAA).</p>
 </details>
 <?php endif ?>
 

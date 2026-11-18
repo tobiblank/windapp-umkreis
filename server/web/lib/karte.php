@@ -177,6 +177,32 @@ function schneehoehe_legende(): string
     return $html . '</div></div>';
 }
 
+/**
+ * Hangschatten der Alpen (seit 18.11.2026, Schnee-Karte): Bild aus tools/relief_bauen.py
+ * (Action "Relief bauen"), Lage der Ecken in relief.json als Kacheln (Web-Mercator, wie
+ * karte.svg, daher nur verschieben und strecken). Ohne Bild oder ausserhalb des Ausschnitts: ''.
+ */
+function relief_svg(array $ausschnitt, ?string $dir = null): string
+{
+    $dir ??= dirname(__DIR__);
+    $meta = json_decode((string)@file_get_contents("$dir/relief.json"), true);
+    if (!is_array($meta) || !isset($meta['datei'], $meta['z'], $meta['x'], $meta['y']) || !is_file("$dir/{$meta['datei']}")) {
+        return '';
+    }
+    $n = 2 ** (int)$meta['z'];
+    $lon = fn(int $x): float => $x / $n * 360 - 180;
+    $lat = fn(int $y): float => rad2deg(atan(sinh(M_PI * (1 - 2 * $y / $n))));
+    $a = karte_punkt($lat((int)$meta['y'][0]), $lon((int)$meta['x'][0]));
+    $b = karte_punkt($lat((int)$meta['y'][1] + 1), $lon((int)$meta['x'][1] + 1));
+    [$vx, $vy, $vw, $vh] = $ausschnitt;
+    if ($b[0] < $vx || $a[0] > $vx + $vw || $b[1] < $vy || $a[1] > $vy + $vh) {
+        return '';
+    }
+    $href = $meta['datei'] . '?v=' . filemtime("$dir/{$meta['datei']}");
+    return sprintf('<image class="relief" href="%s" x="%.3f" y="%.3f" width="%.3f" height="%.3f" preserveAspectRatio="none"/>',
+                   htmlspecialchars($href), $a[0], $a[1], $b[0] - $a[0], $b[1] - $a[1]);
+}
+
 /** Legende als Farbverlauf 0-40 kn mit Marken */
 function windskala_legende(): string
 {
