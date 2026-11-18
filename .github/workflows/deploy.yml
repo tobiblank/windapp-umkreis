@@ -12,6 +12,10 @@ name: Deploy zu Hetzner
 #   Variables: WEB_DIR (Webordner relativ zum FTP-Startordner, z. B. public_html/wohinfahrma)
 #
 # config.php ist nicht im Repo und wird nie hochgeladen oder ueberschrieben.
+#
+# Seit 18.11.2026 Pruefen und Hochladen in einem Job: GitHub rechnet je Job auf volle
+# Minuten auf, zwei Jobs kosteten je Deploy 2 statt 1 Minute. Schlaegt die Pruefung fehl,
+# bricht der Job vor dem Hochladen ab wie bisher.
 
 on:
   push:
@@ -32,8 +36,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  pruefen:
+  deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
@@ -44,12 +49,6 @@ jobs:
         run: for f in $(git ls-files '*.php'); do php -l "$f" >/dev/null || exit 1; done
       - name: Tests
         run: php tests/test.php
-
-  deploy:
-    needs: pruefen
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
       - name: Hochladen
         env:
           FTP_HOST: ${{ secrets.FTP_HOST }}

@@ -34,8 +34,17 @@ name: Sammeln
 # gelaufen 13:38; geplant 17:25, gelaufen 22:26) oder gar nicht. Deshalb stoesst
 # ammerseewind.de (melden.php, alle 10 Minuten auf Hetzner) die Laeufe zur richtigen
 # Zeit per workflow_dispatch an, mit lauf = voll oder klein. Der Zeitplan bleibt als
-# Rueckfall; ein geplanter Lauf ueberspringt sich, wenn in den letzten 3 Stunden schon
-# ein angestossener Lauf derselben Art gestartet ist.
+# Rueckfall; ein geplanter Lauf ueberspringt sich, wenn schon
+# ein angestossener Lauf derselben Art gestartet ist (bis 18.11.2026: in den letzten 3 Stunden).
+
+# Seit 18.11.2026: Der Rueckfall-Lauf vom Zeitplan kam oft 6 bis 9 Stunden zu spaet und lag
+# damit ausserhalb des 3-Stunden-Fensters; er sammelte dann alles ein zweites Mal (rund
+# 13 Minuten, meist Pausen fuer das Minutenlimit von Open-Meteo). Jetzt prueft er, ob seit
+# seiner eigentlichen Zeit (minus 90 Minuten wegen Sommerzeit) schon ein angestossener Lauf
+# derselben Art lief. Die Art steht im Namen des Laufs (run-name). Der Job "anstoss" laeuft
+# nur noch bei geplanten Laeufen (spart eine Minute je Anstoss).
+
+run-name: ${{ github.event_name == 'workflow_dispatch' && format('Sammeln ({0})', inputs.lauf) || 'Sammeln (Zeitplan)' }}
 
 on:
   schedule:
@@ -59,7 +68,8 @@ concurrency:
 
 jobs:
   anstoss:
-    # Geplanter Lauf: schon von ammerseewind.de angestossen? Dann diesen ueberspringen.
+    # Nur geplante Laeufe: schon von ammerseewind.de angestossen? Dann diesen ueberspringen.
+    if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     outputs:
@@ -67,22 +77,35 @@ jobs:
     steps:
       - name: Schon angestossen?
         id: doppelt
-        if: github.event_name == 'schedule'
         env:
           GH_TOKEN: ${{ github.token }}
+          PLAN: ${{ github.event.schedule }}
         run: |
-          seit=$(date -u -d '3 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          # Eigentliche Zeit dieses Laufs: letzter Termin seines Zeitplans vor jetzt (UTC)
+          if [ "$PLAN" = "40 7 * * *" ]; then termine="07:40"; art=klein; else termine="05:25 17:25"; art=voll; fi
+          jetzt=$(date -u +%s); termin=0
+          for t in $termine; do
+            for tag in yesterday today; do
+              s=$(date -u -d "$tag $t" +%s)
+              if [ "$s" -le "$jetzt" ] && [ "$s" -gt "$termin" ]; then termin=$s; fi
+            done
+          done
+          # 90 Minuten frueher: ammerseewind.de stoesst nach Ortszeit an, im Sommer eine Stunde vor dem Zeitplan
+          seit=$(date -u -d "@$((termin - 5400))" +%Y-%m-%dT%H:%M:%SZ)
+          # Ein kleiner Rueckfall gilt auch durch einen vollen Lauf als erledigt, ein voller nur durch einen vollen
+          if [ "$art" = klein ]; then filter='true'; else filter='(.display_title | test("klein") | not)'; fi
           n=$(gh api "repos/${{ github.repository }}/actions/workflows/sammeln.yml/runs?event=workflow_dispatch&created=%3E$seit&per_page=20" \
-                --jq '[.workflow_runs[] | select(.conclusion == null or .conclusion == "success")] | length' 2>/dev/null || echo 0)
-          echo "Angestossene Läufe seit $seit: $n"
+                --jq "[.workflow_runs[] | select(.conclusion == null or .conclusion == \"success\") | select($filter)] | length" 2>/dev/null || echo 0)
+          echo "Plan '$PLAN' ($art), Termin $(date -u -d "@$termin" +%FT%RZ), angestoßene Läufe seit $seit: $n"
           if [ "${n:-0}" -gt 0 ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::Übersprungen: in den letzten 3 Stunden schon angestoßen (ammerseewind.de oder von Hand)."
+            echo "::notice::Übersprungen: seit dem Termin schon angestoßen (ammerseewind.de oder von Hand)."
           fi
 
   sammeln:
     needs: anstoss
-    if: needs.anstoss.outputs.skip != 'true'
+    # Bei workflow_dispatch ist "anstoss" uebersprungen; !cancelled() laesst "sammeln" dann trotzdem laufen.
+    if: ${{ !cancelled() && needs.anstoss.outputs.skip != 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

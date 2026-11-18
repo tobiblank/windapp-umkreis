@@ -3,16 +3,18 @@ name: Prüfen
 # PHP-Syntax, Regionen-Katalog und Tests (tests/test.php: Sammler gegen einen
 # lokalen Open-Meteo-Ersatz, Rangliste). Ohne Netzzugriff auf Open-Meteo.
 # Auf main prueft deploy.yml dasselbe vor dem Hochladen, hier nur andere Branches.
+# Seit 18.11.2026 ohne pull_request: Branches liegen im selben Repo, der Push-Lauf
+# erscheint auch im PR. Vorher lief jede Pruefung doppelt.
 
 on:
   push:
     branches-ignore: [main]
-  pull_request:
   workflow_dispatch:
 
 jobs:
   pruefen:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
