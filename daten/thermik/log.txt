@@ -18,18 +18,32 @@ Druck lugano
   Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd
 Druck brescia
   Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd
+Druck-Ensemble innsbruck
+  ok
+Druck-Ensemble bozen
+  ok
+Druck-Ensemble zuerich
+  ok
+Druck-Ensemble lugano
+  https://ensemble-api.open-meteo.com/v1/ensemble?latitude=46&longitude=8.95&hourly=pressure_msl&models=ecmwf_ifs025&wind_speed_unit=kn&past_days=60&forecast_days=1&timezone=UTC: http=0 
+  ok
+Druck-Ensemble brescia
+  ok
 
 ## walchensee
   Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 800 m
    15.0 km   630 m (-170)  dwd:19912  Bichl
    18.9 km   923 m (+123)  dwd:06103  Mittenwald/Obb.
    24.0 km   719 m (-81)  dwd:01550  Garmisch-Partenkirchen
+  Ensemble: 3 Tage, im Mittel 0 %
 
 ## kochelsee
   Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 598 m
     9.4 km   630 m (+32)  dwd:19912  Bichl
    24.9 km   923 m (+325)  dwd:06103  Mittenwald/Obb.
+  Ensemble: 3 Tage, im Mittel 34 %
   Messreihe dwd:19912 (Bichl)
+    Werte von 2026-07-15 bis 2026-11-18
     18288 Werte, 127 Tage, Median 2.5 kn, 99 %: 10.3 kn
 
 ## achensee
@@ -38,7 +52,9 @@ Druck brescia
     7.7 km   529 m (-397)  geosphere:11325  JENBACH
    18.3 km   929 m (+3)  geosphere:11125  ALPBACH
    21.8 km   776 m (-150)  dwd:02738  Kreuth
+  Ensemble: 3 Tage, im Mittel 0 %
   Messreihe geosphere:11266 (ACHENKIRCH CAMPINGPLATZ)
+    Werte von 2026-08-19 bis 2026-11-18
     90432 Werte, 92 Tage, Median 3.3 kn, 99 %: 13 kn
 
 ## reschensee
@@ -67,7 +83,9 @@ Druck brescia
    24.6 km  2327 m (+840)  geosphere:11310  ISCHGL/IDALPE
    18.8 km  3035 m (+1548)  suedtirol:15000SF  Schnals Teufelsegg
    21.5 km  3220 m (+1733)  suedtirol:15050WS  Schnals Grawand
+  Ensemble: 3 Tage, im Mittel 0 %
   Messreihe suedtirol:02200MS (St. Valentin a.d. Haide)
+    Werte von 2025-03-01 bis 2026-11-18
     90407 Werte, 628 Tage, Median 6 kn, 99 %: 21.4 kn
 
 ## silvaplana
@@ -81,14 +99,18 @@ Druck brescia
     4.3 km  3294 m (+1504)  meteoswiss:cov  Piz Corvatsch
    24.0 km  1078 m (-712)  meteoswiss:rob  Poschiavo / Robbia
    24.3 km  2668 m (+878)  meteoswiss:pma  Piz Martegnas
+  Ensemble: 3 Tage, im Mittel 0 %
   Messreihe meteoswiss:sia (Segl-Maria)
+    Werte von 2025-03-01 bis 2026-11-18
     90432 Werte, 628 Tage, Median 4.5 kn, 99 %: 14.8 kn
 
 ## gardasee-nord
   Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 65 m
+  Ensemble: 3 Tage, im Mittel 0 %
 
 ## lago-santa-croce
   Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 381 m
+  Ensemble: 3 Tage, im Mittel 48 %
 
 ## urnersee
   Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 434 m
@@ -98,12 +120,14 @@ Druck brescia
    22.7 km   724 m (+290)  meteoswiss:aeg  Oberägeri
    18.8 km  1036 m (+602)  meteoswiss:eng  Engelberg
    22.1 km  3045 m (+2611)  meteoswiss:tit  Titlis
+  Ensemble: 3 Tage, im Mittel 0 %
   Messreihe meteoswiss:alt (Altdorf)
+    Werte von 2025-03-01 bis 2026-11-18
     90432 Werte, 628 Tage, Median 2.3 kn, 99 %: 21.4 kn
 
 # Regel-Windlagen gegen Messstationen
 
-Erzeugt von `tools/thermik_pruefen.php` (Action „Thermik prüfen“) am 19.11.2026 16:11 UTC. Zeitraum 2025-03-01 bis 2026-11-18.
+Erzeugt von `tools/thermik_pruefen.php` (Action „Thermik prüfen“) am 19.11.2026 16:27 UTC. Zeitraum 2025-03-01 bis 2026-11-18.
 
 - **Regel geht**: `region_bewerten()` der App mit den Modellen von damals (Open-Meteo Historical Forecast, kurze Vorlaufzeit, ohne Ensemble), Sportart Kite Twintip (ab 14 kn). Zählt auch Tage, an denen eine normale Windlage mit Modellwind geht.
 - **Gemessen geht**: mindestens 2 Stunden am Stück im Tagesfenster ein Stundenmittel ab 14 kn aus einem Sektor der Windlagen; „schwach“ = ab 10 kn. Stationen an Land messen oft weniger als auf dem Wasser.
@@ -112,13 +136,28 @@ Erzeugt von `tools/thermik_pruefen.php` (Action „Thermik prüfen“) am 19.11.
 | Region | Station | Tage | Regel geht | davon gemessen ab 14 kn | ab 10 kn | gemessen ab 14 kn | davon von der Regel erkannt |
 |---|---|---|---|---|---|---|---|
 | Walchensee | keine | 0 | 0 | – | – | 0 | – |
-| Kochelsee | keine | 0 | 0 | – | – | 0 | – |
-| Achensee | keine | 0 | 0 | – | – | 0 | – |
+| Kochelsee | Bichl (dwd, 9.4 km, +32 m) | 127 | 1 | 0 % | 0 % | 0 | – |
+| Achensee | ACHENKIRCH CAMPINGPLATZ (geosphere, 5.5 km, +5 m) | 92 | 33 | 0 % | 3 % | 0 | – |
 | Reschensee | St. Valentin a.d. Haide (suedtirol, 3.9 km, +12 m) | 628 | 188 | 51 % | 72 % | 159 | 60 % |
 | Silvaplana | Segl-Maria (meteoswiss, 2.4 km, +14 m) | 628 | 46 | 13 % | 80 % | 23 | 26 % |
 | Gardasee Nord | keine | 0 | 0 | – | – | 0 | – |
 | Lago di Santa Croce | keine | 0 | 0 | – | – | 0 | – |
 | Urnersee | Altdorf (meteoswiss, 5.1 km, +4 m) | 549 | 76 | 1 % | 33 % | 20 | 5 % |
+
+### Ensemble wie in der App (letzte 60 Tage)
+
+Chance = Anteil der 51 ECMWF-Läufe, an denen der Tag geht (wie die Kacheln). Gemessen wie oben.
+
+| Region | Tage | Chance im Mittel | Tage ab 50 % | davon mit Messung | davon gemessen ab 14 kn | Tage gemessen ab 14 kn |
+|---|---|---|---|---|---|---|
+| Walchensee | 3 | 0 % | 0 | 0 | – | – |
+| Kochelsee | 3 | 34 % | 1 | 1 | 0 % | 0 von 3 |
+| Achensee | 3 | 0 % | 0 | 0 | – | 0 von 3 |
+| Reschensee | 3 | 0 % | 0 | 0 | – | 0 von 3 |
+| Silvaplana | 3 | 0 % | 0 | 0 | – | 0 von 3 |
+| Gardasee Nord | 3 | 0 % | 0 | 0 | – | – |
+| Lago di Santa Croce | 3 | 48 % | 2 | 0 | – | – |
+| Urnersee | 3 | 0 % | 0 | 0 | – | 0 von 3 |
 
 ## Walchensee (`walchensee`)
 
@@ -139,6 +178,22 @@ Kandidaten (Umkreis 25 km):
 - `dwd:19912` Bichl, 9.4 km, 630 m (+32 m)
 - `dwd:06103` Mittenwald/Obb., 24.9 km, 923 m (+325 m)
 
+| Monat | Tage | Regel geht | davon gemessen | gemessen geht |
+|---|---|---|---|---|
+| 2026-07 | 17 | 0 | – | 0 |
+| 2026-08 | 31 | 0 | – | 0 |
+| 2026-09 | 30 | 0 | – | 0 |
+| 2026-10 | 31 | 0 | – | 0 |
+| 2026-11 | 18 | 1 | 0 % | 0 |
+
+Ensemble ab 50 % (letzte 60 Tage): 11-17 (100 %, gemessen 5.6 kn)
+
+Letzte Tage, an denen die Regel „geht“ sagte:
+
+| Tag | Windlage | Fenster | Ensemble | gemessen (bester 2-h-Block) | Richtung |
+|---|---|---|---|---|---|
+| 2026-11-17 | Föhn (Süd) | 8–10 Uhr | 100 % | 5.6 kn | 218° |
+
 ## Achensee (`achensee`)
 
 Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd; Höhe am Vorhersagepunkt 926 m.
@@ -149,6 +204,38 @@ Kandidaten (Umkreis 25 km):
 - `geosphere:11325` JENBACH, 7.7 km, 529 m (-397 m)
 - `geosphere:11125` ALPBACH, 18.3 km, 929 m (+3 m)
 - `dwd:02738` Kreuth, 21.8 km, 776 m (-150 m)
+
+| Monat | Tage | Regel geht | davon gemessen | gemessen geht |
+|---|---|---|---|---|
+| 2026-08 | 13 | 5 | 0 % | 0 |
+| 2026-09 | 30 | 16 | 0 % | 0 |
+| 2026-10 | 31 | 12 | 0 % | 0 |
+| 2026-11 | 18 | 0 | – | 0 |
+
+Letzte Tage, an denen die Regel „geht“ sagte:
+
+| Tag | Windlage | Fenster | Ensemble | gemessen (bester 2-h-Block) | Richtung |
+|---|---|---|---|---|---|
+| 2026-09-22 | Thermik (Nord) | 12–18 Uhr | – | 10.7 kn | 356° |
+| 2026-09-23 | Thermik (Nord) | 12–18 Uhr | – | 9.4 kn | 355° |
+| 2026-09-25 | Thermik (Nord) | 12–18 Uhr | – | 6.4 kn | 341° |
+| 2026-09-26 | Thermik (Nord) | 12–18 Uhr | – | 4.3 kn | 160° |
+| 2026-09-27 | Thermik (Nord) | 12–18 Uhr | – | 5 kn | 159° |
+| 2026-09-28 | Thermik (Nord) | 12–18 Uhr | – | 6.3 kn | 151° |
+| 2026-09-29 | Thermik (Nord) | 12–14 Uhr | – | 4.4 kn | 153° |
+| 2026-09-30 | Thermik (Nord) | 12–18 Uhr | – | 5.8 kn | 342° |
+| 2026-10-03 | Thermik (Nord) | 12–15 Uhr | – | 7.5 kn | 340° |
+| 2026-10-04 | Thermik (Nord) | 12–16 Uhr | – | 9 kn | 345° |
+| 2026-10-06 | Thermik (Nord) | 12–14 Uhr | – | 5.9 kn | 156° |
+| 2026-10-07 | Thermik (Nord) | 12–14 Uhr | – | 5.3 kn | 151° |
+| 2026-10-12 | Thermik (Nord) | 15–18 Uhr | – | 4.4 kn | 352° |
+| 2026-10-17 | Thermik (Nord) | 12–18 Uhr | – | 8.1 kn | 344° |
+| 2026-10-18 | Thermik (Nord) | 12–15 Uhr | – | 5.3 kn | 153° |
+| 2026-10-22 | Thermik (Nord) | 15–18 Uhr | – | 5 kn | 154° |
+| 2026-10-27 | Thermik (Nord) | 12–17 Uhr | – | 9.2 kn | 151° |
+| 2026-10-29 | Thermik (Nord) | 12–16 Uhr | – | 2.4 kn | 351° |
+| 2026-10-30 | Thermik (Nord) | 12–17 Uhr | – | 4.5 kn | 153° |
+| 2026-10-31 | Thermik (Nord) | 12–16 Uhr | – | 8.9 kn | 350° |
 
 ## Reschensee (`reschensee`)
 
@@ -191,28 +278,28 @@ Kandidaten (Umkreis 25 km):
 
 Letzte Tage, an denen die Regel „geht“ sagte:
 
-| Tag | Windlage | Fenster | gemessen (bester 2-h-Block) | Richtung |
-|---|---|---|---|---|
-| 2026-09-08 | Südwind (Talwind) | 11–17 Uhr | 7.9 kn | 180° |
-| 2026-09-09 | Nordföhn | 18–20 Uhr | 7.2 kn | 355° |
-| 2026-09-10 | Nordföhn | 9–14 Uhr | 20.8 kn | 25° |
-| 2026-09-11 | Nordföhn | 10–20 Uhr | 17 kn | 24° |
-| 2026-09-14 | Nordföhn | 14–20 Uhr | 13.2 kn | 6° |
-| 2026-09-15 | Südwind (Talwind) | 11–18 Uhr | 8.9 kn | 12° |
-| 2026-09-21 | Nordföhn | 9–19 Uhr | 14.8 kn | 9° |
-| 2026-09-22 | Nordföhn | 9–19 Uhr | 15.9 kn | 7° |
-| 2026-09-23 | Südwind (Talwind) | 11–16 Uhr | 7.6 kn | 14° |
-| 2026-09-24 | Nordföhn | 17–19 Uhr | 19.8 kn | 13° |
-| 2026-09-26 | Südwind (Talwind) | 11–18 Uhr | 10.5 kn | 358° |
-| 2026-09-27 | Südwind (Talwind) | 11–18 Uhr | 7.7 kn | 198° |
-| 2026-09-28 | Südwind (Talwind) | 11–18 Uhr | 8.5 kn | 357° |
-| 2026-09-29 | Südwind (Talwind) | 15–18 Uhr | 8.5 kn | 166° |
-| 2026-09-30 | Südwind (Talwind) | 11–18 Uhr | 10.5 kn | 169° |
-| 2026-10-28 | Nordföhn | 14–17 Uhr | 12.7 kn | 5° |
-| 2026-10-31 | Nordföhn | 13–17 Uhr | 23.3 kn | 12° |
-| 2026-11-01 | Nordföhn | 9–17 Uhr | 17.4 kn | 7° |
-| 2026-11-02 | Nordföhn | 9–17 Uhr | 20.8 kn | 12° |
-| 2026-11-13 | Nordföhn | 9–17 Uhr | 16.7 kn | 8° |
+| Tag | Windlage | Fenster | Ensemble | gemessen (bester 2-h-Block) | Richtung |
+|---|---|---|---|---|---|
+| 2026-09-08 | Südwind (Talwind) | 11–17 Uhr | – | 7.9 kn | 180° |
+| 2026-09-09 | Nordföhn | 18–20 Uhr | – | 7.2 kn | 355° |
+| 2026-09-10 | Nordföhn | 9–14 Uhr | – | 20.8 kn | 25° |
+| 2026-09-11 | Nordföhn | 10–20 Uhr | – | 17 kn | 24° |
+| 2026-09-14 | Nordföhn | 14–20 Uhr | – | 13.2 kn | 6° |
+| 2026-09-15 | Südwind (Talwind) | 11–18 Uhr | – | 8.9 kn | 12° |
+| 2026-09-21 | Nordföhn | 9–19 Uhr | – | 14.8 kn | 9° |
+| 2026-09-22 | Nordföhn | 9–19 Uhr | – | 15.9 kn | 7° |
+| 2026-09-23 | Südwind (Talwind) | 11–16 Uhr | – | 7.6 kn | 14° |
+| 2026-09-24 | Nordföhn | 17–19 Uhr | – | 19.8 kn | 13° |
+| 2026-09-26 | Südwind (Talwind) | 11–18 Uhr | – | 10.5 kn | 358° |
+| 2026-09-27 | Südwind (Talwind) | 11–18 Uhr | – | 7.7 kn | 198° |
+| 2026-09-28 | Südwind (Talwind) | 11–18 Uhr | – | 8.5 kn | 357° |
+| 2026-09-29 | Südwind (Talwind) | 15–18 Uhr | – | 8.5 kn | 166° |
+| 2026-09-30 | Südwind (Talwind) | 11–18 Uhr | – | 10.5 kn | 169° |
+| 2026-10-28 | Nordföhn | 14–17 Uhr | – | 12.7 kn | 5° |
+| 2026-10-31 | Nordföhn | 13–17 Uhr | – | 23.3 kn | 12° |
+| 2026-11-01 | Nordföhn | 9–17 Uhr | – | 17.4 kn | 7° |
+| 2026-11-02 | Nordföhn | 9–17 Uhr | – | 20.8 kn | 12° |
+| 2026-11-13 | Nordföhn | 9–17 Uhr | – | 16.7 kn | 8° |
 
 ## Silvaplana (`silvaplana`)
 
@@ -255,28 +342,28 @@ Kandidaten (Umkreis 25 km):
 
 Letzte Tage, an denen die Regel „geht“ sagte:
 
-| Tag | Windlage | Fenster | gemessen (bester 2-h-Block) | Richtung |
-|---|---|---|---|---|
-| 2026-07-31 | Malojawind | 12–14 Uhr | 13.8 kn | 249° |
-| 2026-08-01 | Malojawind | 12–15 Uhr | 9.6 kn | 249° |
-| 2026-08-04 | Malojawind | 12–18 Uhr | 11 kn | 247° |
-| 2026-08-05 | Malojawind | 12–18 Uhr | 10.8 kn | 246° |
-| 2026-08-08 | Malojawind | 12–18 Uhr | 12.1 kn | 242° |
-| 2026-08-09 | Malojawind | 15–17 Uhr | 12 kn | 250° |
-| 2026-08-15 | Malojawind | 13–17 Uhr | 11.7 kn | 239° |
-| 2026-08-19 | Malojawind | 12–18 Uhr | 12.3 kn | 246° |
-| 2026-08-23 | Malojawind | 12–18 Uhr | 10.5 kn | 249° |
-| 2026-08-24 | Malojawind | 12–14 Uhr | 14.8 kn | 247° |
-| 2026-08-26 | Malojawind | 12–14 Uhr | 15.6 kn | 248° |
-| 2026-08-29 | Malojawind | 12–16 Uhr | 13.2 kn | 247° |
-| 2026-08-30 | Malojawind | 12–18 Uhr | 12.1 kn | 248° |
-| 2026-08-31 | Malojawind | 12–18 Uhr | 11.5 kn | 248° |
-| 2026-09-01 | Malojawind | 12–18 Uhr | 7.6 kn | 242° |
-| 2026-09-04 | Malojawind | 12–18 Uhr | 11.8 kn | 248° |
-| 2026-09-07 | Malojawind | 12–14 Uhr | 7.7 kn | 236° |
-| 2026-09-08 | Malojawind | 12–18 Uhr | 12.2 kn | 245° |
-| 2026-09-28 | Malojawind | 15–18 Uhr | 10.8 kn | 234° |
-| 2026-09-29 | Malojawind | 14–17 Uhr | 14.9 kn | 249° |
+| Tag | Windlage | Fenster | Ensemble | gemessen (bester 2-h-Block) | Richtung |
+|---|---|---|---|---|---|
+| 2026-07-31 | Malojawind | 12–14 Uhr | – | 13.8 kn | 249° |
+| 2026-08-01 | Malojawind | 12–15 Uhr | – | 9.6 kn | 249° |
+| 2026-08-04 | Malojawind | 12–18 Uhr | – | 11 kn | 247° |
+| 2026-08-05 | Malojawind | 12–18 Uhr | – | 10.8 kn | 246° |
+| 2026-08-08 | Malojawind | 12–18 Uhr | – | 12.1 kn | 242° |
+| 2026-08-09 | Malojawind | 15–17 Uhr | – | 12 kn | 250° |
+| 2026-08-15 | Malojawind | 13–17 Uhr | – | 11.7 kn | 239° |
+| 2026-08-19 | Malojawind | 12–18 Uhr | – | 12.3 kn | 246° |
+| 2026-08-23 | Malojawind | 12–18 Uhr | – | 10.5 kn | 249° |
+| 2026-08-24 | Malojawind | 12–14 Uhr | – | 14.8 kn | 247° |
+| 2026-08-26 | Malojawind | 12–14 Uhr | – | 15.6 kn | 248° |
+| 2026-08-29 | Malojawind | 12–16 Uhr | – | 13.2 kn | 247° |
+| 2026-08-30 | Malojawind | 12–18 Uhr | – | 12.1 kn | 248° |
+| 2026-08-31 | Malojawind | 12–18 Uhr | – | 11.5 kn | 248° |
+| 2026-09-01 | Malojawind | 12–18 Uhr | – | 7.6 kn | 242° |
+| 2026-09-04 | Malojawind | 12–18 Uhr | – | 11.8 kn | 248° |
+| 2026-09-07 | Malojawind | 12–14 Uhr | – | 7.7 kn | 236° |
+| 2026-09-08 | Malojawind | 12–18 Uhr | – | 12.2 kn | 245° |
+| 2026-09-28 | Malojawind | 15–18 Uhr | – | 10.8 kn | 234° |
+| 2026-09-29 | Malojawind | 14–17 Uhr | – | 14.9 kn | 249° |
 
 ## Gardasee Nord (`gardasee-nord`)
 
@@ -293,6 +380,8 @@ Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd; Hö
 Kandidaten (Umkreis 25 km):
 
 - keine in den offenen Netzen
+
+Ensemble ab 50 % (letzte 60 Tage): 11-16 (63 %), 11-18 (82 %)
 
 ## Urnersee (`urnersee`)
 
@@ -330,25 +419,25 @@ Kandidaten (Umkreis 25 km):
 
 Letzte Tage, an denen die Regel „geht“ sagte:
 
-| Tag | Windlage | Fenster | gemessen (bester 2-h-Block) | Richtung |
-|---|---|---|---|---|
-| 2026-07-11 | Thermik (Nord) | 13–18 Uhr | 12 kn | 336° |
-| 2026-07-12 | Thermik (Nord) | 12–18 Uhr | 12.8 kn | 338° |
-| 2026-07-20 | Thermik (Nord) | 12–18 Uhr | 12 kn | 336° |
-| 2026-07-21 | Thermik (Nord) | 12–18 Uhr | 11.3 kn | 341° |
-| 2026-07-22 | Thermik (Nord) | 12–18 Uhr | 11.9 kn | 333° |
-| 2026-07-23 | Thermik (Nord) | 15–18 Uhr | 13.9 kn | 334° |
-| 2026-07-24 | Thermik (Nord) | 14–18 Uhr | 5 kn | 336° |
-| 2026-08-04 | Thermik (Nord) | 14–16 Uhr | 0 kn | –° |
-| 2026-08-08 | Thermik (Nord) | 12–16 Uhr | 2.3 kn | 343° |
-| 2026-08-11 | Thermik (Nord) | 14–18 Uhr | 2.9 kn | 335° |
-| 2026-08-12 | Thermik (Nord) | 12–16 Uhr | 4.6 kn | 332° |
-| 2026-08-13 | Thermik (Nord) | 14–18 Uhr | 2.5 kn | 337° |
-| 2026-08-14 | Thermik (Nord) | 14–18 Uhr | 4 kn | 334° |
-| 2026-08-15 | Thermik (Nord) | 13–15 Uhr | 11 kn | 331° |
-| 2026-08-23 | Thermik (Nord) | 12–17 Uhr | 4.2 kn | 332° |
-| 2026-09-01 | Thermik (Nord) | 13–16 Uhr | 11.6 kn | 337° |
-| 2026-09-11 | Thermik (Nord) | 15–18 Uhr | 0 kn | –° |
-| 2026-09-12 | Thermik (Nord) | 13–17 Uhr | 4.1 kn | 335° |
-| 2026-09-19 | Thermik (Nord) | 14–16 Uhr | 2 kn | 337° |
-| 2026-09-22 | Thermik (Nord) | 13–18 Uhr | 7.9 kn | 330° |
+| Tag | Windlage | Fenster | Ensemble | gemessen (bester 2-h-Block) | Richtung |
+|---|---|---|---|---|---|
+| 2026-07-11 | Thermik (Nord) | 13–18 Uhr | – | 12 kn | 336° |
+| 2026-07-12 | Thermik (Nord) | 12–18 Uhr | – | 12.8 kn | 338° |
+| 2026-07-20 | Thermik (Nord) | 12–18 Uhr | – | 12 kn | 336° |
+| 2026-07-21 | Thermik (Nord) | 12–18 Uhr | – | 11.3 kn | 341° |
+| 2026-07-22 | Thermik (Nord) | 12–18 Uhr | – | 11.9 kn | 333° |
+| 2026-07-23 | Thermik (Nord) | 15–18 Uhr | – | 13.9 kn | 334° |
+| 2026-07-24 | Thermik (Nord) | 14–18 Uhr | – | 5 kn | 336° |
+| 2026-08-04 | Thermik (Nord) | 14–16 Uhr | – | 0 kn | –° |
+| 2026-08-08 | Thermik (Nord) | 12–16 Uhr | – | 2.3 kn | 343° |
+| 2026-08-11 | Thermik (Nord) | 14–18 Uhr | – | 2.9 kn | 335° |
+| 2026-08-12 | Thermik (Nord) | 12–16 Uhr | – | 4.6 kn | 332° |
+| 2026-08-13 | Thermik (Nord) | 14–18 Uhr | – | 2.5 kn | 337° |
+| 2026-08-14 | Thermik (Nord) | 14–18 Uhr | – | 4 kn | 334° |
+| 2026-08-15 | Thermik (Nord) | 13–15 Uhr | – | 11 kn | 331° |
+| 2026-08-23 | Thermik (Nord) | 12–17 Uhr | – | 4.2 kn | 332° |
+| 2026-09-01 | Thermik (Nord) | 13–16 Uhr | – | 11.6 kn | 337° |
+| 2026-09-11 | Thermik (Nord) | 15–18 Uhr | – | 0 kn | –° |
+| 2026-09-12 | Thermik (Nord) | 13–17 Uhr | – | 4.1 kn | 335° |
+| 2026-09-19 | Thermik (Nord) | 14–16 Uhr | – | 2 kn | 337° |
+| 2026-09-22 | Thermik (Nord) | 13–18 Uhr | – | 7.9 kn | 330° |
