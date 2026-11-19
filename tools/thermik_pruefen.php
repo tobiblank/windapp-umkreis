@@ -37,6 +37,9 @@ const TP_WAHL_DH = 250;         // und hoechstens so viele Meter ueber/unter dem
 const TP_SPORT = 'kite_twintip';
 const TP_SCHWACH_KN = 10;       // zweite, weichere Schwelle (Stationen an Land messen oft weniger)
 const TP_PAUSE_S = 25;          // zwischen Open-Meteo-Abrufen (Minutenlimit, grosse Abrufe zaehlen mehrfach)
+const TP_MIN_TAGE = 45;         // Station zaehlt ab so vielen Tagen mit Messwerten (manche sind neu)
+const TP_ENS = 'https://ensemble-api.open-meteo.com/v1/ensemble';
+const TP_ENS_TAGE = 60;         // Ensemble wie in der App: die letzten Tage (past_days)
 
 /** Feste Wahl, falls die automatische danebenliegt: region => "netz:id" */
 const TP_FEST = [];
@@ -283,6 +286,16 @@ function hist_holen(array $punkt, string $vars, string $von, string $bis, string
     return [null, null];
 }
 
+/** ECMWF-Ensemble der letzten TP_ENS_TAGE Tage (aneinandergereihte Laeufe), wie der Sammler */
+function ens_holen(array $punkt, string $vars): ?array
+{
+    sleep(TP_PAUSE_S);
+    $url = TP_ENS . '?' . http_build_query(['latitude' => $punkt[0], 'longitude' => $punkt[1], 'hourly' => $vars, 'models' => 'ecmwf_ifs025',
+           'wind_speed_unit' => 'kn', 'past_days' => TP_ENS_TAGE, 'forecast_days' => 1, 'timezone' => 'UTC']);
+    $d = json_decode((string)holen($url, 300), true);
+    return is_array($d) && isset($d['hourly']['time']) ? $d : null;
+}
+
 /** DWD-Stationsliste, eine Zeile: [id, hoehe, lat, lon, name] oder null */
 function dwd_zeile(string $z): ?array
 {
@@ -504,6 +517,14 @@ foreach (array_keys($druckBedarf) as $p) {
     echo '  Modelle: ' . ($mod ?? 'keine Daten') . "\n";
 }
 
+$druckEns = [];
+foreach (array_keys($druckBedarf) as $p) {
+    echo "Druck-Ensemble $p\n";
+    $druckEns[$p] = ens_holen($katalog['druckpunkte'][$p]['punkt'], 'pressure_msl');
+    echo '  ' . ($druckEns[$p] ? 'ok' : 'keine Daten') . "\n";
+}
+$ensVon = gmdate('Y-m-d', time() - TP_ENS_TAGE * 86400);
+
 $bericht = [];
 $json = [];
 foreach ($regionen as $r) {
@@ -558,6 +579,22 @@ foreach ($regionen as $r) {
         }
     }
 
+    // Ensemble-Chance wie in der App (letzte TP_ENS_TAGE Tage)
+    $chance = [];
+    $ens = ens_holen($r['punkt'], 'wind_speed_10m,wind_direction_10m,cloud_cover');
+    $hoeheEns = isset($hoehenBedarf[$id]) ? ens_holen($r['punkt'], 'wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa') : null;
+    if ($ens !== null && $vh !== null) {
+        $tageE = array_values(array_filter(array_keys($regel), fn($t) => $t >= $ensVon));
+        $daten = ['vorhersage' => $vh, 'ensemble' => $ens, 'druck' => $druck, 'druck_ensemble' => $druckEns, 'hoehe' => $hoehe, 'hoehe_ensemble' => $hoeheEns];
+        foreach (region_bewerten($r, $daten, $sport, $tageE, new DateTimeImmutable("$ensVon 00:00 -2 days", $tz)) as $tag => $e) {
+            if ($e['ens'] !== null) {
+                $chance[$tag] = round($e['ens']['chance'], 2);
+                $regel[$tag]['chance'] = $chance[$tag];
+            }
+        }
+    }
+    echo '  Ensemble: ' . count($chance) . ' Tage, im Mittel ' . ($chance ? round(100 * array_sum($chance) / count($chance)) : '-') . " %\n";
+
     // Messung: erste gewaehlte Station mit genug Werten
     $station = null;
     $gemessen = [];
@@ -574,11 +611,13 @@ foreach ($regionen as $r) {
             }
         }
         $g = array_filter($g);
+        $mitWert = array_keys(array_filter($reihe, fn($x) => $x[0] !== null));
+        echo '    Werte von ' . ($mitWert ? gmdate('Y-m-d', min($mitWert)) . ' bis ' . gmdate('Y-m-d', max($mitWert)) : '-') . "\n";
         $knWerte = array_filter(array_column($reihe, 0), fn($v) => $v !== null);
         sort($knWerte);
         echo '    ' . count($reihe) . ' Werte, ' . count($g) . ' Tage, Median ' . ($knWerte ? round($knWerte[intdiv(count($knWerte), 2)], 1) : '-')
            . ' kn, 99 %: ' . ($knWerte ? round($knWerte[(int)(0.99 * (count($knWerte) - 1))], 1) : '-') . " kn\n";
-        if (count($g) >= 0.5 * max(1, count($regel))) {
+        if (count($g) >= TP_MIN_TAGE) {
             $station = $s + ['key' => $key];
             $gemessen = $g;
             break;
@@ -590,7 +629,21 @@ foreach ($regionen as $r) {
         $tageZ[$tag] = ['regel' => $x['geht'] || $x['modellwind'], 'gemessen' => $gemessen[$tag] ?? null, 'sperre' => $x['sperre']];
     }
     $z = tp_auswerten($tageZ, (int)$sport['min'], TP_SCHWACH_KN);
-    $bericht[$id] = ['region' => $r, 'station' => $station, 'kandidaten' => array_slice($kand, 0, 8, true), 'z' => $z, 'modelle' => $mod, 'see' => $seeHoehe];
+    // Ensemble gegen Messung
+    $ez = ['tage' => count($chance), 'summe' => array_sum($chance), 'ab50' => 0, 'ab50_gem' => 0, 'ab50_mit' => 0, 'gem_ja' => 0, 'mit' => 0];
+    foreach ($chance as $tag => $c) {
+        $g = $gemessen[$tag] ?? null;
+        $mit = $g !== null && $g['abdeckung'] >= 0.6;
+        $ja = $mit && $g['stunden_ab'][(int)$sport['min']] >= MIN_STUNDEN;
+        $ez['mit'] += (int)$mit;
+        $ez['gem_ja'] += (int)$ja;
+        if ($c >= 0.5) {
+            $ez['ab50']++;
+            $ez['ab50_mit'] += (int)$mit;
+            $ez['ab50_gem'] += (int)$ja;
+        }
+    }
+    $bericht[$id] = ['region' => $r, 'station' => $station, 'kandidaten' => array_slice($kand, 0, 8, true), 'z' => $z, 'ez' => $ez, 'modelle' => $mod, 'see' => $seeHoehe];
     $json[$id] = ['station' => $station, 'tage' => array_map(fn($x, $t) => $x + ['gemessen' => $gemessen[$t] ?? null], $regel, array_keys($regel))];
     $json[$id]['tage'] = array_combine(array_keys($regel), $json[$id]['tage']);
 }
@@ -611,6 +664,13 @@ foreach ($bericht as $id => $b) {
     $md .= "| {$b['region']['name']} | " . ($s ? "{$s['name']} ({$s['netz']}, {$s['km']} km, " . sprintf('%+d', $s['dh'] ?? 0) . " m)" : 'keine') . " | {$z['tage']} | {$z['regel_ja']} | "
          . tp_pct($z['regel_ja_gem'], $z['regel_ja']) . " | " . tp_pct($z['regel_ja_schwach'], $z['regel_ja']) . " | {$z['gem_ja']} | " . tp_pct($z['gem_ja_regel'], $z['gem_ja']) . " |\n";
 }
+$md .= "\n### Ensemble wie in der App (letzte " . TP_ENS_TAGE . " Tage)\n\nChance = Anteil der 51 ECMWF-Läufe, an denen der Tag geht (wie die Kacheln). Gemessen wie oben.\n\n";
+$md .= "| Region | Tage | Chance im Mittel | Tage ab 50 % | davon mit Messung | davon gemessen ab {$sport['min']} kn | Tage gemessen ab {$sport['min']} kn |\n|---|---|---|---|---|---|---|\n";
+foreach ($bericht as $id => $b) {
+    $e = $b['ez'];
+    $md .= "| {$b['region']['name']} | {$e['tage']} | " . ($e['tage'] ? round(100 * $e['summe'] / $e['tage']) . ' %' : '–') . " | {$e['ab50']} | {$e['ab50_mit']} | "
+         . tp_pct($e['ab50_gem'], $e['ab50_mit']) . " | " . ($e['mit'] ? "{$e['gem_ja']} von {$e['mit']}" : '–') . " |\n";
+}
 foreach ($bericht as $id => $b) {
     $md .= "\n## {$b['region']['name']} (`$id`)\n\n";
     $md .= "Modelle: " . ($b['modelle'] ?? 'keine Daten') . "; Höhe am Vorhersagepunkt " . ($b['see'] ?? '?') . " m.\n\n";
@@ -628,12 +688,17 @@ foreach ($bericht as $id => $b) {
         }
     }
     $tage = $json[$id]['tage'];
+    $hoch = array_filter($tage, fn($t) => ($t['chance'] ?? 0) >= 0.5);
+    if ($hoch) {
+        $md .= "\nEnsemble ab 50 % (letzte " . TP_ENS_TAGE . " Tage): " . implode(', ', array_map(fn($t, $x) => substr($t, 5) . ' (' . round(100 * $x['chance']) . ' %'
+             . ($x['gemessen'] !== null ? ', gemessen ' . $x['gemessen']['spitze'] . ' kn' : '') . ')', array_keys($hoch), $hoch)) . "\n";
+    }
     $liste = array_filter($tage, fn($t) => ($t['geht'] || $t['modellwind']) && $t['gemessen'] !== null);
     $liste = array_slice($liste, -20, null, true);
     if ($liste) {
-        $md .= "\nLetzte Tage, an denen die Regel „geht“ sagte:\n\n| Tag | Windlage | Fenster | gemessen (bester 2-h-Block) | Richtung |\n|---|---|---|---|---|\n";
+        $md .= "\nLetzte Tage, an denen die Regel „geht“ sagte:\n\n| Tag | Windlage | Fenster | Ensemble | gemessen (bester 2-h-Block) | Richtung |\n|---|---|---|---|---|---|\n";
         foreach ($liste as $tag => $t) {
-            $md .= "| $tag | {$t['windlage']} | {$t['von']}–{$t['bis']} Uhr | {$t['gemessen']['spitze']} kn | " . ($t['gemessen']['richtung'] ?? '–') . "° |\n";
+            $md .= "| $tag | {$t['windlage']} | {$t['von']}–{$t['bis']} Uhr | " . (isset($t['chance']) ? round(100 * $t['chance']) . ' %' : '–') . " | {$t['gemessen']['spitze']} kn | " . ($t['gemessen']['richtung'] ?? '–') . "° |\n";
         }
     }
 }
