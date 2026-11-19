@@ -727,7 +727,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
   <article class="karte region beste-<?= beste_stufe($e) ?><?= $guteTage ? '' : ' still' ?>" id="r-<?= h($r['id']) ?>" data-ziel="<?= h($kartenZiel) ?>">
     <div class="region-kopf">
       <h2><a class="region-link" href="<?= h($kartenZiel) ?>"><?= h($r['name']) ?></a><?= $geteilt ? '' : fav_knopf_html($r, $fav) ?></h2>
-      <?php if (!$geteilt): ?><span class="leise klein fahrzeit"><?= h(fahrzeit_text($e['fahrt'])) ?> Fahrt<span class="km">Tour ab <?= zahl((float)$r['hoehe_tour']) ?> m</span></span><?php endif ?>
+      <?php if (!$geteilt): ?><span class="leise klein fahrzeit"><?= h(fahrzeit_text($e['fahrt'])) ?> Fahrt<span class="km" title="Alle Schneewerte und Temperaturen gelten für diese Höhe (oberer Teil typischer Touren), nicht für den Start.">Werte auf <?= zahl((float)$r['hoehe_tour']) ?> m</span></span><?php endif ?>
     </div>
     <div class="tage" style="--n: <?= count($tage) ?>">
       <?php foreach ($tage as $t):

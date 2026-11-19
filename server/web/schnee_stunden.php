@@ -268,7 +268,7 @@ $jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
       <p class="leise klein">← zur Schnee-Rangliste</p>
     </div>
   </a>
-  <div class="rechts klein leise">Tour ab <?= zahl((float)$region['hoehe_tour']) ?> m</div>
+  <div class="rechts klein leise" title="Alle Schneewerte und Temperaturen gelten für diese Höhe (oberer Teil typischer Touren), nicht für den Start.">Werte auf <?= zahl((float)$region['hoehe_tour']) ?> m</div>
 </header>
 
 <nav class="sortierung klein" aria-label="Tag">
