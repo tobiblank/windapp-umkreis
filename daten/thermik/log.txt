@@ -1,0 +1,354 @@
+Selbsttest ok
+Zeitraum 2025-03-01 bis 2026-11-18, Regionen: walchensee, kochelsee, achensee, reschensee, silvaplana, gardasee-nord, lago-santa-croce, urnersee
+Stationen holen
+  GeoSphere Parameter FF: {"name":"FF","long_name":"Windgeschwindigkeit","desc":"Windgeschwindigkeit über 10 Minuten","unit":"m\/s"}
+  GeoSphere Parameter FFAM: {"name":"FFAM","long_name":"Arithmetisches Mittel der Windgeschwindigkeit","desc":"Arithmetisches Mittel der Windgeschwindigkeit über 10 Minuten","unit":"m\/s"}
+  GeoSphere Parameter DD: {"name":"DD","long_name":"Windrichtung","desc":"Windrichtung der letzten 10 Minuten","unit":"°"}
+  MeteoSchweiz Parameter: dkl010z0;"Windrichtung; Zehnminutenmittel";"Direction du vent; moyenne sur 10 minutes";"Direzione del vento; media su 10'";"Wind direction; ten minutes mean";Wind;Vent;Vento;Wind;T;0;Integer;°
+  MeteoSchweiz Parameter: fkl010z0;"Windgeschwindigkeit skalar; Zehnminutenmittel in m/s";"Vitesse du vent scalaire; moyenne sur 10 minutes en m/s";"Velocità del vento scalare; media su 10' in m/s";"Wind speed scalar; ten minutes mean in m/s";Wind;Vent;Vento;Wind;T;1;Float;m/s
+  MeteoSchweiz Parameter: fu3010z0;"Windgeschwindigkeit; Zehnminutenmittel in km/h";"Vitesse du vent; moyenne sur 10 minutes en km/h";"Velocità del vento; media su 10' in km/h";"Wind speed; ten minutes mean in km/h";Wind;Vent;Vento;Wind;T;1;Float;km/h
+  Stationen: {"geosphere":285,"meteoswiss":158,"suedtirol":230,"dwd":279}
+Druck innsbruck
+  Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd
+Druck bozen
+  Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd
+Druck zuerich
+  Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd
+Druck lugano
+  Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd
+Druck brescia
+  Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd
+
+## walchensee
+  Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 800 m
+   15.0 km   630 m (-170)  dwd:19912  Bichl
+   18.9 km   923 m (+123)  dwd:06103  Mittenwald/Obb.
+   24.0 km   719 m (-81)  dwd:01550  Garmisch-Partenkirchen
+
+## kochelsee
+  Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 598 m
+    9.4 km   630 m (+32)  dwd:19912  Bichl
+   24.9 km   923 m (+325)  dwd:06103  Mittenwald/Obb.
+  Messreihe dwd:19912 (Bichl)
+    18288 Werte, 127 Tage, Median 2.5 kn, 99 %: 10.3 kn
+
+## achensee
+  Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 926 m
+    5.5 km   931 m (+5)  geosphere:11266  ACHENKIRCH CAMPINGPLATZ
+    7.7 km   529 m (-397)  geosphere:11325  JENBACH
+   18.3 km   929 m (+3)  geosphere:11125  ALPBACH
+   21.8 km   776 m (-150)  dwd:02738  Kreuth
+  Messreihe geosphere:11266 (ACHENKIRCH CAMPINGPLATZ)
+    90432 Werte, 92 Tage, Median 3.3 kn, 99 %: 13 kn
+
+## reschensee
+  Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 1487 m
+    3.9 km  1499 m (+12)  suedtirol:02200MS  St. Valentin a.d. Haide
+    6.8 km  1448 m (-39)  suedtirol:02250SE  Haidersee
+    9.2 km  1330 m (-157)  geosphere:11113  NAUDERS
+    1.7 km  2040 m (+553)  suedtirol:00390SF  Graun Schöneben
+   11.6 km  1310 m (-177)  suedtirol:02500MS  Marienberg
+    9.1 km  1842 m (+355)  suedtirol:01110MS  Langtaufers Grub
+   14.6 km  1632 m (+145)  suedtirol:04450PG  Saldurbach - Matsch
+   18.1 km  1304 m (-183)  meteoswiss:scu  Scuol
+   24.2 km  1386 m (-101)  meteoswiss:smm  Sta. Maria, Val Müstair
+   15.5 km   942 m (-545)  suedtirol:03750PG  RAMBACH BEI LAATSCH
+    9.0 km  2450 m (+963)  suedtirol:01080SF  Melag Pratznerberg
+   23.5 km  1770 m (+283)  suedtirol:15570PG  Schnalserbach - Gerstgras
+   24.2 km  1120 m (-367)  suedtirol:07770PG  SULDENBACH - STILFSERBRÜCKE
+   20.3 km   882 m (-605)  suedtirol:05950PG  ETSCH BEI SPONDINIG
+    4.4 km  2926 m (+1439)  suedtirol:00700WS  Graun Elferspitze
+   13.9 km  2460 m (+973)  suedtirol:02700SF  Schleis Kloangruebes
+   24.3 km  1950 m (+463)  suedtirol:15590SF  Schnals Finail
+   22.2 km   889 m (-598)  suedtirol:08105GW  Prad
+   22.8 km   874 m (-613)  suedtirol:08200MS  Laas Eyrs
+   23.1 km   873 m (-614)  suedtirol:08155PG  ETSCH BEI EYRS
+   19.7 km  2380 m (+893)  meteoswiss:nas  Naluns / Schlivera
+   24.6 km  2327 m (+840)  geosphere:11310  ISCHGL/IDALPE
+   18.8 km  3035 m (+1548)  suedtirol:15000SF  Schnals Teufelsegg
+   21.5 km  3220 m (+1733)  suedtirol:15050WS  Schnals Grawand
+  Messreihe suedtirol:02200MS (St. Valentin a.d. Haide)
+    90407 Werte, 628 Tage, Median 6 kn, 99 %: 21.4 kn
+
+## silvaplana
+  Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 1790 m
+    2.4 km  1804 m (+14)  meteoswiss:sia  Segl-Maria
+    9.1 km  1856 m (+66)  meteoswiss:biv  Bivio
+   11.4 km  1709 m (-81)  meteoswiss:sam  Samedan
+   20.2 km  1408 m (-382)  meteoswiss:lat  Bergün / Latsch
+   18.5 km  2260 m (+470)  meteoswiss:beh  Passo del Bernina
+   16.0 km  1089 m (-701)  meteoswiss:vio  Vicosoprano
+    4.3 km  3294 m (+1504)  meteoswiss:cov  Piz Corvatsch
+   24.0 km  1078 m (-712)  meteoswiss:rob  Poschiavo / Robbia
+   24.3 km  2668 m (+878)  meteoswiss:pma  Piz Martegnas
+  Messreihe meteoswiss:sia (Segl-Maria)
+    90432 Werte, 628 Tage, Median 4.5 kn, 99 %: 14.8 kn
+
+## gardasee-nord
+  Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 65 m
+
+## lago-santa-croce
+  Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 381 m
+
+## urnersee
+  Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 434 m
+    5.1 km   438 m (+4)  meteoswiss:alt  Altdorf
+    9.4 km   521 m (+87)  meteoswiss:ges  Gersau
+   17.0 km   790 m (+356)  meteoswiss:sag  Sattel, SZ
+   22.7 km   724 m (+290)  meteoswiss:aeg  Oberägeri
+   18.8 km  1036 m (+602)  meteoswiss:eng  Engelberg
+   22.1 km  3045 m (+2611)  meteoswiss:tit  Titlis
+  Messreihe meteoswiss:alt (Altdorf)
+    90432 Werte, 628 Tage, Median 2.3 kn, 99 %: 21.4 kn
+
+# Regel-Windlagen gegen Messstationen
+
+Erzeugt von `tools/thermik_pruefen.php` (Action „Thermik prüfen“) am 19.11.2026 16:11 UTC. Zeitraum 2025-03-01 bis 2026-11-18.
+
+- **Regel geht**: `region_bewerten()` der App mit den Modellen von damals (Open-Meteo Historical Forecast, kurze Vorlaufzeit, ohne Ensemble), Sportart Kite Twintip (ab 14 kn). Zählt auch Tage, an denen eine normale Windlage mit Modellwind geht.
+- **Gemessen geht**: mindestens 2 Stunden am Stück im Tagesfenster ein Stundenmittel ab 14 kn aus einem Sektor der Windlagen; „schwach“ = ab 10 kn. Stationen an Land messen oft weniger als auf dem Wasser.
+- Gezählt nur Tage mit Messwerten für mindestens 60 % des Fensters, ohne Sperrtage.
+
+| Region | Station | Tage | Regel geht | davon gemessen ab 14 kn | ab 10 kn | gemessen ab 14 kn | davon von der Regel erkannt |
+|---|---|---|---|---|---|---|---|
+| Walchensee | keine | 0 | 0 | – | – | 0 | – |
+| Kochelsee | keine | 0 | 0 | – | – | 0 | – |
+| Achensee | keine | 0 | 0 | – | – | 0 | – |
+| Reschensee | St. Valentin a.d. Haide (suedtirol, 3.9 km, +12 m) | 628 | 188 | 51 % | 72 % | 159 | 60 % |
+| Silvaplana | Segl-Maria (meteoswiss, 2.4 km, +14 m) | 628 | 46 | 13 % | 80 % | 23 | 26 % |
+| Gardasee Nord | keine | 0 | 0 | – | – | 0 | – |
+| Lago di Santa Croce | keine | 0 | 0 | – | – | 0 | – |
+| Urnersee | Altdorf (meteoswiss, 5.1 km, +4 m) | 549 | 76 | 1 % | 33 % | 20 | 5 % |
+
+## Walchensee (`walchensee`)
+
+Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd; Höhe am Vorhersagepunkt 800 m.
+
+Kandidaten (Umkreis 25 km):
+
+- `dwd:19912` Bichl, 15 km, 630 m (-170 m)
+- `dwd:06103` Mittenwald/Obb., 18.9 km, 923 m (+123 m)
+- `dwd:01550` Garmisch-Partenkirchen, 24 km, 719 m (-81 m)
+
+## Kochelsee (`kochelsee`)
+
+Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd; Höhe am Vorhersagepunkt 598 m.
+
+Kandidaten (Umkreis 25 km):
+
+- `dwd:19912` Bichl, 9.4 km, 630 m (+32 m)
+- `dwd:06103` Mittenwald/Obb., 24.9 km, 923 m (+325 m)
+
+## Achensee (`achensee`)
+
+Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd; Höhe am Vorhersagepunkt 926 m.
+
+Kandidaten (Umkreis 25 km):
+
+- `geosphere:11266` ACHENKIRCH CAMPINGPLATZ, 5.5 km, 931 m (+5 m)
+- `geosphere:11325` JENBACH, 7.7 km, 529 m (-397 m)
+- `geosphere:11125` ALPBACH, 18.3 km, 929 m (+3 m)
+- `dwd:02738` Kreuth, 21.8 km, 776 m (-150 m)
+
+## Reschensee (`reschensee`)
+
+Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd; Höhe am Vorhersagepunkt 1487 m.
+
+Kandidaten (Umkreis 25 km):
+
+- `suedtirol:02200MS` St. Valentin a.d. Haide, 3.9 km, 1499 m (+12 m)
+- `suedtirol:02250SE` Haidersee, 6.8 km, 1448 m (-39 m)
+- `geosphere:11113` NAUDERS, 9.2 km, 1330 m (-157 m)
+- `suedtirol:00390SF` Graun Schöneben, 1.7 km, 2040 m (+553 m)
+- `suedtirol:02500MS` Marienberg, 11.6 km, 1310 m (-177 m)
+- `suedtirol:01110MS` Langtaufers Grub, 9.1 km, 1842 m (+355 m)
+- `suedtirol:04450PG` Saldurbach - Matsch, 14.6 km, 1632 m (+145 m)
+- `meteoswiss:scu` Scuol, 18.1 km, 1304 m (-183 m)
+
+| Monat | Tage | Regel geht | davon gemessen | gemessen geht |
+|---|---|---|---|---|
+| 2025-03 | 31 | 6 | 100 % | 8 |
+| 2025-04 | 30 | 5 | 100 % | 10 |
+| 2025-05 | 31 | 13 | 46 % | 10 |
+| 2025-06 | 30 | 10 | 40 % | 6 |
+| 2025-07 | 31 | 14 | 64 % | 10 |
+| 2025-08 | 31 | 12 | 25 % | 5 |
+| 2025-09 | 30 | 12 | 8 % | 5 |
+| 2025-10 | 31 | 6 | 83 % | 13 |
+| 2025-11 | 30 | 4 | 75 % | 7 |
+| 2025-12 | 31 | 5 | 100 % | 5 |
+| 2026-01 | 31 | 4 | 75 % | 4 |
+| 2026-02 | 28 | 3 | 67 % | 4 |
+| 2026-03 | 31 | 9 | 100 % | 11 |
+| 2026-04 | 30 | 13 | 77 % | 16 |
+| 2026-05 | 31 | 10 | 40 % | 10 |
+| 2026-06 | 30 | 10 | 40 % | 7 |
+| 2026-07 | 31 | 17 | 41 % | 7 |
+| 2026-08 | 31 | 13 | 8 % | 2 |
+| 2026-09 | 30 | 17 | 29 % | 8 |
+| 2026-10 | 31 | 2 | 50 % | 7 |
+| 2026-11 | 18 | 3 | 100 % | 4 |
+
+Letzte Tage, an denen die Regel „geht“ sagte:
+
+| Tag | Windlage | Fenster | gemessen (bester 2-h-Block) | Richtung |
+|---|---|---|---|---|
+| 2026-09-08 | Südwind (Talwind) | 11–17 Uhr | 7.9 kn | 180° |
+| 2026-09-09 | Nordföhn | 18–20 Uhr | 7.2 kn | 355° |
+| 2026-09-10 | Nordföhn | 9–14 Uhr | 20.8 kn | 25° |
+| 2026-09-11 | Nordföhn | 10–20 Uhr | 17 kn | 24° |
+| 2026-09-14 | Nordföhn | 14–20 Uhr | 13.2 kn | 6° |
+| 2026-09-15 | Südwind (Talwind) | 11–18 Uhr | 8.9 kn | 12° |
+| 2026-09-21 | Nordföhn | 9–19 Uhr | 14.8 kn | 9° |
+| 2026-09-22 | Nordföhn | 9–19 Uhr | 15.9 kn | 7° |
+| 2026-09-23 | Südwind (Talwind) | 11–16 Uhr | 7.6 kn | 14° |
+| 2026-09-24 | Nordföhn | 17–19 Uhr | 19.8 kn | 13° |
+| 2026-09-26 | Südwind (Talwind) | 11–18 Uhr | 10.5 kn | 358° |
+| 2026-09-27 | Südwind (Talwind) | 11–18 Uhr | 7.7 kn | 198° |
+| 2026-09-28 | Südwind (Talwind) | 11–18 Uhr | 8.5 kn | 357° |
+| 2026-09-29 | Südwind (Talwind) | 15–18 Uhr | 8.5 kn | 166° |
+| 2026-09-30 | Südwind (Talwind) | 11–18 Uhr | 10.5 kn | 169° |
+| 2026-10-28 | Nordföhn | 14–17 Uhr | 12.7 kn | 5° |
+| 2026-10-31 | Nordföhn | 13–17 Uhr | 23.3 kn | 12° |
+| 2026-11-01 | Nordföhn | 9–17 Uhr | 17.4 kn | 7° |
+| 2026-11-02 | Nordföhn | 9–17 Uhr | 20.8 kn | 12° |
+| 2026-11-13 | Nordföhn | 9–17 Uhr | 16.7 kn | 8° |
+
+## Silvaplana (`silvaplana`)
+
+Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd; Höhe am Vorhersagepunkt 1790 m.
+
+Kandidaten (Umkreis 25 km):
+
+- `meteoswiss:sia` Segl-Maria, 2.4 km, 1804 m (+14 m)
+- `meteoswiss:biv` Bivio, 9.1 km, 1856 m (+66 m)
+- `meteoswiss:sam` Samedan, 11.4 km, 1709 m (-81 m)
+- `meteoswiss:lat` Bergün / Latsch, 20.2 km, 1408 m (-382 m)
+- `meteoswiss:beh` Passo del Bernina, 18.5 km, 2260 m (+470 m)
+- `meteoswiss:vio` Vicosoprano, 16 km, 1089 m (-701 m)
+- `meteoswiss:cov` Piz Corvatsch, 4.3 km, 3294 m (+1504 m)
+- `meteoswiss:rob` Poschiavo / Robbia, 24 km, 1078 m (-712 m)
+
+| Monat | Tage | Regel geht | davon gemessen | gemessen geht |
+|---|---|---|---|---|
+| 2025-03 | 31 | 0 | – | 1 |
+| 2025-04 | 30 | 0 | – | 0 |
+| 2025-05 | 31 | 1 | 0 % | 2 |
+| 2025-06 | 30 | 3 | 0 % | 2 |
+| 2025-07 | 31 | 3 | 0 % | 2 |
+| 2025-08 | 31 | 3 | 0 % | 0 |
+| 2025-09 | 30 | 6 | 17 % | 1 |
+| 2025-10 | 31 | 1 | 0 % | 2 |
+| 2025-11 | 30 | 0 | – | 0 |
+| 2025-12 | 31 | 0 | – | 0 |
+| 2026-01 | 31 | 0 | – | 0 |
+| 2026-02 | 28 | 0 | – | 1 |
+| 2026-03 | 31 | 0 | – | 0 |
+| 2026-04 | 30 | 0 | – | 1 |
+| 2026-05 | 31 | 4 | 25 % | 3 |
+| 2026-06 | 30 | 1 | 100 % | 2 |
+| 2026-07 | 31 | 5 | 0 % | 0 |
+| 2026-08 | 31 | 13 | 15 % | 3 |
+| 2026-09 | 30 | 6 | 17 % | 2 |
+| 2026-10 | 31 | 0 | – | 1 |
+| 2026-11 | 18 | 0 | – | 0 |
+
+Letzte Tage, an denen die Regel „geht“ sagte:
+
+| Tag | Windlage | Fenster | gemessen (bester 2-h-Block) | Richtung |
+|---|---|---|---|---|
+| 2026-07-31 | Malojawind | 12–14 Uhr | 13.8 kn | 249° |
+| 2026-08-01 | Malojawind | 12–15 Uhr | 9.6 kn | 249° |
+| 2026-08-04 | Malojawind | 12–18 Uhr | 11 kn | 247° |
+| 2026-08-05 | Malojawind | 12–18 Uhr | 10.8 kn | 246° |
+| 2026-08-08 | Malojawind | 12–18 Uhr | 12.1 kn | 242° |
+| 2026-08-09 | Malojawind | 15–17 Uhr | 12 kn | 250° |
+| 2026-08-15 | Malojawind | 13–17 Uhr | 11.7 kn | 239° |
+| 2026-08-19 | Malojawind | 12–18 Uhr | 12.3 kn | 246° |
+| 2026-08-23 | Malojawind | 12–18 Uhr | 10.5 kn | 249° |
+| 2026-08-24 | Malojawind | 12–14 Uhr | 14.8 kn | 247° |
+| 2026-08-26 | Malojawind | 12–14 Uhr | 15.6 kn | 248° |
+| 2026-08-29 | Malojawind | 12–16 Uhr | 13.2 kn | 247° |
+| 2026-08-30 | Malojawind | 12–18 Uhr | 12.1 kn | 248° |
+| 2026-08-31 | Malojawind | 12–18 Uhr | 11.5 kn | 248° |
+| 2026-09-01 | Malojawind | 12–18 Uhr | 7.6 kn | 242° |
+| 2026-09-04 | Malojawind | 12–18 Uhr | 11.8 kn | 248° |
+| 2026-09-07 | Malojawind | 12–14 Uhr | 7.7 kn | 236° |
+| 2026-09-08 | Malojawind | 12–18 Uhr | 12.2 kn | 245° |
+| 2026-09-28 | Malojawind | 15–18 Uhr | 10.8 kn | 234° |
+| 2026-09-29 | Malojawind | 14–17 Uhr | 14.9 kn | 249° |
+
+## Gardasee Nord (`gardasee-nord`)
+
+Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd; Höhe am Vorhersagepunkt 65 m.
+
+Kandidaten (Umkreis 25 km):
+
+- keine in den offenen Netzen
+
+## Lago di Santa Croce (`lago-santa-croce`)
+
+Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd; Höhe am Vorhersagepunkt 381 m.
+
+Kandidaten (Umkreis 25 km):
+
+- keine in den offenen Netzen
+
+## Urnersee (`urnersee`)
+
+Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd; Höhe am Vorhersagepunkt 434 m.
+
+Kandidaten (Umkreis 25 km):
+
+- `meteoswiss:alt` Altdorf, 5.1 km, 438 m (+4 m)
+- `meteoswiss:ges` Gersau, 9.4 km, 521 m (+87 m)
+- `meteoswiss:sag` Sattel, SZ, 17 km, 790 m (+356 m)
+- `meteoswiss:aeg` Oberägeri, 22.7 km, 724 m (+290 m)
+- `meteoswiss:eng` Engelberg, 18.8 km, 1036 m (+602 m)
+- `meteoswiss:tit` Titlis, 22.1 km, 3045 m (+2611 m)
+
+| Monat | Tage | Regel geht | davon gemessen | gemessen geht |
+|---|---|---|---|---|
+| 2025-03 | 31 | 0 | – | 0 |
+| 2025-04 | 30 | 0 | – | 1 |
+| 2025-05 | 31 | 7 | 0 % | 1 |
+| 2025-06 | 30 | 11 | 0 % | 1 |
+| 2025-07 | 31 | 6 | 0 % | 3 |
+| 2025-08 | 31 | 7 | 0 % | 0 |
+| 2025-09 | 30 | 0 | – | 1 |
+| 2025-10 | 31 | 0 | – | 1 |
+| 2026-01 | 31 | 0 | – | 1 |
+| 2026-02 | 28 | 0 | – | 1 |
+| 2026-03 | 31 | 0 | – | 3 |
+| 2026-04 | 30 | 0 | – | 0 |
+| 2026-05 | 31 | 10 | 0 % | 2 |
+| 2026-06 | 30 | 8 | 0 % | 2 |
+| 2026-07 | 31 | 14 | 7 % | 1 |
+| 2026-08 | 31 | 8 | 0 % | 1 |
+| 2026-09 | 30 | 5 | 0 % | 0 |
+| 2026-10 | 31 | 0 | – | 1 |
+
+Letzte Tage, an denen die Regel „geht“ sagte:
+
+| Tag | Windlage | Fenster | gemessen (bester 2-h-Block) | Richtung |
+|---|---|---|---|---|
+| 2026-07-11 | Thermik (Nord) | 13–18 Uhr | 12 kn | 336° |
+| 2026-07-12 | Thermik (Nord) | 12–18 Uhr | 12.8 kn | 338° |
+| 2026-07-20 | Thermik (Nord) | 12–18 Uhr | 12 kn | 336° |
+| 2026-07-21 | Thermik (Nord) | 12–18 Uhr | 11.3 kn | 341° |
+| 2026-07-22 | Thermik (Nord) | 12–18 Uhr | 11.9 kn | 333° |
+| 2026-07-23 | Thermik (Nord) | 15–18 Uhr | 13.9 kn | 334° |
+| 2026-07-24 | Thermik (Nord) | 14–18 Uhr | 5 kn | 336° |
+| 2026-08-04 | Thermik (Nord) | 14–16 Uhr | 0 kn | –° |
+| 2026-08-08 | Thermik (Nord) | 12–16 Uhr | 2.3 kn | 343° |
+| 2026-08-11 | Thermik (Nord) | 14–18 Uhr | 2.9 kn | 335° |
+| 2026-08-12 | Thermik (Nord) | 12–16 Uhr | 4.6 kn | 332° |
+| 2026-08-13 | Thermik (Nord) | 14–18 Uhr | 2.5 kn | 337° |
+| 2026-08-14 | Thermik (Nord) | 14–18 Uhr | 4 kn | 334° |
+| 2026-08-15 | Thermik (Nord) | 13–15 Uhr | 11 kn | 331° |
+| 2026-08-23 | Thermik (Nord) | 12–17 Uhr | 4.2 kn | 332° |
+| 2026-09-01 | Thermik (Nord) | 13–16 Uhr | 11.6 kn | 337° |
+| 2026-09-11 | Thermik (Nord) | 15–18 Uhr | 0 kn | –° |
+| 2026-09-12 | Thermik (Nord) | 13–17 Uhr | 4.1 kn | 335° |
+| 2026-09-19 | Thermik (Nord) | 14–16 Uhr | 2 kn | 337° |
+| 2026-09-22 | Thermik (Nord) | 13–18 Uhr | 7.9 kn | 330° |
