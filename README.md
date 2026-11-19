@@ -335,7 +335,7 @@ Seit 19.11.2026. Anlass: Lago di Santa Croce und Kochelsee standen fast immer gu
 
 Die Regel feuerte am Gardasee von April bis Oktober an fast jedem Tag (28–31 von 30/31), an Santa Croce an 40–70 % der Tage, auch im November (15 von 30 im November 2025, zuletzt 14. und 18.11.2026).
 
-**In der App** (seit 19.11.2026): In `ensemble_chance()` zählt ein Lauf, der nur über eine Regel-Windlage geht, mit `treffer` statt 1 (`regel_treffer()`); ohne `treffer` mit `REGEL_UNGEPRUEFT` = 0,4. Begründung: Über alle Stationen trafen die Regeln an 58 % der Regeltage mit 10 kn zu, an 30 % mit 14 kn; 0,4 liegt dazwischen, und eine ungeprüfte Regel allein macht so keinen Windtag (ab 50 %). Santa Croce mit 82 % im Ensemble zeigt also höchstens 33 %. Die Marke heißt dann „Regel (ungeprüft)“, der Tooltip nennt Station und Zahlen (`regel_titel()`). Das Fenster und die typische Stärke bleiben; der Walchensee nimmt weiter Marcos Chance.
+**In der App** (seit 19.11.2026; liegt im Branch `thermik-pruefen` und geht erst mit dem Merge nach `main` live): In `ensemble_chance()` zählt ein Lauf, der nur über eine Regel-Windlage geht, mit `treffer` statt 1 (`regel_treffer()`); ohne `treffer` mit `REGEL_UNGEPRUEFT` = 0,4. Begründung: Über alle Stationen trafen die Regeln an 58 % der Regeltage mit 10 kn zu, an 30 % mit 14 kn; 0,4 liegt dazwischen, und eine ungeprüfte Regel allein macht so keinen Windtag (ab 50 %). Santa Croce mit 82 % im Ensemble zeigt also höchstens 33 %. Die Marke heißt dann „Regel (ungeprüft)“, der Tooltip nennt Station und Zahlen (`regel_titel()`). Das Fenster und die typische Stärke bleiben; der Walchensee nimmt weiter Marcos Chance.
 
 **Grenzen:** Die Stationen stehen an Land, oft nicht am Spot (Segl-Maria am Silsersee, Altdorf im Reusstal, Achenkirch am Nordende, Bichl im Moor nördlich des Kochelsees). Historical Forecast heißt kurze Vorlaufzeit, die echte Chance für übermorgen ist unsicherer. Gemessen ist nur die Station, nicht, ob es am Spot fahrbar war.
 
@@ -503,4 +503,4 @@ server/web/vorrechnen.php  Bewertung vorab rechnen (nur mit Schlüssel)
 9. ~~Gezeiten~~ (verworfen 7.11.2026: entscheidet nicht „wohin“, sondern „wann“; das klärt eine Gezeitentabelle vor Ort. Stattdessen Wellen, siehe „Wellen“)
 10. ~~Spot-Infos~~ (erledigt, siehe „Spot-Infos“)
 11. Kalendereintrag (.ics) für ein gutes Fenster
-12. Rückblick mit Messwerten (Pioupiou offen; Holfuy, Windguru-Stationen: Lizenz klären)
+12. Rückblick mit Messwerten: für die Regel-Windlagen seit 19.11.2026 (siehe „Regel-Windlagen an Messstationen prüfen“, offene Netze GeoSphere, MeteoSchweiz, Südtirol, DWD). Offen: Pioupiou; Holfuy, Windguru-Stationen, MeteoKite: Lizenz klären
