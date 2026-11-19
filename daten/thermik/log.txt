@@ -23,9 +23,9 @@ Druck-Ensemble innsbruck
 Druck-Ensemble bozen
   ok
 Druck-Ensemble zuerich
+  https://ensemble-api.open-meteo.com/v1/ensemble?latitude=47.38&longitude=8.55&hourly=pressure_msl&models=ecmwf_ifs025&wind_speed_unit=kn&past_days=60&forecast_days=1&timezone=UTC: http=0 
   ok
 Druck-Ensemble lugano
-  https://ensemble-api.open-meteo.com/v1/ensemble?latitude=46&longitude=8.95&hourly=pressure_msl&models=ecmwf_ifs025&wind_speed_unit=kn&past_days=60&forecast_days=1&timezone=UTC: http=0 
   ok
 Druck-Ensemble brescia
   ok
@@ -41,7 +41,7 @@ Druck-Ensemble brescia
   Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 598 m
     9.4 km   630 m (+32)  dwd:19912  Bichl
    24.9 km   923 m (+325)  dwd:06103  Mittenwald/Obb.
-  Ensemble: 3 Tage, im Mittel 34 %
+  Ensemble: 3 Tage, im Mittel 14 %
   Messreihe dwd:19912 (Bichl)
     Werte von 2026-07-15 bis 2026-11-18
     18288 Werte, 127 Tage, Median 2.5 kn, 99 %: 10.3 kn
@@ -110,7 +110,7 @@ Druck-Ensemble brescia
 
 ## lago-santa-croce
   Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 381 m
-  Ensemble: 3 Tage, im Mittel 48 %
+  Ensemble: 3 Tage, im Mittel 19 %
 
 ## urnersee
   Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 434 m
@@ -127,7 +127,7 @@ Druck-Ensemble brescia
 
 # Regel-Windlagen gegen Messstationen
 
-Erzeugt von `tools/thermik_pruefen.php` (Action „Thermik prüfen“) am 19.11.2026 16:27 UTC. Zeitraum 2025-03-01 bis 2026-11-18.
+Erzeugt von `tools/thermik_pruefen.php` (Action „Thermik prüfen“) am 19.11.2026 16:46 UTC. Zeitraum 2025-03-01 bis 2026-11-18.
 
 - **Regel geht**: `region_bewerten()` der App mit den Modellen von damals (Open-Meteo Historical Forecast, kurze Vorlaufzeit, ohne Ensemble), Sportart Kite Twintip (ab 14 kn). Zählt auch Tage, an denen eine normale Windlage mit Modellwind geht.
 - **Gemessen geht**: mindestens 2 Stunden am Stück im Tagesfenster ein Stundenmittel ab 14 kn aus einem Sektor der Windlagen; „schwach“ = ab 10 kn. Stationen an Land messen oft weniger als auf dem Wasser.
@@ -151,13 +151,26 @@ Chance = Anteil der 51 ECMWF-Läufe, an denen der Tag geht (wie die Kacheln). Ge
 | Region | Tage | Chance im Mittel | Tage ab 50 % | davon mit Messung | davon gemessen ab 14 kn | Tage gemessen ab 14 kn |
 |---|---|---|---|---|---|---|
 | Walchensee | 3 | 0 % | 0 | 0 | – | – |
-| Kochelsee | 3 | 34 % | 1 | 1 | 0 % | 0 von 3 |
+| Kochelsee | 3 | 14 % | 0 | 0 | – | 0 von 3 |
 | Achensee | 3 | 0 % | 0 | 0 | – | 0 von 3 |
 | Reschensee | 3 | 0 % | 0 | 0 | – | 0 von 3 |
 | Silvaplana | 3 | 0 % | 0 | 0 | – | 0 von 3 |
 | Gardasee Nord | 3 | 0 % | 0 | 0 | – | – |
-| Lago di Santa Croce | 3 | 48 % | 2 | 0 | – | – |
+| Lago di Santa Croce | 3 | 19 % | 0 | 0 | – | – |
 | Urnersee | 3 | 0 % | 0 | 0 | – | 0 von 3 |
+
+### Trefferquote je Regel-Windlage (Vorschlag für `treffer` im Katalog)
+
+Treffer = gemessen ab 10 kn (Landstationen messen weniger als auf dem Wasser). Vorschlag = (Treffer + 0.4 × 10) / (Tage + 10): kleine Stichproben rücken zu 0.4.
+
+| Region | Windlage | Regeltage mit Messung | ab 10 kn | ab 14 kn | Vorschlag |
+|---|---|---|---|---|---|
+| Kochelsee | Föhn (Süd) | 1 | 0 | 0 | 0.36 |
+| Achensee | Thermik (Nord) | 33 | 1 | 0 | 0.12 |
+| Reschensee | Nordföhn | 146 | 132 | 96 | 0.87 |
+| Reschensee | Südwind (Talwind) | 42 | 3 | 0 | 0.13 |
+| Silvaplana | Malojawind | 46 | 37 | 6 | 0.73 |
+| Urnersee | Thermik (Nord) | 76 | 25 | 1 | 0.34 |
 
 ## Walchensee (`walchensee`)
 
@@ -186,13 +199,11 @@ Kandidaten (Umkreis 25 km):
 | 2026-10 | 31 | 0 | – | 0 |
 | 2026-11 | 18 | 1 | 0 % | 0 |
 
-Ensemble ab 50 % (letzte 60 Tage): 11-17 (100 %, gemessen 5.6 kn)
-
 Letzte Tage, an denen die Regel „geht“ sagte:
 
 | Tag | Windlage | Fenster | Ensemble | gemessen (bester 2-h-Block) | Richtung |
 |---|---|---|---|---|---|
-| 2026-11-17 | Föhn (Süd) | 8–10 Uhr | 100 % | 5.6 kn | 218° |
+| 2026-11-17 | Föhn (Süd) | 8–10 Uhr | 40 % | 5.6 kn | 218° |
 
 ## Achensee (`achensee`)
 
@@ -380,8 +391,6 @@ Modelle: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd; Hö
 Kandidaten (Umkreis 25 km):
 
 - keine in den offenen Netzen
-
-Ensemble ab 50 % (letzte 60 Tage): 11-16 (63 %), 11-18 (82 %)
 
 ## Urnersee (`urnersee`)
 
