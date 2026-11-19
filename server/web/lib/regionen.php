@@ -36,6 +36,10 @@
  *   wetter         "sonnig" (mittlere Bewoelkung hoechstens 50 %)
  *   zeit           [ab, bis) Ortsstunden, saison [von, bis] Monate (1-12)
  *   staerke        [von, bis] kn: typische Staerke, wenn die Lage zutrifft (Pflicht)
+ *   treffer        0-1, optional (seit 19.11.2026): Anteil der Regeltage, an denen eine
+ *                  Messstation den Wind bestaetigte (tools/thermik_pruefen.php); die
+ *                  Chance zaehlt die Lage nur so oft. Ohne: REGEL_UNGEPRUEFT (0,4)
+ *   pruefung       Text zu treffer: Station, Zeitraum, Zahlen (Tooltip)
  * Oberste Ebene: druckpunkte {id: {name, punkt}}.
  */
 
@@ -250,8 +254,14 @@ function windlagen_pruefen($wl, array $druckpunkte = []): array
                 && is_numeric($w['staerke'][0]) && is_numeric($w['staerke'][1]) && $w['staerke'][0] <= $w['staerke'][1])) {
             $f[] = "$n: Regel-Windlage braucht staerke [von, bis] in kn";
         }
-        if (!$regel && (isset($w['staerke']) || isset($w['wetter']) || isset($w['zeit']) || isset($w['saison']))) {
-            $f[] = "$n: staerke, wetter, zeit und saison gibt es nur bei Regel-Windlagen (mit druck oder grundstroemung)";
+        if (!$regel && (isset($w['staerke']) || isset($w['wetter']) || isset($w['zeit']) || isset($w['saison']) || isset($w['treffer']))) {
+            $f[] = "$n: staerke, wetter, zeit, saison und treffer gibt es nur bei Regel-Windlagen (mit druck oder grundstroemung)";
+        }
+        if (isset($w['treffer']) && !(is_numeric($w['treffer']) && $w['treffer'] >= 0 && $w['treffer'] <= 1)) {
+            $f[] = "$n: treffer muss eine Zahl von 0 bis 1 sein";
+        }
+        if (isset($w['pruefung']) && (!is_string($w['pruefung']) || !isset($w['treffer']))) {
+            $f[] = "$n: pruefung ist ein Text und gehoert zu treffer";
         }
     }
     return $f;

@@ -37,6 +37,8 @@ const TP_WAHL_DH = 250;         // und hoechstens so viele Meter ueber/unter dem
 const TP_SPORT = 'kite_twintip';
 const TP_SCHWACH_KN = 10;       // zweite, weichere Schwelle (Stationen an Land messen oft weniger)
 const TP_PAUSE_S = 25;          // zwischen Open-Meteo-Abrufen (Minutenlimit, grosse Abrufe zaehlen mehrfach)
+const TP_VORWISSEN = 0.4;       // Trefferquote ohne Messung (REGEL_UNGEPRUEFT in bewertung.php)
+const TP_VORWISSEN_TAGE = 10;   // so viele Tage zaehlt das Vorwissen (kleine Stichproben ruecken zur Mitte)
 const TP_MIN_TAGE = 45;         // Station zaehlt ab so vielen Tagen mit Messwerten (manche sind neu)
 const TP_ENS = 'https://ensemble-api.open-meteo.com/v1/ensemble';
 const TP_ENS_TAGE = 60;         // Ensemble wie in der App: die letzten Tage (past_days)
@@ -670,6 +672,26 @@ foreach ($bericht as $id => $b) {
     $e = $b['ez'];
     $md .= "| {$b['region']['name']} | {$e['tage']} | " . ($e['tage'] ? round(100 * $e['summe'] / $e['tage']) . ' %' : '–') . " | {$e['ab50']} | {$e['ab50_mit']} | "
          . tp_pct($e['ab50_gem'], $e['ab50_mit']) . " | " . ($e['mit'] ? "{$e['gem_ja']} von {$e['mit']}" : '–') . " |\n";
+}
+$md .= "\n### Trefferquote je Regel-Windlage (Vorschlag für `treffer` im Katalog)\n\n";
+$md .= "Treffer = gemessen ab " . TP_SCHWACH_KN . " kn (Landstationen messen weniger als auf dem Wasser). Vorschlag = (Treffer + " . TP_VORWISSEN . " × " . TP_VORWISSEN_TAGE . ") / (Tage + " . TP_VORWISSEN_TAGE . "): kleine Stichproben rücken zu " . TP_VORWISSEN . ".\n\n";
+$md .= "| Region | Windlage | Regeltage mit Messung | ab " . TP_SCHWACH_KN . " kn | ab {$sport['min']} kn | Vorschlag |\n|---|---|---|---|---|---|\n";
+foreach ($json as $id => $j) {
+    $c = [];
+    foreach ($j['tage'] as $t) {
+        $g = $t['gemessen'];
+        if (!$t['geht'] || $g === null || $g['abdeckung'] < 0.6 || $t['sperre']) {
+            continue;
+        }
+        $c[$t['windlage']] ??= [0, 0, 0];
+        $c[$t['windlage']][0]++;
+        $c[$t['windlage']][1] += (int)($g['stunden_ab'][TP_SCHWACH_KN] >= MIN_STUNDEN);
+        $c[$t['windlage']][2] += (int)($g['stunden_ab'][(int)$sport['min']] >= MIN_STUNDEN);
+    }
+    foreach ($c as $lage => [$n, $a, $b]) {
+        $v = ($a + TP_VORWISSEN * TP_VORWISSEN_TAGE) / ($n + TP_VORWISSEN_TAGE);
+        $md .= "| {$bericht[$id]['region']['name']} | $lage | $n | $a | $b | " . number_format($v, 2) . " |\n";
+    }
 }
 foreach ($bericht as $id => $b) {
     $md .= "\n## {$b['region']['name']} (`$id`)\n\n";

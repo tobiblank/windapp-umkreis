@@ -401,7 +401,7 @@ function wind_kennzahlen(array $b, array $sport): string
                        'Kalibriert (Messwerte), Mittel ' . $kf[0] . '–' . $kf[1] . ' Uhr' . ($boe !== null ? '; Böen aus dem Modell' : ''));
         }
     } elseif ($det['geht'] && !empty($det['regel'])) {
-        $k[] = $kz('wind', 'Wind', h(zahl((float)$det['staerke'][0]) . '–' . zahl((float)$det['staerke'][1])) . '<small> kn</small>', 'typisch (Regel)');
+        $k[] = $kz('wind', 'Wind', h(zahl((float)$det['staerke'][0]) . '–' . zahl((float)$det['staerke'][1])) . '<small> kn</small>', isset($det['pruefung']) ? 'typisch (Regel)' : 'typisch (Regel, ungeprüft)', regel_titel($det));
     } elseif ($det['geht'] && empty($sport['surf'])) {
         $k[] = $kz('wind', 'Wind Ø', h(zahl($det['mittel_kn'])) . '<small> kn</small>', $det['boe_max'] !== null ? 'Böen bis ' . zahl($det['boe_max']) . ' kn' : $fen);
     } elseif (($b['temp']['kn'] ?? null) !== null) {
@@ -557,7 +557,7 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
 <p class="leise klein erklaerung">
   <b>Modelle:</b> <?= h(implode(', ', array_values($st['modelle'] ?? []))) ?>; Ensemble: 51 Läufe von ECMWF. <b>Windfenster</b> <?= h($sport['name']) ?>: <?= h($wind) ?>.
   <b>Fahrbar</b> heißt im Modellmittel: Wind im Fenster, Richtung passt, nicht ablandig, kein Gewitter, Welle passt. Hinterlegt: Tagesfenster. Zeiten in Ortszeit der Region.
-  Bei Regel-Windlagen rechnet die Bewertung mit einer typischen Stärke; die Linien zeigen trotzdem den Modellwind.
+  Bei Regel-Windlagen rechnet die Bewertung mit einer typischen Stärke; die Linien zeigen trotzdem den Modellwind. In der Chance zählt eine Regel nur so oft, wie sie an einer Messstation zutraf, ungeprüft nur zu 40 %.
 </p>
 <footer class="fuss klein leise">
   <p>Vorhersagen: <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0). Wassertemperatur der Seen: <a href="https://www.alplakes.eawag.ch/">Alplakes, Eawag</a> (CC BY 4.0). Rohwerte, nicht kalibriert.</p>

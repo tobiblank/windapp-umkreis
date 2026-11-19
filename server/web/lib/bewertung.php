@@ -41,6 +41,11 @@
  */
 
 const MIN_STUNDEN = 2;
+// Regel-Windlagen ohne Pruefung an einer Messstation zaehlen in der Chance nur zu 40 %
+// (seit 19.11.2026). Geprueft: Katalogfeld treffer (tools/thermik_pruefen.php).
+// An den Stationen trafen die Regeln 2025/26 an 58 % der Regeltage mit 10 kn zu, an 30 % mit 14 kn;
+// 40 % liegt dazwischen. Damit macht eine ungepruefte Regel allein keinen Windtag (ab 50 %).
+const REGEL_UNGEPRUEFT = 0.4;
 const FENSTER_AB = 9;          // Ortszeit, wie stegen-wind seit 22.10.2026
 const REST_VORLAUF_MIN = 30;   // heute: erst ab jetzt + 30 min (Anfahrt, Aufbau), wie stegen-wind
 
@@ -785,6 +790,26 @@ function regel_grund(array $r, array $w): ?string
     return null;
 }
 
+/**
+ * Trefferquote einer Regel-Windlage (0-1): Anteil der Regeltage, an denen die
+ * Messstation den Wind bestaetigte (Katalogfeld treffer, aus tools/thermik_pruefen.php),
+ * sonst REGEL_UNGEPRUEFT.
+ */
+function regel_treffer(array $lage): float
+{
+    return isset($lage['treffer']) ? (float)$lage['treffer'] : REGEL_UNGEPRUEFT;
+}
+
+/** Tooltip zu einer Regel-Windlage (Detailzeile, Stundenseite) */
+function regel_titel(array $det): string
+{
+    $t = 'Aus Druckdifferenz und/oder Grundströmung abgeleitet, nicht aus dem Modellwind am See. Die Stärke ist ein geschätzter typischer Wert. ';
+    if (isset($det['pruefung'])) {
+        return $t . 'Geprüft an der Messstation ' . $det['pruefung'] . '. Die Chance zählt diese Lage zu ' . round(100 * (float)$det['treffer']) . ' %.';
+    }
+    return $t . 'Noch an keiner Messstation geprüft; die Chance zählt diese Lage nur zu ' . round(100 * REGEL_UNGEPRUEFT) . ' %.';
+}
+
 /** Mitte eines Sektors (im Uhrzeigersinn von 'von' nach 'bis') */
 function sektor_mitte(array $s): float
 {
@@ -1002,6 +1027,8 @@ function tag_bewerten(array $stunden, array $fenster, array $sport, array $windl
         'grob'      => !empty($lage['grob']),
         'regel'     => !empty($lage['regel']),
         'staerke'   => !empty($lage['regel']) ? $lage['staerke'] : null,
+        'treffer'   => !empty($lage['regel']) ? regel_treffer($lage) : null,
+        'pruefung'  => !empty($lage['regel']) ? ($lage['pruefung'] ?? null) : null,
         'grund'     => null,
     ];
 }
@@ -1034,8 +1061,10 @@ function ensemble_chance(array $laeufe, string $tag, array $fenster, array $spor
             continue;
         }
         $n++;
-        if (tag_bewerten($st, $fenster, $sport, $windlagen, $spot, (int)substr($tag, 5, 2))['geht']) {
-            $ja++;
+        $t = tag_bewerten($st, $fenster, $sport, $windlagen, $spot, (int)substr($tag, 5, 2));
+        if ($t['geht']) {
+            // Regel-Windlage: nur so oft, wie sie an der Messstation zutraf (seit 19.11.2026)
+            $ja += !empty($t['regel']) ? $t['treffer'] : 1.0;
         }
     }
     return $n ? ['chance' => $ja / $n, 'laeufe' => $n] : null;

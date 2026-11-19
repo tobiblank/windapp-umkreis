@@ -1,5 +1,5 @@
 {
-  "stand": "2026-11-15",
+  "stand": "2026-11-19",
   "druckpunkte": {
     "bozen": {"name": "Bozen", "punkt": [46.5, 11.35]},
     "innsbruck": {"name": "Innsbruck", "punkt": [47.26, 11.39]},
@@ -385,7 +385,7 @@
         {"art": "tipp", "text": "Für Kiten, Windsurfen und Wingfoilen braucht es eine Lizenz, Auskunft im Welcome-Center Achensee", "quelle": "achensee.com"}
       ],
       "windlagen": [
-        {"name": "Thermik (Nord)", "sektor": [330, 30], "charakter": "Thermik, nachmittags", "druck": [{"plus": "bozen", "minus": "innsbruck", "max": 4}], "grundstroemung": {"hoehe": "10m", "kn_max": 8}, "wetter": "sonnig", "zeit": [12, 18], "saison": [4, 10], "staerke": [10, 18]},
+        {"name": "Thermik (Nord)", "sektor": [330, 30], "charakter": "Thermik, nachmittags", "druck": [{"plus": "bozen", "minus": "innsbruck", "max": 4}], "grundstroemung": {"hoehe": "10m", "kn_max": 8}, "wetter": "sonnig", "zeit": [12, 18], "saison": [4, 10], "staerke": [10, 18], "treffer": 0.12, "pruefung": "Achenkirch Campingplatz (GeoSphere, 6 km, misst erst seit 8/2026), 8–10/2026: an 1 von 33 Regeltagen ab 10 kn"},
         {"name": "Föhn (Süd)", "sektor": [150, 210], "charakter": "böig"}
       ],
       "spots": []
@@ -400,8 +400,8 @@
       "thermik": true,
       "hinweis": "Regeln nach kitewetter.at (Wind am Reschensee I/II, Föhndiagramm): Talwind aus Süd bei sonnigem Sommerwetter und Druckdifferenz Bozen − Innsbruck ab 0 hPa (besser über +2); unter −4 hPa heben sich Nord und Süd gegen Mittag auf. Nordföhn bei −4 bis −6 hPa oder stärker. Geschätzt (Claude): Stärken, Tageszeit 11–18 Uhr, Saison Mai–September für den Talwind. kitewetter nutzt DWD-Stationsdruck, hier Modell-Meeresspiegeldruck: Schwellen nicht 1:1 übertragbar. Punkt (Seemitte) geschätzt. Punkt am 11.11.2026 auf den See verschoben: der alte (46,82/10,525) lag laut Open-Meteo-Höhenmodell auf 1519 m, also am Ufer; neu 1487 m.",
       "windlagen": [
-        {"name": "Südwind (Talwind)", "sektor": [150, 210], "charakter": "Thermik", "druck": [{"plus": "bozen", "minus": "innsbruck", "min": 0}], "wetter": "sonnig", "zeit": [11, 18], "saison": [5, 9], "staerke": [14, 20]},
-        {"name": "Nordföhn", "sektor": [330, 30], "charakter": "böig", "druck": [{"plus": "bozen", "minus": "innsbruck", "max": -4}], "staerke": [16, 25]}
+        {"name": "Südwind (Talwind)", "sektor": [150, 210], "charakter": "Thermik", "druck": [{"plus": "bozen", "minus": "innsbruck", "min": 0}], "wetter": "sonnig", "zeit": [11, 18], "saison": [5, 9], "staerke": [14, 20], "treffer": 0.13, "pruefung": "St. Valentin a.d. Haide (Landeswetterdienst Südtirol, 4 km), 3/2025–11/2026: an 3 von 42 Regeltagen ab 10 kn, an 0 ab 14 kn"},
+        {"name": "Nordföhn", "sektor": [330, 30], "charakter": "böig", "druck": [{"plus": "bozen", "minus": "innsbruck", "max": -4}], "staerke": [16, 25], "treffer": 0.87, "pruefung": "St. Valentin a.d. Haide (Landeswetterdienst Südtirol, 4 km), 3/2025–11/2026: an 132 von 146 Regeltagen ab 10 kn, an 96 ab 14 kn"}
       ],
       "spots": []
     },
@@ -420,7 +420,7 @@
       "thermik": true,
       "hinweis": "Regel nach kitesailing.ch und unhooked: Kiten nur bei S bis SW; Malojawind bei gutem Wetter und SW-Grundströmung (unhooked: 4–10 kn, kräftige W–SW-Strömung stärkt laut kitesailing.ch, deshalb ohne Obergrenze); Nordströmung verhindert ihn; Druckdifferenz Lugano − Zürich ab −4 hPa schwächer, unter −6 selten. Geschätzt (Claude): Höhe der Grundströmung 700 hPa (unhooked nennt keine), Stärke, Tageszeit 12–18 Uhr, Saison Mai–Oktober (unhooked: Mitte Februar bis Ende Oktober, früh im Jahr oft noch Eis). Punkt (Seemitte) geschätzt. Punkt am 11.11.2026 auf den See verschoben: der alte (46,455/9,79) lag laut Open-Meteo-Höhenmodell auf 1880 m, also am Ufer; neu 1790 m = Seespiegel.",
       "windlagen": [
-        {"name": "Malojawind", "sektor": [180, 250], "charakter": "Thermik", "druck": [{"plus": "lugano", "minus": "zuerich", "min": -4}], "grundstroemung": {"hoehe": "700hPa", "sektor": [180, 290], "kn_min": 4}, "wetter": "sonnig", "zeit": [12, 18], "saison": [5, 10], "staerke": [15, 22]}
+        {"name": "Malojawind", "sektor": [180, 250], "charakter": "Thermik", "druck": [{"plus": "lugano", "minus": "zuerich", "min": -4}], "grundstroemung": {"hoehe": "700hPa", "sektor": [180, 290], "kn_min": 4}, "wetter": "sonnig", "zeit": [12, 18], "saison": [5, 10], "staerke": [15, 22], "treffer": 0.73, "pruefung": "Segl-Maria (MeteoSchweiz, 2 km), 3/2025–11/2026: an 37 von 46 Regeltagen ab 10 kn, an 6 ab 14 kn (die Station am Silsersee misst weniger als auf dem Silvaplanersee)"}
       ],
       "spots": [],
       "links": [
@@ -498,7 +498,7 @@
       "thermik": true,
       "hinweis": "Regel nach unhooked: Thermiktag, wenn um 14 Uhr 4–8 kn aus NW bis NO vorhergesagt sind (dort auf Windfinder bezogen, hier 10-m-Modellwind am Vorhersagepunkt). Südföhn eher für Windsurfer, noch nicht eingetragen. Kiten im November und Dezember verboten, nur in ausgewiesenen Zonen (unhooked, nicht aktuell geprüft). Geschätzt (Claude): Stärke, Tageszeit 12–18 Uhr, Saison Mai–September. Punkt (Seemitte) geschätzt.",
       "windlagen": [
-        {"name": "Thermik (Nord)", "sektor": [330, 30], "charakter": "Thermik", "grundstroemung": {"hoehe": "10m", "sektor": [315, 45], "kn_min": 4, "kn_max": 8}, "wetter": "sonnig", "zeit": [12, 18], "saison": [5, 9], "staerke": [12, 20]}
+        {"name": "Thermik (Nord)", "sektor": [330, 30], "charakter": "Thermik", "grundstroemung": {"hoehe": "10m", "sektor": [315, 45], "kn_min": 4, "kn_max": 8}, "wetter": "sonnig", "zeit": [12, 18], "saison": [5, 9], "staerke": [12, 20], "treffer": 0.34, "pruefung": "Altdorf (MeteoSchweiz, 5 km), 3/2025–11/2026: an 25 von 76 Regeltagen ab 10 kn, an 1 ab 14 kn"}
       ],
       "spots": []
     },

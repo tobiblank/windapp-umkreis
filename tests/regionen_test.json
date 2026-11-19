@@ -157,7 +157,9 @@
           "staerke": [
             16,
             22
-          ]
+          ],
+          "treffer": 1.0,
+          "pruefung": "Teststation"
         }
       ],
       "spots": []
@@ -194,7 +196,9 @@
           "staerke": [
             14,
             20
-          ]
+          ],
+          "treffer": 1.0,
+          "pruefung": "Teststation"
         }
       ],
       "spots": []

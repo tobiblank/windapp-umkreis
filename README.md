@@ -33,7 +33,7 @@ Die Vorhersage kommt **einmal pro Region** (ein Vorhersagepunkt). Bewertet wird 
 | Hosting | Hetzner Webhosting, seit 7.11.2026 unter **wohinfahrma.de** (Ordner `public_html/wohinfahrma`, Let's Encrypt); wohinfahrma.dablank.de und www leiten dauerhaft um (`server/web/.htaccess`). Deploy per GitHub Action. Tarif Webhosting S: 2 PHP-Prozesse, `memory_limit` seit 8.11.2026 192M (Maximum des Tarifs, vorher 128M), PHP 8.4 (vorher 8.3); die Actions testen mit derselben Version |
 | Web-App zum Installieren | 7.11.2026: `manifest.php` (Name Wohinfahrma, unter dem Symbol „Fahrma“), `sw.js` und `offline.html` nach stegen-wind (nur Offline-Seite, nichts zwischengespeichert), Symbol als Platzhalter (`icon.svg`, PNG 192/512/180). Erst nach dem Umzug auf wohinfahrma.de auf dem Handy installieren. Hinweis „Als App installieren“ beim ersten Besuch (Chrome/Edge/Android mit Knopf, iPhone als Text), nach „Nicht jetzt“ 30 Tage Ruhe |
 | Quellen für Regionen | 7.11.2026 gesichtet, siehe „Quellen für Regionen und Spots“ |
-| Regel-Windlagen | 7.11.2026: Druckdifferenzen und Grundströmung statt Modellwind für Thermik- und Föhnlagen; Reschensee, Silvaplana, Gardasee Nord, Urnersee. 10.11.2026 dazu Walchensee, Achensee, Lago di Santa Croce und Föhn am Kochelsee (mit `fenster_ab` 6, weil er meist nur bis etwa 9 Uhr weht), dazu `fenster_ab` 6 für den Pelèr am Gardasee; Zeller See bewusst ohne (keine Quelle). Stärken, Tageszeiten und Saison geschätzt, siehe „Regel-Windlagen“ |
+| Regel-Windlagen | 7.11.2026: Druckdifferenzen und Grundströmung statt Modellwind für Thermik- und Föhnlagen; Reschensee, Silvaplana, Gardasee Nord, Urnersee. 10.11.2026 dazu Walchensee, Achensee, Lago di Santa Croce und Föhn am Kochelsee (mit `fenster_ab` 6, weil er meist nur bis etwa 9 Uhr weht), dazu `fenster_ab` 6 für den Pelèr am Gardasee; Zeller See bewusst ohne (keine Quelle). Stärken, Tageszeiten und Saison geschätzt, siehe „Regel-Windlagen“. Seit 19.11.2026 an Messstationen geprüft (Wunsch Tobias: Santa Croce und Kochelsee standen fast immer gut, am Kochelsee war nichts): die Chance zählt eine Regel nur so oft, wie sie an der Station zutraf, ungeprüft zu 40 %; siehe „Regel-Windlagen an Messstationen prüfen“ |
 | Verlauf über die Abrufe | 7.11.2026: dieselbe Chance aus bis zu drei früheren Abrufen, Pfeil in der Kachel und „stabil / steigt / fällt / schwankt“ in der Detailzeile, mit Zwischenspeicher; siehe „Verlauf über die Abrufe“ |
 | Landkarte | 7.11.2026: Regionen als Punkte über der Rangliste, eingefärbt nach der Chance am gewählten Tag, mit Umkreis; eigene SVG-Grundlage aus Natural Earth, keine fremden Server; siehe „Landkarte“ |
 | Fahrzeit und Abfahrt | 7.11.2026: Fahrzeit ab Inning laut openrouteservice (GitHub Action `fahrzeiten.yml`, braucht Secret `ORS_API_KEY`), sonst aus der Luftlinie geschätzt; „Abfahrt bis …“ an guten Tagen; Sortierung „Fahrzeit“; Umkreis nach Straßen-km. Echter ORS-Lauf am 7.11.2026: 40 von 40 Zielen; siehe „Fahrzeit und Abfahrt“ |
@@ -295,6 +295,8 @@ Seit 7.11.2026, nach dem Vorbild lokaler Vorhersageseiten (kitewetter.at, kitesa
 | `zeit` | Ortsstunden [ab, bis), in denen die Windlage weht |
 | `saison` | Monate [von, bis], auch über den Jahreswechsel |
 | `staerke` | **Pflicht:** typische Stärke in kn, wenn die Lage zutrifft |
+| `treffer` | optional, 0–1 (seit 19.11.2026): Anteil der Regeltage, an denen eine Messstation den Wind bestätigte; die Chance zählt die Lage nur so oft. Ohne: `REGEL_UNGEPRUEFT` (0,4). Vorschlag aus der Action „Thermik prüfen“ |
+| `pruefung` | Text zu `treffer`: Station, Zeitraum, Zahlen; erscheint im Tooltip von „Regel“ |
 
 Sind alle Bedingungen einer Stunde erfüllt, rechnet die Bewertung mit der Mitte von `staerke` und der Mitte des `sektor` und prüft dann wie sonst Windfenster der Sportart, ablandig und Gewitter. Böen gibt es dafür keine. Das Ensemble prüft jeden der 51 Läufe mit seinen eigenen Druck- und Höhenwerten; die Chance ist der Anteil der Läufe, an denen die Regel trägt. Die Seite zeigt solche Tage mit „typisch 15–22 kn“ und dem Hinweis **Regel**.
 
@@ -307,6 +309,37 @@ Sind alle Bedingungen einer Stunde erfüllt, rechnet die Bewertung mit der Mitte
 - Seit 10.11.2026 (Walchensee, Achensee, Santa Croce) steht „leichte Grundströmung“ bzw. „Hochdruck“ aus den Quellen als 10-m-Modellwind am Vorhersagepunkt höchstens 8 kn (wie beim Urnersee). Das ist ein Ersatz: Zeigt das Modell die Thermik selbst schon stärker, fällt der Tag fälschlich heraus. Föhn als Bozen − Innsbruck über 4 hPa ist für die Seen nördlich des Inntals nur angenähert.
 - Meer-Regionen mit Thermik (Talamone, Algarve West) und der Ebro-Stausee bleiben bei normalen Windlagen: Seewind erfassen die Modelle besser, und die alpinen Druckachsen passen dort nicht.
 - Bora (Maribor − Triest) und Bise (Genf − Güttingen) bleiben normale Windlagen, weil die Modelle diese großräumigen Winde gut erfassen.
+
+## Regel-Windlagen an Messstationen prüfen
+
+Seit 19.11.2026. Anlass: Lago di Santa Croce und Kochelsee standen fast immer gut, am Kochelsee war beim Nachsehen nichts. Ursache im Code: Die Thermik-Regeln (Santa Croce, Walchensee, Achensee) prüfen nur „sonnig, schwacher Modellwind am See, Saison, Uhrzeit“ und setzen dann eine typische Stärke ein; jeder ruhige Sonnentag gilt als Thermiktag. Die Föhn-Regel am Kochelsee hängt nur an Bozen − Innsbruck ≥ 4 hPa (Modell-Meeresspiegeldruck).
+
+**Action „Thermik prüfen“** (`tools/thermik_pruefen.php`, `.github/workflows/thermik-pruefen.yml`; läuft bei Änderungen am Skript und von Hand, Eingaben `von`, `bis`, `nur`). Legt `daten/thermik/pruefung.md` (Bericht), `pruefung.json` (Tageswerte) und `log.txt` in den Branch; ändert nichts auf dem Server.
+
+1. **Stationen:** alle Windstationen der offenen Netze im Umkreis von 25 km: GeoSphere TAWES (`FF`, `DD`, m/s), MeteoSchweiz SwissMetNet (`fkl010z0`, `dkl010z0`, m/s; Dateien `_t_historical_2020-2029` und `_t_recent`), Landeswetterdienst Südtirol (`WG`, `WR`, m/s), DWD 10-Minuten-Wind (`recent`, `FF_10`, `DD_10`). Gewählt wird automatisch die beste bis 12 km und ±250 m zum See mit mindestens 45 Tagen Werten; `TP_FEST` im Skript erzwingt eine andere. Für die italienischen Seen außerhalb Südtirols (Gardasee, Santa Croce) ist keine offene Quelle bekannt.
+2. **Regel damals:** `region_bewerten()` der App mit den Modellen des Sammlers aus der Historical Forecast API von Open-Meteo (aneinandergereihte kurze Vorhersagen, also eher zu gut für übermorgen), ohne Ensemble, Kite Twintip (ab 14 kn), ab 1.3.2025. Dazu die Ensemble-Chance wie in der App; die Ensemble-API liefert rückwirkend nur rund 3 Tage.
+3. **Gemessen:** Stundenmittel der Station; ein Tag geht, wenn mindestens 2 Stunden am Stück im Tagesfenster ab 14 kn (bzw. „schwach“ ab 10 kn) aus einem Sektor der Windlagen kommen. Nur Tage mit Werten für mindestens 60 % des Fensters.
+4. **Vorschlag für `treffer`:** (Treffer ab 10 kn + 0,4 × 10) / (Regeltage + 10). Landstationen messen weniger als auf dem Wasser, deshalb 10 kn; kleine Stichproben rücken zu 0,4.
+
+**Ergebnis 19.11.2026** (1.3.2025–18.11.2026):
+
+| Region, Windlage | Station | Regeltage | gemessen ab 10 / 14 kn | `treffer` |
+|---|---|---|---|---|
+| Reschensee, Nordföhn | St. Valentin a.d. Haide (Südtirol, 4 km) | 146 | 132 / 96 | 0,87 |
+| Reschensee, Südwind (Talwind) | dieselbe | 42 | 3 / 0 | 0,13 |
+| Silvaplana, Malojawind | Segl-Maria (MeteoSchweiz, 2 km) | 46 | 37 / 6 | 0,73 |
+| Urnersee, Thermik (Nord) | Altdorf (MeteoSchweiz, 5 km) | 76 | 25 / 1 | 0,34 |
+| Achensee, Thermik (Nord) | Achenkirch Campingplatz (GeoSphere, 6 km, misst erst seit 19.8.2026) | 33 | 1 / 0 | 0,12 |
+| Kochelsee, Föhn | Bichl (DWD, 9 km, im Moor, misst erst seit 15.7.2026) | 1 (17.11.2026, Ensemble 100 %) | 0 / 0 (höchstens 5,6 kn) | – (zu wenig) |
+| Lago di Santa Croce, Gardasee Nord, Walchensee | keine offene Station (Walchensee: nächste DWD-Station Bichl 15 km) | – | – | – |
+
+Die Regel feuerte am Gardasee von April bis Oktober an fast jedem Tag (28–31 von 30/31), an Santa Croce an 40–70 % der Tage, auch im November (15 von 30 im November 2025, zuletzt 14. und 18.11.2026).
+
+**In der App** (seit 19.11.2026): In `ensemble_chance()` zählt ein Lauf, der nur über eine Regel-Windlage geht, mit `treffer` statt 1 (`regel_treffer()`); ohne `treffer` mit `REGEL_UNGEPRUEFT` = 0,4. Begründung: Über alle Stationen trafen die Regeln an 58 % der Regeltage mit 10 kn zu, an 30 % mit 14 kn; 0,4 liegt dazwischen, und eine ungeprüfte Regel allein macht so keinen Windtag (ab 50 %). Santa Croce mit 82 % im Ensemble zeigt also höchstens 33 %. Die Marke heißt dann „Regel (ungeprüft)“, der Tooltip nennt Station und Zahlen (`regel_titel()`). Das Fenster und die typische Stärke bleiben; der Walchensee nimmt weiter Marcos Chance.
+
+**Grenzen:** Die Stationen stehen an Land, oft nicht am Spot (Segl-Maria am Silsersee, Altdorf im Reusstal, Achenkirch am Nordende, Bichl im Moor nördlich des Kochelsees). Historical Forecast heißt kurze Vorlaufzeit, die echte Chance für übermorgen ist unsicherer. Gemessen ist nur die Station, nicht, ob es am Spot fahrbar war.
+
+**Wie weiter:** Nach jeder Saison neu laufen lassen und `treffer` übernehmen. Für Santa Croce und Kochelsee fehlen Messwerte: Station MeteoKite Santa Croce (auf kitewetter.at zu sehen) anfragen, für den Kochelsee eine Station am See suchen (Holfuy, Windguru, Surfschule) oder eigene Beobachtungen sammeln („War Wind?“ je Region und Tag, siehe Nächste Schritte).
 
 ## Abgleich mit echten Daten
 
@@ -438,6 +471,7 @@ server/web/stunden.php  Stundenansicht einer Region
 tests/                  Tests und Open-Meteo-Ersatz
 tools/karte_bauen.py    erzeugt server/web/karte.svg aus Natural Earth
 tools/vorrechnen.sh     ruft vorrechnen.php je Sportart auf (Actions)
+tools/thermik_pruefen.php  Regel-Windlagen gegen Messstationen (Action „Thermik prüfen“)
 server/web/vorrechnen.php  Bewertung vorab rechnen (nur mit Schlüssel)
 ```
 
@@ -450,7 +484,7 @@ server/web/vorrechnen.php  Bewertung vorab rechnen (nur mit Schlüssel)
 5. Zugang aus stegen-wind übernehmen, Wohnort und Sportarten je Person
 6. ~~Stegen: kalibrierte Chance aus ammerseewind.de~~ (11.11.2026, siehe „Fremde Prognosen“). Offen: Wing-Schwelle angleichen (hier 16 kn, ammerseewind.de 11 kn)?
 7. Mail-Benachrichtigung
-8. Regel-Windlagen nach dem ersten echten Lauf prüfen (Druckniveaus im Ensemble, plausible Tage); Stärken aus eigener Erfahrung eintragen
+8. Regel-Windlagen nach dem ersten echten Lauf prüfen (Druckniveaus im Ensemble, plausible Tage); Stärken aus eigener Erfahrung eintragen. Seit 19.11.2026 an Messstationen geprüft (siehe „Regel-Windlagen an Messstationen prüfen“); offen: Messwerte für Santa Croce, Kochelsee und Gardasee, die Regeln selbst schärfen (Santa Croce feuert an jedem ruhigen Sonnentag)
 9. ~~Google Search Console~~ (Impressum und Datenschutz am 11.11.2026 geprüft, eingereicht laut Tobias 11.11.2026)
 9a. Tokens setzen: `wohinfahrma_github_token` in der `config.php` von ammerseewind.de (Anstoß des Sammlers), `VORRECHNEN_SCHLUESSEL` als Secret und `vorrechnen_schluessel` in der `config.php` von Wohinfahrma
 10. Schnee-Modus nach dem ersten echten Lauf prüfen (siehe `SCHNEE.md`, „Beim ersten echten Lauf prüfen“); Mikroregion-IDs eintragen; Steiermark freigeben, sobald sie antwortet (Bayern seit 10.11.2026, Tirol, Salzburg, Kärnten, Lombardei seit 16.11.2026, Vorarlberg seit 17.11.2026)

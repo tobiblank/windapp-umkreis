@@ -329,6 +329,20 @@ pruefe($fr['det']['geht'] && $fr['det']['von'] === $sonnenAb && $fr['det']['bis'
 unset($frueh['fenster_ab']);
 $fr9 = region_bewerten($frueh, region_daten($frueh, $stand), $kite, [$morgen], new DateTimeImmutable('today 06:00', new DateTimeZone('Europe/Berlin')))[$morgen];
 pruefe(!$fr9['det']['geht'], 'ohne fenster_ab: dieselbe Morgenregel bleibt vor dem Fenster ab 9 Uhr (1 Stunde reicht nicht)');
+// Trefferquote (seit 19.11.2026): Regel zaehlt in der Chance nur so oft, wie sie an der Station zutraf
+$tq = $byId['testsee-druck']['region'];
+$tq['windlagen'][0]['treffer'] = 0.3;
+$tqE = region_bewerten($tq, region_daten($tq, $stand), $kite, [$morgen], new DateTimeImmutable('today 06:00', new DateTimeZone('Europe/Berlin')))[$morgen];
+pruefe($tqE['det']['geht'] && abs($tqE['ens']['chance'] - 0.3) < 1e-9 && abs($tqE['det']['treffer'] - 0.3) < 1e-9, 'treffer 0,3: alle Läufe mit Regel → Chance 30 %');
+unset($tq['windlagen'][0]['treffer'], $tq['windlagen'][0]['pruefung']);
+$tqU = region_bewerten($tq, region_daten($tq, $stand), $kite, [$morgen], new DateTimeImmutable('today 06:00', new DateTimeZone('Europe/Berlin')))[$morgen];
+pruefe(abs($tqU['ens']['chance'] - REGEL_UNGEPRUEFT) < 1e-9 && $tqU['det']['pruefung'] === null && str_contains(regel_titel($tqU['det']), 'keiner Messstation'),
+       'ohne treffer: ungeprüfte Regel zählt halb, Tooltip sagt es');
+pruefe(str_contains(regel_titel($td['det']), 'Teststation') && str_contains(regel_titel($td['det']), '100 %'), 'Tooltip nennt Station und Anteil');
+pruefe(windlagen_pruefen([['name' => 'N', 'sektor' => [0, 90], 'treffer' => 0.5]]) !== [], 'treffer nur bei Regel-Windlagen');
+pruefe(windlagen_pruefen([$tq['windlagen'][0] + ['treffer' => 1.2]]) !== [], 'treffer über 1 abgelehnt');
+pruefe(windlagen_pruefen([$tq['windlagen'][0] + ['pruefung' => 'x']]) !== [], 'pruefung ohne treffer abgelehnt');
+pruefe(windlagen_pruefen([$tq['windlagen'][0] + ['treffer' => 0.4, 'pruefung' => 'x']], ['a' => [], 'b' => []]) === [], 'treffer mit pruefung gültig');
 $td2 = $byId['testsee-druck']['tage'][$uebermorgen] ?? null;
 pruefe($td2 && !$td2['det']['geht'] && $td2['det']['grund'] === 'Druckdifferenz passt nicht' && abs($td2['ens']['chance']) < 1e-9,
        'Druckregel übermorgen: A−B < 0 → Druckdifferenz passt nicht, 0 %');
