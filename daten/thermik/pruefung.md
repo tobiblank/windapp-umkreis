@@ -1,6 +1,6 @@
 # Regel-Windlagen gegen Messstationen
 
-Erzeugt von `tools/thermik_pruefen.php` (Action „Thermik prüfen“) am 19.11.2026 16:46 UTC. Zeitraum 2025-03-01 bis 2026-11-18.
+Erzeugt von `tools/thermik_pruefen.php` (Action „Thermik prüfen“) am 19.11.2026 17:26 UTC. Zeitraum 2025-03-01 bis 2026-11-18.
 
 - **Regel geht**: `region_bewerten()` der App mit den Modellen von damals (Open-Meteo Historical Forecast, kurze Vorlaufzeit, ohne Ensemble), Sportart Kite Twintip (ab 14 kn). Zählt auch Tage, an denen eine normale Windlage mit Modellwind geht.
 - **Gemessen geht**: mindestens 2 Stunden am Stück im Tagesfenster ein Stundenmittel ab 14 kn aus einem Sektor der Windlagen; „schwach“ = ab 10 kn. Stationen an Land messen oft weniger als auf dem Wasser.

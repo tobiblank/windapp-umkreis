@@ -23,7 +23,6 @@ Druck-Ensemble innsbruck
 Druck-Ensemble bozen
   ok
 Druck-Ensemble zuerich
-  https://ensemble-api.open-meteo.com/v1/ensemble?latitude=47.38&longitude=8.55&hourly=pressure_msl&models=ecmwf_ifs025&wind_speed_unit=kn&past_days=60&forecast_days=1&timezone=UTC: http=0 
   ok
 Druck-Ensemble lugano
   ok
@@ -106,6 +105,7 @@ Druck-Ensemble brescia
 
 ## gardasee-nord
   Vorhersage: icon_d2,icon_eu,ecmwf_ifs,gfs_seamless,meteofrance_arome_france_hd, Hoehe am Punkt 65 m
+  https://ensemble-api.open-meteo.com/v1/ensemble?latitude=45.85&longitude=10.86&hourly=wind_speed_10m%2Cwind_direction_10m%2Ccloud_cover&models=ecmwf_ifs025&wind_speed_unit=kn&past_days=60&forecast_days=1&timezone=UTC: http=0 
   Ensemble: 3 Tage, im Mittel 0 %
 
 ## lago-santa-croce
@@ -127,7 +127,7 @@ Druck-Ensemble brescia
 
 # Regel-Windlagen gegen Messstationen
 
-Erzeugt von `tools/thermik_pruefen.php` (Action „Thermik prüfen“) am 19.11.2026 16:46 UTC. Zeitraum 2025-03-01 bis 2026-11-18.
+Erzeugt von `tools/thermik_pruefen.php` (Action „Thermik prüfen“) am 19.11.2026 17:26 UTC. Zeitraum 2025-03-01 bis 2026-11-18.
 
 - **Regel geht**: `region_bewerten()` der App mit den Modellen von damals (Open-Meteo Historical Forecast, kurze Vorlaufzeit, ohne Ensemble), Sportart Kite Twintip (ab 14 kn). Zählt auch Tage, an denen eine normale Windlage mit Modellwind geht.
 - **Gemessen geht**: mindestens 2 Stunden am Stück im Tagesfenster ein Stundenmittel ab 14 kn aus einem Sektor der Windlagen; „schwach“ = ab 10 kn. Stationen an Land messen oft weniger als auf dem Wasser.
