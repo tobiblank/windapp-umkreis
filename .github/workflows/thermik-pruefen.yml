@@ -1,0 +1,67 @@
+name: Thermik prüfen
+
+# Seit 19.11.2026: prueft die Regel-Windlagen (Thermik, Foehn) gegen Messstationen
+# (tools/thermik_pruefen.php): Modelle von damals aus der Historical Forecast API von
+# Open-Meteo, Wind von GeoSphere, MeteoSchweiz, Suedtirol und DWD. Legt den Bericht
+# daten/thermik/pruefung.md und die Tageswerte pruefung.json in den Branch, auf dem
+# die Action laeuft. Laeuft bei Aenderungen am Skript und von Hand. Aendert nichts
+# auf dem Server; ein Commit dieser Action stoesst kein Deploy an (GITHUB_TOKEN).
+
+on:
+  push:
+    paths:
+      - "tools/thermik_pruefen.php"
+      - ".github/workflows/thermik-pruefen.yml"
+  workflow_dispatch:
+    inputs:
+      von:
+        description: "Erster Tag (YYYY-MM-DD), leer = 2025-03-01"
+        default: ""
+      bis:
+        description: "Letzter Tag, leer = gestern"
+        default: ""
+      nur:
+        description: "Nur diese Regionen (Komma), leer = alle mit Regel-Windlage"
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: thermik-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: curl, zip, mbstring
+          coverage: none
+
+      - name: Prüfen
+        # Log mit in den Branch, damit man es ohne Anmeldung bei GitHub lesen kann
+        run: |
+          set -o pipefail
+          mkdir -p daten/thermik
+          php tools/thermik_pruefen.php daten/regionen.json daten/thermik "${{ inputs.von }}" "${{ inputs.bis }}" "${{ inputs.nur }}" 2>&1 | tee daten/thermik/log.txt
+
+      - name: In den Branch legen
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          [ -d daten/thermik ] || exit 0
+          git add daten/thermik
+          if git diff --cached --quiet; then
+            echo "Bericht unveraendert."
+            exit 0
+          fi
+          git commit -m "Thermik-Prüfung (Action Thermik prüfen)"
+          git pull --rebase
+          git push
