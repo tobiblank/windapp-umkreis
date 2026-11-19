@@ -125,7 +125,7 @@ Je Region und Tag:
 - **Rangliste** (seit 9.11.2026): bester Pulvertag im Zeitraum (`pulver_max`), dann Neuschnee im Zeitraum (Summe je Tag), dann näher. 30 cm bei Sonne vor 12 cm bei Sonne, beide vor 40 cm im Nebel. Vorher zählte die Anzahl passender Tage. Ein einzelner Tag: Pulver, dann Neuschnee 72 h, dann 24 h. Die Karte (Rang der Punkte, Ziel beim Antippen) und die Stundenseite (Tag ohne Auswahl) nehmen ebenfalls den besten Pulvertag.
 - **Priorität** (seit 10.11.2026, Parameter `prio`, `SCHNEE_PRIOS`): `pulver` = Rangliste wie oben (Standard). `neu` = Neuschnee in Stufen (`SCHNEE_NEU_STUFEN`: ab 5, 15, 30 cm), innerhalb einer Stufe die Sonne (alle Tage: Zahl der schönen Tage; ein Tag: sonnig vor teils sonnig vor bewölkt), dann die cm. Stufen, weil sonst bei 17 gegen 18 cm fast immer nur der erste Wert entschiede. `km` = Fahrzeit. Die Lawinenstufe geht in keine Priorität ein. Profile mit Schneehöhe sind bewusst noch nicht dabei: Gemessen wird nur in einem Teil der Regionen, sonst nur Modellwerte.
 
-Abgerufen wird auf **Tourhöhe** (`elevation` je Ort) und mit `past_days=3`. Modelle: `icon_d2,icon_eu,ecmwf_ifs,gfs_seamless` (`schnee_modelle` in `config.php` nur für den Cronjob).
+Abgerufen wird auf **Tourhöhe** (`elevation` je Ort) und mit `past_days=3`. Die Tourhöhe ist die Bezugshöhe für alle Schneewerte und Temperaturen, etwa der obere Teil typischer Touren, nicht der Startpunkt. Seit 19.11.2026 steht in Kachel und Stundenseite deshalb „Werte auf 1.500 m“ statt „Tour ab 1.500 m“ (Hinweis Tobias: bei Lenggries, Spitzing und Achensee las es sich, als ginge die Tour erst dort los). Modelle: `icon_d2,icon_eu,ecmwf_ifs,gfs_seamless` (`schnee_modelle` in `config.php` nur für den Cronjob).
 
 ## Lawinenlage
 
