@@ -80,7 +80,7 @@ function abruf(string $url, int $timeout, string $wo, array &$bericht): array
 /** Nur fuer die Tests: Open-Meteo und Alplakes durch einen lokalen Ersatz tauschen */
 function test_url(string $url, ?string $ersatz): string
 {
-    return $ersatz ? preg_replace('#^https://(?:[a-z-]+\.open-meteo\.com|alplakes-api\.eawag\.ch|aws\.slf\.ch|static\.avalanche\.report|static\.lawinen-warnung\.eu|wiski\.tirol\.gv\.at|dataset\.api\.hub\.geosphere\.at|data\.geo\.admin\.ch|geoservices\.buergernetz\.bz\.it)#', $ersatz, $url) : $url;
+    return $ersatz ? preg_replace('#^https://(?:[a-z-]+\.open-meteo\.com|alplakes-api\.eawag\.ch|aws\.slf\.ch|static\.avalanche\.report|static\.lawinen-warnung\.eu|wiski\.tirol\.gv\.at|dataset\.api\.hub\.geosphere\.at|data\.geo\.admin\.ch|geoservices\.buergernetz\.bz\.it|measurement-api\.slf\.ch|kitepredictionlagodigarda\.onrender\.com)#', $ersatz, $url) : $url;
 }
 
 /**
@@ -147,6 +147,8 @@ function stationen_abrufen(string $netz, array $info, array $ids, ?string $ersat
     $url = $info['abruf'];
     if ($art === 'snowgrid') {
         $url = snowgrid_url($info, $ids, time());
+    } elseif ($art === 'slf-imis') {
+        $url .= (str_contains($url, '?') ? '&' : '?') . 'period_in_days=3';
     } elseif ($art === 'geosphere') {
         $url .= '?' . http_build_query(['parameters' => 'SCHNEE', 'station_ids' => implode(',', $ids),
                     'start' => gmdate('Y-m-d\TH:i', time() - STATION_STUNDEN_ZURUECK * 3600), 'end' => gmdate('Y-m-d\TH:i')]);
@@ -161,6 +163,15 @@ function stationen_abrufen(string $netz, array $info, array $ids, ?string $ersat
         } else {
             $fehlen = array_diff($ids, array_keys($st));
             $bericht[] = sprintf('stationen/%s: ok, %d von %d Punkten mit Wert, %d KB, %d ms', $netz, count($st), count($ids), $r['bytes'] / 1024, $r['ms'])
+                       . ($fehlen ? ' (ohne Wert: ' . implode(', ', $fehlen) . ')' : '');
+        }
+    } elseif ($r['http'] >= 200 && $r['http'] < 300 && $art === 'slf-imis') {
+        $st = slf_imis_lesen($r['body'], $ids, $info['stationen'] ?? []);
+        if ($st === null) {
+            $fehler = 'Antwort ist keine IMIS-Liste (station_code, measure_date, HS, HN_1D): ' . substr(preg_replace('/\s+/', ' ', $r['body']), 0, 150);
+        } else {
+            $fehlen = array_diff($ids, array_keys($st));
+            $bericht[] = sprintf('stationen/%s: ok, %d von %d Stationen mit Schneehöhe, %d KB, %d ms', $netz, count($st), count($ids), $r['bytes'] / 1024, $r['ms'])
                        . ($fehlen ? ' (ohne Wert: ' . implode(', ', $fehlen) . ')' : '');
         }
     } elseif ($r['http'] >= 200 && $r['http'] < 300 && $art === 'geosphere') {
@@ -287,7 +298,7 @@ function server_zeilen_merken(string $dataDir, string $quelle, string $feld, arr
  * Versuch, der naechste kommt beim naechsten Anstoss nach dem Mindestabstand.
  * Rueckgabe ['lawine' => 'ok'|'fehler'|'zu frueh'|..., 'stationen' => ..., 'bericht' => [...]]
  */
-function server_abruf(string $dataDir, array $schnee, ?string $ersatz = null, ?int $jetzt = null): array
+function server_abruf(string $dataDir, array $schnee, ?string $ersatz = null, ?int $jetzt = null, array $regionen = []): array
 {
     $jetzt ??= time();
     $t0 = microtime(true);
@@ -340,6 +351,11 @@ function server_abruf(string $dataDir, array $schnee, ?string $ersatz = null, ?i
         $zeilen = [];
         $fehler = 0;
         foreach ($netze as $netz => $info) {
+            // Netze mit abruf_stunden_utc (SLF IMIS: ein- bis zweimal am Tag) nur im Zeitfenster
+            $nz = $state['netze'][$netz] ?? [];
+            if (!stationen_netz_faellig($info, $nz['gut'] ?? null, $nz['versuch'] ?? null, $jetzt)) {
+                continue;
+            }
             if ($zeitUm()) {
                 $bericht[] = "stationen/$netz: uebersprungen (Zeit)";
                 $fehler++;
@@ -351,10 +367,24 @@ function server_abruf(string $dataDir, array $schnee, ?string $ersatz = null, ?i
             if ($f !== null) {
                 $bericht[] = "stationen/$netz: FEHLER $f";
             }
+            if (!empty($info['abruf_stunden_utc'])) {
+                $state['netze'][$netz]['versuch'] = $jetzt;
+                if ($f === null) {
+                    $state['netze'][$netz]['gut'] = $jetzt;
+                }
+            }
         }
         $state['stationen'] = $jetzt;
         $out['stationen'] = !server_zeilen_merken($dataDir, 'stationen', 'netz', $zeilen) ? 'Schreiben fehlgeschlagen'
                           : ($fehler ? "$fehler von " . count($netze) . ' Messnetzen fehlgeschlagen' : 'ok');
+    }
+
+    // Fremde Prognosen, die der Server selbst holt (seit 23.11.2026: Gardasee), nach dem
+    // Zeitplan des Anbieters; ausserhalb des Zeitbudgets, weil der Dienst erst aufwachen muss
+    foreach ($regionen as $r) {
+        if (($r['fremdprognose']['format'] ?? '') === 'garda') {
+            $out['fremd/' . $r['id']] = fremd_abrufen($dataDir, $r, $ersatz, $jetzt, $state, $bericht);
+        }
     }
 
     @mkdir("$dataDir/.state", 0700, true);
@@ -362,4 +392,70 @@ function server_abruf(string $dataDir, array $schnee, ?string $ersatz = null, ?i
     $out['ms'] = (int)round((microtime(true) - $t0) * 1000);
     $out['bericht'] = $bericht;
     return $out;
+}
+
+// ===================================================================
+// FREMDE PROGNOSE GARDASEE (seit 23.11.2026)
+// ===================================================================
+
+const GARDA_RECHNET = [6, 12, 22];   // Uhr (Europe/Berlin): so rechnet Marcos Gardasee-Vorhersage neu
+const GARDA_VERSATZ_MIN = 10;        // kurz danach abholen
+const GARDA_WIEDERHOLEN_MIN = 60;    // nach einem Fehlversuch fruehestens wieder
+const GARDA_TIMEOUT_S = 60;          // der Dienst (onrender.com) schlaeft und braucht zum Aufwachen
+
+/**
+ * Faellig, wenn seit dem letzten Rechenlauf des Anbieters (plus GARDA_VERSATZ_MIN) kein
+ * guter Abruf war und der letzte Versuch mindestens GARDA_WIEDERHOLEN_MIN her ist.
+ */
+function garda_faellig(?int $gut, ?int $versuch, int $jetzt): bool
+{
+    $tz = new DateTimeZone('Europe/Berlin');
+    $lauf = null;
+    $tag = (new DateTimeImmutable('@' . $jetzt))->setTimezone($tz)->setTime(0, 0);
+    foreach ([$tag, $tag->modify('-1 day')] as $t) {
+        foreach (GARDA_RECHNET as $h) {
+            $z = $t->setTime($h, GARDA_VERSATZ_MIN)->getTimestamp();
+            if ($z <= $jetzt && ($lauf === null || $z > $lauf)) {
+                $lauf = $z;
+            }
+        }
+    }
+    return ($gut === null || $gut < $lauf) && ($versuch === null || $jetzt - $versuch >= GARDA_WIEDERHOLEN_MIN * 60);
+}
+
+/**
+ * Gardasee-Vorhersage holen und als <dataDir>/fremd/<id>.json {ts, payload} ablegen, nur
+ * wenn sie sich lesen laesst (fremdprognose_garda); sonst bleibt die alte Datei.
+ * Rueckgabe 'ok', 'zu frueh' oder eine Fehlermeldung.
+ */
+function fremd_abrufen(string $dataDir, array $region, ?string $ersatz, int $jetzt, array &$state, array &$bericht): string
+{
+    $id = $region['id'];
+    $st = $state['fremd'][$id] ?? [];
+    if (!garda_faellig($st['gut'] ?? null, $st['versuch'] ?? null, $jetzt)) {
+        return 'zu frueh';
+    }
+    $state['fremd'][$id]['versuch'] = $jetzt;
+    $r = abruf(test_url($region['fremdprognose']['abruf'], $ersatz), GARDA_TIMEOUT_S, "fremd/$id", $bericht);
+    if ($r['http'] < 200 || $r['http'] >= 300) {
+        $f = "http={$r['http']} " . ($r['err'] !== '' ? $r['err'] : substr(preg_replace('/\s+/', ' ', $r['body']), 0, 150));
+        $bericht[] = "fremd/$id: FEHLER $f";
+        return $f;
+    }
+    $j = json_decode($r['body'], true);
+    $p = is_array($j) ? fremdprognose_garda($j, $jetzt) : null;
+    if ($p === null) {
+        $f = 'Antwort ist keine frische Gardasee-Vorhersage: ' . substr(preg_replace('/\s+/', ' ', $r['body']), 0, 150);
+        $bericht[] = "fremd/$id: FEHLER $f";
+        return $f;
+    }
+    $datei = "$dataDir/fremd/$id.json";
+    @mkdir(dirname($datei), 0700, true);
+    if (@file_put_contents("$datei.tmp", json_encode(['ts' => gmdate('Y-m-d\TH:i:s\Z', $jetzt), 'payload' => $j], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), LOCK_EX) === false
+        || !@rename("$datei.tmp", $datei)) {
+        return 'Schreiben fehlgeschlagen';
+    }
+    $state['fremd'][$id]['gut'] = $jetzt;
+    $bericht[] = sprintf('fremd/%s: ok, %d Tage, Stand %s, %d KB, %d ms', $id, count($p['tage']), gmdate('Y-m-d H:i', $p['stand']), $r['bytes'] / 1024, $r['ms']);
+    return 'ok';
 }

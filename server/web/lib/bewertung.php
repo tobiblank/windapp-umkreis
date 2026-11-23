@@ -1395,9 +1395,97 @@ function fremdprognose_ammerseewind(array $j, ?int $jetzt = null): ?array
     return $tage ? ['stand' => $stand, 'tage' => $tage, 'format' => 'ammerseewind'] : null;
 }
 
+// Gardasee (seit 23.11.2026): kalibrierte Vorhersage von Marco Schanda fuer Pelèr (morgens,
+// Nordwind, Referenz Malcesine) und Ora (nachmittags, Thermik von Sueden, Referenz Torbole),
+// Zustimmung per Mail (eingegangen bis 23.11.2026). Zwei Sessions je Tag, keine Tageszahl.
+// Seine Chance (prob_session) meint >= 10 kn im Session-Mittel am Ufer-Webcam-Standort,
+// Mittel aus Grundwind und Boeen (Walchensee: >= 12 kn). Stufen laut Mail: Go ab 70 %,
+// Vielleicht 40-69 %, Eher nicht darunter. Er rechnet um 6, 12 und 22 Uhr neu; der Server
+// holt kurz danach (fremd_abrufen() in lib/abruf.php) nach <data_dir>/fremd/<id>.json.
+const GARDA_SESSIONS = ['peler' => ['Pelèr', 6, 12], 'ora' => ['Ora', 12, 18]];   // Name, Fenster laut Antwort, sonst diese
+const GARDA_GO = 0.7;
+const GARDA_VIELLEICHT = 0.4;
+const GARDA_HINWEIS = 'Chance = Session-Mittel (Grundwind und Böen) ab 10 kn am Ufer; Walchensee: ab 12 kn';
+
+/** Stunde aus "06:00" oder 6, sonst null */
+function garda_stunde(mixed $v): ?int
+{
+    if (is_int($v) && $v >= 0 && $v <= 24) {
+        return $v;
+    }
+    return is_string($v) && preg_match('/^(\d{1,2}):\d{2}$/', $v, $m) && (int)$m[1] <= 24 ? (int)$m[1] : null;
+}
+
+/**
+ * Antwort von /forecast der Gardasee-Vorhersage pruefen: status success, generated_at
+ * (Ortszeit) hoechstens FREMD_FRISCH_S alt, nowcast.days mit ora/peler je Tag.
+ * Rueckgabe wie fremdprognose_auswerten(), je Tag 'chance' = bessere Session, 'stufe' nach
+ * GARDA_GO/GARDA_VIELLEICHT, 'peak_kt' = pred_kt der besseren Session, 'sessions'
+ * [key => [name, chance, kt, von, bis]] und 'gewitter' (storm.level ausser none) oder null.
+ */
+function fremdprognose_garda(array $j, ?int $jetzt = null): ?array
+{
+    $jetzt ??= time();
+    $gen = $j['generated_at'] ?? $j['nowcast']['generated_at'] ?? null;
+    if (($j['status'] ?? '') !== 'success' || !is_string($gen) || !is_array($j['nowcast']['days'] ?? null)) {
+        return null;
+    }
+    try {
+        $stand = (new DateTimeImmutable($gen, new DateTimeZone('Europe/Berlin')))->getTimestamp();
+    } catch (Exception) {
+        return null;
+    }
+    if ($jetzt - $stand > FREMD_FRISCH_S || $stand - $jetzt > 3600) {
+        return null;
+    }
+    $tage = [];
+    foreach ($j['nowcast']['days'] as $d) {
+        if (!is_array($d) || !is_string($d['date'] ?? null) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $d['date'])) {
+            continue;
+        }
+        $sessions = [];
+        foreach (GARDA_SESSIONS as $k => [$name, $von, $bis]) {
+            $x = $d[$k] ?? null;
+            if (!is_array($x) || !is_numeric($x['prob_session'] ?? null)) {
+                continue;
+            }
+            $w = is_array($x['window'] ?? null) ? $x['window'] : [];
+            $h = array_values(array_filter((array)($w['hours'] ?? []), 'is_int'));
+            $sessions[$k] = ['name' => $name, 'chance' => max(0.0, min(1.0, (float)$x['prob_session'])),
+                             'kt' => is_numeric($x['pred_kt'] ?? null) ? (float)$x['pred_kt'] : null,
+                             'von' => garda_stunde($w['start'] ?? null) ?? ($h ? min($h) : $von),
+                             'bis' => garda_stunde($w['end'] ?? null) ?? ($h ? max($h) + 1 : $bis)];
+        }
+        if (!$sessions) {
+            continue;
+        }
+        $sturm = $d['storm']['level'] ?? null;
+        $tage[$d['date']] = garda_tag($sessions) + ['sessions' => $sessions,
+            'gewitter' => is_string($sturm) && !in_array($sturm, ['', 'none'], true) ? $sturm : null];
+    }
+    return $tage ? ['stand' => $stand, 'tage' => $tage, 'format' => 'garda'] : null;
+}
+
+/** Tageswerte aus den Sessions: bessere Session zaehlt */
+function garda_tag(array $sessions): array
+{
+    $best = null;
+    foreach ($sessions as $s) {
+        if ($best === null || $s['chance'] > $best['chance']) {
+            $best = $s;
+        }
+    }
+    $c = $best['chance'];
+    return ['chance' => $c, 'stufe' => $c >= GARDA_GO ? 'go' : ($c >= GARDA_VIELLEICHT ? 'maybe' : 'no'), 'peak_kt' => $best['kt']];
+}
+
 /** Ordner oder Datei einer Region: config.php 'fremdprognosen', sonst Katalogfeld pfad im Ordner 'winddaten' */
 function fremdprognose_quelle(array $cfg, array $region): ?string
 {
+    // Gardasee: holt der Server selbst in den eigenen Datenordner
+    if (($region['fremdprognose']['format'] ?? '') === 'garda') {
+        return is_string($cfg['data_dir'] ?? null) && $cfg['data_dir'] !== '' ? rtrim($cfg['data_dir'], '/') . '/fremd/' . $region['id'] . '.json' : null;
+    }
     $q = $cfg['fremdprognosen'][$region['id']] ?? null;
     if (is_string($q) && $q !== '') {
         return rtrim($q, '/');
@@ -1435,6 +1523,9 @@ function fremdprognosen_laden(array $cfg, array $regionen, ?int $jetzt = null): 
         if (($r['fremdprognose']['format'] ?? '') === 'ammerseewind') {
             $j = is_file($quelle) ? json_decode((string)@file_get_contents($quelle), true) : null;
             $x = is_array($j) ? fremdprognose_ammerseewind($j, $jetzt) : null;
+        } elseif (($r['fremdprognose']['format'] ?? '') === 'garda') {
+            $j = is_file($quelle) ? json_decode((string)@file_get_contents($quelle), true) : null;
+            $x = is_array($j['payload'] ?? null) ? fremdprognose_garda($j['payload'], $jetzt) : null;
         } else {
             $x = fremdprognose_lesen($quelle, $jetzt);
         }
@@ -1469,11 +1560,17 @@ function fremd_einmischen(array $region, array $proTag, array $sport, ?DateTimeI
     }
     $now = $jetzt ?? new DateTimeImmutable('now');
     $lok = $now->setTimezone(new DateTimeZone($region['zeitzone']));
+    $garda = ($p['format'] ?? '') === 'garda';
     foreach ($proTag as $tag => $d) {
         $f = $p['tage'][$tag] ?? null;
         $heute = $tag === $lok->format('Y-m-d');
+        // Gardasee heute: nur Sessions, deren Fenster noch nicht vorbei ist (Pelèr bis Mittag, Ora bis abends)
+        if ($garda && $f !== null && $heute) {
+            $offen = array_filter($f['sessions'], fn($x) => $x['bis'] > (int)$lok->format('G'));
+            $f = $offen ? array_merge($f, garda_tag($offen), ['sessions' => $offen]) : null;
+        }
         if ($d === null || $f === null || !empty($d['vorbei']) || str_starts_with((string)($d['det']['grund'] ?? ''), 'Sperre')
-            || ($heute && !$aw && (int)$lok->format('G') >= FREMD_HEUTE_BIS)
+            || ($heute && !$aw && !$garda && (int)$lok->format('G') >= FREMD_HEUTE_BIS)
             || ($heute && $aw && $now->getTimestamp() - $p['stand'] > FREMD_HEUTE_FRISCH_S)) {
             continue;
         }
@@ -1488,7 +1585,8 @@ function fremd_einmischen(array $region, array $proTag, array $sport, ?DateTimeI
         $proTag[$tag]['fremd'] = ['name' => $q['name'], 'url' => $q['url'], 'stufe' => $stufe,
                                   'peak_kt' => $f['peak_kt'], 'stand' => $p['stand'],
                                   'stunden' => $f['stunden'] ?? [], 'staerkste' => $f['staerkste'] ?? null,
-                                  'beste' => $aw ? ($f['beste'][$sport['ammerseewind']] ?? null) : null];
+                                  'beste' => $aw ? ($f['beste'][$sport['ammerseewind']] ?? null) : null,
+                                  'sessions' => $f['sessions'] ?? null, 'gewitter' => $f['gewitter'] ?? null];
     }
     return $proTag;
 }
@@ -1496,6 +1594,20 @@ function fremd_einmischen(array $region, array $proTag, array $sport, ?DateTimeI
 /** "GO · Mittelwind bis 17 kn · Stand 6:10" fuer die Seite, mit bester Zeit "lohnt sich · 11–16 Uhr · Mittelwind bis 18 kn · Stand 9:40" */
 function fremd_text(array $fr, DateTimeZone $tz): string
 {
+    // Gardasee: je Session Chance, Fenster und Session-Mittel, z. B. "Pelèr GO 91 % (6–12 Uhr, ≈ 14 kn) · Ora eher nicht 7 %"
+    if (!empty($fr['sessions'])) {
+        $teile = [];
+        foreach ($fr['sessions'] as $x) {
+            $st = $x['chance'] >= GARDA_GO ? 'go' : ($x['chance'] >= GARDA_VIELLEICHT ? 'maybe' : 'no');
+            $teile[] = $x['name'] . ' ' . FREMD_STUFEN[$st] . ' ' . (string)round(100 * $x['chance']) . ' %'
+                     . ($x['chance'] >= GARDA_VIELLEICHT ? ' (' . $x['von'] . '–' . $x['bis'] . ' Uhr' . ($x['kt'] !== null ? ', ≈ ' . (string)round($x['kt']) . ' kn' : '') . ')' : '');
+        }
+        if (!empty($fr['gewitter'])) {
+            $teile[] = 'Gewitter: ' . $fr['gewitter'];
+        }
+        $teile[] = 'Stand ' . (new DateTimeImmutable('@' . $fr['stand']))->setTimezone($tz)->format('G:i');
+        return implode(' · ', $teile);
+    }
     $teile = [FREMD_STUFEN[$fr['stufe']] ?? $fr['stufe']];
     if (!empty($fr['beste'])) {
         $teile[] = $fr['beste'][0] . '–' . $fr['beste'][1] . ' Uhr';   // beste Zeit (seit 14.11.2026)

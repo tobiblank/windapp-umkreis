@@ -147,6 +147,7 @@ $bzm = $mess['suedtirol']['stationen'] ?? [];
 pruefe(array_keys($bzm) === ['bz1', 'bz2'] && $bzm['bz1']['hs'] == 26.0 && abs($bzm['bz1']['hsd24'] - 6.0) < 0.2 && $bzm['bz2']['hs'] == 0.0 && $bzm['bz1']['name'] === 'Bezett eins'
        && str_contains($ausText, 'stationen/suedtirol: 2 von 3 Stationen mit Schneehöhe') && str_contains($ausText, 'ohne Wert: bz3'),
        'Südtirol: Zeitreihe je Station (Ortszeit mit Kürzel), leicht negativ = 0 cm, Station ohne Werte fehlt ohne Fehler');
+pruefe(!isset($mess['slf-imis']) && !str_contains($ausText, 'stationen/slf-imis'), 'SLF IMIS: nicht von der Action abgerufen (nur Server, ein- bis zweimal am Tag)');
 $sgm = $mess['snowgrid']['stationen'] ?? [];
 pruefe(array_keys($sgm) === ['d-tour'] && $sgm['d-tour']['hs'] == 18.0 && $sgm['d-tour']['hsd24'] == 3.0 && !empty($sgm['d-tour']['modell'])
        && str_contains($ausText, 'stationen/snowgrid: ok, 1 von 2 Punkten mit Wert') && str_contains($ausText, 'ohne Wert: d-mitte'),
@@ -173,10 +174,40 @@ pruefe($erg['lawine'] === 'ok' && $erg['stationen'] === 'ok' && is_file("$srv/la
        && !glob("$srv/lawine/*.gz") && ($GLOBALS['umkreis_abruf_wiederholungen'] ?? null) === 1,
        'Server-Abruf: Lagebericht und Stationen in je eine kleine Datei' . ($erg['lawine'] !== 'ok' || $erg['stationen'] !== 'ok' ? ': ' . json_encode($erg) : ''));
 unset($GLOBALS['umkreis_abruf_wiederholungen'], $GLOBALS['umkreis_abruf_warte_fehler']);
+$imS = stationen_laden($srv)['slf-imis']['stationen'] ?? [];
+pruefe(array_keys($imS) === ['im1'] && $imS['im1']['hs'] == 36.0 && $imS['im1']['hsd24'] == 5.0 && $imS['im1']['hn24'] == 6.4 && !empty($imS['im1']['tageswert'])
+       && $imS['im1']['zeit'] === gmdate('Y-m-d\T00:00:00\Z') && preg_match('#stationen/slf-imis: ok, 1 von 2 Stationen mit Schneehöhe, .* \(ohne Wert: im2\)#u', implode("\n", $erg['bericht'])) === 1,
+       'SLF IMIS: Tageswert 0 UTC, Änderung zum Vortag, HN_1D, nur Stationen aus dem Katalog');
+$gReg = ['id' => 'gardasee-nord', 'fremdprognose' => ['format' => 'garda', 'abruf' => 'https://kitepredictionlagodigarda.onrender.com/forecast']];
+$ergG = server_abruf("$tmp/schnee_garda", $sKatS, "http://127.0.0.1:$sPort", null, [$gReg, ['id' => 'ohne']]);
+$ergG2 = server_abruf("$tmp/schnee_garda", $sKatS, "http://127.0.0.1:$sPort", time() + 30 * 60, [$gReg]);
+unset($GLOBALS['umkreis_abruf_wiederholungen'], $GLOBALS['umkreis_abruf_warte_fehler']);
+$gDatei = json_decode((string)@file_get_contents("$tmp/schnee_garda/fremd/gardasee-nord.json"), true);
+pruefe(($ergG['fremd/gardasee-nord'] ?? '') === 'ok' && ($ergG2['fremd/gardasee-nord'] ?? '') === 'zu frueh' && !isset($ergG['fremd/ohne'])
+       && fremdprognose_garda($gDatei['payload'] ?? []) !== null,
+       'Server-Abruf: Gardasee-Vorhersage geholt und abgelegt, danach erst nach dem nächsten Rechenlauf' . (($ergG['fremd/gardasee-nord'] ?? '') !== 'ok' ? ': ' . json_encode($ergG) : ''));
+$tag = gmmktime(0, 0, 0, 11, 23, 2026);
+$imisNetz = ['abruf_stunden_utc' => [6, 16]];
+pruefe(stationen_netz_faellig($imisNetz, null, null, $tag + 3600) && !stationen_netz_faellig($imisNetz, $tag - 4 * 3600, null, $tag + 5 * 3600)
+       && stationen_netz_faellig($imisNetz, $tag - 4 * 3600, null, $tag + 6 * 3600) && !stationen_netz_faellig($imisNetz, $tag + 6 * 3600, null, $tag + 15 * 3600)
+       && stationen_netz_faellig($imisNetz, $tag + 6 * 3600, null, $tag + 16 * 3600 + 60) && !stationen_netz_faellig($imisNetz, $tag + 6 * 3600, $tag + 16 * 3600 + 60, $tag + 17 * 3600)
+       && stationen_netz_faellig($imisNetz, $tag + 6 * 3600, $tag + 16 * 3600 + 60, $tag + 19 * 3600) && stationen_netz_faellig([], 1, 1, 2),
+       'SLF IMIS: je Zeitfenster (6 und 16 UTC) ein guter Abruf, nach Fehlversuch frühestens 2 h später');
+pruefe(slf_imis_lesen('{"a":1}', ['x'], []) === null && slf_imis_lesen('[{"x":1}]', ['x'], []) === null && slf_imis_lesen('[]', ['x'], []) === [],
+       'SLF IMIS: falsches Format wird erkannt');
+$imW = stationen_wert($imS['im1'], gmmktime(20, 0, 0) );
+$imW2 = stationen_wert($imS['im1'], intdiv(time(), 86400) * 86400 + 40 * 3600);
+pruefe($imW && !$imW['alt'] && $imW['tageswert'] && $imW['hn24'] == 6.4 && $imW2 && $imW2['alt'], 'SLF IMIS: Tageswert erst nach 36 h mit Datum');
+@mkdir("$tmp/schnee/stationen", 0700, true);
+copy("$srv/stationen/server.ndjson", "$tmp/schnee/stationen/server.ndjson");   // fuer die Seitentests: wie auf dem Server
 $erg2 = server_abruf($srv, $sKatS, "http://127.0.0.1:$sPort");
 $erg3 = server_abruf($srv, $sKatS, "http://127.0.0.1:$sPort", time() + 25 * 60);
 pruefe($erg2['lawine'] === 'zu frueh' && $erg2['stationen'] === 'zu frueh' && $erg3['lawine'] === 'ok' && $erg3['stationen'] === 'zu frueh',
        'Server-Abruf: Mindestabstand 20 min (Lagebericht) und 50 min (Stationen)');
+$erg55 = server_abruf($srv, $sKatS, "http://127.0.0.1:$sPort", time() + 55 * 60);
+unset($GLOBALS['umkreis_abruf_wiederholungen'], $GLOBALS['umkreis_abruf_warte_fehler']);
+pruefe($erg55['stationen'] === 'ok' && !str_contains(implode("\n", $erg55['bericht']), 'stationen/slf-imis') && isset(stationen_laden($srv)['slf-imis']),
+       'SLF IMIS: beim nächsten Stationsabruf nicht noch einmal, alter Stand bleibt');
 $lagenS = lawine_laden($srv);
 $messS = stationen_laden($srv);
 pruefe(($lagenS['euregio']['alt_stunden'] ?? null) === LAWINE_ALT_STUNDEN_SERVER && ($lagen['euregio']['alt_stunden'] ?? null) === LAWINE_ALT_STUNDEN
@@ -456,6 +487,11 @@ pruefe(str_contains($wd, '>Cam Region D ↗</a> <span class="leise">rund 4,2 km 
        'Liste: nur SNOWGRID-Punkte → Webcam der Region, keine zum Modellpunkt');
 pruefe(str_contains($karte('schnee-c'), '>Cam Region C ↗</a> <span class="leise">im Gebiet</span>') && str_contains($html, 'Webcams: verlinkt, nicht eingebunden'),
        'Liste: Station ohne Webcam → Webcam der Region ohne km; Quelle im Fuß');
+$wb = $karte('schnee-b');
+pruefe(preg_match('#Schneehöhe gemessen heute [^(]*\(<a href="https://www.slf.ch/" rel="noopener">WSL-Institut für Schnee- und Lawinenforschung SLF ↗</a>, <a href="https://data.hub.geosphere.at/dataset/tawes-v1-10min"[^>]*>GeoSphere ↗</a>, <a href="https://www.meteoschweiz.admin.ch/"#u', $wb) === 1
+       && preg_match('#Imeins <span class="leise">2.600 m</span> <b>36 cm</b> <span class="leise" title="[^"]*">\(Vortag \+5\)</span> <span class="leise" title="[^"]*SNOWPACK[^"]*">· Neuschnee 6 cm \(Modell SNOWPACK\)</span>#u', $wb) === 1
+       && !str_contains($wb, 'Imzwei') && str_contains($html, 'Messwerte: <a href="https://www.slf.ch/"'),
+       'Liste: SLF IMIS mit Tageswert, Neuschnee als Modell SNOWPACK gekennzeichnet, Quelle SLF mit Link auf slf.ch');
 pruefe(preg_match('#id="r-schnee-c".*?Schneehöhe gemessen heute .*?Bezett eins <span class="leise">2.450 m</span> <b>26 cm</b>.*?\(24 h \+6\).*?Bezett zwei <span class="leise">2.000 m</span> <b>0 cm</b>#s', $html) === 1,
        'Liste: Südtiroler Stationen');
 [, $hw] = holen($wPort, 'schnee.php?km=800&prio=neu&ansicht=woche');

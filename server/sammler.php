@@ -184,14 +184,21 @@ function quellen_schnee(array $schnee, string $modelle): array
             'art'      => 'lawine',
             'dienste'  => $dienste,
         ],
+        // Netze mit abruf_stunden_utc (SLF IMIS) holt nur der Server (lib/abruf.php), nicht die Action
         'stationen' => [
             'every'    => 60,
-            'regionen' => array_map(fn($id) => ['id' => $id, 'typ' => 'stationen'], array_keys(stationen_benoetigt($schnee))),
+            'regionen' => array_map(fn($id) => ['id' => $id, 'typ' => 'stationen'], array_keys(stationen_action($schnee))),
             'art'      => 'stationen',
-            'netze'    => array_intersect_key($schnee['messnetze'] ?? [], stationen_benoetigt($schnee)),
+            'netze'    => stationen_action($schnee),
             'ids'      => stationen_benoetigt($schnee),
         ],
     ];
+}
+
+/** Messnetze, die der Sammler holt: alle aus dem Katalog ohne abruf_stunden_utc */
+function stationen_action(array $schnee): array
+{
+    return array_filter(array_intersect_key($schnee['messnetze'] ?? [], stationen_benoetigt($schnee)), fn($n) => empty($n['abruf_stunden_utc']));
 }
 
 function quellen_wind(array $katalog, string $modelle): array

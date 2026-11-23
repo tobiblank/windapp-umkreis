@@ -119,6 +119,22 @@
       "hinweis": "Spalte htoauts0 (Schneehöhe automatisch, cm, 10 Minuten); Dateiname nach openpaul.github.io (Beispiel brz) und der Doku von MeteoSchweiz (now = seit gestern 12 UTC, Zeit UTC, Semikolon, Windows-1252). Stationen aus ogd-smn_meta_stations.csv vom 9.11.2026; am 9.11.2026 meldete nur Samedan eine Schneehöhe (Segl-Maria und Bernina nicht).",
       "stationen": {"sam": {"name": "Samedan", "hoehe": 1709}}
     },
+    "slf-imis": {
+      "art": "slf-imis",
+      "name": "WSL-Institut für Schnee- und Lawinenforschung SLF, Messnetz IMIS",
+      "kurz": "SLF",
+      "quelle": "WSL-Institut für Schnee- und Lawinenforschung SLF",
+      "abruf": "https://measurement-api.slf.ch/public/api/imis/daily-snow",
+      "url": "https://www.slf.ch/",
+      "lizenz": "Nutzung mit Zustimmung des SLF, Mail vom 23.11.2026",
+      "abruf_stunden_utc": [6, 16],
+      "hinweis": "Freigabe per Mail des SLF vom 23.11.2026 (Vorgang DATA-2406): Anzeige von HS (gemessen) und HN_1D (Neuschnee 24 h, vom Schneedeckenmodell SNOWPACK gerechnet) erlaubt; HN_1D als Modellwert kennzeichnen; Quelle „WSL-Institut für Schnee- und Lawinenforschung SLF“ mit Link auf www.slf.ch; Abruf ein- bis zweimal täglich über den eigenen Server mit Zwischenspeicher, nicht von den Geräten der Besucher. Tageswerte mit measure_date 0 UTC, period_in_days=3 (am 23.11.2026 gesehen). Stationen und Lage aus /public/api/imis/stations vom 23.11.2026, nur Schneestationen (type SNOW_FLAT).",
+      "stationen": {
+        "BER3": {"name": "Puoz Bass", "hoehe": 2625, "lat": 46.4409, "lon": 9.9159},
+        "LAG2": {"name": "Tscheppa", "hoehe": 2730, "lat": 46.4514, "lon": 9.7446},
+        "BEV2": {"name": "Valetta", "hoehe": 2512, "lat": 46.5396, "lon": 9.8371}
+      }
+    },
     "suedtirol": {
       "art": "suedtirol",
       "name": "Landeswetterdienst Südtirol (Hydrographisches Amt)",
@@ -255,7 +271,7 @@
     },
     {
       "id": "oberengadin",
-      "stationen": {"meteoswiss": ["sam"]},
+      "stationen": {"slf-imis": ["BER3", "LAG2", "BEV2"], "meteoswiss": ["sam"]},
       "name": "Oberengadin",
       "land": "CH",
       "punkt": [46.45, 9.87],

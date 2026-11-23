@@ -464,9 +464,18 @@ function abschnitt(array $r, ?array $st, array $sport, float $ymax, string $tag,
         // Seit 14.11.2026 mit bester Zeit (ammerseewind.de), sonst der staerksten Stunde
         $zeit = !empty($fr['beste']) ? $fr['beste'][0] . '–' . $fr['beste'][1] . ' Uhr'
               : (($fr['staerkste'] ?? null) !== null ? 'stärkste Stunde ' . $fr['staerkste'] . ' Uhr' : null);
+        // Gardasee (seit 23.11.2026): Urteil und Zeit der besseren Session, darunter beide Sessions
+        $sess = $fr['sessions'] ?? [];
+        if ($sess) {
+            $beste = array_reduce($sess, fn($a, $x) => $a === null || $x['chance'] > $a['chance'] ? $x : $a);
+            $zeit = $beste['name'] . ' ' . $beste['von'] . '–' . $beste['bis'] . ' Uhr';
+        }
         $o .= '<p class="urteil wind ' . $klasse . '">' . h(tag_kurz($tag, $heute)) . ': <b>' . h(FREMD_STUFEN[$fr['stufe']] ?? $fr['stufe']) . '</b>'
             . ($zeit !== null ? ' <span class="leise">· ' . h($zeit) . '</span>' : '')
-            . ($fr['peak_kt'] !== null ? ' <span class="leise">· Mittelwind bis ' . zahl($fr['peak_kt']) . ' kn</span>' : '') . '</p>';
+            . ($fr['peak_kt'] !== null ? ' <span class="leise">· ' . ($sess ? '≈ ' . zahl($fr['peak_kt']) . ' kn Session-Mittel' : 'Mittelwind bis ' . zahl($fr['peak_kt']) . ' kn') . '</span>' : '') . '</p>';
+        if ($sess) {
+            $o .= '<p class="klein">' . h(implode(' · ', array_slice(explode(' · ', fremd_text($fr, $heute->getTimezone())), 0, -1))) . '. <span class="leise">' . h(GARDA_HINWEIS) . '.</span></p>';
+        }
         $kalibriert = !empty($fr['stunden']);
         $o .= '<p class="klein">' . ($kalibriert ? 'Urteil, Zeiten, Wind-Kachel und blaue Linie' : 'Urteil und Chance') . ' aus der <a href="' . h($fr['url']) . '" rel="noopener">Vorhersage von ' . h($fr['name']) . ' ↗</a>, an Messwerten kalibriert · Stand '
             . (new DateTimeImmutable('@' . $fr['stand']))->setTimezone($heute->getTimezone())->format('G:i') . '. '

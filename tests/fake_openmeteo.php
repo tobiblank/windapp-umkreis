@@ -118,6 +118,36 @@ if ($pfad === '/services/meteo/v1/timeseries') {
     echo json_encode($out);
     exit;
 }
+// Gardasee-Vorhersage von Marco Schanda (seit 23.11.2026), Aufbau wie /forecast am 23.11.2026
+if ($pfad === '/forecast') {
+    header('Content-Type: application/json');
+    $tz = new DateTimeZone('Europe/Berlin');
+    $jetztL = (new DateTimeImmutable('now', $tz));
+    $sess = fn(float $c, float $kt, ?string $von, ?string $bis, array $h) => ['prob_session' => $c, 'pred_kt' => $kt, 'status' => 'ok', 'threshold_kt' => 10.0,
+        'window' => ['start' => $von, 'end' => $bis, 'hours' => $h, 'hourly_kt' => [], 'peak' => '07:00']];
+    $tage = [];
+    for ($i = 0; $i < 3; $i++) {
+        $tage[] = ['date' => $jetztL->modify("+$i day")->format('Y-m-d'), 'peler' => $sess(0.91, 14.2, '06:00', '12:00', [6, 7, 8, 9, 10, 11]),
+                   'ora' => $sess(0.07, 4.2, null, null, [12, 13, 14, 15, 16, 17, 18]), 'storm' => ['level' => 'none']];
+    }
+    echo json_encode(['generated_at' => $jetztL->format('Y-m-d H:i:s'), 'status' => 'success', 'nowcast' => ['date' => $jetztL->format('Y-m-d'), 'days' => $tage]]);
+    exit;
+}
+// SLF IMIS daily-snow (seit 23.11.2026): Tageswerte 0 UTC ohne Zeitzone, mehrere Tage
+// je Station; im1 steigt von 31 auf 36 cm (HN_1D 6,4), im2 ohne Schneehoehe, imx nicht im Katalog
+if ($pfad === '/public/api/imis/daily-snow') {
+    header('Content-Type: application/json');
+    $tag0 = intdiv(time(), 86400) * 86400;
+    $out = [];
+    foreach ([2, 1, 0] as $i) {
+        $d = gmdate('Y-m-d\T00:00:00', $tag0 - $i * 86400);
+        $out[] = ['station_code' => 'im1', 'measure_date' => $d, 'HS' => [30.0, 31.0, 36.0][2 - $i], 'HN_1D' => [0.0, 1.2, 6.4][2 - $i]];
+        $out[] = ['station_code' => 'im2', 'measure_date' => $d, 'HS' => null, 'HN_1D' => null];
+        $out[] = ['station_code' => 'imx', 'measure_date' => $d, 'HS' => 99.0, 'HN_1D' => 9.0];
+    }
+    echo json_encode($out);
+    exit;
+}
 // SNOWGRID-CL (seit 9.11.2026): Tageswerte in m bis gestern, ein Feature je lat_lon (in
 // der Reihenfolge); erster Punkt 10, 12, 15, 18 cm, alle weiteren null (ausserhalb)
 if ($pfad === '/v1/timeseries/historical/snowgrid_cl-v2-1d-1km') {

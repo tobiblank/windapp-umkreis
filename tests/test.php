@@ -1175,7 +1175,8 @@ $tag3 = (new DateTimeImmutable('+3 days', new DateTimeZone('Europe/Berlin')))->f
 [, $html] = holen($sitePort, "stunden.php?region=ammersee&tag=$tag3");
 pruefe(!str_contains($html, 'nicht kalibriert: Stunde fahrbar') && preg_match('#<details class="klein leise legende-auf">.*?kalibriert.*?</details>#s', $html) === 0,
        'Stundenseite ohne fremde Prognose: kein Modell-Hinweis im Diagramm, Legende ohne „kalibriert“');
-pruefe(str_contains($html, '<div class="kz kz-wind" title="Mittel und höchste Böe 9–17 Uhr"><span class="t">Wind Ø</span><span class="w">6<small> kn</small></span><span class="u">Böen bis 10 kn</span>'),
+// Fensterende = Sonnenuntergang (im Spätherbst 16 statt 17 Uhr), deshalb nicht fest
+pruefe(preg_match('#<div class="kz kz-wind" title="Mittel und höchste Böe 9–1[67] Uhr"><span class="t">Wind Ø</span><span class="w">\d+<small> kn</small></span><span class="u">Böen bis \d+ kn</span>#u', $html) === 1,
        'Stundenseite: Wind-Kachel zeigt die Böen auch an Tagen ohne Fenster (zu wenig Wind)');
 [, $hk] = holen($sitePort, 'index.php?km=1000');
 pruefe(preg_match('#id="r-adria-nord".*?<span class="wetter">⛅<b>12°</b></span>#s', $hk) === 1 && str_contains($hk, 'Teils sonnig, Luft 12 °C von '),
@@ -1263,6 +1264,62 @@ pruefe(!isset($fz['2030-07-11']['fremd']), 'Sperre bleibt Sperre');
 pruefe(fremd_text($fx['2030-07-10']['fremd'], new DateTimeZone('Europe/Berlin')) === 'GO · Mittelwind bis 16 kn · Stand 6:10', 'Text für die Seite');
 $fE = ranglisten_eintrag($fRegion, 50, $fx);
 pruefe(abs($fE['erwartete_tage'] - (0.72 + 0.35 + 0.2)) < 1e-9, 'Rangliste zählt die fremde Chance');
+fremdprognosen([]);
+
+// Gardasee (seit 23.11.2026): Marcos Vorhersage mit zwei Sessions (Pelèr, Ora), holt der Server
+echo "\nGardasee (Pelèr/Ora)\n";
+$gSess = fn(float $c, float $kt, ?string $von, ?string $bis, array $h) => ['prob_session' => $c, 'prob_kiteable' => $c, 'kiteable' => $c >= 0.5, 'pred_kt' => $kt,
+    'range_kt' => [$kt - 3, $kt + 3], 'status' => 'ok', 'threshold_kt' => 10.0, 'lead_days' => 0, 'factors' => [],
+    'window' => ['start' => $von, 'end' => $bis, 'hours' => $h, 'hourly_kt' => [], 'peak' => '07:00']];
+$gPayload = fn(array $extra = []) => $extra + ['generated_at' => '2030-07-10 06:00:54', 'status' => 'success', 'webcam' => [],
+    'nowcast' => ['date' => '2030-07-10', 'generated_at' => '2030-07-10 06:00', 'days' => [
+        ['date' => '2030-07-10', 'peler' => $gSess(0.91, 14.2, '06:00', '12:00', [6, 7, 8, 9, 10, 11]), 'ora' => $gSess(0.55, 11.0, null, null, [12, 13, 14, 15, 16, 17, 18]),
+         'storm' => ['level' => 'none', 'reasons' => []]],
+        ['date' => '2030-07-11', 'peler' => $gSess(0.2, 8.0, '06:00', '11:00', [6, 7, 8, 9, 10]), 'ora' => $gSess(0.45, 10.4, null, null, [12, 13, 14, 15, 16, 17, 18]),
+         'storm' => ['level' => 'moderate', 'reasons' => ['cape']]],
+        ['date' => 'kaputt'],
+    ]]];
+$gp = fremdprognose_garda($gPayload(), $fJetzt);
+pruefe($gp !== null && array_keys($gp['tage']) === ['2030-07-10', '2030-07-11'] && $gp['stand'] === strtotime('2030-07-10 04:00:54 UTC') && $gp['format'] === 'garda',
+       'Gardasee: Tage gelesen, generated_at als Ortszeit');
+$g10 = $gp['tage']['2030-07-10'] ?? [];
+pruefe(abs(($g10['chance'] ?? 0) - 0.91) < 1e-9 && ($g10['stufe'] ?? '') === 'go' && ($g10['peak_kt'] ?? 0) == 14.2
+       && ($g10['sessions']['peler']['von'] ?? 0) === 6 && ($g10['sessions']['peler']['bis'] ?? 0) === 12 && ($g10['sessions']['ora']['von'] ?? 0) === 12 && ($g10['sessions']['ora']['bis'] ?? 0) === 19
+       && ($gp['tage']['2030-07-11']['stufe'] ?? '') === 'maybe' && ($gp['tage']['2030-07-11']['gewitter'] ?? '') === 'moderate' && $g10['gewitter'] === null,
+       'Gardasee: Tageschance = bessere Session, Stufen 70/40, Fenster aus start/end oder hours, Gewitterstufe');
+pruefe(fremdprognose_garda($gPayload(['status' => 'error']), $fJetzt) === null && fremdprognose_garda($gPayload(['generated_at' => '2030-07-09 08:00:00']), $fJetzt) === null
+       && fremdprognose_garda(['status' => 'success', 'generated_at' => '2030-07-10 06:00:00'], $fJetzt) === null,
+       'Gardasee: Fehlerstatus, älter als 18 h oder ohne days: keine Prognose');
+$gRegion = ['id' => 'gardasee-nord', 'name' => 'Gardasee Nord', 'zeitzone' => 'Europe/Rome',
+            'fremdprognose' => ['name' => 'Marco Schanda', 'url' => 'https://kitepredictionlagodigarda.onrender.com/', 'format' => 'garda',
+                                'abruf' => 'https://kitepredictionlagodigarda.onrender.com/forecast']];
+pruefe(regionen_pruefen(['regionen' => [$gRegion + ['land' => 'IT', 'typ' => 'see', 'punkt' => [45.85, 10.86], 'windlagen' => [], 'spots' => []]]]) === [], 'Katalogfeld fremdprognose garda gültig');
+$gOhne = $gRegion;
+unset($gOhne['fremdprognose']['abruf']);
+pruefe((bool)array_filter(regionen_pruefen(['regionen' => [$gOhne + ['land' => 'IT', 'typ' => 'see', 'punkt' => [45.85, 10.86], 'windlagen' => [], 'spots' => []]]]), fn($x) => str_contains($x, 'abruf')),
+       'garda ohne abruf wird abgelehnt');
+pruefe(fremdprognose_quelle(['data_dir' => '/d/'], $gRegion) === '/d/fremd/gardasee-nord.json' && fremdprognose_quelle([], $gRegion) === null, 'Gardasee: Datei im eigenen Datenordner');
+@mkdir("$tmp/gdaten/fremd", 0777, true);
+file_put_contents("$tmp/gdaten/fremd/gardasee-nord.json", json_encode(['ts' => '2030-07-10T04:10:00Z', 'payload' => $gPayload()]));
+fremdprognosen_laden(['data_dir' => "$tmp/gdaten"], [$gRegion], $fJetzt);
+$gx = fremd_einmischen($gRegion, $fProTag, SPORTARTEN['kite_twintip'], $fUm('10:00'));
+pruefe(abs($gx['2030-07-10']['ens']['chance'] - 0.91) < 1e-9 && count($gx['2030-07-10']['fremd']['sessions']) === 2 && abs($gx['2030-07-11']['ens']['chance'] - 0.45) < 1e-9,
+       'Gardasee: Chance der besseren Session eingesetzt');
+$gy = fremd_einmischen($gRegion, $fProTag, SPORTARTEN['kite_twintip'], $fUm('13:00'));
+$gz = fremd_einmischen($gRegion, $fProTag, SPORTARTEN['kite_twintip'], $fUm('19:30'));
+pruefe(abs($gy['2030-07-10']['ens']['chance'] - 0.55) < 1e-9 && array_keys($gy['2030-07-10']['fremd']['sessions']) === ['ora'] && $gy['2030-07-10']['fremd']['stufe'] === 'maybe'
+       && !isset($gz['2030-07-10']['fremd']) && isset($gz['2030-07-11']['fremd']) && !isset(fremd_einmischen($gRegion, $fProTag, SPORTARTEN['segeln'], $fUm('10:00'))['2030-07-10']['fremd']),
+       'Gardasee heute: nach dem Pelèr nur noch die Ora, abends eigener Wert; Segeln eigener Wert');
+$tzG = new DateTimeZone('Europe/Berlin');
+pruefe(fremd_text($gx['2030-07-10']['fremd'], $tzG) === 'Pelèr GO 91 % (6–12 Uhr, ≈ 14 kn) · Ora vielleicht 55 % (12–19 Uhr, ≈ 11 kn) · Stand 6:00'
+       && fremd_text($gx['2030-07-11']['fremd'], $tzG) === 'Pelèr eher nicht 20 % · Ora vielleicht 45 % (12–19 Uhr, ≈ 10 kn) · Gewitter: moderate · Stand 6:00',
+       'Gardasee: Text mit beiden Sessions');
+require_once "$ROOT/server/web/lib/abruf.php";
+$gT = fn(string $z) => (new DateTimeImmutable("2030-07-10 $z", $tzG))->getTimestamp();
+pruefe(garda_faellig(null, null, $gT('05:00')) && !garda_faellig($gT('22:20') - 86400, null, $gT('06:05')) && garda_faellig($gT('22:20') - 86400, null, $gT('06:12'))
+       && !garda_faellig($gT('06:12'), null, $gT('11:59')) && garda_faellig($gT('06:12'), null, $gT('12:11')) && !garda_faellig($gT('06:12'), $gT('12:11'), $gT('12:50'))
+       && garda_faellig($gT('06:12'), $gT('12:11'), $gT('13:15')),
+       'Gardasee: abholen kurz nach 6, 12 und 22 Uhr, nach Fehlversuch frühestens 1 h später');
 fremdprognosen([]);
 
 // ammerseewind.de (seit 11.11.2026): Exportdatei mit einer Chance je Sportart

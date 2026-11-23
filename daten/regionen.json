@@ -437,7 +437,11 @@
       "alplakes": "garda",
       "thermik": true,
       "fenster_ab": 6,
-      "hinweis": "Regel nach kitewetter.at (Föhndiagramm): Druckdifferenz Bozen − Brescia/Ghedi; höherer Druck in Brescia bringt Ora, umgekehrt Vento (Pelèr). Eine Schwelle nennt die Seite nicht, hier 0 hPa. Geschätzt (Claude): Stärken, Tageszeiten (Pelèr bis 12, Ora ab 12 Uhr), Saison April–Oktober. Seit 10.11.2026 fenster_ab 6 (Wunsch Tobias), damit der Pelèr ab Sonnenaufgang zählt: laut Marco Schandas Gardasee-Vorhersage setzt er nachts ein, ist bei Sonnenaufgang am stärksten und lässt bis Mittag nach. Gardasee Süd wäre eine eigene Region. Punkt geschätzt.",
+      "links": [
+        {"name": "Gardasee-Vorhersage von Marco Schanda", "url": "https://kitepredictionlagodigarda.onrender.com/"}
+      ],
+      "fremdprognose": {"name": "Marco Schanda", "url": "https://kitepredictionlagodigarda.onrender.com/", "format": "garda", "abruf": "https://kitepredictionlagodigarda.onrender.com/forecast"},
+      "hinweis": "Seit 23.11.2026 kommt die Chance für Kite, Wing und Windsurf (ohne Wave) aus Marcos kalibrierter Gardasee-Vorhersage (Zustimmung per Mail, eingegangen bis 23.11.2026): zwei Sessions je Tag, Pelèr morgens (Referenz Malcesine) und Ora nachmittags (Referenz Torbole); Chance = Session-Mittel aus Grundwind und Böen ab 10 kn am Ufer-Webcam-Standort (Walchensee ab 12 kn); Stufen Go ab 70 %, Vielleicht 40–69 %; er rechnet um 6, 12 und 22 Uhr, der Server holt kurz danach. Die Regel-Windlagen gelten für Segeln und als Rückfall. Regel nach kitewetter.at (Föhndiagramm): Druckdifferenz Bozen − Brescia/Ghedi; höherer Druck in Brescia bringt Ora, umgekehrt Vento (Pelèr). Eine Schwelle nennt die Seite nicht, hier 0 hPa. Geschätzt (Claude): Stärken, Tageszeiten (Pelèr bis 12, Ora ab 12 Uhr), Saison April–Oktober. Seit 10.11.2026 fenster_ab 6 (Wunsch Tobias), damit der Pelèr ab Sonnenaufgang zählt: laut Marco Schandas Gardasee-Vorhersage setzt er nachts ein, ist bei Sonnenaufgang am stärksten und lässt bis Mittag nach. Gardasee Süd wäre eine eigene Region. Punkt geschätzt.",
       "windlagen": [
         {"name": "Pelèr", "sektor": [330, 30], "charakter": "morgens", "druck": [{"plus": "bozen", "minus": "brescia", "min": 0}], "zeit": [6, 12], "saison": [4, 10], "staerke": [14, 22]},
         {"name": "Ora", "sektor": [150, 210], "charakter": "nachmittags, Thermik", "druck": [{"plus": "bozen", "minus": "brescia", "max": 0}], "wetter": "sonnig", "zeit": [12, 18], "saison": [4, 10], "staerke": [14, 22]}

@@ -1,7 +1,7 @@
 <?php
 /**
- * Lageberichte und Messstationen auf dem Server holen (seit 13.11.2026), siehe
- * server_abruf() in lib/abruf.php.
+ * Lageberichte und Messstationen auf dem Server holen (seit 13.11.2026), seit 23.11.2026
+ * auch die Gardasee-Vorhersage von Marco Schanda; siehe server_abruf() in lib/abruf.php.
  *
  *   POST lawine_holen.php   schluessel=<abruf_schluessel aus config.php>
  *
@@ -60,4 +60,11 @@ try {
     exit;
 }
 $ersatz = $cfg['test_url_ersatz'] ?? null;
-echo json_encode(server_abruf($dataDir, $schnee, is_string($ersatz) ? $ersatz : null), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+// Wind-Katalog fuer fremde Prognosen, die der Server holt (seit 23.11.2026: Gardasee)
+$windKatalog = $cfg['regionen_datei'] ?? __DIR__ . '/lib/regionen.json';
+try {
+    $windRegionen = is_file($windKatalog) ? regionen_laden($windKatalog) : [];
+} catch (RuntimeException $e) {
+    $windRegionen = [];
+}
+echo json_encode(server_abruf($dataDir, $schnee, is_string($ersatz) ? $ersatz : null, null, $windRegionen), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

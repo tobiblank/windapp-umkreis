@@ -987,6 +987,7 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
               <?= h(fremd_text($fr, $tzSeite)) ?>
               <?php if ($tt = temp_text($d)): ?><span class="temp" title="<?= h($tt[1]) ?>">· <?= h($tt[0]) ?></span><?php endif ?>
               <a href="<?= h($fr['url']) ?>" rel="noopener">· Vorhersage von <?= h($fr['name']) ?> ↗</a>
+              <?php if (!empty($fr['sessions'])): ?><span class="leise" title="<?= h(GARDA_HINWEIS) ?>">· Chance für ≥ 10 kn Session-Mittel</span><?php endif ?>
               <a class="stunden-link" href="stunden.php?<?= h(http_build_query(['region' => $r['id'], 'sport' => $sportId, 'tag' => $t])) ?>">· Stunden ›</a>
             <?php elseif ($det['geht']): ?>
               <?= h($d['spot_name'] ?? 'ganze Region') ?> ·
