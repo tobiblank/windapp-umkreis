@@ -33,6 +33,8 @@
  *                      Neuschnee im Zeitraum (wie bisher, Standard)
  *              neu     Neuschnee in Stufen (SCHNEE_NEU_STUFEN), innerhalb einer Stufe die
  *                      Sonne: sonst entschiede fast immer der erste Zentimeter
+ *              hs      Schneehoehe heute (seit 24.11.2026, schnee_hs_heute()): gemessen,
+ *                      sonst SNOWGRID, sonst Open-Meteo; dann Neuschnee
  *              km      Fahrzeit
  * Die Schwellen sind Startwerte ohne Quelle (SCHNEE_REGEL, SCHNEE_KAMM_HINWEIS).
  *
@@ -80,9 +82,14 @@ const SCHNEE_KAMM_HINWEIS = 50;       // km/h in 700 hPa: ab hier Hinweis "Wind 
 const SCHNEE_FORMATE = ['json', 'xml'];
 
 /** Prioritaeten der Rangliste (seit 10.11.2026), Schluessel = Parameter prio */
-const SCHNEE_PRIOS = ['pulver' => 'Pulver + Sonne', 'neu' => 'Neuschnee', 'km' => 'Fahrzeit'];
+const SCHNEE_PRIOS = ['pulver' => 'Pulver + Sonne', 'neu' => 'Neuschnee', 'hs' => 'Schneehöhe', 'km' => 'Fahrzeit'];
 /** cm Neuschnee: Stufengrenzen fuer die Prioritaet "neu" (Startwerte ohne Quelle) */
 const SCHNEE_NEU_STUFEN = [5, 15, 30];
+/**
+ * m um die Tourhoehe: nur Messstationen in diesem Band zaehlen fuer die Prioritaet "hs"
+ * (Talstationen wie Hermagor 562 m und Gipfel wie Sonnblick 3.109 m nicht). Startwert ohne Quelle.
+ */
+const SCHNEE_HS_BAND = 500;
 
 // ===================================================================
 // KATALOG
@@ -621,6 +628,52 @@ function schnee_rangliste(array $regionen, array $stand, array $heim, float $rad
     return schnee_sortieren($liste, 'summe');
 }
 
+/**
+ * Schneehoehe heute fuer die Prioritaet "hs" (seit 24.11.2026, Wunsch Tobias): die beste
+ * Angabe, die es fuer die Region gibt, in dieser Reihenfolge:
+ *   gemessen  Median der Messstationen (ohne Modellpunkte) auf Tourhoehe +- SCHNEE_HS_BAND m;
+ *             Stationen ohne Hoehe zaehlen mit
+ *   snowgrid  SNOWGRID-Punkt (GeoSphere, 1 km, nur Oesterreich) am naechsten an der Tourhoehe
+ *   modell    Open-Meteo snow_depth heute um SCHNEE_MORGEN Uhr ($modellHs), im Gebirge oft
+ *             deutlich zu niedrig (Abgleich 11.11.2026)
+ * Bewusst nicht der hoechste Wert: Gletscher- und Gipfelstationen wuerden sonst entscheiden.
+ * $stationen aus stationen_region(). Rueckgabe ['cm', 'art', 'n' (Stationen), 'von', 'bis'
+ * (Hoehen in m oder null), 'stand' (DateTimeImmutable oder null)] oder null ohne Angabe.
+ */
+function schnee_hs_heute(array $region, array $stationen, ?float $modellHs): ?array
+{
+    $tour = (float)$region['hoehe_tour'];
+    $mess = [];
+    $grid = null;
+    foreach ($stationen as $s) {
+        $w = $s['wert'];
+        if (!empty($w['modell'])) {
+            if ($grid === null || abs(($w['hoehe'] ?? $tour) - $tour) < abs(($grid['hoehe'] ?? $tour) - $tour)) {
+                $grid = $w;
+            }
+        } elseif ($w['hoehe'] === null || abs($w['hoehe'] - $tour) <= SCHNEE_HS_BAND) {
+            $mess[] = $w;
+        }
+    }
+    if ($mess) {
+        $hs = array_column($mess, 'hs');
+        sort($hs);
+        $m = intdiv(count($hs), 2);
+        $median = count($hs) % 2 ? $hs[$m] : ($hs[$m - 1] + $hs[$m]) / 2;
+        $hoehen = array_filter(array_column($mess, 'hoehe'), fn($h) => $h !== null);
+        return ['cm' => (int)round($median), 'art' => 'gemessen', 'n' => count($mess),
+                'von' => $hoehen ? min($hoehen) : null, 'bis' => $hoehen ? max($hoehen) : null,
+                'stand' => max(array_column($mess, 'zeit'))];
+    }
+    if ($grid) {
+        return ['cm' => (int)round($grid['hs']), 'art' => 'snowgrid', 'n' => 1, 'von' => $grid['hoehe'], 'bis' => $grid['hoehe'], 'stand' => $grid['zeit']];
+    }
+    if ($modellHs !== null) {
+        return ['cm' => (int)round(max(0.0, $modellHs)), 'art' => 'modell', 'n' => 0, 'von' => $tour, 'bis' => $tour, 'stand' => null];
+    }
+    return null;
+}
+
 /** Stufe des Neuschnees fuer die Prioritaet "neu": 0 unter 5 cm, 1 ab 5, 2 ab 15, 3 ab 30 */
 function schnee_neu_stufe(?float $cm): int
 {
@@ -641,6 +694,9 @@ function schnee_neu_stufe(?float $cm): int
  *   (alle Tage: Zahl der schoenen Tage; ein Tag: sonnig vor teils sonnig vor bewoelkt, wie
  *   das Symbol, nicht die einzelnen Prozent), dann die cm. 40 cm im
  *   Nebel gehen vor 30 cm bei Sonne, 18 cm bei Sonne vor 25 cm im Nebel.
+ * $prio 'hs': Schneehoehe heute ($e['hs_heute'] aus schnee_hs_heute(), ohne Angabe ans Ende),
+ *   dann Neuschnee im Zeitraum bzw. am Tag (24 h). Die Schneehoehe gilt fuer heute, auch wenn
+ *   ein spaeterer Tag gewaehlt ist; was bis dahin dazukommt, entscheidet erst danach.
  * $prio 'km': Fahrzeit.
  * Bei Gleichstand gewinnt die naehere Region. Die Lawinenlage geht nicht ein.
  */
@@ -653,6 +709,10 @@ function schnee_sortieren(array $liste, string $nach, string $prio = 'pulver'): 
     }
     $tag = $liste && isset($liste[0]['tage'][$nach]) ? $nach : null;
     $s = function (array $e) use ($tag, $prio): array {
+        if ($prio === 'hs') {
+            $neu = $tag === null ? $e['neu_summe'] : ($e['tage'][$tag]['det']['neu24'] ?? 0);
+            return [$e['hs_heute']['cm'] ?? -1, $neu, -$e['km']];
+        }
         if ($prio === 'neu') {
             if ($tag === null) {
                 return [schnee_neu_stufe($e['neu_summe']), $e['schoene_tage'] ?? 0, $e['neu_summe'], -$e['km']];
