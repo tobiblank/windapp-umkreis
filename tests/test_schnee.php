@@ -420,6 +420,8 @@ pruefe(preg_match('#id="r-schnee-c".*?class="tag [^"]*warn-hoch"#s', $html) === 
        && preg_match('#class="warn-punkt warn-hoch"#', $html) === 1 && preg_match('#class="warn-punkt warn-erheblich"#', $html) === 1
        && str_contains($html, 'Bei Stufe 3 passieren die meisten tödlichen Lawinenunfälle.'),
        'Lawinen-Warnzeichen: Stufe 4 Kachel rot umrandet, Dreieck im Abzeichen und auf der Karte, Hinweis zu Stufe 3');
+pruefe(preg_match('#<a href="schnee_stunden\.php\?[^"]*tag=\d{4}-\d\d-\d\d[^"]*\#lawine" class="warn-link">\s*<title>⚠ [^<]*Lawinenwarnstufe \d [^<]*antippen#u', $html) === 1
+       && str_contains($html, 'class="tippflaeche"'), 'Karte: Dreieck ist ein eigener Link zum Tag mit der Warnung');
 pruefe(str_contains($html, '<select name="prio">') && str_contains($html, '<option value="pulver" selected>Pulver + Sonne</option>') && str_contains($html, '<select name="nach">')
        && preg_match('#<select name="nach">(.*?)</select>#s', $html, $mNach) && !str_contains($mNach[1], 'value="km"'), 'Auswahl: Tag und Priorität getrennt');
 pruefe(substr_count($html, 'noch die eigene Beurteilung vor Ort') >= 3 && str_contains($html, '<p class="karte klein haftung">'), 'Haftungshinweis oben, je Region und im Fuß');
@@ -510,6 +512,8 @@ pruefe(!str_contains(holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $
 [, $hOhneS] = holen($wPort, 'schnee_stunden.php?region=schnee-a&tag=' . $t3);
 pruefe(preg_match('#Kein gültiger Lagebericht für diesen Tag\..*?<span class="leise">abgerufen heute \d+:\d\d</span>#u', $hOhneS) === 1,
        'ohne gültigen Bericht: trotzdem, wann zuletzt beim Dienst abgerufen wurde');
+pruefe(preg_match('#Berichte gibt es meist nur für heute und morgen\. Vorhanden:.*?\#lawine">.*?<span class="lw lw\d">Gefahrenstufe \d</span>#su', $hOhneS) === 1
+       && str_contains($hOhneS, 'id="lawine"'), 'ohne gültigen Bericht: Tage mit Bericht verlinkt');
 [$code] = holen($wPort, 'schnee_stunden.php?region=gibtsnicht');
 pruefe($code === 404, 'Stundenseite: unbekannte Region 404');
 [, $html] = holen($wPort, 'index.php?km=1000');
