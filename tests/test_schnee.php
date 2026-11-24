@@ -328,6 +328,25 @@ pruefe($ids(schnee_sortieren($prioListe, 'summe', 'neu')) === ['nebel40', 'sonne
 pruefe($ids(schnee_sortieren($prioListe, 'T', 'neu')) === ['nebel40', 'sonne28', 'sonne18', 'nebel25'], 'Priorität Neuschnee an einem Tag: Stufe, dann Sonne (wie das Symbol), dann cm');
 pruefe($ids(schnee_sortieren($prioListe, 'summe', 'km')) === ['nebel25', 'sonne18', 'sonne28', 'nebel40'] && $ids(schnee_sortieren($prioListe, 'km')) === $ids(schnee_sortieren($prioListe, 'summe', 'km')),
        'Priorität Fahrzeit, alter Parameter nach=km gleichwertig');
+// Prioritaet Schneehoehe (seit 24.11.2026)
+$hsSt = fn(?int $hoehe, float $hs, bool $modell = false) => ['netz' => 'x', 'wert' => ['name' => 'S', 'hoehe' => $hoehe, 'hs' => $hs, 'zeit' => new DateTimeImmutable('2026-11-24 06:00', new DateTimeZone('UTC')), 'modell' => $modell]];
+$hsR = ['hoehe_tour' => 2200];
+$hsA = schnee_hs_heute($hsR, [$hsSt(562, 0.0), $hsSt(2100, 40.0), $hsSt(2500, 60.0), $hsSt(null, 20.0), $hsSt(3109, 200.0), $hsSt(2300, 90.0, true)], 5.0);
+pruefe($hsA['art'] === 'gemessen' && $hsA['cm'] === 40 && $hsA['n'] === 3 && $hsA['von'] === 2100 && $hsA['bis'] === 2500,
+       'Schneehöhe heute: Median der Stationen auf Tourhöhe ± 500 m, ohne Tal und Gipfel, Station ohne Höhe zählt');
+pruefe(schnee_hs_heute($hsR, [$hsSt(2100, 40.0), $hsSt(2500, 61.0)], null)['cm'] === 51, 'Schneehöhe heute: Median aus zwei Stationen = Mittel');
+$hsG = schnee_hs_heute($hsR, [$hsSt(562, 3.0), $hsSt(1500, 30.0, true), $hsSt(2300, 70.4, true)], 5.0);
+pruefe($hsG['art'] === 'snowgrid' && $hsG['cm'] === 70 && $hsG['von'] === 2300, 'Schneehöhe heute: ohne Station auf Tourhöhe der SNOWGRID-Punkt nahe der Tourhöhe');
+$hsM = schnee_hs_heute($hsR, [], 12.6);
+pruefe($hsM['art'] === 'modell' && $hsM['cm'] === 13 && schnee_hs_heute($hsR, [], null) === null, 'Schneehöhe heute: sonst Open-Meteo, ohne alles null');
+$hsListe = [
+    ['region' => ['id' => 'tief'], 'km' => 50, 'neu_summe' => 30.0, 'hs_heute' => ['cm' => 20], 'tage' => ['T' => ['det' => ['neu24' => 30.0]]]],
+    ['region' => ['id' => 'hoch-weit'], 'km' => 300, 'neu_summe' => 0.0, 'hs_heute' => ['cm' => 80], 'tage' => ['T' => ['det' => ['neu24' => 0.0]]]],
+    ['region' => ['id' => 'hoch-neu'], 'km' => 200, 'neu_summe' => 10.0, 'hs_heute' => ['cm' => 80], 'tage' => ['T' => ['det' => ['neu24' => 10.0]]]],
+    ['region' => ['id' => 'ohne'], 'km' => 10, 'neu_summe' => 50.0, 'hs_heute' => null, 'tage' => ['T' => ['det' => ['neu24' => 50.0]]]],
+];
+pruefe($ids(schnee_sortieren($hsListe, 'summe', 'hs')) === ['hoch-neu', 'hoch-weit', 'tief', 'ohne'] && $ids(schnee_sortieren($hsListe, 'T', 'hs')) === ['hoch-neu', 'hoch-weit', 'tief', 'ohne'],
+       'Priorität Schneehöhe: mehr Schnee zuerst, bei Gleichstand der Neuschnee, ohne Angabe ans Ende');
 pruefe(schnee_neu_stufe(4.9) === 0 && schnee_neu_stufe(5.0) === 1 && schnee_neu_stufe(15.0) === 2 && schnee_neu_stufe(30.0) === 3 && schnee_neu_stufe(null) === 0, 'Neuschnee-Stufen ab 5, 15, 30 cm');
 pruefe(lawine_warnung(null) === null && lawine_warnung(['stufe' => 2]) === null && lawine_warnung(['stufe' => 3])['klasse'] === 'warn-erheblich'
        && str_contains(lawine_warnung(['stufe' => 3])['text'], 'meisten tödlichen') && lawine_warnung(['stufe' => 4])['klasse'] === 'warn-hoch'
@@ -398,6 +417,7 @@ for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $wPort); $i++) {
     usleep(100000);
 }
 foreach (['schnee.php', 'schnee.php?km=800', 'schnee.php?km=800&ansicht=reise', 'schnee.php?km=800&ansicht=woche', 'schnee.php?sport=skitour&km=800&nach=km', 'schnee.php?km=800&prio=neu', "schnee.php?km=800&prio=neu&nach=$t1", 'schnee.php?km=800&prio=km&ansicht=woche', 'schnee.php?km=800&prio=<x>',
+          'schnee.php?km=800&prio=hs', 'schnee.php?km=800&prio=hs&ansicht=reise', "schnee.php?km=800&prio=hs&nach=$t1", 'schnee.php?km=800&prio=hs&ansicht=woche',
           "schnee.php?km=800&nach=$t1", 'schnee.php?sport=<script>&km=12', 'schnee_stunden.php?region=schnee-a', "schnee_stunden.php?region=schnee-b&sport=skitour&tag=$t0",
           "schnee.php?region=schnee-a&nach=$t1", 'schnee.php?region=schnee-a&nach=2020-01-01'] as $u) {
     [$code, $html] = holen($wPort, $u);
@@ -494,6 +514,14 @@ pruefe(preg_match('#Schneehöhe gemessen heute [^(]*\(<a href="https://www.slf.c
        'Liste: SLF IMIS mit Tageswert, Neuschnee als Modell SNOWPACK gekennzeichnet, Quelle SLF mit Link auf slf.ch');
 pruefe(preg_match('#id="r-schnee-c".*?Schneehöhe gemessen heute .*?Bezett eins <span class="leise">2.450 m</span> <b>26 cm</b>.*?\(24 h \+6\).*?Bezett zwei <span class="leise">2.000 m</span> <b>0 cm</b>#s', $html) === 1,
        'Liste: Südtiroler Stationen');
+[, $hHs] = holen($wPort, 'schnee.php?km=800&prio=hs');
+[, $hHsW] = holen($wPort, 'schnee.php?km=800&prio=hs&ansicht=woche');
+preg_match_all('#id="r-(schnee-[a-d])"#', $hHs, $hsReihe);
+pruefe($hsReihe[1] === ['schnee-b', 'schnee-a', 'schnee-d', 'schnee-c'] && str_contains($hHs, '<option value="hs" selected>Schneehöhe</option>')
+       && preg_match('#id="r-schnee-c".*?Schneehöhe heute:</span> <b>13 cm</b> <span class="leise">· gemessen, Median von 2 Stationen auf 2.000–2.450 m#s', $hHs) === 1
+       && preg_match('#id="r-schnee-d".*?Schneehöhe heute:</span> <b>≈ 18 cm</b> <span class="leise">· Modell SNOWGRID auf 2.350 m#s', $hHs) === 1
+       && str_contains($hHsW, 'Fahrt · <span title="Schneehöhe heute: gemessen'),
+       'Priorität Schneehöhe: Reihenfolge nach Schneehöhe heute, Wert und Herkunft je Region, in der Tabelle hinter der Fahrzeit');
 [, $hw] = holen($wPort, 'schnee.php?km=800&prio=neu&ansicht=woche');
 pruefe(str_contains($hw, '<option value="neu" selected>Neuschnee</option>') && str_contains($hw, 'prio=neu') && preg_match('#<td class="[^"]*warn-(hoch|erheblich)"#', $hw) === 1,
        'Woche: Priorität bleibt in den Links, Warnzeichen in den Zellen');

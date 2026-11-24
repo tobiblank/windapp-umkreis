@@ -188,6 +188,22 @@ foreach ($liste as $i => $e) {
 if (!$geteilt && !$fav) {
     $liste = array_values(array_filter($liste, fn($e) => im_umkreis($e, (float)$km)));
 }
+// Prioritaet Schneehoehe (seit 24.11.2026): Schneehoehe heute je Region, gemessen > SNOWGRID > Modell
+$heuteTag = $heute->format('Y-m-d');
+if ($prio === 'hs') {
+    foreach ($liste as $i => $e) {
+        $r = $e['region'];
+        $st = stationen_region($r, $messungen);
+        $hs = schnee_hs_heute($r, $st, null);
+        if ($hs === null) {
+            // Tage ab uebermorgen: heute steht nicht in $e['tage'], also nur fuer heute bewerten
+            $modellHs = isset($e['tage'][$heuteTag]) ? $e['tage'][$heuteTag]['det']['hs']
+                : (schnee_region_bewerten($r, ['vorhersage' => $stand['schnee_vorhersage'][$r['id']] ?? null, 'ensemble' => $stand['schnee_ensemble'][$r['id']] ?? null], [$heuteTag], $jetzt)[$heuteTag]['det']['hs'] ?? null);
+            $hs = schnee_hs_heute($r, $st, $modellHs);
+        }
+        $liste[$i]['hs_heute'] = $hs;
+    }
+}
 $liste = schnee_sortieren($liste, $nach, $prio);
 
 $zeiten = [];
@@ -260,6 +276,23 @@ function stunden_link(array $region, ?string $tag = null): string
 function meter(?float $m): string
 {
     return $m === null ? '?' : zahl(round($m / 50) * 50) . ' m';
+}
+
+/**
+ * Schneehoehe heute fuer die Prioritaet "hs" (seit 24.11.2026) als Text: [Wert, Herkunft],
+ * z. B. ["45 cm", "gemessen, Median von 3 Stationen auf 1.950–2.450 m"]
+ */
+function hs_heute_text(?array $hs): array
+{
+    if ($hs === null) {
+        return ['?', 'keine Angabe'];
+    }
+    $hoehe = fn() => $hs['von'] === null ? '' : ' auf ' . zahl((float)$hs['von']) . ($hs['bis'] !== null && $hs['bis'] != $hs['von'] ? '–' . zahl((float)$hs['bis']) : '') . ' m';
+    return match ($hs['art']) {
+        'gemessen' => [zahl($hs['cm']) . ' cm', 'gemessen, ' . ($hs['n'] === 1 ? '1 Station' : 'Median von ' . $hs['n'] . ' Stationen') . $hoehe()],
+        'snowgrid' => ['≈ ' . zahl($hs['cm']) . ' cm', 'Modell SNOWGRID' . $hoehe() . ($hs['stand'] ? ', Stand ' . WOCHENTAGE[(int)gmdate('w', $hs['stand']->getTimestamp())] . ' ' . gmdate('j.n.', $hs['stand']->getTimestamp()) : '')],
+        default    => ['≈ ' . zahl($hs['cm']) . ' cm', 'nur Modell (Open-Meteo)' . $hoehe() . ', im Gebirge oft deutlich zu niedrig'],
+    };
 }
 
 /** "26 cm" (unter 1 cm: "0 cm"); null: "?" */
@@ -516,7 +549,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
   <p>
   „Neu“ je Tag: Niederschlag der 24 Stunden bis <?= SCHNEE_MORGEN ?> Uhr, der auf Tourhöhe als Schnee fällt (Schneefallgrenze unter der Tourhöhe; 1 mm Wasser = <?= zahl(SCHNEE_CM_JE_MM, 1) ?> cm Schnee). So lassen sich die Tage addieren. Darunter die Spanne aus dem ECMWF-Ensemble (80 % der 51 Läufe liegen darin).
   „Pulvertag“ (kräftiges Blau): mindestens <?= SCHNEE_REGEL['neu_min'] ?> cm Neuschnee in den 72 Stunden davor, damit auch der schöne Tag nach dem Schneefall zählt, und von <?= SCHNEE_TAG[0] ?> bis <?= SCHNEE_TAG[1] ?> Uhr höchstens teils sonnig (⛅, bis <?= SCHNEE_REGEL['wolken_max'] ?> % Wolken). Sonst hellt das Blau mit dem Neuschnee ab (ab 10 cm, ab 3 cm).
-  Reihenfolge nach der gewählten Priorität: „Pulver + Sonne“ = der beste Pulvertag, also am meisten Neuschnee an einem schönen Tag, dann Neuschnee im Zeitraum. „Neuschnee“ = Neuschnee in Stufen (ab <?= implode(', ab ', SCHNEE_NEU_STUFEN) ?> cm), innerhalb einer Stufe zuerst die Sonne. „Fahrzeit“ = die nächste zuerst.
+  Reihenfolge nach der gewählten Priorität: „Pulver + Sonne“ = der beste Pulvertag, also am meisten Neuschnee an einem schönen Tag, dann Neuschnee im Zeitraum. „Neuschnee“ = Neuschnee in Stufen (ab <?= implode(', ab ', SCHNEE_NEU_STUFEN) ?> cm), innerhalb einer Stufe zuerst die Sonne. „Schneehöhe“ = die Schneehöhe heute, dann der Neuschnee: gemessen (Median der Stationen auf Tourhöhe ± <?= SCHNEE_HS_BAND ?> m, also ohne Tal- und Gipfelstationen), wo es keine gibt das Schneedeckenmodell SNOWGRID (nur Österreich), sonst nur Open-Meteo, das im Gebirge oft deutlich zu wenig zeigt; woher der Wert kommt, steht bei jeder Region. „Fahrzeit“ = die nächste zuerst.
   „Temp“: Temperatur auf Tourhöhe, tiefste in der Nacht davor (<?= SCHNEE_NACHT_AB ?>–<?= SCHNEE_MORGEN ?> Uhr) / höchste am Tag (<?= SCHNEE_TAG[0] ?>–<?= SCHNEE_TAG[1] ?> Uhr). Im Frühjahr: Friert es nachts, trägt der Firn am Morgen; je wärmer am Tag, desto früher weicht er auf. Am Talort ist es meist wärmer, bei Inversion auch kälter. Von März bis Juni steht „Firn“ dabei, wenn es nachts auf höchstens <?= schnee_grad(SCHNEE_FIRN_NACHT) ?> abkühlt, am Tag mindestens <?= schnee_grad(SCHNEE_FIRN_TAG) ?> erreicht, der Tag höchstens teils sonnig ist und kein frischer Pulver liegt; „kein Frost“, wenn die Nacht über 0° bleibt.
   Schneehöhe und Wind am Kamm (700 hPa, etwa 3000 m) schließen nichts aus, sie stehen nur dabei; 💨 ab <?= SCHNEE_KAMM_HINWEIS ?> km/h am Kamm. Ob genug Schnee für eine Tour liegt, siehst du an der Schneehöhe (Modell, im Gebirge grob) und an den Messstationen. Die Schwellen sind Startwerte, nicht kalibriert.
   </p>
@@ -699,7 +732,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
     <tbody>
       <?php foreach ($liste as $e): $r = $e['region']; ?>
         <tr>
-          <th scope="row" class="m-name"><a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>#r-<?= h($r['id']) ?>"><?= h($r['name']) ?></a><span class="leise"><?= h(fahrzeit_text($e['fahrt'])) ?> Fahrt</span></th>
+          <th scope="row" class="m-name"><a href="<?= h(link_mit(['ansicht' => 'bald', 'nach' => null])) ?>#r-<?= h($r['id']) ?>"><?= h($r['name']) ?></a><span class="leise"><?= h(fahrzeit_text($e['fahrt'])) ?> Fahrt<?php if ($prio === 'hs'): [$hsWert, $hsWoher] = hs_heute_text($e['hs_heute'] ?? null); ?> · <span title="<?= h('Schneehöhe heute: ' . $hsWoher) ?>"><?= h($hsWert) ?></span><?php endif ?></span></th>
           <?php foreach ($tage as $t):
               $d = $e['tage'][$t];
               $vorbei = !empty($d['vorbei']);
@@ -729,6 +762,9 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
       <h2><a class="region-link" href="<?= h($kartenZiel) ?>"><?= h($r['name']) ?></a><?= $geteilt ? '' : fav_knopf_html($r, $fav) ?></h2>
       <?php if (!$geteilt): ?><span class="leise klein fahrzeit"><?= h(fahrzeit_text($e['fahrt'])) ?> Fahrt<span class="km" title="Alle Schneewerte und Temperaturen gelten für diese Höhe (oberer Teil typischer Touren), nicht für den Start.">Werte auf <?= zahl((float)$r['hoehe_tour']) ?> m</span></span><?php endif ?>
     </div>
+    <?php if ($prio === 'hs' && !$geteilt): [$hsWert, $hsWoher] = hs_heute_text($e['hs_heute'] ?? null); ?>
+      <p class="klein messung hs-heute" title="Danach sortiert: Messstationen nahe der Tourhöhe (± <?= SCHNEE_HS_BAND ?> m), sonst SNOWGRID, sonst Open-Meteo"><span class="leise">Schneehöhe heute:</span> <b><?= h($hsWert) ?></b> <span class="leise">· <?= h($hsWoher) ?></span></p>
+    <?php endif ?>
     <div class="tage" style="--n: <?= count($tage) ?>">
       <?php foreach ($tage as $t):
           $d = $e['tage'][$t];
