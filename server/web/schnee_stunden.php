@@ -318,7 +318,7 @@ $jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
   <?= maps_html($region) ?>
 </section>
 
-<section class="karte lawine-seite">
+<section class="karte lawine-seite" id="lawine">
   <h2 class="klein">Lawinenlage <?= h(tag_kurz($tag, $heute)) ?></h2>
   <?php if (!lawine_freigegeben($region, $dienste)): ?>
     <p class="klein">Bitte im Lagebericht nachsehen: <a href="<?= h($dienst['url_bericht']) ?>" rel="noopener"><?= h($dienst['name']) ?> ↗</a> <span class="leise">(die Stufe zeigen wir hier, sobald die Nutzung geklärt ist)</span></p>
@@ -327,6 +327,21 @@ $jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
     <?php if (!$lage): ?>
     <?php $ab = lawine_zeit_text((string)($lagenAlle[$region['warndienst']]['ts'] ?? ''), $tzSeite); ?>
     <p class="klein">Kein gültiger Lagebericht für diesen Tag. Das heißt nicht „keine Gefahr“. <a href="<?= h($dienst['url_bericht']) ?>" rel="noopener"><?= h($dienst['kurz']) ?> ↗</a><?= $ab !== '' ? ' <span class="leise">abgerufen ' . h($ab) . '</span>' : '' ?></p>
+    <?php // Seit 24.11.2026: die Tage mit gueltigem Bericht nennen (meist heute und morgen), sonst wirkt das
+          // Dreieck auf der Karte (hoechste Stufe heute/morgen) neben "kein Bericht" widerspruechlich
+      $andere = [];
+      foreach ($tage as $t) {
+          if ($t !== $tag && !$bew[$t]['vorbei'] && ($l = lawine_lage($region, $lagenAlle, $t))) {
+              $andere[$t] = $l;
+          }
+      }
+    ?>
+    <?php if ($andere): ?>
+    <p class="klein">Berichte gibt es meist nur für heute und morgen. Vorhanden:
+      <?php foreach ($andere as $t => $l): $w = lawine_warnung($l); ?>
+        <a href="<?= h(link_mit(['tag' => $t]) . '#lawine') ?>"><?= $w ? '⚠&#xFE0E; ' : '' ?><?= h(tag_kurz($t, $heute)) ?></a> <span class="lw lw<?= $l['stufe'] ?>">Gefahrenstufe <?= $l['stufe'] ?: '–' ?></span><?= $t !== array_key_last($andere) ? ' · ' : '' ?>
+      <?php endforeach ?></p>
+    <?php endif ?>
     <?php else: ?>
     <p class="klein"><span class="lw lw<?= $lage['stufe'] ?>">Gefahrenstufe <?= $lage['stufe'] ?: '–' ?></span> <?= h(lawine_stufen_text($lage['teile'], true)) ?></p>
     <?php foreach (lawine_probleme_liste($lage['probleme']) as $p): ?>

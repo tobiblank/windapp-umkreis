@@ -280,10 +280,13 @@ pruefe(!$rl[1]['tage'][$uebermorgen]['det']['geht'], 'Ammersee übermorgen: geht
 $nah = rangliste($regionen, $stand, $kite, $inning, 100, [$morgen]);
 pruefe(count($nah) === 1 && $nah[0]['region']['id'] === 'ammersee', 'Umkreis 100 km: nur Ammersee');
 
+// Ende des Tagesfensters morgen an der Adria: Sonnenuntergang um 16:30, je nach Datum und
+// PHP-Version (8.4 rechnet date_sun_info genauer) 16 oder 17 Uhr; seit 24.11.2026 nicht mehr fest 17
+$adriaBis = tagesfenster($morgen, new DateTimeZone('Europe/Rome'), 45.5, 13.0)[1];
 $segeln = rangliste($regionen, $stand, SPORTARTEN['segeln'], $inning, 1000, [$morgen]);
 $adriaS = array_values(array_filter($segeln, fn($e) => $e['region']['id'] === 'adria-nord'))[0]['tage'][$morgen];
-pruefe($adriaS['det']['geht'] && $adriaS['det']['von'] === 15,
-       "Segeln Adria morgen: 10-15 Uhr zu viel Wind (max 18 kn), danach geht es (ab {$adriaS['det']['von']} Uhr)");
+pruefe($adriaBis - 15 >= MIN_STUNDEN ? $adriaS['det']['geht'] && $adriaS['det']['von'] === 15 : !$adriaS['det']['geht'],
+       "Segeln Adria morgen: 10-15 Uhr zu viel Wind (max 18 kn), danach geht es, wenn bis $adriaBis Uhr genug Zeit bleibt (ab " . ($adriaS['det']['von'] ?? '–') . " Uhr)");
 
 $wave = ['name' => 'Wave', 'min' => 14, 'welle_min' => 1.0];
 $rlw = rangliste($regionen, $stand, $wave, $inning, 1000, [$morgen]);
@@ -385,11 +388,13 @@ $datenAdria = ['vorhersage' => $stand['vorhersage']['adria-nord'], 'ensemble' =>
 // Testdaten Adria morgen: Bora 20 kn von 10 bis 15 Uhr Ortszeit, Fenster 9-17 Uhr
 $um = fn(string $zeit) => new DateTimeImmutable("$morgen $zeit", $rom);
 $r = region_bewerten($adriaR, $datenAdria, $kite, [$morgen, $uebermorgen], $um('12:00'))[$morgen];
-pruefe($r['rest'] && !$r['vorbei'] && $r['fenster'] === [13, 17], 'um 12 Uhr: Rest 13-17 Uhr (12:30 aufgerundet)');
+pruefe($r['rest'] && !$r['vorbei'] && $r['fenster'] === [13, $adriaBis], "um 12 Uhr: Rest 13-$adriaBis Uhr (12:30 aufgerundet)");
 pruefe($r['det']['geht'] && $r['det']['von'] === 13 && $r['det']['bis'] === 15, "um 12 Uhr: geht noch 13-15 Uhr (ist {$r['det']['von']}-{$r['det']['bis']})");
 pruefe(abs($r['ens']['chance'] - 1.0) < 1e-9, 'um 12 Uhr: Ensemble rechnet nur den Rest, weiter 100 %');
 $r = region_bewerten($adriaR, $datenAdria, $kite, [$morgen], $um('14:10'))[$morgen];
-pruefe($r['rest'] && !$r['vorbei'] && !$r['det']['geht'] && abs($r['ens']['chance']) < 1e-9, 'um 14:10 Uhr: Rest 15-17 Uhr ohne Wind, 0 %');
+pruefe($adriaBis - 15 >= MIN_STUNDEN
+       ? $r['rest'] && !$r['vorbei'] && !$r['det']['geht'] && abs($r['ens']['chance']) < 1e-9
+       : $r['rest'] && $r['vorbei'], "um 14:10 Uhr: Rest 15-$adriaBis Uhr ohne Wind, 0 % (bis 16 Uhr: vorbei)");
 $r = region_bewerten($adriaR, $datenAdria, $kite, [$morgen], $um('15:40'))[$morgen];
 pruefe($r['vorbei'] && $r['ens'] === null && $r['det']['grund'] === 'Tag vorbei', 'um 15:40 Uhr: nur noch 1 Stunde, vorbei');
 $r = region_bewerten($adriaR, $datenAdria, $kite, [$uebermorgen], $um('15:40'))[$uebermorgen];
