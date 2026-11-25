@@ -49,12 +49,13 @@ const REGEL_UNGEPRUEFT = 0.4;
 const FENSTER_AB = 9;          // Ortszeit, wie stegen-wind seit 22.10.2026
 const REST_VORLAUF_MIN = 30;   // heute: erst ab jetzt + 30 min (Anfahrt, Aufbau), wie stegen-wind
 
-/** Voreinstellungen wie in stegen-wind (sport.php): nur 14 kn Directional ist dort kalibriert */
+/** Voreinstellungen wie in stegen-wind (sport.php): nur 14 kn Directional ist dort kalibriert.
+ *  Wing seit 25.11.2026 ab 11 kn wie ammerseewind.de (dort seit 5.11.2026; vorher hier 16 kn) */
 const SPORTARTEN = [
     'kite_directional' => ['name' => 'Kite Directional', 'gruppe' => 'kite', 'min' => 14, 'ammerseewind' => 'directional'],
     'kite_twintip'     => ['name' => 'Kite Twintip', 'gruppe' => 'kite', 'min' => 14, 'ammerseewind' => 'twintip'],
     'kitefoil'         => ['name' => 'Kitefoil', 'gruppe' => 'kite', 'min' => 11, 'ammerseewind' => 'kitefoil'],
-    'wingfoil'         => ['name' => 'Wingfoil', 'gruppe' => 'wing', 'min' => 16, 'ammerseewind' => 'wing'],
+    'wingfoil'         => ['name' => 'Wingfoil', 'gruppe' => 'wing', 'min' => 11, 'ammerseewind' => 'wing'],
     'windsurf'         => ['name' => 'Windsurf', 'gruppe' => 'windsurf', 'min' => 17, 'ammerseewind' => 'windsurf'],
     'windsurf_foil'    => ['name' => 'Windsurf Foil', 'gruppe' => 'windsurf', 'min' => 12, 'ammerseewind' => 'windsurffoil'],
     // Seit 7.11.2026: Wave-Varianten mit Mindestwelle, Wellenreiten ohne Mindestwind (Faustwerte, nicht kalibriert)
