@@ -437,11 +437,10 @@ if (getenv('UMKREIS_SCHNEE_OFFEN')) {   // zum Ansehen im Browser: Schnee-Seite 
 }
 pruefe(str_contains($html, 'class="lw lw3 warn-erheblich"') && str_contains($html, 'class="lw lw2"') && str_contains($html, 'Zuordnung über den Namen'), 'Lawinen-Abzeichen in EAWS-Farben, Hinweis auf Namenszuordnung');
 pruefe(preg_match('#id="r-schnee-c".*?class="tag [^"]*warn-hoch"#s', $html) === 1 && str_contains($html, 'class="lw lw4 warn-hoch"') && str_contains($html, '<span class="warn" aria-label="Warnung">⚠')
-       && preg_match('#class="warn-punkt warn-hoch"#', $html) === 1 && preg_match('#class="warn-punkt warn-erheblich"#', $html) === 1
        && str_contains($html, 'Bei Stufe 3 passieren die meisten tödlichen Lawinenunfälle.'),
-       'Lawinen-Warnzeichen: Stufe 4 Kachel rot umrandet, Dreieck im Abzeichen und auf der Karte, Hinweis zu Stufe 3');
-pruefe(preg_match('#<a href="schnee_stunden\.php\?[^"]*tag=\d{4}-\d\d-\d\d[^"]*\#lawine" class="warn-link">\s*<title>⚠ [^<]*Lawinenwarnstufe \d [^<]*antippen#u', $html) === 1
-       && str_contains($html, 'class="tippflaeche"'), 'Karte: Dreieck ist ein eigener Link zum Tag mit der Warnung');
+       'Lawinen-Warnzeichen: Stufe 4 Kachel rot umrandet, Dreieck im Abzeichen, Hinweis zu Stufe 3');
+pruefe(preg_match('#<svg class="landkarte-bild".*?</svg>#s', $html, $mKarte) === 1 && !str_contains($mKarte[0], '⚠') && !str_contains($mKarte[0], 'warn-')
+       && !str_contains($html, 'Lawinenwarnstufe ab 3 (orange)'), 'Karte: kein Lawinenzeichen (seit 25.11.2026)');
 pruefe(str_contains($html, '<select name="prio">') && str_contains($html, '<option value="pulver" selected>Pulver + Sonne</option>') && str_contains($html, '<select name="nach">')
        && preg_match('#<select name="nach">(.*?)</select>#s', $html, $mNach) && !str_contains($mNach[1], 'value="km"'), 'Auswahl: Tag und Priorität getrennt');
 pruefe(substr_count($html, 'noch die eigene Beurteilung vor Ort') >= 3 && str_contains($html, '<p class="karte klein haftung">'), 'Haftungshinweis oben, je Region und im Fuß');

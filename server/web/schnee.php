@@ -599,7 +599,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
     }
     $u = $rp * 0.7;
     // Hoechste Lawinenwarnstufe eines Punkts: am gewaehlten Tag, sonst ueber alle Tage mit Bericht
-    // (meist heute und morgen); dieselbe Stufe wie das Warndreieck auf der Karte
+    // (meist heute und morgen); nur noch fuer das Maennchen (seit 25.11.2026 kein Dreieck auf der Karte)
     // Rueckgabe [Stufe, Tag mit dieser Stufe]; das Dreieck verlinkt auf diesen Tag (seit 24.11.2026),
     // der Punkt selbst weiter auf den Pulvertag
     $stufeVon = function (array $p) use ($kartenTag, $tage, $lageVon): array {
@@ -653,12 +653,11 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
         $zahl = $n !== null && $n >= 0.5;
         $rk = $zahl ? $rp : $rp * 0.55;
         $fuellung = $n === null ? '' : ' style="fill: ' . schneefarbe((float)$n) . '"';
-        [$stufeMax, $warnTag] = $stufeVon($p);
-        $warn = lawine_warnung($stufeMax ? ['stufe' => $stufeMax] : null);
-        $titel = ($warn ? '⚠ ' : '') . $r['name'] . ': Neuschnee ' . cm($n) . ($kartenTag ? '' : ' im Zeitraum')
+        // Seit 25.11.2026 (Wunsch Tobias) kein Lawinenzeichen mehr auf der Karte: bei Stufe 3 im
+        // Hochwinter staende es fast ueberall; die Lage steht in der Kachel und auf der Stundenseite
+        $titel = $r['name'] . ': Neuschnee ' . cm($n) . ($kartenTag ? '' : ' im Zeitraum')
                . ($p['wert']['geht'] ? ' · Pulvertag' . ($kartenTag ? '' : ' ' . tag_kurz($p['wert']['tag'], $heute)) : '')
-               . ' · ' . fahrzeit_text($p['e']['fahrt']) . ' Fahrt'
-               . ($warn ? ' · Lawinenwarnstufe ' . $stufeMax . ($kartenTag ? '' : ' ' . tag_kurz($warnTag, $heute)) : '');
+               . ' · ' . fahrzeit_text($p['e']['fahrt']) . ' Fahrt';
     ?>
     <a href="<?= h(stunden_link($r, $p['wert']['tag'])) ?>" class="punkt <?= $klasse ?>">
       <title><?= h($titel) ?></title>
@@ -666,15 +665,6 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
       <?php if ($zahl): ?><text class="zahl<?= $dunkel ?>" x="<?= round($p['xy'][0], 1) ?>" y="<?= round($p['xy'][1] + $rp * 0.36, 2) ?>" font-size="<?= round($rp * 1.05, 2) ?>"><?= zahl(round($n)) ?></text><?php endif ?>
       <?php if (isset($namen[$nr])): $rechts = $namen[$nr] === 'rechts'; ?><text class="name<?= $rechts ? '' : ' links' ?>" x="<?= round($p['xy'][0] + ($rechts ? 1 : -1) * $rp * 1.3, 2) ?>" y="<?= round($p['xy'][1] + $rp * 0.35, 2) ?>" font-size="<?= round($rp, 2) ?>" stroke-width="<?= round($rp * 0.3, 2) ?>"><?= h($r['name']) ?></text><?php endif ?>
     </a>
-    <?php if ($warn): // Dreieck als eigener Link zum Tag mit der Warnung (seit 24.11.2026), mit unsichtbarer Tippflaeche
-        $wx = round($p['xy'][0] + $rk * 0.75, 2); $wy = round($p['xy'][1] - $rk * 0.55, 2);
-        $wf = round($rp * ($warn['stufe'] >= 4 ? 1.25 : 1.0), 2); ?>
-    <a href="<?= h(stunden_link($r, $warnTag) . '#lawine') ?>" class="warn-link">
-      <title><?= h('⚠ ' . $r['name'] . ': Lawinenwarnstufe ' . $warn['stufe'] . ' ' . tag_kurz($warnTag, $heute) . ' – antippen für die Lawinenlage') ?></title>
-      <circle class="tippflaeche" cx="<?= $wx ?>" cy="<?= round($wy - $wf * 0.35, 2) ?>" r="<?= round($wf * 0.9, 2) ?>"/>
-      <text class="warn-punkt <?= $warn['klasse'] ?>" x="<?= $wx ?>" y="<?= $wy ?>" font-size="<?= $wf ?>" stroke-width="<?= round($rp * 0.25, 2) ?>">⚠&#xFE0E;</text>
-    </a>
-    <?php endif ?>
     <?php endforeach ?>
     <?= karte_orte_svg($orte, $rp) // feste Orte ueber den Regionspunkten, damit kein Name verdeckt wird ?>
     <?php
@@ -718,7 +708,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
   <p class="leise klein landkarte-fuss fuss-neu">Fläche: Neuschnee auf <?= zahl(SCHNEE_RASTER_HOEHE) ?> m<?= $kartenTag ? '' : ' im Zeitraum' ?>, Raster rund 25 km, ein Modell, Stand <?= $stand ?>. Grob: Täler und einzelne Kämme verschwimmen.</p>
   <?php if ($hsZellen): ?><p class="leise klein landkarte-fuss fuss-hs">Fläche: Schneehöhe im Modell <?= h(tag_kurz($hsTag, $heute)) ?> <?= SCHNEE_MORGEN ?> Uhr, Raster rund 25 km, ein Modell, Stand <?= $stand ?>. Kein Messwert: Das Modell rechnet je Zelle mit einer mittleren Geländehöhe und liegt im Gebirge oft deutlich unter den Messstationen. Für „wo liegt mehr, wo weniger“, nicht für Zentimeter.</p><?php endif ?>
   <?php endif ?>
-  <p class="leise klein landkarte-fuss">Punkte, Farbe und Zahl: Neuschnee in cm auf Tourhöhe der Region<?= $kartenTag ? ' (24 h bis ' . SCHNEE_MORGEN . ' Uhr)' : ', alle Tage im Zeitraum zusammen' ?>. Ring: <?= $kartenTag ? 'Pulvertag' : 'mindestens ein Pulvertag' ?>. ⚠&#xFE0E; Lawinenwarnstufe ab 3 (orange) bzw. ab 4 (rot)<?= $kartenTag ? '' : ', heute oder morgen' ?>, antippen: Lawinenlage an diesem Tag. Männchen: <?= $eigenerOrt ? 'dein Standort' : 'Inning' ?>, antippen: wohin fahr ma? Punkt antippen: Stunden der Region.<?= $fav ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße.' ?> Karte: Natural Earth; Relief: Mapzen Terrain Tiles (EU-DEM, Copernicus; SRTM und GMTED2010, USGS; ETOPO1, NOAA).</p>
+  <p class="leise klein landkarte-fuss">Punkte, Farbe und Zahl: Neuschnee in cm auf Tourhöhe der Region<?= $kartenTag ? ' (24 h bis ' . SCHNEE_MORGEN . ' Uhr)' : ', alle Tage im Zeitraum zusammen' ?>. Ring: <?= $kartenTag ? 'Pulvertag' : 'mindestens ein Pulvertag' ?>. Männchen: <?= $eigenerOrt ? 'dein Standort' : 'Inning' ?>, antippen: wohin fahr ma? Punkt antippen: Stunden der Region.<?= $fav ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße.' ?> Karte: Natural Earth; Relief: Mapzen Terrain Tiles (EU-DEM, Copernicus; SRTM und GMTED2010, USGS; ETOPO1, NOAA).</p>
 </details>
 <?php endif ?>
 
