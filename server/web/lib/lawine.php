@@ -378,7 +378,37 @@ function lawine_lage(array $region, array $lagen, string $tag, ?int $jetzt = nul
         'mehrere'         => count($treffer) > 1,
         'ueber_namen'     => !$eaws,
         'abgerufen'       => (string)($lage['ts'] ?? ''),
+        'tendenz'         => $b['tendenz'] ?? [],
     ];
+}
+
+/**
+ * Tendenz fuer einen Tag ohne eigenen Bericht (seit 28.11.2026, Wunsch Tobias): aus dem Bericht
+ * des Vortags, wenn dessen Tendenz (CAAML v6 tendencyType, eigene validTime) 12 Uhr dieses Tags
+ * abdeckt. Meist also morgen bis 17 Uhr, danach uebermorgen. Keine Gefahrenstufe, kein Text.
+ * Liefern laut Pruefung vom 28.11.2026 Euregio, Kaernten und Lombardei; das SLF nur einen
+ * Kommentar ohne Typ (dann null); Bayern und GeoSphere ungeprueft (keine Datei erreichbar).
+ * Rueckgabe null oder ['typ', 'text' (mit Pfeil), 'pfeil', 'bis', 'veroeffentlicht']
+ */
+function lawine_tendenz(array $region, array $lagen, string $tag, ?int $jetzt = null): ?array
+{
+    $tz = new DateTimeZone($region['zeitzone']);
+    $vortag = (new DateTimeImmutable("$tag 12:00", $tz))->modify('-1 day')->format('Y-m-d');
+    $vor = lawine_lage($region, $lagen, $vortag, $jetzt);
+    if (!$vor) {
+        return null;
+    }
+    $mittag = (new DateTimeImmutable("$tag 12:00", $tz))->getTimestamp();
+    foreach ($vor['tendenz'] as $t) {
+        $von = strtotime($t['von']);
+        $bis = strtotime($t['bis']);
+        if ($von !== false && $bis !== false && $mittag >= $von && $mittag < $bis) {
+            $text = LAWINE_TENDENZ[$t['typ']];
+            return ['typ' => $t['typ'], 'text' => $text, 'pfeil' => mb_substr($text, 0, 1), 'bis' => $t['bis'],
+                    'veroeffentlicht' => $vor['veroeffentlicht']];
+        }
+    }
+    return null;
 }
 
 /** Hoechste Stufe eines Berichts (0 = keine Einstufung) */

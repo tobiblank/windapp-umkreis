@@ -398,7 +398,8 @@ function lawine_html(array $region, array $lagenTage, array $dienste, array $tag
     $zus = [];
     foreach ($kurze as $t) {
         $l = $lagenTage[$t] ?? null;
-        $zus[] = h(tag_kurz($t, $heute)) . ' ' . ($l ? (lawine_warnung($l) ? '⚠&#xFE0E; ' : '') . 'LWS ' . ($l['stufe'] ?: '–') : 'kein Bericht');
+        $tend = $l ? null : lawine_tendenz($region, $lagen, $t);
+        $zus[] = h(tag_kurz($t, $heute)) . ' ' . ($l ? (lawine_warnung($l) ? '⚠&#xFE0E; ' : '') . 'LWS ' . ($l['stufe'] ?: '–') : ($tend ? 'Tendenz ' . $tend['pfeil'] : 'kein Bericht'));
     }
     $o = '<details class="lawine klein"' . ($stoerung ? ' open' : '') . '><summary>Lawinenlage: ' . implode(', ', $zus) . ($stoerung ? ' · <span class="lawine-stoerung">Abruf gestört</span>' : '') . '</summary>';
     if ($stoerung) {
@@ -411,8 +412,11 @@ function lawine_html(array $region, array $lagenTage, array $dienste, array $tag
     foreach ($kurze as $t) {
         $l = $lagenTage[$t] ?? null;
         if (!$l) {
-            $o .= '<p><b>' . h(tag_kurz($t, $heute)) . ':</b> <span class="leise">kein gültiger Lagebericht (heißt nicht „keine Gefahr“)</span> · ' . $link
-                . ($ab !== '' ? ' <span class="leise">abgerufen ' . h($ab) . '</span>' : '') . '</p>';
+            $tend = lawine_tendenz($region, $lagen, $t);
+            $o .= '<p><b>' . h(tag_kurz($t, $heute)) . ':</b> '
+                . ($tend ? '<span class="lw lw-tendenz">Tendenz ' . h($tend['text']) . '</span> <span class="leise">laut Bericht vom ' . h(lawine_zeit_text($tend['veroeffentlicht'], $tzSeite)) . ', noch keine Gefahrenstufe für diesen Tag (heißt nicht „keine Gefahr“)</span> · '
+                         : '<span class="leise">kein gültiger Lagebericht (heißt nicht „keine Gefahr“)</span> · ')
+                . $link . ($ab !== '' ? ' <span class="leise">abgerufen ' . h($ab) . '</span>' : '') . '</p>';
             continue;
         }
         $probleme = array_map(fn($p) => h($p['text']) . ($p['aspekte'] && count($p['aspekte']) < 8 ? ' ' . lawine_rose($p['aspekte']) : ''), lawine_probleme_liste($l['probleme']));
@@ -773,8 +777,14 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
       <?php foreach ($tage as $t):
           $d = $e['tage'][$t];
           $lw = lawine_abzeichen($lageVon[$r['id']][$t] ?? null);
-          // LWS-Zeile immer gleich hoch: ohne Bericht ein leises "LWS –"
-          $lwZeile = $lw !== '' ? $lw : '<span class="lw lw-leer" title="' . h(lawine_freigegeben($r, $dienste) ? 'Kein Lagebericht für diesen Tag (heißt nicht „keine Gefahr“)' : 'Lawinenwarnstufe im Bericht des Warndiensts nachsehen') . '">LWS –</span>';
+          // LWS-Zeile immer gleich hoch. Ohne Bericht (seit 28.11.2026): die Tendenz aus dem Bericht des
+          // Vortags, sonst heute und morgen ein leises "LWS –", ab uebermorgen nichts (unsichtbarer Platzhalter)
+          $tendK = $lw === '' && lawine_freigegeben($r, $dienste) ? lawine_tendenz($r, $lagen, $t) : null;
+          $spaeter = (int)$heute->diff(new DateTimeImmutable($t, $tzSeite))->format('%r%a') >= 2;
+          $lwZeile = $lw !== '' ? $lw
+              : ($tendK ? '<span class="lw lw-tendenz" title="' . h('Tendenz laut Lagebericht: ' . mb_substr($tendK['text'], 2) . '. Noch keine Gefahrenstufe für diesen Tag (heißt nicht „keine Gefahr“).') . '">Tendenz ' . h($tendK['pfeil']) . '</span>'
+              : ($spaeter ? '<span class="lw lw-leer lw-platz" aria-hidden="true">LWS –</span>'
+              : '<span class="lw lw-leer" title="' . h(lawine_freigegeben($r, $dienste) ? 'Kein Lagebericht für diesen Tag (heißt nicht „keine Gefahr“)' : 'Lawinenwarnstufe im Bericht des Warndiensts nachsehen') . '">LWS –</span>'));
       ?>
         <?php if (!empty($d['vorbei'])): ?>
         <div class="tag leer" title="Für heute ist das Tourenfenster vorbei">
