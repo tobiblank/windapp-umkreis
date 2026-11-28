@@ -24,6 +24,9 @@
  * Felder wie aspects und elevation in XML sind nach dem CAAML-Schema angenommen.
  */
 
+/** Tendenz im Lagebericht (CAAML v6 tendencyType), Anzeige mit Pfeil (seit 28.11.2026) */
+const LAWINE_TENDENZ = ['increasing' => '↗ steigend', 'steady' => '→ gleichbleibend', 'decreasing' => '↘ fallend'];
+
 const LAWINE_STUFEN = ['low' => 1, 'moderate' => 2, 'considerable' => 3, 'high' => 4, 'very_high' => 5];
 const LAWINE_STUFEN_NAMEN = [1 => 'gering', 2 => 'mäßig', 3 => 'erheblich', 4 => 'groß', 5 => 'sehr groß'];
 const LAWINE_PROBLEME = [
@@ -150,6 +153,18 @@ function lawine_lesen(string $text, string $format): ?array
             $probleme[] = ['typ' => $typ, 'aspekte' => $asp, 'ab' => $ab, 'bis' => $bis,
                            'zeit' => (string)(lawine_eins($p['validTimePeriod'] ?? null) ?? 'all_day')];
         }
+        // Tendenz (seit 28.11.2026): CAAML v6 tendency[] mit tendencyType decreasing|steady|increasing
+        // und eigener validTime (meist der Folgetag). Nur der Typ, kein Text (keine eigene Deutung).
+        $tendenz = [];
+        $tl = $b['tendency'] ?? [];
+        foreach (is_array($tl) && !array_is_list($tl) ? [$tl] : (array)$tl as $t) {
+            $typ = is_array($t) ? lawine_eins($t['tendencyType'] ?? null) : null;
+            if (is_string($typ) && isset(LAWINE_TENDENZ[$typ])) {
+                $tv = lawine_eins($t['validTime'] ?? null);
+                $tendenz[] = ['typ' => $typ, 'von' => (string)(lawine_eins($tv['startTime'] ?? null) ?? ''),
+                              'bis' => (string)(lawine_eins($tv['endTime'] ?? null) ?? '')];
+            }
+        }
         $out[] = [
             'id'              => (string)($b['bulletinID'] ?? ''),
             'veroeffentlicht' => (string)(lawine_eins($b['publicationTime'] ?? null) ?? ''),
@@ -158,6 +173,7 @@ function lawine_lesen(string $text, string $format): ?array
             'regionen'        => $regionen,
             'stufen'          => $stufen,
             'probleme'        => $probleme,
+            'tendenz'         => $tendenz,
         ];
     }
     return $out;
