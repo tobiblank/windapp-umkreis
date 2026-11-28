@@ -471,10 +471,11 @@ $hoehen = array_map(fn($m) => $m[2], $mH);
 pruefe(count($hoehen) >= 6 && $hoehen[0] === '26 cm' && $hoehen[1] === '≈ 26 cm' && str_contains($mH[1][1], 'ohne Setzen und Schmelzen')
        && (bool)array_filter($mH, fn($m) => preg_match('#^Schneehöhe am \d+\.\d+\. 18 cm \(Modell SNOWGRID\) plus (\d+) cm#u', $m[1], $g) && $m[2] === '≈ ' . (18 + (int)$g[1]) . ' cm'),
        'Kacheln: Höhe heute gemessen, danach ≈ plus Neuschnee; SNOWGRID vom Vortag plus Neuschnee seitdem');
-pruefe(str_contains($html, '<p class="karte klein hs-hinweis"><b>Höhe:</b>'), 'Hinweis zur Höhe oben auf der Seite');
+pruefe(preg_match('#<details class="karte klein hinweise"><summary><b>Hinweise:</b> Lawinenlage ohne Gewähr · Höhe ab morgen geschätzt</summary>\s*<p class="haftung"><b>Lawinen:</b>.*?<p class="hs-hinweis"><b>Höhe:</b>.*?</details>#su', $html) === 1,
+       'Hinweise oben eingeklappt: Lawinen und Höhe, das Wichtigste in der Zusammenfassung');
 pruefe(str_contains($html, '<select name="prio">') && str_contains($html, '<option value="pulver" selected>Pulver + Sonne</option>') && str_contains($html, '<select name="nach">')
        && preg_match('#<select name="nach">(.*?)</select>#s', $html, $mNach) && !str_contains($mNach[1], 'value="km"'), 'Auswahl: Tag und Priorität getrennt');
-pruefe(substr_count($html, 'noch die eigene Beurteilung vor Ort') >= 3 && str_contains($html, '<p class="karte klein haftung">'), 'Haftungshinweis oben, je Region und im Fuß');
+pruefe(substr_count($html, 'noch die eigene Beurteilung vor Ort') >= 3 && str_contains($html, '<p class="haftung"><b>Lawinen:</b>'), 'Haftungshinweis oben, je Region und im Fuß');
 pruefe(preg_match('#id="r-schnee-b".*?ausgegeben heute \d+:\d\d, gültig bis \S+ \d+:\d\d, abgerufen heute \d+:\d\d.*?Auszug aus dem Lagebericht \(Quelle: LWD Bayern Test\)#s', $html) === 1
        && str_contains($html, 'Hinweis von Wohinfahrma: Lawinenwarnstufe 4') && str_contains($html, 'Warndreiecke und ihre Texte sind Hinweise von Wohinfahrma')
        && !str_contains($html, 'lawine-stoerung'),
