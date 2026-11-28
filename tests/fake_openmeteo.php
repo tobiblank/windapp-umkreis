@@ -167,6 +167,8 @@ if ($pfad === '/v1/timeseries/historical/snowgrid_cl-v2-1d-1km') {
 // Lageberichte (seit 8.11.2026)
 $jetztTs = time();
 $gueltig = ['startTime' => gmdate('Y-m-d\TH:i:s\Z', $jetztTs - 86400), 'endTime' => gmdate('Y-m-d\TH:i:s\Z', $jetztTs + 2 * 86400)];
+// Tendenz (seit 28.11.2026): gilt fuer den Tag nach dem Bericht
+$tendenzZeit = ['startTime' => $gueltig['endTime'], 'endTime' => gmdate('Y-m-d\TH:i:s\Z', $jetztTs + 3 * 86400)];
 if ($pfad === '/api/bulletin/caaml/de/json') {
     header('Content-Type: application/json');
     echo json_encode(['bulletins' => [[
@@ -194,7 +196,8 @@ if (preg_match('#^/bulletins/(\d{4}-\d{2}-\d{2})/\1_(EUREGIO|DE-BY|XX)_de_CAAMLv
         echo json_encode(['bulletins' => [
             ['bulletinID' => 'eu-1', 'publicationTime' => gmdate('Y-m-d\TH:i:s\Z', $jetztTs - 7200), 'validTime' => $gueltig,
              'regions' => [['regionID' => 'AT-07-14-01', 'name' => 'Tirol (nicht freigegeben)'], ['regionID' => 'IT-32-BZ-08-01', 'name' => 'Ahrntal Ost']],
-             'dangerRatings' => [['mainValue' => 'high', 'validTimePeriod' => 'all_day']], 'avalancheProblems' => [['problemType' => 'new_snow']]],
+             'dangerRatings' => [['mainValue' => 'high', 'validTimePeriod' => 'all_day']], 'avalancheProblems' => [['problemType' => 'new_snow']],
+             'tendency' => [['highlights' => 'Die Lawinengefahr bleibt bestehen.', 'tendencyType' => 'steady', 'validTime' => $tendenzZeit]]],
             ['bulletinID' => 'eu-2', 'publicationTime' => gmdate('Y-m-d\TH:i:s\Z', $jetztTs - 7200), 'validTime' => $gueltig,
              'regions' => [['regionID' => 'AT-07-02', 'name' => 'Nur Tirol']], 'dangerRatings' => [['mainValue' => 'low']]],
         ]]);
@@ -211,6 +214,7 @@ if (preg_match('#^/bulletins/(\d{4}-\d{2}-\d{2})/\1_(EUREGIO|DE-BY|XX)_de_CAAMLv
        . '<dangerRating><mainValue>moderate</mainValue><elevation><lowerBound>1800</lowerBound></elevation><validTimePeriod>all_day</validTimePeriod></dangerRating>'
        . '<dangerRating><mainValue>low</mainValue><elevation><upperBound>1800</upperBound></elevation><validTimePeriod>all_day</validTimePeriod></dangerRating>'
        . '<avalancheProblem><problemType>wind_slab</problemType><elevation><lowerBound>1800</lowerBound></elevation><aspects><aspect>N</aspect><aspect>NW</aspect></aspects><validTimePeriod>all_day</validTimePeriod></avalancheProblem>'
+       . '<tendency><tendencyType>increasing</tendencyType><validTime><startTime>' . $tendenzZeit['startTime'] . '</startTime><endTime>' . $tendenzZeit['endTime'] . '</endTime></validTime></tendency>'
        . '<customData><ALBINA><mainDate>' . $m[1] . '</mainDate></ALBINA></customData></bulletin></bulletins>';
     exit;
 }

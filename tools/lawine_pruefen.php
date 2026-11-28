@@ -45,6 +45,7 @@ foreach ($dienste as $id => $d) {
         }
         $b = lawine_filtern($b, $d['freigegeben']);
         $roh = roh_bulletins($body, $d['format']);
+        $roh_t = roh_tendenz($body, $d['format']);
         $ohneStufe = 0;
         foreach ($b as $x) {
             $ohneStufe += $x['stufen'] ? 0 : 1;
@@ -57,6 +58,9 @@ foreach ($dienste as $id => $d) {
             foreach (lawine_probleme_liste($x['probleme']) as $p) {
                 echo "     Problem: {$p['text']}\n";
             }
+            // Tendenz (seit 28.11.2026): gelesener Typ und, zur Pruefung, die Rohdaten
+            echo '     Tendenz: ' . ($x['tendenz'] ? implode('; ', array_map(fn($t) => LAWINE_TENDENZ[$t['typ']] . " ({$t['von']} bis {$t['bis']})", $x['tendenz'])) : '–')
+                 . ' | roh: ' . mb_substr(json_encode($roh_t[$x['id']] ?? null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 0, 300) . "\n";
         }
         if (!$b || $ohneStufe) {
             echo "   FEHLER: " . (!$b ? 'keine freigegebene Mikroregion' : "$ohneStufe Teile ohne Gefahrenstufe") . "\n";
@@ -82,6 +86,26 @@ function roh_bulletins(string $body, string $format): array
     $out = [];
     foreach ($liste as $b) {
         $out[(string)($b['bulletinID'] ?? '')] = $b['dangerRatings'] ?? $b['dangerRating'] ?? null;
+    }
+    return $out;
+}
+
+/** Rohe Tendenz-Angaben je bulletinID (seit 28.11.2026), zur Pruefung, welche Dienste tendencyType liefern */
+function roh_tendenz(string $body, string $format): array
+{
+    $out = [];
+    if ($format === 'xml') {
+        $dom = new DOMDocument();
+        if (!@$dom->loadXML($body, LIBXML_NONET)) {
+            return [];
+        }
+        $roh = lawine_xml_array($dom->documentElement);
+        $liste = is_array($roh) ? ($roh['bulletin'] ?? []) : [];
+    } else {
+        $liste = json_decode($body, true)['bulletins'] ?? [];
+    }
+    foreach ($liste as $b) {
+        $out[(string)($b['bulletinID'] ?? '')] = $b['tendency'] ?? null;
     }
     return $out;
 }

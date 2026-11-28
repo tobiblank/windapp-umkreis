@@ -24,6 +24,9 @@
  * Felder wie aspects und elevation in XML sind nach dem CAAML-Schema angenommen.
  */
 
+/** Tendenz im Lagebericht (CAAML v6 tendencyType), Anzeige mit Pfeil (seit 28.11.2026) */
+const LAWINE_TENDENZ = ['increasing' => '↗ steigend', 'steady' => '→ gleichbleibend', 'decreasing' => '↘ fallend'];
+
 const LAWINE_STUFEN = ['low' => 1, 'moderate' => 2, 'considerable' => 3, 'high' => 4, 'very_high' => 5];
 const LAWINE_STUFEN_NAMEN = [1 => 'gering', 2 => 'mäßig', 3 => 'erheblich', 4 => 'groß', 5 => 'sehr groß'];
 const LAWINE_PROBLEME = [
@@ -150,6 +153,18 @@ function lawine_lesen(string $text, string $format): ?array
             $probleme[] = ['typ' => $typ, 'aspekte' => $asp, 'ab' => $ab, 'bis' => $bis,
                            'zeit' => (string)(lawine_eins($p['validTimePeriod'] ?? null) ?? 'all_day')];
         }
+        // Tendenz (seit 28.11.2026): CAAML v6 tendency[] mit tendencyType decreasing|steady|increasing
+        // und eigener validTime (meist der Folgetag). Nur der Typ, kein Text (keine eigene Deutung).
+        $tendenz = [];
+        $tl = $b['tendency'] ?? [];
+        foreach (is_array($tl) && !array_is_list($tl) ? [$tl] : (array)$tl as $t) {
+            $typ = is_array($t) ? lawine_eins($t['tendencyType'] ?? null) : null;
+            if (is_string($typ) && isset(LAWINE_TENDENZ[$typ])) {
+                $tv = lawine_eins($t['validTime'] ?? null);
+                $tendenz[] = ['typ' => $typ, 'von' => (string)(lawine_eins($tv['startTime'] ?? null) ?? ''),
+                              'bis' => (string)(lawine_eins($tv['endTime'] ?? null) ?? '')];
+            }
+        }
         $out[] = [
             'id'              => (string)($b['bulletinID'] ?? ''),
             'veroeffentlicht' => (string)(lawine_eins($b['publicationTime'] ?? null) ?? ''),
@@ -158,6 +173,7 @@ function lawine_lesen(string $text, string $format): ?array
             'regionen'        => $regionen,
             'stufen'          => $stufen,
             'probleme'        => $probleme,
+            'tendenz'         => $tendenz,
         ];
     }
     return $out;
@@ -362,7 +378,37 @@ function lawine_lage(array $region, array $lagen, string $tag, ?int $jetzt = nul
         'mehrere'         => count($treffer) > 1,
         'ueber_namen'     => !$eaws,
         'abgerufen'       => (string)($lage['ts'] ?? ''),
+        'tendenz'         => $b['tendenz'] ?? [],
     ];
+}
+
+/**
+ * Tendenz fuer einen Tag ohne eigenen Bericht (seit 28.11.2026, Wunsch Tobias): aus dem Bericht
+ * des Vortags, wenn dessen Tendenz (CAAML v6 tendencyType, eigene validTime) 12 Uhr dieses Tags
+ * abdeckt. Meist also morgen bis 17 Uhr, danach uebermorgen. Keine Gefahrenstufe, kein Text.
+ * Liefern laut Pruefung vom 28.11.2026 Euregio, Kaernten und Lombardei; das SLF nur einen
+ * Kommentar ohne Typ (dann null); Bayern und GeoSphere ungeprueft (keine Datei erreichbar).
+ * Rueckgabe null oder ['typ', 'text' (mit Pfeil), 'pfeil', 'bis', 'veroeffentlicht']
+ */
+function lawine_tendenz(array $region, array $lagen, string $tag, ?int $jetzt = null): ?array
+{
+    $tz = new DateTimeZone($region['zeitzone']);
+    $vortag = (new DateTimeImmutable("$tag 12:00", $tz))->modify('-1 day')->format('Y-m-d');
+    $vor = lawine_lage($region, $lagen, $vortag, $jetzt);
+    if (!$vor) {
+        return null;
+    }
+    $mittag = (new DateTimeImmutable("$tag 12:00", $tz))->getTimestamp();
+    foreach ($vor['tendenz'] as $t) {
+        $von = strtotime($t['von']);
+        $bis = strtotime($t['bis']);
+        if ($von !== false && $bis !== false && $mittag >= $von && $mittag < $bis) {
+            $text = LAWINE_TENDENZ[$t['typ']];
+            return ['typ' => $t['typ'], 'text' => $text, 'pfeil' => mb_substr($text, 0, 1), 'bis' => $t['bis'],
+                    'veroeffentlicht' => $vor['veroeffentlicht']];
+        }
+    }
+    return null;
 }
 
 /** Hoechste Stufe eines Berichts (0 = keine Einstufung) */

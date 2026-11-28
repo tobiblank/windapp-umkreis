@@ -401,6 +401,8 @@ a.tag:active { filter: brightness(.94); }
 .tag .chance { display: block; margin-top: 3px; font-size: 11px; color: var(--leise); min-height: 1.2em; }
 .tag.s-go .chance { color: var(--s-go); font-weight: 600; } .tag.s-maybe .chance { color: var(--s-maybe); font-weight: 600; }
 .lw.lw-leer { background: transparent; color: var(--leise); border-color: var(--linie); font-weight: 400; }
+.lw.lw-tendenz { background: transparent; color: var(--text); border: 1px dashed var(--leise); font-weight: 400; } /* Tendenz: bewusst kein EAWS-Farbabzeichen (seit 28.11.2026) */
+.lw.lw-platz { visibility: hidden; }
 /* Lawinen-Warnzeichen (seit 10.11.2026): Dreieck ab Stufe 3, Tag rot umrandet ab Stufe 4; Platz bleibt */
 .lw .warn { font-size: .95em; }
 .tag.warn-hoch { outline: 2.5px solid #ff0000; outline-offset: -2.5px; }

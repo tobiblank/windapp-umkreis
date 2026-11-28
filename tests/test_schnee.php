@@ -69,6 +69,23 @@ pruefe(lawine_mehrdeutig($ohneGrenze) && !lawine_mehrdeutig($real[0]['stufen']) 
        'zwei Stufen ohne Höhengrenze (Trentino, 17.4.2026): Lücke wird genannt, nicht geraten');
 pruefe(array_column(lawine_probleme_liste($real[0]['probleme']), 'text') === ['Altschnee (N, NO, NW über 2.200 m)', 'nachmittags: Nassschnee (alle Expositionen über 1.600 m)', 'nachmittags: Nassschnee (alle Expositionen unter 1.600 m)'],
        'Probleme: Altschnee vor- und nachmittags nur einmal, Nassschnee mit „nachmittags“');
+// Tendenz (seit 28.11.2026): Typ wie bei Euregio/Kaernten/Lombardei, SLF nur mit Kommentar ohne Typ
+$mitT = '{"bulletins":[{"bulletinID":"t","publicationTime":"2026-11-27T16:00:00Z","validTime":{"startTime":"2026-11-27T16:00:00Z","endTime":"2026-11-28T16:00:00Z"},'
+      . '"regions":[{"regionID":"IT-32-BZ-08-01","name":"Ortler"}],"dangerRatings":[{"mainValue":"moderate"}],'
+      . '"tendency":[{"highlights":"Die Lawinengefahr bleibt bestehen.","tendencyType":"steady","validTime":{"startTime":"2026-11-28T16:00:00Z","endTime":"2026-11-29T16:00:00Z"}}]},'
+      . '{"bulletinID":"s","publicationTime":"2026-11-27T16:00:00Z","validTime":{"startTime":"2026-11-27T16:00:00Z","endTime":"2026-11-28T16:00:00Z"},'
+      . '"regions":[{"regionID":"CH-7111","name":"Oberengadin"}],"dangerRatings":[{"mainValue":"considerable"}],"tendency":[{"comment":"Die Gefahr nimmt langsam ab."}]}]}';
+$lt = lawine_lesen($mitT, 'json');
+$xmlT = lawine_lesen(str_replace('</bulletin>', '<tendency><tendencyType>increasing</tendencyType><validTime><startTime>2026-01-11T16:00:00Z</startTime><endTime>2026-01-12T16:00:00Z</endTime></validTime></tendency></bulletin>', $xml), 'xml');
+pruefe($lt[0]['tendenz'] === [['typ' => 'steady', 'von' => '2026-11-28T16:00:00Z', 'bis' => '2026-11-29T16:00:00Z']] && $lt[1]['tendenz'] === []
+       && $xmlT[0]['tendenz'][0]['typ'] === 'increasing' && $real[0]['tendenz'] === [],
+       'Tendenz: tendencyType aus JSON und XML; nur Kommentar (SLF) oder nur Text (Testdatei Bayern) ergibt keine');
+$regT = ['warndienst' => 'euregio', 'zeitzone' => 'Europe/Rome', 'eaws' => ['IT-32-BZ-08']];
+$lagenT = ['euregio' => ['bulletins' => $lt, 'ts' => '2026-11-28T07:30:00Z']];
+$um9 = (new DateTimeImmutable('2026-11-28 09:00', new DateTimeZone('Europe/Rome')))->getTimestamp();
+$tT = lawine_tendenz($regT, $lagenT, '2026-11-29', $um9);
+pruefe($tT && $tT['text'] === '→ gleichbleibend' && $tT['pfeil'] === '→' && lawine_tendenz($regT, $lagenT, '2026-11-30', $um9) === null
+       && lawine_lage($regT, $lagenT, '2026-11-29', $um9) === null, 'Tendenz für morgen aus dem Bericht von heute, übermorgen keine');
 $tzB = new DateTimeZone('Europe/Berlin');
 $jetztB = (new DateTimeImmutable('2026-04-16 18:00', $tzB))->getTimestamp();
 pruefe(lawine_gueltig_text($real[0], $tzB, $jetztB) === 'ausgegeben heute 17:00, gültig bis morgen 17:00' && lawine_zeit_text('', $tzB) === ''
@@ -439,6 +456,8 @@ pruefe(str_contains($html, 'class="lw lw3 warn-erheblich"') && str_contains($htm
 pruefe(preg_match('#id="r-schnee-c".*?class="tag [^"]*warn-hoch"#s', $html) === 1 && str_contains($html, 'class="lw lw4 warn-hoch"') && str_contains($html, '<span class="warn" aria-label="Warnung">⚠')
        && str_contains($html, 'Bei Stufe 3 passieren die meisten tödlichen Lawinenunfälle.'),
        'Lawinen-Warnzeichen: Stufe 4 Kachel rot umrandet, Dreieck im Abzeichen, Hinweis zu Stufe 3');
+pruefe(preg_match('#<span class="lw lw-tendenz" title="Tendenz laut Lagebericht: (gleichbleibend|steigend)\.[^"]*">Tendenz [→↗]</span>#u', $html) === 1
+       && str_contains($html, 'class="lw lw-leer lw-platz" aria-hidden="true"'), 'Kacheln: Tendenz am Tag nach dem letzten Bericht, später kein LWS');
 pruefe(preg_match('#<svg class="landkarte-bild".*?</svg>#s', $html, $mKarte) === 1 && !str_contains($mKarte[0], '⚠') && !str_contains($mKarte[0], 'warn-')
        && !str_contains($html, 'Lawinenwarnstufe ab 3 (orange)'), 'Karte: kein Lawinenzeichen (seit 25.11.2026)');
 pruefe(str_contains($html, '<select name="prio">') && str_contains($html, '<option value="pulver" selected>Pulver + Sonne</option>') && str_contains($html, '<select name="nach">')

@@ -327,6 +327,9 @@ $jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
     <?php if (!$lage): ?>
     <?php $ab = lawine_zeit_text((string)($lagenAlle[$region['warndienst']]['ts'] ?? ''), $tzSeite); ?>
     <p class="klein">Kein gültiger Lagebericht für diesen Tag. Das heißt nicht „keine Gefahr“. <a href="<?= h($dienst['url_bericht']) ?>" rel="noopener"><?= h($dienst['kurz']) ?> ↗</a><?= $ab !== '' ? ' <span class="leise">abgerufen ' . h($ab) . '</span>' : '' ?></p>
+    <?php if ($tend = lawine_tendenz($region, $lagenAlle, $tag)): // seit 28.11.2026 ?>
+    <p class="klein"><span class="lw lw-tendenz">Tendenz <?= h($tend['text']) ?></span> <span class="leise">laut Bericht vom <?= h(lawine_zeit_text($tend['veroeffentlicht'], $tzSeite)) ?>; eine Gefahrenstufe für diesen Tag gibt der Warndienst meist ab 17 Uhr am Vortag heraus.</span></p>
+    <?php endif ?>
     <?php // Seit 24.11.2026: die Tage mit gueltigem Bericht nennen (meist heute und morgen), sonst wirkt das
           // Dreieck auf der Karte (hoechste Stufe heute/morgen) neben "kein Bericht" widerspruechlich
       $andere = [];
