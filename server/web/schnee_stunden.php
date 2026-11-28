@@ -104,6 +104,11 @@ if ($tag === null) {
     }
 }
 $b = $bew[$tag];
+// Schneehoehe (seit 28.11.2026): heute gemessen > SNOWGRID > Modell, spaeter plus Neuschnee (schnee_hs_tage())
+$heuteTag = $heute->format('Y-m-d');
+$hsHeute = schnee_hs_heute($region, stationen_region($region, stationen_laden($dataDir)), $bew[$heuteTag]['det']['hs'] ?? null);
+$hsTag = schnee_hs_tage($region, $daten['vorhersage'], $hsHeute, $heuteTag, [$tag])[$tag] ?? null;
+$hsA = $hsTag ? schnee_hs_anzeige($hsTag) : null;
 $tz = new DateTimeZone($region['zeitzone']);
 $st = schnee_stunden($daten['vorhersage'], $tz, (int)$region['hoehe_tour']);
 $dienste = $schnee['lawinendienste'];
@@ -299,7 +304,8 @@ $jetztStunde = $jetztOrt->format('Y-m-d') . ' ' . (int)$jetztOrt->format('G');
   <?php if (!$b['vorbei'] && ($fi = $k['firn'] ?? null)): ?><p class="klein firn-hinweis<?= $fi['art'] === 'weich' ? ' weich' : '' ?>"><?= h($fi['text']) ?></p><?php endif ?>
   <div class="kennzahlen">
     <div class="kz kz-schnee"><span class="t">Neuschnee 24 h</span><span class="w"><?= h(cm($k['neu24'])) ?></span><span class="u"<?= $e && $e['neu24_p10'] !== null ? ' title="80 % der 51 Ensemble-Läufe, Mitte ' . h(cm($e['neu24_p50'])) . '"' : '' ?>><?= $e && $e['neu24_p10'] !== null ? (round($e['neu24_p10']) == round($e['neu24_p90']) ? 'Ensemble einig' : 'Spanne ' . h(zahl(round($e['neu24_p10']))) . '–' . h(cm($e['neu24_p90']))) : 'bis ' . SCHNEE_MORGEN . ' Uhr' ?></span></div>
-    <div class="kz kz-schnee"><span class="t">Schneehöhe</span><span class="w"><?= h(cm($k['hs'])) ?></span><span class="u">Modell, grob</span></div>
+    <?php if ($hsA): ?><div class="kz kz-schnee" title="<?= h($hsA['titel']) ?>"><span class="t">Schneehöhe</span><span class="w"><?= h($hsA['wert']) ?></span><span class="u"><?= h($hsA['u']) ?></span></div>
+    <?php else: ?><div class="kz kz-schnee"><span class="t">Schneehöhe</span><span class="w"><?= h($k['hs'] === null ? '?' : '≈ ' . cm($k['hs'])) ?></span><span class="u">Modell, grob</span></div><?php endif ?>
     <div class="kz kz-schnee"><span class="t">Schneefallgrenze</span><span class="w"><?= h(meter($k['grenze'])) ?></span><span class="u"><?= $k['grenze'] === null ? 'kein Niederschlag' : 'tiefste in 72 h' ?></span></div>
     <div class="kz kz-temp" title="Auf Tourhöhe: tiefste <?= SCHNEE_NACHT_AB ?>–<?= SCHNEE_MORGEN ?> Uhr, höchste <?= $k['von'] ?>–<?= $k['bis'] ?> Uhr"><span class="t">Temperatur</span><span class="w"><?= h(schnee_temp_text($k) ?? '?') ?></span><span class="u">Nacht / Tag</span></div>
     <div class="kz kz-temp"><span class="t">Nullgrad</span><span class="w"><?= h(meter($k['nullgrad'])) ?></span><span class="u">höchste am Tag</span></div>

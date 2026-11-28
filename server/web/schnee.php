@@ -188,9 +188,10 @@ foreach ($liste as $i => $e) {
 if (!$geteilt && !$fav) {
     $liste = array_values(array_filter($liste, fn($e) => im_umkreis($e, (float)$km)));
 }
-// Prioritaet Schneehoehe (seit 24.11.2026): Schneehoehe heute je Region, gemessen > SNOWGRID > Modell
+// Schneehoehe heute je Region, gemessen > SNOWGRID > Modell: seit 24.11.2026 fuer die Prioritaet
+// Schneehoehe, seit 28.11.2026 immer (Kacheln: heute plus Neuschnee bis zum jeweiligen Tag)
 $heuteTag = $heute->format('Y-m-d');
-if ($prio === 'hs') {
+{
     foreach ($liste as $i => $e) {
         $r = $e['region'];
         $st = stationen_region($r, $messungen);
@@ -202,6 +203,7 @@ if ($prio === 'hs') {
             $hs = schnee_hs_heute($r, $st, $modellHs);
         }
         $liste[$i]['hs_heute'] = $hs;
+        $liste[$i]['hs_tage'] = schnee_hs_tage($r, $stand['schnee_vorhersage'][$r['id']] ?? null, $hs, $heuteTag, $tage);
     }
 }
 $liste = schnee_sortieren($liste, $nach, $prio);
@@ -315,13 +317,13 @@ function himmel_symbol(?float $wolken, bool $schneit = false): ?string
 }
 
 /** Tooltip der Kachel: alles, was dort keinen Platz hat */
-function kachel_titel(array $d): string
+function kachel_titel(array $d, ?array $hs = null): string
 {
     $k = $d['det'];
     $sp = spanne_text($d);
     return implode(' · ', array_filter([
         'Neuschnee 24 h bis ' . SCHNEE_MORGEN . ' Uhr ' . cm($k['neu24']) . ($sp ? ' (Ensemble ' . $sp . ')' : ''),
-        'in 72 h ' . cm($k['neu72']), $k['hs'] !== null ? 'Schneehöhe ≈ ' . cm($k['hs']) . ' (Modell)' : null,
+        'in 72 h ' . cm($k['neu72']), $hs ? schnee_hs_anzeige($hs)['titel'] : ($k['hs'] !== null ? 'Schneehöhe ≈ ' . cm($k['hs']) . ' (Modell)' : null),
         $k['wolken'] !== null ? schnee_himmel($k['wolken']) . ' (' . zahl($k['wolken']) . ' % Wolken)' : null,
         ($tt = schnee_temp_text($k)) !== null ? 'Temperatur Nacht / Tag ' . $tt . 'C' : null,
         $k['kamm'] !== null ? 'Wind am Kamm ' . zahl($k['kamm']) . ' km/h' . ($k['kamm_stark'] ? ' (stark)' : '') : null,
@@ -545,6 +547,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
 <?php endif ?>
 
 <p class="karte klein haftung"><b>Lawinen:</b> <?= h(HAFTUNG) ?> Die Gefahrenstufe ändert Farbe und Reihenfolge nicht; ab Stufe 3 steht ein Warndreieck ⚠&#xFE0E; bei der Region, ab Stufe 4 ist der Tag rot umrandet.</p>
+<p class="karte klein hs-hinweis"><b>Höhe:</b> heute gemessen (Median der Stationen nahe der Tourhöhe), sonst ≈ Modell. Ab morgen ≈ Schneehöhe heute plus Neuschnee bis dahin, ohne Setzen und Schmelzen gerechnet, also eher zu hoch.</p>
 <?php foreach ($quellen as $id => $d): if ($st = lawine_stoerung($lagen[$id] ?? null)): ?><?= str_replace('<p class="lawine-stoerung">', '<p class="karte klein lawine-stoerung">', stoerung_html($st, $d)) ?>
 <?php endif; endforeach ?>
 
@@ -555,6 +558,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
   „Pulvertag“ (kräftiges Blau): mindestens <?= SCHNEE_REGEL['neu_min'] ?> cm Neuschnee in den 72 Stunden davor, damit auch der schöne Tag nach dem Schneefall zählt, und von <?= SCHNEE_TAG[0] ?> bis <?= SCHNEE_TAG[1] ?> Uhr höchstens teils sonnig (⛅, bis <?= SCHNEE_REGEL['wolken_max'] ?> % Wolken). Sonst hellt das Blau mit dem Neuschnee ab (ab 10 cm, ab 3 cm).
   Reihenfolge nach der gewählten Priorität: „Pulver + Sonne“ = der beste Pulvertag, also am meisten Neuschnee an einem schönen Tag, dann Neuschnee im Zeitraum. „Neuschnee“ = Neuschnee in Stufen (ab <?= implode(', ab ', SCHNEE_NEU_STUFEN) ?> cm), innerhalb einer Stufe zuerst die Sonne. „Schneehöhe“ = die Schneehöhe heute, dann der Neuschnee: gemessen (Median der Stationen auf Tourhöhe ± <?= SCHNEE_HS_BAND ?> m, also ohne Tal- und Gipfelstationen), wo es keine gibt das Schneedeckenmodell SNOWGRID (nur Österreich), sonst nur Open-Meteo, das im Gebirge oft deutlich zu wenig zeigt; woher der Wert kommt, steht bei jeder Region. „Fahrzeit“ = die nächste zuerst.
   „Temp“: Temperatur auf Tourhöhe, tiefste in der Nacht davor (<?= SCHNEE_NACHT_AB ?>–<?= SCHNEE_MORGEN ?> Uhr) / höchste am Tag (<?= SCHNEE_TAG[0] ?>–<?= SCHNEE_TAG[1] ?> Uhr). Im Frühjahr: Friert es nachts, trägt der Firn am Morgen; je wärmer am Tag, desto früher weicht er auf. Am Talort ist es meist wärmer, bei Inversion auch kälter. Von März bis Juni steht „Firn“ dabei, wenn es nachts auf höchstens <?= schnee_grad(SCHNEE_FIRN_NACHT) ?> abkühlt, am Tag mindestens <?= schnee_grad(SCHNEE_FIRN_TAG) ?> erreicht, der Tag höchstens teils sonnig ist und kein frischer Pulver liegt; „kein Frost“, wenn die Nacht über 0° bleibt.
+  „Höhe“ (seit 28.11.2026): heute die gemessene Schneehöhe, Median der Messstationen bis <?= SCHNEE_HS_BAND ?> m über oder unter der Tourhöhe; ohne Station ≈ SNOWGRID (Modell, nur Österreich) oder ≈ das Wettermodell, das im Gebirge oft deutlich zu wenig zeigt. Ab morgen ≈ diese Höhe plus der Neuschnee bis dahin, ohne Setzen und Schmelzen gerechnet, also eher zu hoch.
   Schneehöhe und Wind am Kamm (700 hPa, etwa 3000 m) schließen nichts aus, sie stehen nur dabei; 💨 ab <?= SCHNEE_KAMM_HINWEIS ?> km/h am Kamm. Ob genug Schnee für eine Tour liegt, siehst du an der Schneehöhe (Modell, im Gebirge grob) und an den Messstationen. Die Schwellen sind Startwerte, nicht kalibriert.
   </p>
   <p>Blau statt Grün: Ein gutes Feld heißt „guter Schnee“, nie „sicher“. Die Lawinenstufe steht in den offiziellen Farben daneben, nur für Tage mit Lagebericht: „LWS 3“ = Lawinenwarnstufe, im Bericht „Gefahrenstufe 3“. ⚠&#xFE0E; ab Stufe 3, weil bei Stufe 3 die meisten tödlichen Unfälle passieren (Bayerische Alpen seit 1993/94: 48 % laut Lawinenwarndienst Bayern); ab Stufe 4 zusätzlich rot umrandet. Am Platz in der Rangliste ändert das nichts.</p>
@@ -804,11 +808,12 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
         <?php else: ?>
         <?php $warn = lawine_warnung($lageVon[$r['id']][$t] ?? null); ?>
         <a class="tag <?= schnee_klasse($d) ?><?= $nach === $t ? ' gewaehlt' : '' ?><?= $warn ? ' ' . $warn['klasse'] : '' ?>" href="<?= h(stunden_link($r, $t)) ?>"
-           title="<?= h(kachel_titel($d)) ?>">
+           title="<?= h(kachel_titel($d, $e['hs_tage'][$t] ?? null)) ?>">
           <span class="t"><?= h(tag_kurz($t, $heute)) ?></span>
           <span class="himmel"><?= himmel_symbol($d['det']['wolken'], ($d['det']['neu_tag'] ?? 0) >= 2) ?? '–' ?><?= $d['det']['kamm_stark'] ? '<span class="kamm" title="Viel Wind am Kamm">💨</span>' : '' ?></span>
           <span class="zeile"><span class="k">Neu</span> <?= h(cm($d['det']['neu24'])) ?></span>
-          <span class="zeile"><span class="k">Höhe</span> <?= h(cm($d['det']['hs'])) ?></span>
+          <?php $hsA = isset($e['hs_tage'][$t]) ? schnee_hs_anzeige($e['hs_tage'][$t]) : ['wert' => $d['det']['hs'] === null ? '?' : '≈ ' . cm($d['det']['hs']), 'titel' => 'Schneehöhe im Modell (Open-Meteo), im Gebirge oft zu niedrig']; ?>
+          <span class="zeile" title="<?= h($hsA['titel']) ?>"><span class="k">Höhe</span> <?= h($hsA['wert']) ?></span>
           <span class="zeile" title="<?= h('Auf ' . zahl((float)$r['hoehe_tour']) . ' m: tiefste in der Nacht (' . SCHNEE_NACHT_AB . '–' . SCHNEE_MORGEN . ' Uhr) / höchste am Tag (' . $d['det']['von'] . '–' . $d['det']['bis'] . ' Uhr)') ?>"><span class="k">Temp</span> <?= h(schnee_temp_text($d['det']) ?? '?') ?></span>
           <?php if ($fi = $d['det']['firn'] ?? null): ?><span class="firn<?= $fi['art'] === 'weich' ? ' weich' : '' ?>" title="<?= h($fi['text']) ?>"><?= h($fi['kurz']) ?></span><?php endif ?>
           <?= $lwZeile ?>

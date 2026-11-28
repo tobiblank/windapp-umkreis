@@ -674,6 +674,60 @@ function schnee_hs_heute(array $region, array $stationen, ?float $modellHs): ?ar
     return null;
 }
 
+/**
+ * Schneehoehe je Tag fuer Kacheln und Stundenseite (seit 28.11.2026, Wunsch Tobias): die beste
+ * Angabe von heute (schnee_hs_heute(): gemessen, sonst SNOWGRID, sonst Modell) plus der Neuschnee
+ * je Tag (24 h bis SCHNEE_MORGEN Uhr, Modellmittel) nach dem Tag dieser Angabe bis zum jeweiligen
+ * Tag. Ohne Setzen und Schmelzen, also eher zu hoch. Vorher stand in der Kachel snow_depth als
+ * Mittel der Modelle; das sprang ohne Schneefall (vermutlich, weil ICON-D2 nur rund zwei Tage
+ * rechnet und dann im Mittel fehlt) und lag weit unter den Stationen.
+ * Rueckgabe [tag => ['cm', 'art', 'basis' (cm), 'plus' (cm Neuschnee), 'heute' (bool)]];
+ * 'cm' null, wenn fuer einen Tag dazwischen der Neuschnee fehlt.
+ */
+function schnee_hs_tage(array $region, ?array $vorhersage, ?array $hsHeute, string $heute, array $tage): array
+{
+    if (!$hsHeute || !$tage) {
+        return [];
+    }
+    $tz = new DateTimeZone($region['zeitzone']);
+    $st = schnee_stunden($vorhersage, $tz, (int)$region['hoehe_tour']);
+    // Stand der Angabe: Messung (Zeit) bzw. SNOWGRID (Tageswert bis gestern); Modell: heute 8 Uhr
+    $basisTag = $hsHeute['stand'] instanceof DateTimeImmutable ? $hsHeute['stand']->setTimezone($tz)->format('Y-m-d') : $heute;
+    $basisTag = min($basisTag, $heute);
+    $letzter = max($tage);
+    $out = [];
+    $plus = 0.0;
+    $luecke = false;
+    for ($d = $basisTag; $d <= $letzter; $d = (new DateTimeImmutable($d))->modify('+1 day')->format('Y-m-d')) {
+        if ($d !== $basisTag) {
+            $n = schnee_kennwerte($st, $d, SCHNEE_TAG)['neu24'];
+            $n === null ? $luecke = true : $plus += $n;
+        }
+        if ($d >= $heute && in_array($d, $tage, true)) {
+            $out[$d] = ['cm' => $luecke ? null : (int)round($hsHeute['cm'] + $plus), 'art' => $hsHeute['art'],
+                        'basis' => $hsHeute['cm'], 'basis_tag' => $basisTag === $heute ? null : $basisTag,
+                        'plus' => (int)round($plus), 'heute' => $d === $heute];
+        }
+    }
+    return $out;
+}
+
+/** Anzeige einer Schneehoehe aus schnee_hs_tage(): ['wert' => '52 cm' oder '≈ 53 cm', 'titel', 'u' (kurze Herkunft)] */
+function schnee_hs_anzeige(array $x): array
+{
+    $woher = match ($x['art']) { 'gemessen' => 'gemessen', 'snowgrid' => 'Modell SNOWGRID', default => 'Modell Open-Meteo' };
+    if ($x['cm'] === null) {
+        return ['wert' => '?', 'titel' => 'Schneehöhe: Neuschnee bis dahin unbekannt', 'u' => $woher];
+    }
+    $genau = $x['heute'] && $x['art'] === 'gemessen' && $x['plus'] === 0;
+    $wann = empty($x['basis_tag']) ? 'heute' : 'am ' . (new DateTimeImmutable($x['basis_tag']))->format('j.n.');
+    $titel = $x['heute'] && $x['plus'] === 0
+        ? 'Schneehöhe ' . $wann . ' ' . $x['basis'] . ' cm (' . $woher . ')'
+        : 'Schneehöhe ' . $wann . ' ' . $x['basis'] . ' cm (' . $woher . ') plus ' . $x['plus'] . ' cm Neuschnee bis dahin; ohne Setzen und Schmelzen gerechnet, also eher zu hoch';
+    return ['wert' => ($genau ? '' : '≈ ') . zahl($x['cm']) . ' cm', 'titel' => $titel,
+            'u' => $x['heute'] && $x['plus'] === 0 ? $woher : $woher . ' + Neuschnee'];
+}
+
 /** Stufe des Neuschnees fuer die Prioritaet "neu": 0 unter 5 cm, 1 ab 5, 2 ab 15, 3 ab 30 */
 function schnee_neu_stufe(?float $cm): int
 {
