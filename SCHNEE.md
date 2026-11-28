@@ -179,7 +179,7 @@ Freigabe per Mail der Lawinenwarnzentrale Bayern (10.11.2026): Einbindung über 
 | Ausfälle deutlich anzeigen | `lawine_stoerung()`: letzter Abruf fehlgeschlagen, letzter guter Abruf älter als 13 h (mit Abruf auf dem Server: 2 h) oder gar keine Daten: Hinweis oben, bei der Region („Abruf gestört“, Block aufgeklappt) und auf der Stundenseite, mit Stand |
 | Haftung, Eigenverantwortung | `LAWINE_HAFTUNG` (siehe oben) |
 
-Echte Berichte prüft die Action „Lagebericht prüfen“ (`tools/lawine_pruefen.php`, bei Änderungen am Parser oder Katalog und von Hand). Testdatei `tests/lawine_bayern_2026-04-17.xml` nach dem Aufbau der echten Datei vom 17.4.2026 (Tageszeiten, Nassschnee).
+Echte Berichte prüft die Action „Lagebericht prüfen“ (`tools/lawine_pruefen.php`, bei Änderungen am Parser oder Katalog und von Hand): seit 28.11.2026 heute und morgen für alle freigegebenen Dienste, das SLF einmal (aktueller Bericht), dazu der 27.3.2026 als Archivtag (nur avalanche.report hält ältere Dateien vor, static.lawinen-warnung.eu nicht mehr; vorher war der Check deshalb dauerhaft rot). 404 ist nur bei ausdrücklich angegebenen vergangenen Tagen ein Fehler. Zeigt je Berichtsteil auch die Tendenz mit Rohdaten. Testdatei `tests/lawine_bayern_2026-04-17.xml` nach dem Aufbau der echten Datei vom 17.4.2026 (Tageszeiten, Nassschnee).
 
 ### Freigabe am 8.11.2026
 

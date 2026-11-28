@@ -1,7 +1,7 @@
 name: Lagebericht prüfen
 
 # Seit 10.11.2026: liest echte Lageberichte der freigegebenen Warndienste mit {datum}
-# (derzeit Bayern) mit lawine_lesen() und zeigt Stufen und Probleme so, wie die Seite sie
+# mit lawine_lesen() und zeigt Stufen und Probleme so, wie die Seite sie
 # zeigt (tools/lawine_pruefen.php). Laeuft bei Aenderungen am Parser oder am Katalog und
 # von Hand (Actions > Lagebericht prüfen > Run workflow, optional mit Tagen).
 
@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       tage:
-        description: "Tage (YYYY-MM-DD, durch Leerzeichen getrennt); leer = zwei Tage aus dem letzten Winter"
+        description: "Tage (YYYY-MM-DD, durch Leerzeichen getrennt), dazu immer heute und morgen; leer = 27.3.2026 als Archivtag"
         required: false
         default: ""
 
