@@ -399,7 +399,7 @@ function lawine_html(array $region, array $lagenTage, array $dienste, array $tag
     foreach ($kurze as $t) {
         $l = $lagenTage[$t] ?? null;
         $tend = $l ? null : lawine_tendenz($region, $lagen, $t);
-        $zus[] = h(tag_kurz($t, $heute)) . ' ' . ($l ? (lawine_warnung($l) ? '⚠&#xFE0E; ' : '') . 'LWS ' . ($l['stufe'] ?: '–') : ($tend ? 'Tendenz ' . $tend['pfeil'] : 'kein Bericht'));
+        $zus[] = h(tag_kurz($t, $heute)) . ' ' . ($l ? (lawine_warnung($l) ? '⚠&#xFE0E; ' : '') . 'LWS ' . ($l['stufe'] ?: '–') : ($tend ? trim('Tendenz ' . $tend['pfeil']) : 'kein Bericht'));
     }
     $o = '<details class="lawine klein"' . ($stoerung ? ' open' : '') . '><summary>Lawinenlage: ' . implode(', ', $zus) . ($stoerung ? ' · <span class="lawine-stoerung">Abruf gestört</span>' : '') . '</summary>';
     if ($stoerung) {
@@ -414,7 +414,7 @@ function lawine_html(array $region, array $lagenTage, array $dienste, array $tag
         if (!$l) {
             $tend = lawine_tendenz($region, $lagen, $t);
             $o .= '<p><b>' . h(tag_kurz($t, $heute)) . ':</b> '
-                . ($tend ? '<span class="lw lw-tendenz">Tendenz ' . h($tend['text']) . '</span> <span class="leise">laut Bericht vom ' . h(lawine_zeit_text($tend['veroeffentlicht'], $tzSeite)) . ', noch keine Gefahrenstufe für diesen Tag (heißt nicht „keine Gefahr“)</span> · '
+                . ($tend ? lawine_tendenz_html($tend) . ' <span class="leise">laut Bericht vom ' . h(lawine_zeit_text($tend['veroeffentlicht'], $tzSeite)) . ', noch keine Gefahrenstufe für diesen Tag (heißt nicht „keine Gefahr“)</span> · '
                          : '<span class="leise">kein gültiger Lagebericht (heißt nicht „keine Gefahr“)</span> · ')
                 . $link . ($ab !== '' ? ' <span class="leise">abgerufen ' . h($ab) . '</span>' : '') . '</p>';
             continue;
@@ -709,10 +709,15 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
     <button type="button" class="feldknopf" data-feld="neu" aria-pressed="true">Neuschnee</button><?php if ($hsZellen): ?>
     <button type="button" class="feldknopf" data-feld="hs" aria-pressed="false">Schneehöhe</button><?php endif ?>
     <button type="button" class="feldknopf" data-feld="aus" aria-pressed="false">aus</button></p>
+  <?php endif ?>
+  <details class="karte-info"><summary class="leise klein">Erklärung zur Karte</summary>
+  <?php // seit 28.11.2026 eingeklappt (Wunsch Tobias): nur bei Bedarf ?>
+  <?php if ($zellen): ?>
   <p class="leise klein landkarte-fuss fuss-neu">Fläche: Neuschnee auf <?= zahl(SCHNEE_RASTER_HOEHE) ?> m<?= $kartenTag ? '' : ' im Zeitraum' ?>, Raster rund 25 km, ein Modell, Stand <?= $stand ?>. Grob: Täler und einzelne Kämme verschwimmen.</p>
   <?php if ($hsZellen): ?><p class="leise klein landkarte-fuss fuss-hs">Fläche: Schneehöhe im Modell <?= h(tag_kurz($hsTag, $heute)) ?> <?= SCHNEE_MORGEN ?> Uhr, Raster rund 25 km, ein Modell, Stand <?= $stand ?>. Kein Messwert: Das Modell rechnet je Zelle mit einer mittleren Geländehöhe und liegt im Gebirge oft deutlich unter den Messstationen. Für „wo liegt mehr, wo weniger“, nicht für Zentimeter.</p><?php endif ?>
   <?php endif ?>
   <p class="leise klein landkarte-fuss">Punkte, Farbe und Zahl: Neuschnee in cm auf Tourhöhe der Region<?= $kartenTag ? ' (24 h bis ' . SCHNEE_MORGEN . ' Uhr)' : ', alle Tage im Zeitraum zusammen' ?>. Ring: <?= $kartenTag ? 'Pulvertag' : 'mindestens ein Pulvertag' ?>. Männchen: <?= $eigenerOrt ? 'dein Standort' : 'Inning' ?>, antippen: wohin fahr ma? Punkt antippen: Stunden der Region.<?= $fav ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße.' ?> Karte: Natural Earth; Relief: Mapzen Terrain Tiles (EU-DEM, Copernicus; SRTM und GMTED2010, USGS; ETOPO1, NOAA).</p>
+  </details>
 </details>
 <?php endif ?>
 
@@ -782,7 +787,7 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
           $tendK = $lw === '' && lawine_freigegeben($r, $dienste) ? lawine_tendenz($r, $lagen, $t) : null;
           $spaeter = (int)$heute->diff(new DateTimeImmutable($t, $tzSeite))->format('%r%a') >= 2;
           $lwZeile = $lw !== '' ? $lw
-              : ($tendK ? '<span class="lw lw-tendenz" title="' . h('Tendenz laut Lagebericht: ' . mb_substr($tendK['text'], 2) . '. Noch keine Gefahrenstufe für diesen Tag (heißt nicht „keine Gefahr“).') . '">Tendenz ' . h($tendK['pfeil']) . '</span>'
+              : ($tendK ? '<span class="lw lw-tendenz" title="' . h('Tendenz laut Lagebericht: ' . ($tendK['text'] !== '' ? mb_substr($tendK['text'], 2) : '„' . $tendK['wortlaut'] . '“') . '. Noch keine Gefahrenstufe für diesen Tag (heißt nicht „keine Gefahr“).') . '">Tendenz' . ($tendK['pfeil'] !== '' ? ' ' . h($tendK['pfeil']) : '') . '</span>'
               : ($spaeter ? '<span class="lw lw-leer lw-platz" aria-hidden="true">LWS –</span>'
               : '<span class="lw lw-leer" title="' . h(lawine_freigegeben($r, $dienste) ? 'Kein Lagebericht für diesen Tag (heißt nicht „keine Gefahr“)' : 'Lawinenwarnstufe im Bericht des Warndiensts nachsehen') . '">LWS –</span>'));
       ?>

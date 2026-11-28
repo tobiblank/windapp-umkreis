@@ -77,9 +77,15 @@ $mitT = '{"bulletins":[{"bulletinID":"t","publicationTime":"2026-11-27T16:00:00Z
       . '"regions":[{"regionID":"CH-7111","name":"Oberengadin"}],"dangerRatings":[{"mainValue":"considerable"}],"tendency":[{"comment":"Die Gefahr nimmt langsam ab."}]}]}';
 $lt = lawine_lesen($mitT, 'json');
 $xmlT = lawine_lesen(str_replace('</bulletin>', '<tendency><tendencyType>increasing</tendencyType><validTime><startTime>2026-01-11T16:00:00Z</startTime><endTime>2026-01-12T16:00:00Z</endTime></validTime></tendency></bulletin>', $xml), 'xml');
-pruefe($lt[0]['tendenz'] === [['typ' => 'steady', 'von' => '2026-11-28T16:00:00Z', 'bis' => '2026-11-29T16:00:00Z']] && $lt[1]['tendenz'] === []
-       && $xmlT[0]['tendenz'][0]['typ'] === 'increasing' && $real[0]['tendenz'] === [],
-       'Tendenz: tendencyType aus JSON und XML; nur Kommentar (SLF) oder nur Text (Testdatei Bayern) ergibt keine');
+pruefe($lt[0]['tendenz'] === [['typ' => 'steady', 'wortlaut' => '', 'von' => '2026-11-28T16:00:00Z', 'bis' => '2026-11-29T16:00:00Z']]
+       && $lt[1]['tendenz'] === [['typ' => null, 'wortlaut' => 'Die Gefahr nimmt langsam ab.', 'von' => '2026-11-28T16:00:00Z', 'bis' => '2026-11-29T16:00:00Z']]
+       && $xmlT[0]['tendenz'][0]['typ'] === 'increasing' && $real[0]['tendenz'][0]['wortlaut'] === 'No change for the time being.',
+       'Tendenz: tendencyType aus JSON und XML; ohne Typ der Kommentar im Wortlaut (SLF: 24 h nach dem Bericht)');
+$regS = ['warndienst' => 'slf', 'zeitzone' => 'Europe/Zurich', 'eaws' => ['CH-7111']];
+$tS = lawine_tendenz($regS, ['slf' => ['bulletins' => $lt, 'ts' => '2026-11-28T07:30:00Z']], '2026-11-29', $um9);
+pruefe($tS && $tS['typ'] === null && $tS['pfeil'] === '' && $tS['wortlaut'] === 'Die Gefahr nimmt langsam ab.'
+       && lawine_tendenz_html($tS) === '<span class="lw lw-tendenz">Tendenz</span> <q class="tendenz-wortlaut">Die Gefahr nimmt langsam ab.</q>',
+       'SLF: Tendenz für morgen als Kommentar im Wortlaut, ohne Pfeil');
 $regT = ['warndienst' => 'euregio', 'zeitzone' => 'Europe/Rome', 'eaws' => ['IT-32-BZ-08']];
 $lagenT = ['euregio' => ['bulletins' => $lt, 'ts' => '2026-11-28T07:30:00Z']];
 $um9 = (new DateTimeImmutable('2026-11-28 09:00', new DateTimeZone('Europe/Rome')))->getTimestamp();
