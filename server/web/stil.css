@@ -388,6 +388,7 @@ a.tag:active { filter: brightness(.94); }
 .lawine p { margin: 0 0 4px; } .lawine p:last-child { margin-bottom: 0; }
 .rose { vertical-align: -4px; } .rose path { fill: var(--karte); stroke: var(--leise); stroke-width: .6; } .rose path.an { fill: var(--text); }
 .haftung { border-left: 4px solid var(--leise); }
+.hinweise { border-left: 4px solid var(--leise); } .hinweise > summary { cursor: pointer; } .hinweise p { margin: 8px 0 0; } .hinweise .haftung { border-left: 0; }
 .stunden-bild .s-schnee { fill: var(--s-maybe); }
 .stunden-bild .s-sfg { fill: none; stroke: var(--s-go); stroke-width: 2; stroke-linejoin: round; }
 .stunden-bild .s-null { fill: none; stroke: var(--maybe); stroke-width: 1.4; stroke-dasharray: 4 3; }

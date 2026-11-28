@@ -546,8 +546,12 @@ $quellen = array_filter($dienste, fn($d) => $d['freigegeben']);
 <?php endif ?>
 <?php endif ?>
 
-<p class="karte klein haftung"><b>Lawinen:</b> <?= h(HAFTUNG) ?> Die Gefahrenstufe ändert Farbe und Reihenfolge nicht; ab Stufe 3 steht ein Warndreieck ⚠&#xFE0E; bei der Region, ab Stufe 4 ist der Tag rot umrandet.</p>
-<p class="karte klein hs-hinweis"><b>Höhe:</b> heute gemessen (Median der Stationen nahe der Tourhöhe), sonst ≈ Modell. Ab morgen ≈ Schneehöhe heute plus Neuschnee bis dahin, ohne Setzen und Schmelzen gerechnet, also eher zu hoch.</p>
+<?php // Seit 28.11.2026 eingeklappt (Wunsch Tobias); die Zusammenfassung nennt das Wichtigste, der volle
+      // Haftungshinweis steht ausserdem in jedem Lawinenblock, auf der Stundenseite und im Impressum ?>
+<details class="karte klein hinweise"><summary><b>Hinweise:</b> Lawinenlage ohne Gewähr · Höhe ab morgen geschätzt</summary>
+<p class="haftung"><b>Lawinen:</b> <?= h(HAFTUNG) ?> Die Gefahrenstufe ändert Farbe und Reihenfolge nicht; ab Stufe 3 steht ein Warndreieck ⚠&#xFE0E; bei der Region, ab Stufe 4 ist der Tag rot umrandet.</p>
+<p class="hs-hinweis"><b>Höhe:</b> heute gemessen (Median der Stationen nahe der Tourhöhe), sonst ≈ Modell. Ab morgen ≈ Schneehöhe heute plus Neuschnee bis dahin, ohne Setzen und Schmelzen gerechnet, also eher zu hoch.</p>
+</details>
 <?php foreach ($quellen as $id => $d): if ($st = lawine_stoerung($lagen[$id] ?? null)): ?><?= str_replace('<p class="lawine-stoerung">', '<p class="karte klein lawine-stoerung">', stoerung_html($st, $d)) ?>
 <?php endif; endforeach ?>
 
