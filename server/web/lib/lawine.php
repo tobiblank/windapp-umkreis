@@ -155,15 +155,32 @@ function lawine_lesen(string $text, string $format): ?array
         }
         // Tendenz (seit 28.11.2026): CAAML v6 tendency[] mit tendencyType decreasing|steady|increasing
         // und eigener validTime (meist der Folgetag). Nur der Typ, kein Text (keine eigene Deutung).
+        // Seit 28.11.2026 auch ohne Typ: dann der Kommentar im Wortlaut (SLF: nur "comment", keine
+        // validTime; gilt dann fuer die 24 h nach dem Bericht). Mit Typ bleibt es beim Pfeil.
         $tendenz = [];
         $tl = $b['tendency'] ?? [];
+        $bBis = (string)(lawine_eins($vt['endTime'] ?? null) ?? '');
         foreach (is_array($tl) && !array_is_list($tl) ? [$tl] : (array)$tl as $t) {
-            $typ = is_array($t) ? lawine_eins($t['tendencyType'] ?? null) : null;
-            if (is_string($typ) && isset(LAWINE_TENDENZ[$typ])) {
-                $tv = lawine_eins($t['validTime'] ?? null);
-                $tendenz[] = ['typ' => $typ, 'von' => (string)(lawine_eins($tv['startTime'] ?? null) ?? ''),
-                              'bis' => (string)(lawine_eins($tv['endTime'] ?? null) ?? '')];
+            if (!is_array($t)) {
+                continue;
             }
+            $typ = lawine_eins($t['tendencyType'] ?? null);
+            $typ = is_string($typ) && isset(LAWINE_TENDENZ[$typ]) ? $typ : null;
+            $wort = '';
+            if ($typ === null) {
+                $roh = lawine_eins($t['comment'] ?? $t['highlights'] ?? null);
+                $wort = is_string($roh) ? trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags(str_ireplace(['<br>', '<br/>', '<br />'], ' ', $roh)), ENT_QUOTES | ENT_HTML5, 'UTF-8'))) : '';
+            }
+            if ($typ === null && $wort === '') {
+                continue;
+            }
+            $tv = lawine_eins($t['validTime'] ?? null);
+            $von = (string)(lawine_eins($tv['startTime'] ?? null) ?? '');
+            $bis = (string)(lawine_eins($tv['endTime'] ?? null) ?? '');
+            if ($von === '' && $bBis !== '' && ($ts = strtotime($bBis)) !== false) {
+                [$von, $bis] = [$bBis, gmdate('Y-m-d\TH:i:s\Z', $ts + 86400)];
+            }
+            $tendenz[] = ['typ' => $typ, 'wortlaut' => $wort, 'von' => $von, 'bis' => $bis];
         }
         $out[] = [
             'id'              => (string)($b['bulletinID'] ?? ''),
@@ -386,9 +403,9 @@ function lawine_lage(array $region, array $lagen, string $tag, ?int $jetzt = nul
  * Tendenz fuer einen Tag ohne eigenen Bericht (seit 28.11.2026, Wunsch Tobias): aus dem Bericht
  * des Vortags, wenn dessen Tendenz (CAAML v6 tendencyType, eigene validTime) 12 Uhr dieses Tags
  * abdeckt. Meist also morgen bis 17 Uhr, danach uebermorgen. Keine Gefahrenstufe, kein Text.
- * Liefern laut Pruefung vom 28.11.2026 Euregio, Kaernten und Lombardei; das SLF nur einen
- * Kommentar ohne Typ (dann null); Bayern und GeoSphere ungeprueft (keine Datei erreichbar).
- * Rueckgabe null oder ['typ', 'text' (mit Pfeil), 'pfeil', 'bis', 'veroeffentlicht']
+ * Typ liefern laut Pruefung vom 28.11.2026 Euregio, Kaernten und Lombardei; das SLF nur einen
+ * Kommentar ohne Typ: dann 'wortlaut' (unveraendert, CC BY 4.0). Bayern, GeoSphere ungeprueft.
+ * Rueckgabe null oder ['typ' (oder null), 'text' (mit Pfeil oder ''), 'pfeil', 'wortlaut', 'bis', 'veroeffentlicht']
  */
 function lawine_tendenz(array $region, array $lagen, string $tag, ?int $jetzt = null): ?array
 {
@@ -403,12 +420,19 @@ function lawine_tendenz(array $region, array $lagen, string $tag, ?int $jetzt = 
         $von = strtotime($t['von']);
         $bis = strtotime($t['bis']);
         if ($von !== false && $bis !== false && $mittag >= $von && $mittag < $bis) {
-            $text = LAWINE_TENDENZ[$t['typ']];
-            return ['typ' => $t['typ'], 'text' => $text, 'pfeil' => mb_substr($text, 0, 1), 'bis' => $t['bis'],
-                    'veroeffentlicht' => $vor['veroeffentlicht']];
+            $text = $t['typ'] ? LAWINE_TENDENZ[$t['typ']] : '';
+            return ['typ' => $t['typ'], 'text' => $text, 'pfeil' => $text !== '' ? mb_substr($text, 0, 1) : '',
+                    'wortlaut' => $t['wortlaut'] ?? '', 'bis' => $t['bis'], 'veroeffentlicht' => $vor['veroeffentlicht']];
         }
     }
     return null;
+}
+
+/** Tendenz als Kaestchen fuer Lawinenblock und Stundenseite: Pfeil mit Wort, sonst der Kommentar im Wortlaut */
+function lawine_tendenz_html(array $t): string
+{
+    return '<span class="lw lw-tendenz">Tendenz' . ($t['text'] !== '' ? ' ' . htmlspecialchars($t['text']) : '') . '</span>'
+         . ($t['text'] === '' && $t['wortlaut'] !== '' ? ' <q class="tendenz-wortlaut">' . htmlspecialchars($t['wortlaut']) . '</q>' : '');
 }
 
 /** Hoechste Stufe eines Berichts (0 = keine Einstufung) */
@@ -607,7 +631,7 @@ function lawine_gueltig_text(array $lage, DateTimeZone $tz, ?int $jetzt = null):
 function lawine_auszug_text(array $lage, array $dienst): string
 {
     $namen = array_values(array_unique(array_map(fn($r) => $r[1] ?: $r[0], $lage['regionen'])));
-    $t = 'Auszug aus dem Lagebericht (Quelle: ' . ($dienst['name'] ?? 'Warndienst') . '): nur Gefahrenstufe und Lawinenprobleme, ohne die Texte; von Wohinfahrma gekürzt und aufbereitet. '
+    $t = 'Auszug aus dem Lagebericht (Quelle: ' . ($dienst['name'] ?? 'Warndienst') . '): nur Gefahrenstufe, Lawinenprobleme und Tendenz, ohne die übrigen Texte; von Wohinfahrma gekürzt und aufbereitet. '
        . 'Gilt für ' . implode(', ', $namen) . ($lage['ueber_namen'] ? ' (Zuordnung über den Namen)' : '') . '.';
     if (count($namen) > 1) {
         $t .= ' Bei mehreren Teilgebieten steht hier das mit der höchsten Stufe.';

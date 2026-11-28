@@ -827,7 +827,9 @@ function trend_titel(array $tr, DateTimeZone $tz, DateTimeImmutable $heute): str
   </svg>
   <button type="button" class="feldknopf" id="feldKnopf" aria-pressed="true" hidden>Farbfeld Windstärke</button>
   <?= windskala_legende() ?>
+  <details class="karte-info"><summary class="leise klein">Erklärung zur Karte</summary>
   <p class="leise klein landkarte-fuss">Farbfeld: mittlerer Wind an der Region (am guten Tag im Fenster, sonst im Tagesmittel), nicht dazwischen. Spitze am Punkt: wohin der Wind weht (am guten Tag im Fenster, sonst im Tagesmittel, ab <?= KARTE_PFEIL_AB_KN ?> kn). <?= 'Männchen: ' . ($eigenerOrt ? 'dein Standort' : 'Inning') . ($flug ? ', fliegt zum besten Ziel' : '') . '. ' ?>Punkt antippen: Stunden der Region<?= $kartenTag ? '' : ' am besten Tag' ?>.<?= $flug || $fav ? '' : ' Kreis: ' . zahl($km) . ' km Luftlinie; der Umkreis zählt die Straße, darum fehlen manche Ziele innerhalb des Kreises.' ?> Karte: Natural Earth.</p>
+  </details>
 </details>
 <?php endif ?>
 
