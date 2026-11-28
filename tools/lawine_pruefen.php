@@ -1,10 +1,13 @@
 <?php
 /**
  * Echte Lageberichte gegen lawine_lesen() pruefen (seit 10.11.2026), laeuft in
- * .github/workflows/lawine-pruefen.yml (mit Netz). Liest je freigegebenem Dienst mit
- * {datum} die Datei fuer die angegebenen Tage (Standard: zwei Tage aus dem letzten
- * Winter), dazu heute. 404 ist bei vergangenen Tagen ein Fehler, heute nicht (ausserhalb
- * der Saison gibt es keinen Bericht).
+ * .github/workflows/lawine-pruefen.yml (mit Netz). Liest je freigegebenem Dienst die Datei
+ * fuer heute und morgen, dazu die angegebenen Tage; Dienste ohne {datum} (SLF) einmal den
+ * aktuellen Bericht. Seit 28.11.2026 ohne Angabe zusaetzlich der 27.3.2026 als Archivtag:
+ * static.lawinen-warnung.eu (Bayern, GeoSphere) haelt aeltere Dateien nicht mehr vor, nur
+ * avalanche.report (Euregio, Kaernten, Lombardei). 404 ist deshalb nur bei ausdruecklich
+ * angegebenen vergangenen Tagen ein Fehler; heute, morgen und der Archivtag sind ein Hinweis
+ * (ausserhalb der Saison und vor 17 Uhr fuer morgen gibt es keinen Bericht).
  *
  *   php tools/lawine_pruefen.php [daten/schneeregionen.json] [YYYY-MM-DD ...]
  *
@@ -15,16 +18,20 @@
 require __DIR__ . '/../server/web/lib/lawine.php';
 
 $katalog = $argv[1] ?? __DIR__ . '/../daten/schneeregionen.json';
-$tage = array_slice($argv, 2) ?: ['2026-03-27', '2026-04-17'];
+$angegeben = array_slice($argv, 2);
 $dienste = json_decode((string)file_get_contents($katalog), true)['lawinendienste'] ?? [];
-$heute = (new DateTimeImmutable('today', new DateTimeZone('Europe/Berlin')))->format('Y-m-d');
+$heuteD = new DateTimeImmutable('today', new DateTimeZone('Europe/Berlin'));
+$heute = $heuteD->format('Y-m-d');
+$morgen = $heuteD->modify('+1 day')->format('Y-m-d');
+$tage = $angegeben ?: ['2026-03-27'];
 $fehler = 0;
 
 foreach ($dienste as $id => $d) {
-    if (!$d['freigegeben'] || !str_contains($d['abruf'], '{datum}')) {
+    if (!$d['freigegeben']) {
         continue;
     }
-    foreach (array_unique([...$tage, $heute]) as $tag) {
+    $mitDatum = str_contains($d['abruf'], '{datum}');
+    foreach ($mitDatum ? array_unique([...$tage, $heute, $morgen]) : ['aktuell'] as $tag) {
         $url = lawine_url($d, $tag);
         $ch = curl_init($url);
         curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 30, CURLOPT_FOLLOWLOCATION => true,
@@ -33,8 +40,12 @@ foreach ($dienste as $id => $d) {
         $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
         echo "== $id $tag: HTTP $http, " . strlen($body) . " Bytes\n   $url\n";
-        if ($http === 404 && $tag === $heute) {
-            echo "   heute noch kein Bericht (ausserhalb der Saison normal)\n";
+        if ($http === 404 && !($mitDatum && in_array($tag, $angegeben, true) && $tag < $heute)) {
+            echo '   ' . match (true) {
+                $tag === 'aktuell', $tag === $heute => 'noch kein Bericht (ausserhalb der Saison normal)',
+                $tag === $morgen => 'morgen noch kein Bericht (vor 17 Uhr normal)',
+                default => 'Archivtag nicht mehr abrufbar (Hinweis, kein Fehler)',
+            } . "\n";
             continue;
         }
         $b = $http === 200 ? lawine_lesen($body, $d['format']) : null;
