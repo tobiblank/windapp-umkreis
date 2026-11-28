@@ -466,6 +466,12 @@ pruefe(preg_match('#<span class="lw lw-tendenz" title="Tendenz laut Lagebericht:
        && str_contains($html, 'class="lw lw-leer lw-platz" aria-hidden="true"'), 'Kacheln: Tendenz am Tag nach dem letzten Bericht, später kein LWS');
 pruefe(preg_match('#<svg class="landkarte-bild".*?</svg>#s', $html, $mKarte) === 1 && !str_contains($mKarte[0], '⚠') && !str_contains($mKarte[0], 'warn-')
        && !str_contains($html, 'Lawinenwarnstufe ab 3 (orange)'), 'Karte: kein Lawinenzeichen (seit 25.11.2026)');
+preg_match_all('#title="(Schneehöhe [^"]*)"><span class="k">Höhe</span> ([^<]*)<#u', $html, $mH, PREG_SET_ORDER);
+$hoehen = array_map(fn($m) => $m[2], $mH);
+pruefe(count($hoehen) >= 6 && $hoehen[0] === '26 cm' && $hoehen[1] === '≈ 26 cm' && str_contains($mH[1][1], 'ohne Setzen und Schmelzen')
+       && (bool)array_filter($mH, fn($m) => preg_match('#^Schneehöhe am \d+\.\d+\. 18 cm \(Modell SNOWGRID\) plus (\d+) cm#u', $m[1], $g) && $m[2] === '≈ ' . (18 + (int)$g[1]) . ' cm'),
+       'Kacheln: Höhe heute gemessen, danach ≈ plus Neuschnee; SNOWGRID vom Vortag plus Neuschnee seitdem');
+pruefe(str_contains($html, '<p class="karte klein hs-hinweis"><b>Höhe:</b>'), 'Hinweis zur Höhe oben auf der Seite');
 pruefe(str_contains($html, '<select name="prio">') && str_contains($html, '<option value="pulver" selected>Pulver + Sonne</option>') && str_contains($html, '<select name="nach">')
        && preg_match('#<select name="nach">(.*?)</select>#s', $html, $mNach) && !str_contains($mNach[1], 'value="km"'), 'Auswahl: Tag und Priorität getrennt');
 pruefe(substr_count($html, 'noch die eigene Beurteilung vor Ort') >= 3 && str_contains($html, '<p class="karte klein haftung">'), 'Haftungshinweis oben, je Region und im Fuß');
